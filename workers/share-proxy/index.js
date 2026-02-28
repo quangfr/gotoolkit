@@ -30,6 +30,7 @@ const MAX_ASSET_BYTES = 25 * 1024 * 1024;
 const LOCAL_SYNC_REVOKE_CACHE_TTL_MS = 60 * 1000;
 const LOCAL_SYNC_JTI_CACHE_TTL_MS = 2 * 60 * 1000;
 const LOCAL_SYNC_CACHE_MAX_ENTRIES = 5000;
+const OAUTH_IDENTITY_TOKEN_TTL_MS = 5 * 60 * 1000;
 let serviceAccountConfig = null;
 let signingKeyPromise = null;
 let accessTokenCache = { token: null, expiresAt: 0 };
@@ -556,6 +557,90 @@ function getSpaceAuthSecret(env) {
 
 function getSpaceCreateSecret(env) {
   return String(env?.SHARE_SPACE_CREATE_SECRET || "").trim();
+}
+
+function getOauthIdentitySecret(env) {
+  return String(env?.SHARE_OAUTH_IDENTITY_SECRET || "").trim();
+}
+
+async function getOauthIdentitySigningKey(env) {
+  const secret = getOauthIdentitySecret(env);
+  if (!secret) return null;
+  return crypto.subtle.importKey(
+    "raw",
+    textEncoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"]
+  );
+}
+
+async function verifyOauthIdentityToken(env, token) {
+  const key = await getOauthIdentitySigningKey(env);
+  if (!key) return { ok: false, error: "Secret identité OAuth manquant" };
+  const rawToken = String(token || "").trim();
+  const dot = rawToken.lastIndexOf(".");
+  if (dot <= 0) return { ok: false, error: "Jeton identité invalide" };
+  const payloadPart = rawToken.slice(0, dot);
+  const sigPart = rawToken.slice(dot + 1);
+  let payloadRaw = "";
+  try {
+    payloadRaw = fromBase64UrlString(payloadPart);
+  } catch (err) {
+    return { ok: false, error: "Jeton identité invalide" };
+  }
+  let sigBytes;
+  try {
+    const sigRaw = fromBase64UrlString(sigPart);
+    sigBytes = new Uint8Array(sigRaw.length);
+    for (let i = 0; i < sigRaw.length; i += 1) sigBytes[i] = sigRaw.charCodeAt(i);
+  } catch (err) {
+    return { ok: false, error: "Signature identité invalide" };
+  }
+  const valid = await crypto.subtle.verify("HMAC", key, sigBytes, textEncoder.encode(payloadRaw));
+  if (!valid) return { ok: false, error: "Signature identité invalide" };
+  let payload = null;
+  try {
+    payload = JSON.parse(payloadRaw);
+  } catch (err) {
+    return { ok: false, error: "Payload identité invalide" };
+  }
+  const exp = Number(payload?.exp || 0);
+  const iat = Number(payload?.iat || 0);
+  const email = String(payload?.email || "").trim().toLowerCase();
+  const provider = String(payload?.provider || "").trim().toLowerCase();
+  if (String(payload?.typ || "").trim() !== "oauth-identity") return { ok: false, error: "Type identité invalide" };
+  if (!email || !provider) return { ok: false, error: "Identité incomplète" };
+  if (!Number.isFinite(exp) || !Number.isFinite(iat) || Date.now() >= exp) return { ok: false, error: "Identité expirée" };
+  if ((exp - iat) > OAUTH_IDENTITY_TOKEN_TTL_MS + 5_000) return { ok: false, error: "Durée identité invalide" };
+  return { ok: true, payload };
+}
+
+function resolveAllowedSpacesForEmail(emailRaw) {
+  const email = String(emailRaw || "").trim().toLowerCase();
+  const allowed = new Set();
+  if (!email) return [];
+  if (email === "tranxq@gmail.com") {
+    allowed.add("golive");
+    allowed.add("safran");
+    return Array.from(allowed);
+  }
+  const domain = email.split("@")[1] || "";
+  if (domain === "savane-group.com") {
+    allowed.add("golive");
+  }
+  if (domain === "safrangroup.com") {
+    allowed.add("golive");
+    allowed.add("safran");
+  }
+  return Array.from(allowed);
+}
+
+function readManagedSpaceCode(env, spaceId) {
+  const normalizedSpaceId = normalizeSpaceId(spaceId);
+  if (normalizedSpaceId === "golive") return String(env?.GOLIVE_SPACE_CODE || "").trim();
+  if (normalizedSpaceId === "safran") return String(env?.SAFRAN_SPACE_CODE || "").trim();
+  return "";
 }
 
 function hasValidSpaceCreateSecret(request, env) {
@@ -1504,7 +1589,22 @@ async function handleRequest(request, env) {
       });
     }
 
-    const spaceCode = normalizeSpaceJoinCode(body?.spaceCode || body?.spaceJoinCode || "");
+    let spaceCode = normalizeSpaceJoinCode(body?.spaceCode || body?.spaceJoinCode || "");
+    if (!spaceCode) {
+      const identityToken = String(body?.identityToken || "").trim();
+      const identityCheck = await verifyOauthIdentityToken(env, identityToken);
+      if (!identityCheck.ok) {
+        return errorResponse(identityCheck.error || "Identité OAuth invalide", 401, request, env);
+      }
+      const allowedSpaces = resolveAllowedSpacesForEmail(identityCheck.payload?.email || "");
+      if (!allowedSpaces.includes(spaceId)) {
+        return errorResponse("Accès refusé pour cet espace", 403, request, env);
+      }
+      spaceCode = normalizeSpaceJoinCode(readManagedSpaceCode(env, spaceId));
+      if (!spaceCode) {
+        return errorResponse("Code espace géré manquant", 500, request, env);
+      }
+    }
     if (!spaceCode) {
       return errorResponse("spaceCode manquant", 400, request, env);
     }

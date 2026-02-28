@@ -11,6 +11,7 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 const OAUTH_PROVIDER = "microsoft";
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const DEFAULT_SCOPE = "offline_access User.Read Mail.ReadWrite";
+const IDENTITY_TOKEN_TTL_MS = 5 * 60 * 1000;
 
 function normalizeOrigin(origin) {
   return (origin || "").trim();
@@ -53,6 +54,30 @@ function jsonResponse(corsHeaders, payload, status = 200, extraHeaders = {}) {
 
 function errorResponse(corsHeaders, status, message) {
   return jsonResponse(corsHeaders, { error: { message } }, status);
+}
+
+function toBase64UrlString(text) {
+  return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function getIdentitySigningKey(env) {
+  const secret = String(env?.SHARE_OAUTH_IDENTITY_SECRET || "").trim();
+  if (!secret) return null;
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+}
+
+async function createIdentityToken(env, payload) {
+  const key = await getIdentitySigningKey(env);
+  if (!key) throw new Error("SHARE_OAUTH_IDENTITY_SECRET manquant");
+  const raw = JSON.stringify(payload || {});
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(raw));
+  return `${toBase64UrlString(raw)}.${toBase64UrlString(String.fromCharCode(...new Uint8Array(sig)))}`;
 }
 
 function getRedirectUri(request) {
@@ -546,6 +571,35 @@ export default {
         connected: true,
         accountEmail: token.user_email || "",
         accountName: token.user_name || ""
+      }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
+    }
+
+    if (request.method === "POST" && path === "/auth/identity") {
+      await request.json().catch(() => ({}));
+      const sessionId = resolveSessionId(request);
+      if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
+      const token = await getValidAccessToken(request, env, sessionId).catch(() => null);
+      const accountEmail = String(token?.user_email || "").trim().toLowerCase();
+      if (!token?.access_token || !accountEmail) {
+        return errorResponse(cors.headers, 401, "Connexion Outlook requise");
+      }
+      const now = Date.now();
+      const expiresAt = now + IDENTITY_TOKEN_TTL_MS;
+      const identityToken = await createIdentityToken(env, {
+        typ: "oauth-identity",
+        provider: OAUTH_PROVIDER,
+        email: accountEmail,
+        name: String(token?.user_name || "").trim(),
+        iat: now,
+        exp: expiresAt
+      });
+      return jsonResponse(cors.headers, {
+        ok: true,
+        provider: OAUTH_PROVIDER,
+        accountEmail,
+        accountName: String(token?.user_name || "").trim(),
+        identityToken,
+        expiresAt
       }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
     }
 

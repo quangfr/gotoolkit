@@ -84,6 +84,8 @@
         || value.spaceCode
         || ""
       ),
+      accessMode: String(value.accessMode || "").trim().toLowerCase(),
+      accessManaged: Boolean(value.accessManaged),
       isDefault,
       updatedAt: String(value.updatedAt || nowIso()).trim() || nowIso()
     };

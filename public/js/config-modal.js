@@ -1423,6 +1423,10 @@
         return microsoftJsonPost("/auth/status", {});
     }
 
+    async function microsoftGetIdentity() {
+        return microsoftJsonPost("/auth/identity", {});
+    }
+
     async function microsoftDisconnect() {
         return microsoftJsonPost("/auth/disconnect", {});
     }
@@ -1446,6 +1450,7 @@
     global.GoToolkitMicrosoftPublish = {
         getDeviceId: getMicrosoftDeviceId,
         getAuthStatus: microsoftGetAuthStatus,
+        getIdentity: microsoftGetIdentity,
         ensureConnected: microsoftEnsureConnected,
         disconnect: microsoftDisconnect,
         createDraft: microsoftCreateDraft
@@ -1515,6 +1520,10 @@
         return gmailJsonPost("/auth/status", {});
     }
 
+    async function gmailGetIdentity() {
+        return gmailJsonPost("/auth/identity", {});
+    }
+
     async function gmailDisconnect() {
         return gmailJsonPost("/auth/disconnect", {});
     }
@@ -1538,6 +1547,7 @@
     global.GoToolkitGmailPublish = {
         getDeviceId: getGmailDeviceId,
         getAuthStatus: gmailGetAuthStatus,
+        getIdentity: gmailGetIdentity,
         ensureConnected: gmailEnsureConnected,
         disconnect: gmailDisconnect,
         createDraft: gmailCreateDraft

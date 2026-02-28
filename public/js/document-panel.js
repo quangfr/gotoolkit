@@ -429,24 +429,19 @@
             });
         }
 
-        if (appId === "memo") {
-            if (headerEl) {
-                const closeBtn = headerEl.querySelector(".chat-knowledge-modal__close");
-                const memoSettingsBtn = document.getElementById("memoSettingsBtn");
-                if (memoSettingsBtn) {
-                    memoSettingsBtn.classList.add("chat-knowledge-modal__add");
-                    memoSettingsBtn.classList.remove("app-header-btn");
-                    memoSettingsBtn.style.marginLeft = "auto";
-                }
+        if (appId === "memo" && headerEl) {
+            const closeBtn = headerEl.querySelector(".chat-knowledge-modal__close");
+            const connectionBtn = document.getElementById("memoConnectionBtn");
+            if (connectionBtn) {
+                connectionBtn.classList.add("chat-knowledge-modal__add");
+                connectionBtn.classList.remove("app-header-btn");
+                connectionBtn.style.marginLeft = "auto";
+                connectionBtn.style.display = "inline-flex";
                 if (closeBtn) {
                     closeBtn.style.marginLeft = "0";
-                    if (memoSettingsBtn) {
-                        headerEl.insertBefore(memoSettingsBtn, closeBtn);
-                    }
+                    headerEl.insertBefore(connectionBtn, closeBtn);
                 } else {
-                    if (memoSettingsBtn) {
-                        headerEl.appendChild(memoSettingsBtn);
-                    }
+                    headerEl.appendChild(connectionBtn);
                 }
             }
         }
@@ -1821,18 +1816,6 @@
                         const isSharedSpaceSyncing = Boolean(sectionMeta?.isSyncing);
                         const hasSharedSpaceSyncError = Boolean(sectionMeta?.hasSyncError);
                         const sharedSpaceSyncErrorMessage = String(sectionMeta?.syncErrorMessage || "").trim();
-                        const settingsBtn = document.createElement("button");
-                        settingsBtn.type = "button";
-                        settingsBtn.className = "document-explorer__item-action";
-                        settingsBtn.classList.add("document-explorer__item-action--hover-only");
-                        settingsBtn.title = String(sectionMeta?.settingsLabel || "Modifier cet espace");
-                        settingsBtn.innerHTML = '<i data-lucide="settings"></i>';
-                        settingsBtn.addEventListener("click", (event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            onSectionSettings?.(sectionName);
-                        });
-                        actions.appendChild(settingsBtn);
                         if (canRefreshSection) {
                             const refreshBtn = document.createElement("button");
                             refreshBtn.type = "button";

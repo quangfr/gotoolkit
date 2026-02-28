@@ -33,8 +33,10 @@
   const assetBlobCache = new Map();
   const spaceKeyCache = new Map();
   const spaceAuthTokenCache = new Map();
+  const oauthIdentityCache = new Map();
   const tokenSpaceIdCache = new Map();
   let syncSessionState = null;
+  let syncClockOffsetMs = 0;
 
   function logShareDebug(event, payload) {
     if (!CLOUD_SYNC_DEBUG_ENABLED) return;
@@ -82,12 +84,54 @@
     return {
       "X-Sync-Session": session.id,
       "X-Sync-JTI": randomToken(16),
-      "X-Sync-TS": String(Date.now())
+      "X-Sync-TS": String(Date.now() + syncClockOffsetMs)
     };
   }
 
   function mergeSyncHeaders(baseHeaders) {
     return Object.assign({}, getSyncHeaders(), baseHeaders || {});
+  }
+
+  function updateSyncClockOffsetFromResponse(response) {
+    if (!response?.headers?.get) return;
+    const serverDateRaw = String(response.headers.get("date") || "").trim();
+    if (!serverDateRaw) return;
+    const serverTs = Date.parse(serverDateRaw);
+    if (!Number.isFinite(serverTs)) return;
+    syncClockOffsetMs = serverTs - Date.now();
+  }
+
+  async function fetchWithSyncRetry(url, options = {}) {
+    const requestOptions = Object.assign({}, options || {});
+    const baseHeaders = Object.assign({}, requestOptions.headers || {});
+    delete baseHeaders["X-Sync-Session"];
+    delete baseHeaders["X-Sync-JTI"];
+    delete baseHeaders["X-Sync-TS"];
+    requestOptions.headers = mergeSyncHeaders(baseHeaders);
+
+    let response;
+    try {
+      response = await fetch(url, requestOptions);
+    } catch (error) {
+      throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+    }
+
+    updateSyncClockOffsetFromResponse(response);
+    if (response.status !== 401) return response;
+
+    const errorText = await response.clone().text().catch(() => "");
+    if (!/horodatage sync invalide/i.test(errorText)) {
+      return response;
+    }
+
+    requestOptions.headers = mergeSyncHeaders(baseHeaders);
+    try {
+      response = await fetch(url, requestOptions);
+    } catch (error) {
+      throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+    }
+    updateSyncClockOffsetFromResponse(response);
+    return response;
   }
 
   function chunkArray(items, chunkSize) {
@@ -118,6 +162,44 @@
     const api = window.GoToolkitSpaces;
     if (!api?.getSpaceById) return null;
     return api.getSpaceById(spaceId) || null;
+  }
+
+  function getOauthProviders() {
+    return [
+      { id: "microsoft", api: window.GoToolkitMicrosoftPublish },
+      { id: "gmail", api: window.GoToolkitGmailPublish }
+    ];
+  }
+
+  async function getOauthIdentityAssertion() {
+    const now = Date.now();
+    for (const provider of getOauthProviders()) {
+      const cached = oauthIdentityCache.get(provider.id);
+      if (cached?.identityToken && Number(cached.expiresAt || 0) > now + 10_000) {
+        return cached;
+      }
+      const api = provider.api;
+      if (!api?.getIdentity) continue;
+      try {
+        const payload = await api.getIdentity();
+        const identityToken = String(payload?.identityToken || "").trim();
+        const accountEmail = String(payload?.accountEmail || "").trim().toLowerCase();
+        const expiresAt = Number(payload?.expiresAt || 0);
+        if (!identityToken || !accountEmail || !Number.isFinite(expiresAt)) continue;
+        const next = {
+          provider: provider.id,
+          identityToken,
+          accountEmail,
+          accountName: String(payload?.accountName || "").trim(),
+          expiresAt
+        };
+        oauthIdentityCache.set(provider.id, next);
+        return next;
+      } catch (err) {
+        oauthIdentityCache.delete(provider.id);
+      }
+    }
+    return null;
   }
 
   function toBase64FromBytes(bytes) {
@@ -582,12 +664,12 @@
 
     let response;
     try {
-      response = await fetch(buildAssetUrl(base, assetId), {
+      response = await fetchWithSyncRetry(buildAssetUrl(base, assetId), {
         method: "GET",
         cache: "no-store",
-        headers: mergeSyncHeaders({
+        headers: {
           Accept: "application/json"
-        })
+        }
       });
     } catch (error) {
       throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
@@ -681,13 +763,7 @@
       url = parsed.toString();
       requestOptions.cache = "no-store";
     }
-    let response;
-    try {
-      response = await fetch(url, requestOptions);
-    } catch (error) {
-      throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
-    }
-    return response;
+    return fetchWithSyncRetry(url, requestOptions);
   }
 
   async function uploadAssetWithBase(base, uploadPayload) {
@@ -698,19 +774,14 @@
       mimeType: uploadPayload?.mimeType || "",
       contentBase64Length: String(uploadPayload?.contentBase64 || "").length
     });
-    let response;
-    try {
-      response = await fetch(url, {
-        method: "POST",
-        headers: mergeSyncHeaders({
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        }),
-        body: JSON.stringify(uploadPayload || {})
-      });
-    } catch (error) {
-      throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
-    }
+    const response = await fetchWithSyncRetry(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify(uploadPayload || {})
+    });
     if (!response.ok) {
       const body = await response.text().catch(() => "");
       logShareDebug("r2-asset-upload:error", {
@@ -880,7 +951,7 @@
         collection,
         spaceId: resolveRequestSpaceId(collection, "", options)
       });
-      const response = await fetch(url, {
+      const response = await fetchWithSyncRetry(url, {
         method: "GET",
         headers: authHeaders
       });
@@ -941,7 +1012,7 @@
         collection,
         spaceId
       });
-      const response = await fetch(url, {
+      const response = await fetchWithSyncRetry(url, {
         method,
         headers: authHeaders,
         body: JSON.stringify({ payload: encryptedPayload })
@@ -1000,16 +1071,11 @@
       });
       const results = [];
       for (const chunkWrites of chunkArray(preparedWrites, BATCH_WRITES_CHUNK_SIZE)) {
-        let response;
-        try {
-          response = await fetch(buildShareBatchUrl(base, collection), {
-            method: "POST",
-            headers: authHeaders,
-            body: JSON.stringify({ writes: chunkWrites })
-          });
-        } catch (error) {
-          throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
-        }
+        const response = await fetchWithSyncRetry(buildShareBatchUrl(base, collection), {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ writes: chunkWrites })
+        });
         if (!response.ok) {
           const body = await response.text().catch(() => "");
           throw new Error(body || "Impossible de sauvegarder le lot");
@@ -1045,16 +1111,11 @@
       });
       const docs = [];
       for (const chunkIds of chunkArray(normalizedIds, BATCH_IDS_CHUNK_SIZE)) {
-        let response;
-        try {
-          response = await fetch(buildShareBatchGetUrl(base, collection), {
-            method: "POST",
-            headers: authHeaders,
-            body: JSON.stringify({ ids: chunkIds })
-          });
-        } catch (error) {
-          throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
-        }
+        const response = await fetchWithSyncRetry(buildShareBatchGetUrl(base, collection), {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ ids: chunkIds })
+        });
         if (!response.ok) {
           const body = await response.text().catch(() => "");
           throw new Error(body || "Impossible de récupérer le lot");
@@ -1117,7 +1178,11 @@
       const spacesApi = window.GoToolkitSpaces;
       const allSpaces = typeof spacesApi?.readSpaces === "function" ? spacesApi.readSpaces() : [];
       const withCode = (Array.isArray(allSpaces) ? allSpaces : [])
-        .filter(item => normalizeSpaceId(item?.id || "") && normalizeSpaceJoinCode(item?.spaceJoinCode || ""))
+        .filter(item => {
+          const hasJoinCode = Boolean(normalizeSpaceJoinCode(item?.spaceJoinCode || ""));
+          const hasManagedAccess = Boolean(item?.accessManaged) && String(item?.accessMode || "").trim().toLowerCase() === "oauth";
+          return normalizeSpaceId(item?.id || "") && (hasJoinCode || hasManagedAccess);
+        })
         .map(item => normalizeSpaceId(item?.id || ""));
       if (withCode.length === 1) return withCode[0];
       if (withCode.includes("golive")) return "golive";
@@ -1138,17 +1203,47 @@
       spaceId: normalizedSpaceId,
       spaceCode
     };
-    const response = await fetch(`${base}/${API_VERSION}/spaces/auth`, {
+    const response = await fetchWithSyncRetry(`${base}/${API_VERSION}/spaces/auth`, {
       method: "POST",
-      headers: mergeSyncHeaders({
+      headers: {
         "Content-Type": "application/json",
         Accept: "application/json"
-      }),
+      },
       body: JSON.stringify(requestBody)
     });
     if (!response.ok) {
       const body = await response.text().catch(() => "");
       throw new Error(body || "Auth espace impossible");
+    }
+    const data = await response.json().catch(() => ({}));
+    const token = String(data?.token || "").trim();
+    const expiresAt = Number(data?.expiresAt || 0);
+    if (!token || !Number.isFinite(expiresAt)) {
+      throw new Error("Token espace invalide");
+    }
+    spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt });
+    return token;
+  }
+
+  async function authenticateSpaceWithOauth(base, spaceId) {
+    const normalizedSpaceId = normalizeSpaceId(spaceId);
+    if (!normalizedSpaceId) return null;
+    const identity = await getOauthIdentityAssertion();
+    if (!identity?.identityToken) return null;
+    const response = await fetchWithSyncRetry(`${base}/${API_VERSION}/spaces/auth`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify({
+        spaceId: normalizedSpaceId,
+        identityToken: identity.identityToken
+      })
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(body || "Auth espace OAuth impossible");
     }
     const data = await response.json().catch(() => ({}));
     const token = String(data?.token || "").trim();
@@ -1170,8 +1265,10 @@
     }
     const space = getSpaceById(normalizedSpaceId);
     const spaceCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
-    if (!spaceCode) return null;
-    return authenticateSpaceWithCode(base, normalizedSpaceId, spaceCode);
+    if (spaceCode) {
+      return authenticateSpaceWithCode(base, normalizedSpaceId, spaceCode);
+    }
+    return authenticateSpaceWithOauth(base, normalizedSpaceId);
   }
 
   async function rotateSpaceJoinCode(spaceId, currentSpaceCodeRaw, nextSpaceCodeRaw) {
@@ -1197,7 +1294,7 @@
         collection: "pages",
         spaceId: normalizedSpaceId
       });
-      const response = await fetch(`${base}/${API_VERSION}/spaces/auth/rotate`, {
+      const response = await fetchWithSyncRetry(`${base}/${API_VERSION}/spaces/auth/rotate`, {
         method: "POST",
         headers: authHeaders,
         body: JSON.stringify({
@@ -1356,16 +1453,11 @@
       });
       const results = [];
       for (const chunkIds of chunkArray(normalizedIds, BATCH_IDS_CHUNK_SIZE)) {
-        let response;
-        try {
-          response = await fetch(buildShareBatchDeleteUrl(base, collection), {
-            method: "POST",
-            headers: authHeaders,
-            body: JSON.stringify({ ids: chunkIds })
-          });
-        } catch (error) {
-          throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
-        }
+        const response = await fetchWithSyncRetry(buildShareBatchDeleteUrl(base, collection), {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ ids: chunkIds })
+        });
         if (!response.ok) {
           const body = await response.text().catch(() => "");
           throw new Error(body || "Impossible de supprimer le lot");
@@ -1423,16 +1515,11 @@
       });
       const results = [];
       for (const chunkWrites of chunkArray(preparedWrites, BATCH_WRITES_CHUNK_SIZE)) {
-        let response;
-        try {
-          response = await fetch(buildShareBatchCreateUrl(base, collection), {
-            method: "POST",
-            headers: authHeaders,
-            body: JSON.stringify({ writes: chunkWrites })
-          });
-        } catch (error) {
-          throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
-        }
+        const response = await fetchWithSyncRetry(buildShareBatchCreateUrl(base, collection), {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ writes: chunkWrites })
+        });
         if (!response.ok) {
           const body = await response.text().catch(() => "");
           throw new Error(body || "Impossible de créer le lot");
@@ -1463,7 +1550,7 @@
           collection,
           spaceId: resolveRequestSpaceId(collection, "", options)
         });
-        response = await fetch(url, {
+        response = await fetchWithSyncRetry(url, {
           method: "GET",
           cache: "no-store",
           headers: authHeaders
@@ -1513,9 +1600,9 @@
       const url = buildAssetUrl(base, assetId);
       let response;
       try {
-        response = await fetch(url, {
+        response = await fetchWithSyncRetry(url, {
           method: "DELETE",
-          headers: mergeSyncHeaders({ Accept: "application/json" })
+          headers: { Accept: "application/json" }
         });
       } catch (error) {
         throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
