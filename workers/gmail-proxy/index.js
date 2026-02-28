@@ -700,7 +700,7 @@ export default {
       await request.json().catch(() => ({}));
       const sessionId = resolveSessionId(request);
       if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
-      const token = await getValidAccessToken(request, env, sessionId).catch(() => null);
+      const token = await getValidToken(env, sessionId).catch(() => null);
       const accountEmail = String(token?.account_email || "").trim().toLowerCase();
       if (!token?.access_token || !accountEmail) {
         return errorResponse(cors.headers, 401, "Connexion Gmail requise");

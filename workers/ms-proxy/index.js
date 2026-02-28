@@ -10,7 +10,7 @@ const SESSION_COOKIE_NAME = "gt_ms_sid";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 const OAUTH_PROVIDER = "microsoft";
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
-const DEFAULT_SCOPE = "offline_access User.Read Mail.ReadWrite";
+const DEFAULT_SCOPE = "offline_access User.Read";
 const IDENTITY_TOKEN_TTL_MS = 5 * 60 * 1000;
 
 function normalizeOrigin(origin) {

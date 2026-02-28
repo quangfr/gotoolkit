@@ -187,15 +187,6 @@
                         <div class="field-row">
                             <label style="width:100%">
                                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;">
-                                    <span class="label-title">Outlook</span>
-                                    <a id="microsoftAuthLink" class="label-title dashed-link" href="#">Se connecter</a>
-                                </div>
-                            </label>
-                        </div>
-                        <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
-                        <div class="field-row">
-                            <label style="width:100%">
-                                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;">
                                     <span class="label-title">Gmail</span>
                                     <a id="gmailAuthLink" class="label-title dashed-link" href="#">Se connecter</a>
                                 </div>
@@ -1438,22 +1429,12 @@
         return true;
     }
 
-    async function microsoftCreateDraft(options = {}) {
-        return microsoftJsonPost("/mail/draft/create", {
-            subject: String(options?.subject || "Document").trim() || "Document",
-            html: String(options?.html || ""),
-            text: String(options?.text || ""),
-            attachments: Array.isArray(options?.attachments) ? options.attachments : []
-        });
-    }
-
     global.GoToolkitMicrosoftPublish = {
         getDeviceId: getMicrosoftDeviceId,
         getAuthStatus: microsoftGetAuthStatus,
         getIdentity: microsoftGetIdentity,
         ensureConnected: microsoftEnsureConnected,
-        disconnect: microsoftDisconnect,
-        createDraft: microsoftCreateDraft
+        disconnect: microsoftDisconnect
     };
 
     const DEFAULT_GMAIL_API_BASE = (global.GO_TOOLKIT_GMAIL_API_URL || "https://gmail.gotoolkit.workers.dev").replace(/\/$/, "");

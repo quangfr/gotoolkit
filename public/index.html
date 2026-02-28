@@ -87,11 +87,11 @@
         integrity="sha384-LlKSgo4Eo5GuF/ZrstLti44dE+GC5XAJ7TSu0Nw9Q3vIZF2QMnkRcK7BUoLabYLF" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js"
         integrity="sha384-o5vdFlIHJf1L/hUFEtj8tgNVtCT+02DKNT3MPA47wJ9Eo5HocC7qCL2YL+sWNsk8" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.17">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.18">
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.17">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.17">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.18">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.18">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js" defer></script>
     <style>
@@ -326,8 +326,6 @@
                                     <div class="submenu">
                                         <button id="fileMenuSendGmail" type="button"
                                             class="menu-panel-btn">Gmail</button>
-                                        <button id="fileMenuSendOutlook" type="button"
-                                            class="menu-panel-btn">Outlook</button>
                                         <button id="fileMenuSendMailto" type="button"
                                             class="menu-panel-btn">Messagerie</button>
                                     </div>
@@ -469,21 +467,20 @@
                         data-lucide="x"></i></button>
             </div>
             <div class="ia-actions" style="gap: 16px;">
-                <p style="margin:0; opacity:0.8;">La connexion facultative permet d'accéder aux espaces de partage autorisés.</p>
-                <div id="connectionModalStatus" style="font-size:13px; opacity:0.85;"></div>
-                <div style="display:flex; flex-direction:column; gap:10px;">
+                <div id="connectionModalStatus" style="display:none;"></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                     <button id="connectionGoogleBtn" type="button" class="btn btn-secondary"
-                        style="justify-content:flex-start;">
+                        style="justify-content:center;">
                         <i data-lucide="mail"></i> Google
                     </button>
                     <button id="connectionMicrosoftBtn" type="button" class="btn btn-secondary"
-                        style="justify-content:flex-start;">
+                        style="justify-content:center;">
                         <i data-lucide="briefcase"></i> Microsoft
                     </button>
                 </div>
-                <div class="modal-actions" style="justify-content:space-between; align-items:center; margin-top: 4px;">
+                <div class="modal-actions" style="justify-content:space-between; align-items:center; gap:12px; margin-top: 4px; flex-wrap:nowrap;">
                     <label for="connectionModalDismissToggle"
-                        style="display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer;">
+                        style="display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer; margin:0;">
                         <input id="connectionModalDismissToggle" type="checkbox"
                             style="accent-color: var(--primary-color);" />
                         <span>Ne plus afficher</span>
@@ -513,7 +510,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.17</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.18</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -596,25 +593,25 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.28.17" defer></script>
-    <script src="js/turnstile-helper.js?v=2026.02.28.17" defer></script>
-    <script src="js/config-modal.js?v=2026.02.28.17" defer></script>
-    <script src="js/feature-visibility.js?v=2026.02.28.17" defer></script>
-    <script src="js/document-storage.js?v=2026.02.28.17" defer></script>
-    <script src="js/storage-service.js?v=2026.02.28.17" defer></script>
-    <script src="js/shared-ui.js?v=2026.02.28.17" defer></script>
-    <script src="js/spaces-store.js?v=2026.02.28.17" defer></script>
-    <script src="js/share-worker-client.js?v=2026.02.28.17" defer></script>
-    <script src="js/share-history.js?v=2026.02.28.17" defer></script>
-    <script src="js/document-api.js?v=2026.02.28.17" defer></script>
-    <script src="js/keywordIndex.js?v=2026.02.28.17" defer></script>
-    <script src="js/document-rag.js?v=2026.02.28.17" defer></script>
-    <script src="js/ia-config.js?v=2026.02.28.17" defer></script>
-    <script src="preset.js?v=2026.02.28.17" defer></script>
-    <script src="prompt.js?v=2026.02.28.17" defer></script>
-    <script src="js/ia-client.js?v=2026.02.28.17" defer></script>
-    <script src="js/document-markdown.js?v=2026.02.28.17" defer></script>
-    <script src="js/notion-export.js?v=2026.02.28.17" defer></script>
+    <script src="js/config.js?v=2026.02.28.18" defer></script>
+    <script src="js/turnstile-helper.js?v=2026.02.28.18" defer></script>
+    <script src="js/config-modal.js?v=2026.02.28.18" defer></script>
+    <script src="js/feature-visibility.js?v=2026.02.28.18" defer></script>
+    <script src="js/document-storage.js?v=2026.02.28.18" defer></script>
+    <script src="js/storage-service.js?v=2026.02.28.18" defer></script>
+    <script src="js/shared-ui.js?v=2026.02.28.18" defer></script>
+    <script src="js/spaces-store.js?v=2026.02.28.18" defer></script>
+    <script src="js/share-worker-client.js?v=2026.02.28.18" defer></script>
+    <script src="js/share-history.js?v=2026.02.28.18" defer></script>
+    <script src="js/document-api.js?v=2026.02.28.18" defer></script>
+    <script src="js/keywordIndex.js?v=2026.02.28.18" defer></script>
+    <script src="js/document-rag.js?v=2026.02.28.18" defer></script>
+    <script src="js/ia-config.js?v=2026.02.28.18" defer></script>
+    <script src="preset.js?v=2026.02.28.18" defer></script>
+    <script src="prompt.js?v=2026.02.28.18" defer></script>
+    <script src="js/ia-client.js?v=2026.02.28.18" defer></script>
+    <script src="js/document-markdown.js?v=2026.02.28.18" defer></script>
+    <script src="js/notion-export.js?v=2026.02.28.18" defer></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -630,15 +627,15 @@
             }
         });
     </script>
-    <script src="js/news.js?v=2026.02.28.17" defer></script>
-    <script src="js/voice-video-player.js?v=2026.02.28.17" defer></script>
-    <script src="js/voice-audio-player.js?v=2026.02.28.17" defer></script>
-    <script src="js/youtube-publish.js?v=2026.02.28.17" defer></script>
-    <script src="js/voice.js?v=2026.02.28.17" defer></script>
-    <script src="js/voice-transcript.js?v=2026.02.28.17" defer></script>
-    <script src="js/googletts.js?v=2026.02.28.17" defer></script>
-    <script src="js/draw-memo.js?v=2026.02.28.17" defer></script>
-    <script src="js/document-tabs.js?v=2026.02.28.17" defer></script>
+    <script src="js/news.js?v=2026.02.28.18" defer></script>
+    <script src="js/voice-video-player.js?v=2026.02.28.18" defer></script>
+    <script src="js/voice-audio-player.js?v=2026.02.28.18" defer></script>
+    <script src="js/youtube-publish.js?v=2026.02.28.18" defer></script>
+    <script src="js/voice.js?v=2026.02.28.18" defer></script>
+    <script src="js/voice-transcript.js?v=2026.02.28.18" defer></script>
+    <script src="js/googletts.js?v=2026.02.28.18" defer></script>
+    <script src="js/draw-memo.js?v=2026.02.28.18" defer></script>
+    <script src="js/document-tabs.js?v=2026.02.28.18" defer></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -648,10 +645,10 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.28.17" defer></script>
-    <script src="js/assist.js?v=2026.02.28.17" defer></script>
-    <script src="js/space-sync.js?v=2026.02.28.17" defer></script>
-    <script src="js/document-panel.js?v=2026.02.28.17" defer></script>
+    <script src="js/memo.bundle.js?v=2026.02.28.18" defer></script>
+    <script src="js/assist.js?v=2026.02.28.18" defer></script>
+    <script src="js/space-sync.js?v=2026.02.28.18" defer></script>
+    <script src="js/document-panel.js?v=2026.02.28.18" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -1093,7 +1090,7 @@
                 }
                 await publisher.ensureConnected();
                 await syncManagedSharedSpaces();
-                setConnectionModalVisible(true);
+                setConnectionModalVisible(false);
                 setStatus(`Connexion ${isGoogle ? "Google" : "Microsoft"} établie`);
             }
 
@@ -11181,13 +11178,6 @@
                 setStatus("Rédaction Gmail web ouverte");
             }
 
-            function openOutlookWebFallback() {
-                const { text } = getEmailComposePayload();
-                const url = `https://outlook.office.com/mail/deeplink/compose?body=${encodeURIComponent(text)}`;
-                window.open(url, "_blank", "noopener,noreferrer");
-                setStatus("Rédaction Outlook web ouverte");
-            }
-
             document.getElementById('fileMenuSendMailto')?.addEventListener('click', () => {
                 closeMenus();
                 openMailtoFallback();
@@ -11224,40 +11214,6 @@
                     setStatus("Brouillon Gmail ouvert");
                 } catch (err) {
                     openGmailWebFallback();
-                }
-            });
-
-            document.getElementById('fileMenuSendOutlook')?.addEventListener('click', async () => {
-                closeMenus();
-                const outlookPublisher = window.GoToolkitMicrosoftPublish;
-                const { title, html, attachments } = getEmailComposePayload();
-                const text = htmlToPlainText(html);
-                let connected = false;
-                try {
-                    if (outlookPublisher?.getAuthStatus) {
-                        const status = await outlookPublisher.getAuthStatus();
-                        connected = Boolean(status?.connected);
-                    }
-                } catch (err) {
-                    connected = false;
-                }
-                if (!connected || !outlookPublisher?.createDraft) {
-                    openOutlookWebFallback();
-                    return;
-                }
-                if (!String(html || "").trim()) {
-                    setStatus("HTML Email vide");
-                    return;
-                }
-                try {
-                    setStatus("Création du brouillon...");
-                    const payload = await outlookPublisher.createDraft({ subject: title, html, text, attachments });
-                    const draftUrl = String(payload?.draftUrl || payload?.webUrl || "").trim();
-                    if (!draftUrl) throw new Error("URL de brouillon Outlook indisponible");
-                    window.open(draftUrl, "_blank", "noopener,noreferrer");
-                    setStatus("Brouillon Outlook ouvert");
-                } catch (err) {
-                    openOutlookWebFallback();
                 }
             });
 
