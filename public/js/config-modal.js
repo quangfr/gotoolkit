@@ -3,7 +3,7 @@
     if (!doc) return;
     const SETTINGS_HELP = Object.freeze({
         assemblyAi: "Utilisation : transcription des enregistrements.\nPolitique actuelle : environ 50 $ de crédits gratuits, puis 0,15 $/h.",
-        googleTts: "Utilisation : téléchargement audio d'un fichier et lecture audio dans mobile.html.\nGratuit estimé : Standard ~70 h/mois ; Neural2, WaveNet, Studio et Chirp HD ~17 h/mois.\nAprès gratuité : Standard ~0,23 $/h ; Neural2 et WaveNet ~0,91 $/h ; Chirp 3 HD ~1,71 $/h ; Studio ~9,14 $/h.\nBascule conseillée : Standard d'abord, Neural2 ensuite, Studio ou Chirp HD seulement si la qualité justifie le coût.",
+        googleTts: "Utilisation : téléchargement audio d'un fichier et lecture audio dans mobile.html.\nGratuit estimé : Neural2 + WaveNet + Studio + Chirp HD ~60 h/mois puis Standard + Wavenet ~120 h/mois ;\nAprès gratuité : Standard ~0,23 $/h ; Neural2 et WaveNet ~0,91 $/h ; Chirp 3 HD ~1,71 $/h ; Studio ~9,14 $/h.\n",
         openRouterModel: "Utilisation : chat Assist.\nOrdre de grandeur : ~100 à 500 requêtes par euro sur des échanges courts à moyens, selon le modèle et la taille des prompts.",
         openRouterOcr: "Utilisation : importeur d'images et images à l'intérieur des documents.\nOrdre de grandeur : ~0,01 à 0,03 €/image selon la résolution et la quantité de texte.",
         openRouterEmbeddings: "Utilisation : indexation RAG et recherche sémantique des documents.\nOrdre de grandeur : ~0,001 à 0,003 €/MB de texte selon le volume réellement vectorisé."
@@ -1546,8 +1546,12 @@
     }
 
     async function microsoftEnsureConnected() {
-        const status = await microsoftGetAuthStatus();
-        if (status?.connected) return true;
+        try {
+            const status = await microsoftGetAuthStatus();
+            if (status?.connected) return true;
+        } catch (err) {
+            console.warn("Microsoft auth status check failed, opening OAuth popup anyway", err);
+        }
         await openMicrosoftOAuthPopup();
         return true;
     }
