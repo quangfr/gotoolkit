@@ -100,11 +100,21 @@ Only `public/js` may touch `window`:
   - Shared tree appears stale after move → verify remote `parentId/spaceId/updatedAt`, then run space refresh.
   - When checking whether a file exists in a cloud space, inspect the share tree metadata first (`view=tree`) and verify the file `id` plus `parentId`, `spaceId`, and `updatedAt`.
 - **Cloud share fetch order**:
-  1. Authenticate the space with `POST /v1/spaces/auth` using `spaceId` + `spaceCode`.
-  2. Reuse the returned `X-Space-Auth` token with `X-Space-Id` and sync headers (`X-Sync-Session`, `X-Sync-JTI`, `X-Sync-TS`). `/v1/spaces/auth` now also returns a stable per-space `contentKey` for local page/media encryption and decryption.
-  3. Check `pages?view=tree&spaceId=...` first to confirm the page id and inspect tree metadata.
-  4. Check `pages-meta/:id` next for title/description/icon/parent/status metadata.
-  5. Fetch `pages/:id` last for content; payloads in `pages` may be encrypted (`gtke=1`, AES-GCM) and must be decrypted locally with the auth-returned `contentKey`, not the `spaceCode`.
+  1. Authenticate the space with `POST /v1/spaces/auth` using `spaceId` + `spaceCode` or a managed OAuth identity.
+  2. Treat explicit `spaceCode` auth as hash-validated server-side state: `/v1/spaces/auth` checks the stored `space_code_hashes` record for that `spaceId`, not just the worker secret in isolation.
+  3. Reuse the returned `X-Space-Auth` token with `X-Space-Id` and sync headers (`X-Sync-Session`, `X-Sync-JTI`, `X-Sync-TS`). `/v1/spaces/auth` also returns a stable per-space `contentKey` for local page/media encryption and decryption.
+  4. Check `shares/pages?view=tree&spaceId=...` first to confirm the page id, descendants, and tree metadata (`id`, `parentId`, `spaceId`, `updatedAt`).
+  5. Check `shares/pages-meta/:id` next for title/description/icon/parent/status metadata.
+  6. Fetch `shares/pages/:id` last for content; payloads in `pages` may be encrypted (`gtke=1`, AES-GCM) and must be decrypted locally with the auth-returned `contentKey`, not the `spaceCode`.
+  7. If `POST /v1/spaces/auth` returns invalid `spaceCode` for a managed space, verify both the worker-managed code secret and the D1 `space_code_hashes` entry before assuming the local `.env` value is wrong.
+- **Cloud share spaceCode rotation**:
+  1. For managed spaces such as `golive` and `safran`, treat the effective auth state as two parts that must stay aligned:
+     worker-managed secret (`GOLIVE_SPACE_CODE` / `SAFRAN_SPACE_CODE`) and D1 `space_code_hashes`.
+  2. If you are rotating without the current code, generate the new code first, update the worker secret with Wrangler, and update the same value in `.env.local` or the intended local source of truth.
+  3. Compute the stored hash exactly as the worker does: `sha256("${spaceId}:${spaceCode}")`.
+  4. Upsert that hash into the D1 `space_code_hashes` row for the target `spaceId` (`space-auth` database), because `/v1/spaces/auth` validates against the stored hash.
+  5. Re-run `POST /v1/spaces/auth` with the new `spaceCode` to verify the rotation worked before assuming the new code is active.
+  6. Use `/v1/spaces/auth/rotate` only when you know the current code and already have a valid `X-Space-Auth`; otherwise the direct secret + D1 hash alignment path is the recovery path.
 - **Context7 usage**:
   - Use Context7 for external library/API behavior and setup.
   - Prefer local code inspection for repo-specific behavior and regressions.
@@ -123,9 +133,12 @@ Only `public/js` may touch `window`:
 - `npm run check:csp`
 - `node --check <touched-js-file>`
 - `curl -i https://share.gotoolkit.workers.dev/v1/shares/memos?view=tree\\&spaceId=golive`
-- `curl -i https://share.gotoolkit.workers.dev/v1/shares/pages?view=tree\\&spaceId=golive`
 - `curl -i -H 'Origin: https://gotoolkit.fr' -H 'Content-Type: application/json' -d '{"spaceId":"golive","spaceCode":"<code>"}' https://share.gotoolkit.workers.dev/v1/spaces/auth`
   Response includes `token`, `expiresAt`, and `contentKey` for local decrypt/encrypt.
+- `node -e "const crypto=require('crypto'); process.stdout.write(crypto.createHash('sha256').update('golive:<new-code>').digest('hex'))"`
+- `scripts/with-env-local.sh npx wrangler secret put GOLIVE_SPACE_CODE`
+- `scripts/with-env-local.sh npx wrangler d1 execute space-auth --remote --command "INSERT INTO space_code_hashes (space_id, code_hash, updated_at) VALUES ('golive','<sha256(spaceId:spaceCode)>', datetime('now')) ON CONFLICT(space_id) DO UPDATE SET code_hash=excluded.code_hash, updated_at=excluded.updated_at;"`
+- `curl -i -H 'Origin: https://gotoolkit.fr' -H 'X-Space-Id: golive' -H 'X-Space-Auth: <token>' -H 'X-Sync-Session: <session>' -H 'X-Sync-JTI: <jti>' -H 'X-Sync-TS: <ts>' 'https://share.gotoolkit.workers.dev/v1/shares/pages?view=tree&spaceId=golive'`
 - `curl -i -H 'Origin: https://gotoolkit.fr' -H 'X-Space-Id: golive' -H 'X-Space-Auth: <token>' -H 'X-Sync-Session: <session>' -H 'X-Sync-JTI: <jti>' -H 'X-Sync-TS: <ts>' 'https://share.gotoolkit.workers.dev/v1/shares/pages-meta/<id>'`
 - `curl -i -H 'Origin: https://gotoolkit.fr' -H 'X-Space-Id: golive' -H 'X-Space-Auth: <token>' -H 'X-Sync-Session: <session>' -H 'X-Sync-JTI: <jti>' -H 'X-Sync-TS: <ts>' 'https://share.gotoolkit.workers.dev/v1/shares/pages/<id>'`
 - Playwright API timing (when UI MCP is flaky): use `require(\"playwright\").request.newContext()`.
