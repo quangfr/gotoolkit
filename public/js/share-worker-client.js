@@ -331,6 +331,13 @@
     const effectiveSpaceId = String(payload.spaceId || "golive").trim().toLowerCase() || "golive";
     const space = getSpaceById(effectiveSpaceId);
     const joinCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
+    console.log("[SSO Debug] decrypt page payload start", {
+      spaceId: effectiveSpaceId,
+      hasJoinCode: Boolean(joinCode),
+      joinCodePreview: joinCode ? `${joinCode.slice(0, 2)}***${joinCode.slice(-2)}` : "",
+      payloadType: String(payload?.type || "").trim(),
+      isEncrypted: true
+    });
     if (!joinCode) {
       throw new Error(`Phrase d'accès manquante pour l'espace ${effectiveSpaceId}`);
     }
@@ -347,6 +354,11 @@
     );
     const plainText = textDecoder.decode(plainBuffer);
     const parsed = JSON.parse(plainText);
+    console.log("[SSO Debug] decrypt page payload success", {
+      spaceId: effectiveSpaceId,
+      payloadKeys: parsed && typeof parsed === "object" ? Object.keys(parsed).slice(0, 12) : [],
+      tabCount: Array.isArray(parsed?.tabs) ? parsed.tabs.length : 0
+    });
     return parsed && typeof parsed === "object" ? parsed : payload;
   }
 
@@ -1541,6 +1553,11 @@
         spaceId: options?.spaceId,
         includeArchived: options?.includeArchived ? "1" : ""
       });
+      console.log("[SSO Debug] fetch share tree start", {
+        collection,
+        spaceId: resolveRequestSpaceId(collection, "", options),
+        url
+      });
       let response;
       try {
         const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
@@ -1563,6 +1580,12 @@
         throw new Error(body || "Impossible de récupérer l'arborescence");
       }
       const data = await response.json().catch(() => ({}));
+      console.log("[SSO Debug] fetch share tree success", {
+        collection,
+        spaceId: resolveRequestSpaceId(collection, "", options),
+        count: Array.isArray(data.documents) ? data.documents.length : 0,
+        watermark: String(data.watermark || "").trim()
+      });
       return {
         documents: Array.isArray(data.documents) ? data.documents : [],
         watermark: String(data.watermark || "").trim()
