@@ -73,6 +73,32 @@
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
 }
 
+.settings-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.settings-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: help;
+}
+
+.settings-help-btn:hover {
+  color: var(--color-primary);
+  background: var(--bg-surface-soft);
+}
+
 /* --- Theme Overrides --- */
 
 /* App Shell (Light) Theme */

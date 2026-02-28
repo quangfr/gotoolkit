@@ -10,6 +10,9 @@
         EMBEDDINGS_MODEL: "go-toolkit-openrouter-embeddings-model",
         REASONING_EFFORT: "go-toolkit-openrouter-reasoning-effort"
     };
+    var STORAGE_KEYS_SERVICES = {
+        GOOGLE_TTS_API_KEY: "go-toolkit-googletts-key"
+    };
 
     var DEFAULTS = {
         CONTEXT_WINDOW: "0",
@@ -149,6 +152,12 @@
                 normalized = DEFAULTS.OPENROUTER_REASONING_EFFORT;
             }
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.REASONING_EFFORT, normalized);
+        },
+        getGoogleTtsApiKey: function () {
+            return (safeStorageRead(STORAGE_KEYS_SERVICES.GOOGLE_TTS_API_KEY) || "").trim();
+        },
+        setGoogleTtsApiKey: function (value) {
+            safeStorageWrite(STORAGE_KEYS_SERVICES.GOOGLE_TTS_API_KEY, (value || "").trim());
         },
         isOpenRouterAvailable: function () {
             return Boolean(GoToolkitIAConfig.getOpenRouterApiKey() || OPENROUTER_PROXY_ENDPOINT);

@@ -1,6 +1,12 @@
 ;(function (global) {
   const DEFAULT_API_URL = "https://googletts.gotoolkit.workers.dev";
+  const DIRECT_API_URL = "https://texttospeech.googleapis.com/v1/text:synthesize";
+  const DIRECT_VOICES_URL = "https://texttospeech.googleapis.com/v1/voices";
   const DEFAULT_TIMEOUT_MS = 45000;
+
+  function getDirectApiKey() {
+    return (global.GoToolkitIAConfig?.getGoogleTtsApiKey?.() || "").trim();
+  }
 
   function resolveApiBaseUrl() {
     const explicit = (global.GO_TOOLKIT_GOOGLE_TTS_API_URL || "").trim();
@@ -10,6 +16,17 @@
       return fromConfig.trim().replace(/\/+$/, "");
     }
     return DEFAULT_API_URL;
+  }
+
+  function shouldUseDirectGoogleTts() {
+    return Boolean(getDirectApiKey());
+  }
+
+  function buildDirectGoogleTtsUrl(baseUrl) {
+    const apiKey = getDirectApiKey();
+    if (!apiKey) return "";
+    const separator = baseUrl.includes("?") ? "&" : "?";
+    return `${baseUrl}${separator}key=${encodeURIComponent(apiKey)}`;
   }
 
   function detectLanguage(text) {
@@ -70,14 +87,24 @@
     const timeout = setTimeout(() => abortController.abort(), timeoutMs);
 
     const languageCode = (opts.languageCode || detectLanguage(inputText) || "fr-FR").trim();
-    const body = {
-      text: inputText,
-      languageCode
-    };
+    const body = shouldUseDirectGoogleTts()
+      ? {
+          input: { text: inputText },
+          voice: { languageCode },
+          audioConfig: { audioEncoding: "MP3" }
+        }
+      : {
+          text: inputText,
+          languageCode
+        };
 
     try {
-      const turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(resolveApiBaseUrl() + "/speak", "googletts");
-      const response = await fetch(resolveApiBaseUrl() + "/speak", {
+      const useDirect = shouldUseDirectGoogleTts();
+      const targetUrl = useDirect ? buildDirectGoogleTtsUrl(DIRECT_API_URL) : resolveApiBaseUrl() + "/speak";
+      const turnstileHeaders = useDirect
+        ? null
+        : await global.GoToolkitTurnstile?.getHeadersForUrl?.(targetUrl, "googletts");
+      const response = await fetch(targetUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -104,11 +131,58 @@
 
       const audioBlob = b64ToBlob(
         audioContent,
-        payload?.audioConfig?.audioEncoding === "MP3" ? "audio/mpeg" : "audio/wav"
+        (payload?.audioConfig?.audioEncoding || "MP3") === "MP3" ? "audio/mpeg" : "audio/wav"
       );
       return { ok: true, payload, audioBlob };
     } catch (error) {
       return { ok: false, reason: "NETWORK_OR_ABORT", error };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async function verifyAccess(options) {
+    const opts = options || {};
+    const abortController = opts.abortController || new AbortController();
+    const timeoutMs = Number(opts.timeoutMs) > 0 ? Number(opts.timeoutMs) : 15000;
+    const timeout = setTimeout(() => abortController.abort(), timeoutMs);
+    try {
+      const useDirect = shouldUseDirectGoogleTts();
+      const targetUrl = useDirect ? buildDirectGoogleTtsUrl(DIRECT_VOICES_URL) : resolveApiBaseUrl() + "/speak";
+      const turnstileHeaders = useDirect
+        ? null
+        : await global.GoToolkitTurnstile?.getHeadersForUrl?.(targetUrl, "googletts");
+      const response = await fetch(targetUrl, {
+        method: useDirect ? "GET" : "POST",
+        headers: {
+          ...(useDirect ? {} : { "Content-Type": "application/json" }),
+          ...(turnstileHeaders || {})
+        },
+        ...(useDirect ? {} : {
+          body: JSON.stringify({
+            text: "Test",
+            languageCode: "fr-FR"
+          })
+        }),
+        signal: abortController.signal
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          ok: false,
+          mode: useDirect ? "direct" : "proxy",
+          reason: payload?.error?.code || "HTTP_ERROR",
+          status: response.status,
+          payload
+        };
+      }
+      return {
+        ok: true,
+        mode: useDirect ? "direct" : "proxy",
+        payload
+      };
+    } catch (error) {
+      return { ok: false, mode: shouldUseDirectGoogleTts() ? "direct" : "proxy", reason: "NETWORK_OR_ABORT", error };
     } finally {
       clearTimeout(timeout);
     }
@@ -205,6 +279,7 @@
   global.GoToolkitGoogleTTS = {
     detectLanguage,
     synthesize,
+    verifyAccess,
     createController
   };
 })(window);

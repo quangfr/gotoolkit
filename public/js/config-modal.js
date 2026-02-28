@@ -1,6 +1,13 @@
 ; (function (global) {
     const doc = global.document;
     if (!doc) return;
+    const SETTINGS_HELP = Object.freeze({
+        assemblyAi: "Utilisation : transcription des enregistrements.\nPolitique actuelle : environ 50 $ de crédits gratuits, puis 0,15 $/h.",
+        googleTts: "Utilisation : téléchargement audio d'un fichier et lecture audio dans mobile.html.\nGratuit estimé : Standard ~70 h/mois ; Neural2, WaveNet, Studio et Chirp HD ~17 h/mois.\nAprès gratuité : Standard ~0,23 $/h ; Neural2 et WaveNet ~0,91 $/h ; Chirp 3 HD ~1,71 $/h ; Studio ~9,14 $/h.\nBascule conseillée : Standard d'abord, Neural2 ensuite, Studio ou Chirp HD seulement si la qualité justifie le coût.",
+        openRouterModel: "Utilisation : chat Assist.\nOrdre de grandeur : ~100 à 500 requêtes par euro sur des échanges courts à moyens, selon le modèle et la taille des prompts.",
+        openRouterOcr: "Utilisation : importeur d'images et images à l'intérieur des documents.\nOrdre de grandeur : ~0,01 à 0,03 €/image selon la résolution et la quantité de texte.",
+        openRouterEmbeddings: "Utilisation : indexation RAG et recherche sémantique des documents.\nOrdre de grandeur : ~0,001 à 0,003 €/MB de texte selon le volume réellement vectorisé."
+    });
     const SHARED_SETTINGS_MODAL_HTML = `
         <div class="modal settings-modal" style="max-height: 98vh; overflow-y: auto; display: flex; flex-direction: column; max-width: 640px; width: min(640px, 94vw); min-width: min(100vw, 520px); min-height: min(100vh, 720px); padding: 12px; margin-right: -8px;">
             <header style="flex-shrink: 0;">
@@ -20,8 +27,11 @@
                         <div class="field-row">
                             <label style="width:100%">
                                 <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
-                                    <div>
+                                    <div class="settings-label-row">
                                         <a class="label-title dashed-link" href="https://www.assemblyai.com/dashboard/api-keys" target="_blank" rel="noopener noreferrer">Clé AssemblyAI</a>
+                                        <button class="settings-help-btn" type="button" data-help-key="assemblyAi" aria-label="Aide Clé AssemblyAI">
+                                            <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                        </button>
                                         <span class="ia-status" id="assemblyAiStatus" aria-hidden="true"></span>
                                     </div>
                                     <div style="display:flex; gap:0.35rem;">
@@ -29,6 +39,23 @@
                                     </div>
                                 </div>
                                 <input id="assemblyAiKeyInput" type="text" placeholder="sk-..." />
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                    <div class="settings-label-row">
+                                        <a class="label-title dashed-link" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">Clé Google TTS</a>
+                                        <button class="settings-help-btn" type="button" data-help-key="googleTts" aria-label="Aide Clé Google TTS">
+                                            <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                        </button>
+                                        <span class="ia-status" id="googleTtsStatus" aria-hidden="true"></span>
+                                    </div>
+                                    <div style="display:flex; gap:0.35rem;">
+                                        <button id="googleTtsVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
+                                    </div>
+                                </div>
+                                <input id="googleTtsApiKeyInput" type="text" placeholder="AIza..." />
                             </label>
                         </div>
                         <div id="openrouterSettings">
@@ -49,19 +76,34 @@
                             </div>
                             <div class="field-row">
                                 <label style="width:100%">
-                                    <span class="label-title">Modèle OpenRouter</span>
+                                    <span class="settings-label-row">
+                                        <span class="label-title">Modèle OpenRouter</span>
+                                        <button class="settings-help-btn" type="button" data-help-key="openRouterModel" aria-label="Aide Modèle OpenRouter">
+                                            <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                        </button>
+                                    </span>
                                     <input id="openrouterModelInput" type="text" placeholder="@preset/gotoolkit ou openai/gpt-oss-120b" />
                                 </label>
                             </div>
                             <div class="field-row" id="openrouterOcrModelRow">
                                 <label style="width:100%">
-                                    <span class="label-title">Modèle OCR</span>
+                                    <span class="settings-label-row">
+                                        <span class="label-title">Modèle OCR</span>
+                                        <button class="settings-help-btn" type="button" data-help-key="openRouterOcr" aria-label="Aide Modèle OCR">
+                                            <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                        </button>
+                                    </span>
                                     <input id="openrouterOcrModelInput" type="text" placeholder="nvidia/nemotron-nano-12b-v2-vl" />
                                 </label>
                             </div>
                             <div class="field-row">
                                 <label style="width:100%">
-                                    <span class="label-title">Modèle Embeddings</span>
+                                    <span class="settings-label-row">
+                                        <span class="label-title">Modèle Embeddings</span>
+                                        <button class="settings-help-btn" type="button" data-help-key="openRouterEmbeddings" aria-label="Aide Modèle Embeddings">
+                                            <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                        </button>
+                                    </span>
                                     <input id="openrouterEmbeddingsModelInput" type="text" placeholder="qwen/qwen3-embedding-8b" />
                                 </label>
                             </div>
@@ -447,6 +489,18 @@
         if (stored) input.value = stored;
     }
 
+    function populateAssemblyAiInput() {
+        const input = doc.getElementById("assemblyAiKeyInput");
+        if (!input) return;
+        input.value = localStorage.getItem("go-toolkit-assemblyai-key") || "";
+    }
+
+    function populateGoogleTtsInput() {
+        const input = doc.getElementById("googleTtsApiKeyInput");
+        if (!input) return;
+        input.value = global.GoToolkitIAConfig?.getGoogleTtsApiKey?.() || "";
+    }
+
     function populateOpenrouterOcrModelInput() {
         const input = doc.getElementById("openrouterOcrModelInput");
         if (!input) return;
@@ -622,6 +676,7 @@
 
     function persistModalAiSettings() {
         const cfg = global.GoToolkitIAConfig;
+        const googleTtsApiKeyInput = doc.getElementById("googleTtsApiKeyInput");
         const openrouterApiKeyInput = doc.getElementById("openrouterApiKeyInput");
         const openrouterDataCollectionSelect = doc.getElementById("openrouterDataCollectionSelect");
         const openrouterModelInput = doc.getElementById("openrouterModelInput");
@@ -629,6 +684,7 @@
         const openrouterEmbeddingsModelInput = doc.getElementById("openrouterEmbeddingsModelInput");
         const openrouterEffortSelect = doc.getElementById("openrouterEffortSelect");
 
+        const googleTtsApiKey = (googleTtsApiKeyInput?.value || "").trim();
         const openRouterKey = (openrouterApiKeyInput?.value || "").trim();
         const openRouterData = (openrouterDataCollectionSelect?.value || cfg?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny").trim();
         const openRouterModel = (openrouterModelInput?.value || "").trim() || (cfg?.DEFAULTS?.OPENROUTER_MODEL || "");
@@ -638,6 +694,7 @@
 
         try {
             if (cfg?.setBackend) cfg.setBackend("openrouter");
+            if (cfg?.setGoogleTtsApiKey) cfg.setGoogleTtsApiKey(googleTtsApiKey);
             if (cfg?.setOpenRouterApiKey) cfg.setOpenRouterApiKey(openRouterKey);
             if (cfg?.setOpenRouterDataCollection) cfg.setOpenRouterDataCollection(openRouterData);
             if (cfg?.setOpenRouterModel) cfg.setOpenRouterModel(openRouterModel);
@@ -686,6 +743,43 @@
                 setStatus(statusEl, { state: "warning", label: "Clé invalide" });
                 return false;
             }
+        }
+    }
+
+    async function testGoogleTtsConnection() {
+        persistModalAiSettings();
+        const statusEl = doc.getElementById("googleTtsStatus");
+        const directKey = (global.GoToolkitIAConfig?.getGoogleTtsApiKey?.() || "").trim();
+        setStatus(statusEl, { state: "verifying", label: "Vérification..." });
+        if (directKey) {
+            const directResult = await global.GoToolkitGoogleTTS?.verifyAccess?.();
+            if (directResult?.ok) {
+                setStatus(statusEl, { state: "ready", label: "Accès direct" });
+                return true;
+            }
+        }
+        try {
+            const explicit = global.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
+            const baseUrl = String(explicit).replace(/\/+$/, "");
+            const targetUrl = baseUrl + "/speak";
+            const turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(targetUrl, "googletts");
+            const response = await fetch(targetUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(turnstileHeaders || {})
+                },
+                body: JSON.stringify({
+                    text: "Test",
+                    languageCode: "fr-FR"
+                })
+            });
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            setStatus(statusEl, { state: directKey ? "warning" : "ready", label: directKey ? "Clé invalide, proxy" : "Accès proxy" });
+            return true;
+        } catch (err) {
+            setStatus(statusEl, { state: "error", label: directKey ? "Clé invalide" : "Proxy indisponible" });
+            return false;
         }
     }
 
@@ -754,6 +848,7 @@
 
     function bindVerifyButtons() {
         const assemblyAiVerifyBtn = doc.getElementById("assemblyAiVerifyBtn");
+        const googleTtsVerifyBtn = doc.getElementById("googleTtsVerifyBtn");
         const openrouterVerifyBtn = doc.getElementById("openrouterVerifyBtn");
 
         if (assemblyAiVerifyBtn && assemblyAiVerifyBtn.dataset.verifyBound !== "1") {
@@ -770,6 +865,15 @@
             assemblyAiVerifyBtn.dataset.verifyBound = "1";
         }
 
+        if (googleTtsVerifyBtn && googleTtsVerifyBtn.dataset.verifyBound !== "1") {
+            googleTtsVerifyBtn.addEventListener("click", async function () {
+                try {
+                    await testGoogleTtsConnection();
+                } catch (err) { /* noop */ }
+            });
+            googleTtsVerifyBtn.dataset.verifyBound = "1";
+        }
+
         if (openrouterVerifyBtn && openrouterVerifyBtn.dataset.verifyBound !== "1") {
             openrouterVerifyBtn.addEventListener("click", async function () {
                 try {
@@ -783,6 +887,19 @@
             });
             openrouterVerifyBtn.dataset.verifyBound = "1";
         }
+    }
+
+    function bindSettingsHelp() {
+        const buttons = Array.from(doc.querySelectorAll(".settings-help-btn"));
+        buttons.forEach(button => {
+            if (button.dataset.helpBound === "1") return;
+            const helpKey = String(button.getAttribute("data-help-key") || "").trim();
+            const tooltip = SETTINGS_HELP[helpKey] || "";
+            if (tooltip) {
+                button.setAttribute("title", tooltip);
+            }
+            button.dataset.helpBound = "1";
+        });
     }
 
     function getSettingsTabNodes(modal) {
@@ -1123,6 +1240,8 @@
     global.GoToolkitSettingsModal = {
         bind,
         performFullReset,
+        populateAssemblyAiInput,
+        populateGoogleTtsInput,
         populateOpenrouterModelInput,
         populateOpenrouterOcrModelInput,
         populateOpenrouterEmbeddingsModelInput,
@@ -1152,6 +1271,7 @@
         formatLatencyMs,
         appendLatencyToLabel,
         testAssemblyAiConnection,
+        testGoogleTtsConnection,
         testOpenRouterConnection
     };
 
@@ -1183,12 +1303,15 @@
         bindSettingsTabs(modal);
         bindCategoryResetButton(modal);
         activateSettingsTab(modal, "servicesTab");
+        populateAssemblyAiInput();
+        populateGoogleTtsInput();
         populateOpenrouterModelInput();
         populateOpenrouterOcrModelInput();
         populateOpenrouterEmbeddingsModelInput();
         populateOpenrouterEffortSelect();
         bindRepairButton();
         bindVerifyButtons();
+        bindSettingsHelp();
         prepareCategorySettingsTab(modal).catch(() => { /* noop */ });
     }
 
