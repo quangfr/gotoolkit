@@ -1418,6 +1418,31 @@
         return null;
     }
 
+    function resolveActiveMemoContext() {
+        const activeMemo = window.GoToolkitMemoVoice?.getActiveMemo?.() || null;
+        const activeMemoId = String(
+            activeMemo?.id
+            || window.getMemoActiveTabId?.()
+            || state.currentMemoId
+            || ""
+        ).trim();
+        const activeMemoName = String(
+            activeMemo?.title
+            || state.currentMemoName
+            || ""
+        ).trim();
+        const activeDocumentId = String(
+            window.GoToolkitMemoGetActiveDocumentId?.()
+            || state.recordingDocumentId
+            || ""
+        ).trim();
+        return {
+            memoId: activeMemoId || null,
+            memoName: activeMemoName || "",
+            documentId: activeDocumentId || null
+        };
+    }
+
     async function startRecording(memoId, memoName) {
         if (state.isRecording || state.isTranscribing) {
             if (state.isTranscribing) {
@@ -1427,13 +1452,18 @@
             showToast("Enregistrement déjà actif.", true);
             return;
         }
-        if (!memoId) {
+        const context = resolveActiveMemoContext();
+        const resolvedMemoId = String(memoId || context.memoId || "").trim();
+        const resolvedMemoName = String(memoName || context.memoName || "").trim();
+        if (!resolvedMemoId) {
             showToast("Docs introuvable.", true);
             return;
         }
-        state.recordingMemoId = memoId;
-        state.recordingDocumentId = window.GoToolkitMemoGetActiveDocumentId?.() || null;
-        state.recordingMemoName = memoName || "";
+        state.currentMemoId = resolvedMemoId;
+        state.currentMemoName = resolvedMemoName;
+        state.recordingMemoId = resolvedMemoId;
+        state.recordingDocumentId = context.documentId;
+        state.recordingMemoName = resolvedMemoName;
         state.audioChunks = [];
         state.videoChunks = [];
         state.audioBlob = null;
@@ -1507,7 +1537,7 @@
             };
             state.audioRecorder.start();
             if (state.overlayTranscriptionMode === "live" && state.overlayMic) {
-                startLiveTranscription(audioStream, memoId);
+                startLiveTranscription(audioStream, resolvedMemoId);
             } else {
                 stopLiveTranscription();
             }

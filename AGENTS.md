@@ -10,7 +10,7 @@
 - **Bump the version systematically ONLY when the user asks for a "bump", "commit", or "push".**
 - **Automated Versioning**: Run `npm run bump` to automatically increment the version in `package.json`, update cache-busters `?v=...` in HTML files, and update version labels.
 - **Commits and Push**: When asked to "commit" or "push", always run `npm run bump` first, then commit with a descriptive message and push. If multiple changes were made, provide a detailed bulleted list in the commit description (e.g., `git commit -m "title" -m "detailed list of changes"`).
-- **Shortcut**: Treat user request `savane` as `bump commit push` (run `npm run bump`, commit, then push).
+- **Shortcut**: Treat user request `push` as `bump commit push` (run `npm run bump`, commit, then push).
 - **Commit title format**: Use `v2026.xx.xx.xx : <summary>` with a summary under 15 words.
 - **Manual Bumping checklist** (if `npm run bump` is not used):
   1. Increment `version` in `package.json`.
@@ -99,6 +99,13 @@ Only `public/js` may touch `window`:
   - `browserType.launchPersistentContext ... chrome not found` → run `npx playwright install chromium` and use local Node Playwright script.
   - `TypeError: Failed to fetch` from share client → verify worker reachability with `curl https://share.gotoolkit.workers.dev/...`.
   - Shared tree appears stale after move → verify remote `parentId/spaceId/updatedAt`, then run space refresh.
+  - When checking whether a file exists in a cloud space, inspect the share tree metadata first (`view=tree`) and verify the file `id` plus `parentId`, `spaceId`, and `updatedAt`.
+- **Cloud share fetch order**:
+  1. Authenticate the space with `POST /v1/spaces/auth` using `spaceId` + `spaceCode`.
+  2. Reuse the returned `X-Space-Auth` token with `X-Space-Id` and sync headers (`X-Sync-Session`, `X-Sync-JTI`, `X-Sync-TS`).
+  3. Check `pages?view=tree&spaceId=...` first to confirm the page id and inspect tree metadata.
+  4. Check `pages-meta/:id` next for title/description/icon/parent/status metadata.
+  5. Fetch `pages/:id` last for content; payloads in `pages` may be encrypted (`gtke=1`, AES-GCM + PBKDF2) and must be decrypted locally with the normalized `spaceCode`.
 - **Context7 usage**:
   - Use Context7 for external library/API behavior and setup.
   - Prefer local code inspection for repo-specific behavior and regressions.
@@ -117,6 +124,10 @@ Only `public/js` may touch `window`:
 - `npm run check:csp`
 - `node --check <touched-js-file>`
 - `curl -i https://share.gotoolkit.workers.dev/v1/shares/memos?view=tree\\&spaceId=golive`
+- `curl -i https://share.gotoolkit.workers.dev/v1/shares/pages?view=tree\\&spaceId=golive`
+- `curl -i -H 'Origin: https://gotoolkit.fr' -H 'Content-Type: application/json' -d '{"spaceId":"golive","spaceCode":"<code>"}' https://share.gotoolkit.workers.dev/v1/spaces/auth`
+- `curl -i -H 'Origin: https://gotoolkit.fr' -H 'X-Space-Id: golive' -H 'X-Space-Auth: <token>' -H 'X-Sync-Session: <session>' -H 'X-Sync-JTI: <jti>' -H 'X-Sync-TS: <ts>' 'https://share.gotoolkit.workers.dev/v1/shares/pages-meta/<id>'`
+- `curl -i -H 'Origin: https://gotoolkit.fr' -H 'X-Space-Id: golive' -H 'X-Space-Auth: <token>' -H 'X-Sync-Session: <session>' -H 'X-Sync-JTI: <jti>' -H 'X-Sync-TS: <ts>' 'https://share.gotoolkit.workers.dev/v1/shares/pages/<id>'`
 - Playwright API timing (when UI MCP is flaky): use `require(\"playwright\").request.newContext()`.
 
 ## Workers env

@@ -578,17 +578,17 @@ async function getOauthIdentitySigningKey(env) {
 
 async function verifyOauthIdentityToken(env, token) {
   const key = await getOauthIdentitySigningKey(env);
-  if (!key) return { ok: false, error: "Secret identité OAuth manquant" };
+  if (!key) return { ok: false, error: "Secret de signature du jeton d'identité OAuth manquant" };
   const rawToken = String(token || "").trim();
   const dot = rawToken.lastIndexOf(".");
-  if (dot <= 0) return { ok: false, error: "Jeton identité invalide" };
+  if (dot <= 0) return { ok: false, error: "Jeton d'identité OAuth invalide" };
   const payloadPart = rawToken.slice(0, dot);
   const sigPart = rawToken.slice(dot + 1);
   let payloadRaw = "";
   try {
     payloadRaw = fromBase64UrlString(payloadPart);
   } catch (err) {
-    return { ok: false, error: "Jeton identité invalide" };
+    return { ok: false, error: "Jeton d'identité OAuth invalide" };
   }
   let sigBytes;
   try {
@@ -596,24 +596,24 @@ async function verifyOauthIdentityToken(env, token) {
     sigBytes = new Uint8Array(sigRaw.length);
     for (let i = 0; i < sigRaw.length; i += 1) sigBytes[i] = sigRaw.charCodeAt(i);
   } catch (err) {
-    return { ok: false, error: "Signature identité invalide" };
+    return { ok: false, error: "Signature du jeton d'identité OAuth invalide" };
   }
   const valid = await crypto.subtle.verify("HMAC", key, sigBytes, textEncoder.encode(payloadRaw));
-  if (!valid) return { ok: false, error: "Signature identité invalide" };
+  if (!valid) return { ok: false, error: "Signature du jeton d'identité OAuth invalide" };
   let payload = null;
   try {
     payload = JSON.parse(payloadRaw);
   } catch (err) {
-    return { ok: false, error: "Payload identité invalide" };
+    return { ok: false, error: "Payload du jeton d'identité OAuth invalide" };
   }
   const exp = Number(payload?.exp || 0);
   const iat = Number(payload?.iat || 0);
   const email = String(payload?.email || "").trim().toLowerCase();
   const provider = String(payload?.provider || "").trim().toLowerCase();
-  if (String(payload?.typ || "").trim() !== "oauth-identity") return { ok: false, error: "Type identité invalide" };
-  if (!email || !provider) return { ok: false, error: "Identité incomplète" };
-  if (!Number.isFinite(exp) || !Number.isFinite(iat) || Date.now() >= exp) return { ok: false, error: "Identité expirée" };
-  if ((exp - iat) > OAUTH_IDENTITY_TOKEN_TTL_MS + 5_000) return { ok: false, error: "Durée identité invalide" };
+  if (String(payload?.typ || "").trim() !== "oauth-identity") return { ok: false, error: "Type de jeton d'identité OAuth invalide" };
+  if (!email || !provider) return { ok: false, error: "Jeton d'identité OAuth incomplet: email ou provider manquant" };
+  if (!Number.isFinite(exp) || !Number.isFinite(iat) || Date.now() >= exp) return { ok: false, error: "Jeton d'identité OAuth expiré - relancer la connexion Gmail/Microsoft" };
+  if ((exp - iat) > OAUTH_IDENTITY_TOKEN_TTL_MS + 5_000) return { ok: false, error: "Durée de validité du jeton d'identité OAuth invalide" };
   return { ok: true, payload };
 }
 
@@ -683,17 +683,18 @@ async function signSpaceAuthPayload(env, payload) {
 
 async function verifySpaceAuthToken(env, token, expectedSpaceId) {
   const key = await getSpaceAuthSigningKey(env);
-  if (!key) return { ok: false, error: "Secret auth manquant" };
+  const expected = normalizeSpaceId(expectedSpaceId || "");
+  if (!key) return { ok: false, error: `Secret de signature X-Space-Auth manquant pour l'espace ${expected || "inconnu"}` };
   const rawToken = String(token || "").trim();
   const dot = rawToken.lastIndexOf(".");
-  if (dot <= 0) return { ok: false, error: "Token invalide" };
+  if (dot <= 0) return { ok: false, error: `Jeton X-Space-Auth invalide pour l'espace ${expected || "inconnu"}` };
   const payloadPart = rawToken.slice(0, dot);
   const sigPart = rawToken.slice(dot + 1);
   let payloadRaw = "";
   try {
     payloadRaw = fromBase64UrlString(payloadPart);
   } catch (err) {
-    return { ok: false, error: "Token invalide" };
+    return { ok: false, error: `Jeton X-Space-Auth invalide pour l'espace ${expected || "inconnu"}` };
   }
   let sigBytes;
   try {
@@ -701,21 +702,24 @@ async function verifySpaceAuthToken(env, token, expectedSpaceId) {
     sigBytes = new Uint8Array(sigRaw.length);
     for (let i = 0; i < sigRaw.length; i += 1) sigBytes[i] = sigRaw.charCodeAt(i);
   } catch (err) {
-    return { ok: false, error: "Signature invalide" };
+    return { ok: false, error: `Signature X-Space-Auth invalide pour l'espace ${expected || "inconnu"}` };
   }
   const valid = await crypto.subtle.verify("HMAC", key, sigBytes, textEncoder.encode(payloadRaw));
-  if (!valid) return { ok: false, error: "Signature invalide" };
+  if (!valid) return { ok: false, error: `Signature X-Space-Auth invalide pour l'espace ${expected || "inconnu"}` };
   let payload = null;
   try {
     payload = JSON.parse(payloadRaw);
   } catch (err) {
-    return { ok: false, error: "Payload token invalide" };
+    return { ok: false, error: `Payload X-Space-Auth invalide pour l'espace ${expected || "inconnu"}` };
   }
   const spaceId = normalizeSpaceId(payload?.spaceId || "");
-  const expected = normalizeSpaceId(expectedSpaceId || "");
   const exp = Number(payload?.exp || 0);
-  if (!spaceId || !expected || spaceId !== expected) return { ok: false, error: "Token hors scope" };
-  if (!Number.isFinite(exp) || Date.now() >= exp) return { ok: false, error: "Token expiré" };
+  if (!spaceId || !expected || spaceId !== expected) {
+    return { ok: false, error: `Jeton X-Space-Auth hors scope: attendu=${expected || "inconnu"}, reçu=${spaceId || "vide"}` };
+  }
+  if (!Number.isFinite(exp) || Date.now() >= exp) {
+    return { ok: false, error: `Jeton X-Space-Auth expiré pour l'espace ${expected} - relancer /v1/spaces/auth avec le spaceCode ou l'identité OAuth` };
+  }
   return { ok: true, payload };
 }
 
@@ -789,10 +793,10 @@ async function enforceSyncEnvelope(request, env, context) {
   const timestamp = Number(envelope.timestampRaw || 0);
   const now = Date.now();
   if (!envelope.sessionId || !envelope.jti || !Number.isFinite(timestamp)) {
-    return errorResponse("En-têtes sync requis (session/jti/ts)", 401, request, env);
+    return errorResponse("En-têtes sync requis: X-Sync-Session, X-Sync-JTI et X-Sync-TS", 401, request, env);
   }
   if (Math.abs(now - timestamp) > SYNC_SKEW_MS) {
-    return errorResponse("Horodatage sync invalide", 401, request, env);
+    return errorResponse("Horodatage sync invalide: vérifier X-Sync-TS et l'horloge client", 401, request, env);
   }
 
   if (shouldCheckSyncRevoke(env)) {
@@ -801,7 +805,7 @@ async function enforceSyncEnvelope(request, env, context) {
     const revokeCacheTtlMs = getLocalSyncRevokeCacheTtlMs(env);
     const cachedRevokeExpiry = Number(syncSessionRevokedCache.get(revokedKey) || 0);
     if (cachedRevokeExpiry > nowTs) {
-      return errorResponse("Session sync révoquée", 403, request, env);
+      return errorResponse("Session sync révoquée: le X-Sync-Session utilisé pour cette session n'est plus autorisé", 403, request, env);
     }
     if (cachedRevokeExpiry) {
       syncSessionRevokedCache.delete(revokedKey);
@@ -810,7 +814,7 @@ async function enforceSyncEnvelope(request, env, context) {
     if (revoked) {
       syncSessionRevokedCache.set(revokedKey, nowTs + revokeCacheTtlMs);
       trimCacheMap(syncSessionRevokedCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
-      return errorResponse("Session sync révoquée", 403, request, env);
+      return errorResponse("Session sync révoquée: le X-Sync-Session utilisé pour cette session n'est plus autorisé", 403, request, env);
     }
   }
 
@@ -820,7 +824,7 @@ async function enforceSyncEnvelope(request, env, context) {
     const replayKey = `sync:replay:${envelope.sessionId}:${envelope.jti}`;
     const cachedReplayExpiry = Number(syncReplayLocalCache.get(replayKey) || 0);
     if (cachedReplayExpiry > nowTs) {
-      return errorResponse("Requête rejouée", 409, request, env);
+      return errorResponse("Protection anti-rejeu déclenchée: ce couple X-Sync-Session/X-Sync-JTI a déjà été utilisé", 409, request, env);
     }
     if (cachedReplayExpiry) {
       syncReplayLocalCache.delete(replayKey);
@@ -829,7 +833,7 @@ async function enforceSyncEnvelope(request, env, context) {
     if (seen) {
       syncReplayLocalCache.set(replayKey, nowTs + jtiCacheTtlMs);
       trimCacheMap(syncReplayLocalCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
-      return errorResponse("Requête rejouée", 409, request, env);
+      return errorResponse("Protection anti-rejeu déclenchée: ce couple X-Sync-Session/X-Sync-JTI a déjà été utilisé", 409, request, env);
     }
     syncReplayLocalCache.set(replayKey, nowTs + jtiCacheTtlMs);
     trimCacheMap(syncReplayLocalCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
@@ -857,7 +861,7 @@ async function enforceWriteRateLimit(request, env) {
       return null;
     }
     return errorResponse(
-      "Trop de requêtes d'écriture, réessayez dans un instant",
+      "Limite de sécurité atteinte sur les écritures: trop de requêtes, réessayez dans un instant",
       429,
       request,
       env
@@ -1526,7 +1530,7 @@ async function handleRequest(request, env) {
       }
       const spaceCode = normalizeSpaceJoinCode(body?.spaceCode || body?.spaceJoinCode || "");
       if (!spaceCode) {
-        return errorResponse("spaceCode manquant", 400, request, env);
+        return errorResponse("spaceCode manquant: fournir le code d'accès de l'espace (même phrase d'accès utilisée côté client pour dériver la clé de chiffrement/déchiffrement des pages)", 400, request, env);
       }
       const existingHash = await readSpaceCodeHash(env, spaceId);
       if (existingHash) {
@@ -1542,7 +1546,7 @@ async function handleRequest(request, env) {
         iat: now,
         exp: expiresAt
       });
-      if (!token) return errorResponse("Impossible de signer le token", 500, request, env);
+      if (!token) return errorResponse("Impossible de signer le jeton X-Space-Auth à partir du code d'accès de l'espace", 500, request, env);
       return jsonResponse({ ok: true, created: true, token, spaceId, expiresAt }, 200, request, env, {
         "Cache-Control": "no-store, max-age=0"
       });
@@ -1562,11 +1566,11 @@ async function handleRequest(request, env) {
       }
       const existingHash = await readSpaceCodeHash(env, spaceId);
       if (!existingHash) {
-        return errorResponse("Aucun code existant pour cet espace", 404, request, env);
+        return errorResponse("Aucun code d'accès d'espace enregistré pour ce spaceId", 404, request, env);
       }
       const currentHash = await sha256Hex(textEncoder.encode(`${spaceId}:${currentSpaceCode}`));
       if (existingHash !== currentHash) {
-        return errorResponse("Code espace actuel invalide", 403, request, env);
+        return errorResponse("Code d'accès actuel de l'espace invalide: impossible de faire tourner le code d'accès de cet espace", 403, request, env);
       }
       const providedToken = String(
         request.headers.get("X-Space-Auth")
@@ -1574,7 +1578,7 @@ async function handleRequest(request, env) {
         || ""
       ).trim();
       if (!providedToken) {
-        return errorResponse("Authentification espace requise", 401, request, env);
+        return errorResponse("Authentification espace requise: fournir X-Space-Id et X-Space-Auth valides", 401, request, env);
       }
       const verification = await verifySpaceAuthToken(env, providedToken, spaceId);
       if (!verification.ok) {
@@ -1590,7 +1594,7 @@ async function handleRequest(request, env) {
         iat: now,
         exp: expiresAt
       });
-      if (!token) return errorResponse("Impossible de signer le token", 500, request, env);
+      if (!token) return errorResponse("Impossible de signer le nouveau jeton X-Space-Auth après rotation du code d'accès", 500, request, env);
       return jsonResponse({ ok: true, rotated: true, token, spaceId, expiresAt }, 200, request, env, {
         "Cache-Control": "no-store, max-age=0"
       });
@@ -1616,7 +1620,7 @@ async function handleRequest(request, env) {
         granted: allowedSpaces.includes(spaceId)
       });
       if (!allowedSpaces.includes(spaceId)) {
-        return errorResponse("Accès refusé pour cet espace", 403, request, env);
+        return errorResponse(`Accès refusé pour cet espace: l'identité OAuth n'est pas autorisée sur ${spaceId}`, 403, request, env);
       }
       spaceCode = normalizeSpaceJoinCode(readManagedSpaceCode(env, spaceId));
       console.log("share oauth managed space code lookup", {
@@ -1625,11 +1629,11 @@ async function handleRequest(request, env) {
         managedCodeLength: spaceCode.length
       });
       if (!spaceCode) {
-        return errorResponse("Code espace géré manquant", 500, request, env);
+        return errorResponse("Code d'accès géré de l'espace manquant: l'identité OAuth est valide mais aucun spaceCode géré n'est configuré côté worker", 500, request, env);
       }
     }
     if (!spaceCode) {
-      return errorResponse("spaceCode manquant", 400, request, env);
+      return errorResponse("spaceCode manquant: fournir le code d'accès de l'espace (ou une identité OAuth gérée). Ce code sert à authentifier /v1/spaces/auth puis, côté client, à dériver la clé de chiffrement/déchiffrement des pages", 400, request, env);
     }
     const codeHash = await sha256Hex(textEncoder.encode(`${spaceId}:${spaceCode}`));
     const existingHash = await readSpaceCodeHash(env, spaceId);
@@ -1641,7 +1645,7 @@ async function handleRequest(request, env) {
       usedOauthManagedCode: !normalizeSpaceJoinCode(body?.spaceCode || body?.spaceJoinCode || "")
     });
     if (!existingHash) {
-      return errorResponse("Aucun code existant pour cet espace", 404, request, env);
+      return errorResponse("Aucun code d'accès d'espace enregistré pour ce spaceId", 404, request, env);
     }
     if (existingHash && existingHash !== codeHash) {
       console.log("share space auth hash mismatch", {
@@ -1649,7 +1653,7 @@ async function handleRequest(request, env) {
         existingHashSuffix: existingHash.slice(-8),
         candidateHashSuffix: codeHash.slice(-8)
       });
-      return errorResponse("Code espace invalide", 403, request, env);
+      return errorResponse(`Code d'accès d'espace invalide pour ${spaceId}: échec d'authentification /v1/spaces/auth. Rappel: ce spaceCode n'est pas le jeton X-Space-Auth; il sert à obtenir ce jeton et, côté client, à dériver la clé de chiffrement/déchiffrement`, 403, request, env);
     }
     const now = Date.now();
     const expiresAt = now + (10 * 60 * 1000);
@@ -1659,7 +1663,7 @@ async function handleRequest(request, env) {
       iat: now,
       exp: expiresAt
     });
-    if (!token) return errorResponse("Impossible de signer le token", 500, request, env);
+    if (!token) return errorResponse("Impossible de signer le jeton X-Space-Auth après validation du code d'accès de l'espace", 500, request, env);
     return jsonResponse({ ok: true, token, spaceId, expiresAt }, 200, request, env, {
       "Cache-Control": "no-store, max-age=0"
     });
@@ -1689,11 +1693,11 @@ async function handleRequest(request, env) {
 
     if (request.method === "POST") {
       if (assetPath.action !== "upload") {
-        return errorResponse("Route assets invalide", 404, request, env);
+        return errorResponse("Route assets invalide: utiliser /v1/assets/upload pour l'upload ou /v1/assets/:id pour la lecture", 404, request, env);
       }
       const authHeaders = readSpaceAuthHeaders(request);
       if (!authHeaders.spaceId || !authHeaders.token) {
-        return errorResponse("Authentification espace requise", 401, request, env);
+        return errorResponse("Authentification espace requise: fournir X-Space-Id et X-Space-Auth valides", 401, request, env);
       }
       const verification = await verifySpaceAuthToken(env, authHeaders.token, authHeaders.spaceId);
       if (!verification.ok) {
@@ -1731,7 +1735,7 @@ async function handleRequest(request, env) {
       }
       const authHeaders = readSpaceAuthHeaders(request);
       if (!authHeaders.spaceId || !authHeaders.token) {
-        return errorResponse("Authentification espace requise", 401, request, env);
+        return errorResponse("Authentification espace requise: fournir X-Space-Id et X-Space-Auth valides", 401, request, env);
       }
       const verification = await verifySpaceAuthToken(env, authHeaders.token, authHeaders.spaceId);
       if (!verification.ok) {
@@ -1747,7 +1751,7 @@ async function handleRequest(request, env) {
       }
       const assetSpaceId = readAssetSpaceId(result.object);
       if (!assetSpaceId || assetSpaceId !== authHeaders.spaceId) {
-        return errorResponse("Asset hors scope", 403, request, env);
+        return errorResponse("Asset hors scope: l'asset demandé n'appartient pas au X-Space-Id fourni", 403, request, env);
       }
       await deleteAssetFromStorage(env, assetPath.action);
       return jsonResponse({ ok: true }, 200, request, env);
@@ -1782,7 +1786,7 @@ async function handleRequest(request, env) {
   const authHeaders = readSpaceAuthHeaders(request);
   if (requiresSpaceAuth) {
     if (!authHeaders.spaceId || !authHeaders.token) {
-      return errorResponse("Authentification espace requise", 401, request, env);
+      return errorResponse("Authentification espace requise: fournir X-Space-Id et X-Space-Auth valides", 401, request, env);
     }
     const verification = await verifySpaceAuthToken(env, authHeaders.token, authHeaders.spaceId);
     if (!verification.ok) {
@@ -1922,7 +1926,7 @@ async function handleRequest(request, env) {
       if (isSpaceProtectedCollection(batchGetPath.collection) && doc?.payload) {
         const docSpaceId = resolvePayloadSpaceId(doc.payload || {});
         if (!docSpaceId || docSpaceId !== authHeaders.spaceId) {
-          return errorResponse("Accès espace refusé", 403, request, env);
+          return errorResponse("Accès espace refusé: le document ciblé n'appartient pas au X-Space-Id fourni", 403, request, env);
         }
       }
       documents.push({
@@ -1981,7 +1985,7 @@ async function handleRequest(request, env) {
         if (scopedPayload) {
           const docSpaceId = resolvePayloadSpaceId(scopedPayload);
           if (!docSpaceId || docSpaceId !== authHeaders.spaceId) {
-            return errorResponse("Accès espace refusé", 403, request, env);
+            return errorResponse("Accès espace refusé: le document ciblé n'appartient pas au X-Space-Id fourni", 403, request, env);
           }
         }
       }
@@ -2124,7 +2128,7 @@ async function handleRequest(request, env) {
           return errorResponse("spaceId requis", 400, request, env);
         }
         if (querySpaceId !== authHeaders.spaceId) {
-          return errorResponse("Accès espace refusé", 403, request, env);
+          return errorResponse("Accès espace refusé: la requête tree cible un spaceId différent de X-Space-Id", 403, request, env);
         }
       }
       if (view === "tree") {
@@ -2156,7 +2160,7 @@ async function handleRequest(request, env) {
     if (isSpaceProtectedCollection(path.collection) && doc?.payload) {
       const docSpaceId = resolvePayloadSpaceId(doc.payload || {});
       if (!docSpaceId || docSpaceId !== authHeaders.spaceId) {
-        return errorResponse("Accès espace refusé", 403, request, env);
+        return errorResponse("Accès espace refusé: le document ciblé n'appartient pas au X-Space-Id fourni", 403, request, env);
       }
     }
     if (!doc) {
@@ -2177,7 +2181,7 @@ async function handleRequest(request, env) {
       if (existing?.payload) {
         const docSpaceId = resolvePayloadSpaceId(existing.payload || {});
         if (!docSpaceId || docSpaceId !== authHeaders.spaceId) {
-          return errorResponse("Accès espace refusé", 403, request, env);
+          return errorResponse("Accès espace refusé: le document ciblé n'appartient pas au X-Space-Id fourni", 403, request, env);
         }
       }
     }

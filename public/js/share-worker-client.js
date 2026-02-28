@@ -774,6 +774,32 @@
     return Boolean(error && error.__goToolkitShareNetworkFailure);
   }
 
+  function isExpiredSpaceAuthResponse(response, bodyText) {
+    if (!response || response.ok) return false;
+    const normalized = String(bodyText || "").trim().toLowerCase();
+    return response.status === 401 && normalized.includes("token expir");
+  }
+
+  async function fetchWithSpaceAuthRetry(base, url, requestOptions, spaceId) {
+    const normalizedSpaceId = normalizeSpaceId(spaceId || "");
+    const execute = async () => {
+      const headers = await withSpaceAuthHeaders(base, mergeSyncHeaders(requestOptions?.headers || {}), {
+        method: requestOptions?.method || "GET",
+        collection: requestOptions?.collection || "",
+        spaceId: normalizedSpaceId
+      });
+      return fetchWithSyncRetry(url, Object.assign({}, requestOptions || {}, { headers }));
+    };
+    let response = await execute();
+    if (!normalizedSpaceId) return response;
+    const errorText = response.ok ? "" : await response.clone().text().catch(() => "");
+    if (!isExpiredSpaceAuthResponse(response, errorText)) {
+      return response;
+    }
+    spaceAuthTokenCache.delete(normalizedSpaceId);
+    return execute();
+  }
+
   async function withWorkerFallback(task) {
     let lastNetworkError = null;
     for (const base of workerBases) {
@@ -976,9 +1002,10 @@
   async function listShares(collection, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
+      const resolvedSpaceId = resolveRequestSpaceId(collection, "", options);
       const query = {};
-      if ((collection === "pages" || collection === "pages-meta") && options?.spaceId) {
-        query.spaceId = options.spaceId;
+      if ((collection === "pages" || collection === "pages-meta") && resolvedSpaceId) {
+        query.spaceId = resolvedSpaceId;
       }
       const url = Object.keys(query).length ? buildCollectionQueryUrl(base, collection, query) : buildShareUrl(base, collection, null);
       const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
@@ -986,7 +1013,7 @@
       }), {
         method: "GET",
         collection,
-        spaceId: resolveRequestSpaceId(collection, "", options)
+        spaceId: resolvedSpaceId
       });
       const response = await fetchWithSyncRetry(url, {
         method: "GET",
@@ -1595,30 +1622,27 @@
   async function listShareTree(collection, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
+      const resolvedSpaceId = resolveRequestSpaceId(collection, "", options);
       const url = buildCollectionQueryUrl(base, collection, {
         view: "tree",
-        spaceId: options?.spaceId,
+        spaceId: resolvedSpaceId,
         includeArchived: options?.includeArchived ? "1" : ""
       });
       console.log("[SSO Debug] fetch share tree start", {
         collection,
-        spaceId: resolveRequestSpaceId(collection, "", options),
+        spaceId: resolvedSpaceId,
         url
       });
       let response;
       try {
-        const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
-          Accept: "application/json"
-        }), {
-          method: "GET",
-          collection,
-          spaceId: resolveRequestSpaceId(collection, "", options)
-        });
-        response = await fetchWithSyncRetry(url, {
+        response = await fetchWithSpaceAuthRetry(base, url, {
           method: "GET",
           cache: "no-store",
-          headers: authHeaders
-        });
+          headers: {
+            Accept: "application/json"
+          },
+          collection
+        }, resolvedSpaceId);
       } catch (error) {
         throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
       }
@@ -1629,7 +1653,7 @@
       const data = await response.json().catch(() => ({}));
       console.log("[SSO Debug] fetch share tree success", {
         collection,
-        spaceId: resolveRequestSpaceId(collection, "", options),
+        spaceId: resolvedSpaceId,
         count: Array.isArray(data.documents) ? data.documents.length : 0,
         watermark: String(data.watermark || "").trim()
       });
