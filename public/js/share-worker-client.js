@@ -171,6 +171,41 @@
     ];
   }
 
+  function normalizeOauthIdentity(providerId, payload) {
+    const provider = String(providerId || "").trim().toLowerCase();
+    const identityToken = String(payload?.identityToken || "").trim();
+    const accountEmail = String(payload?.accountEmail || "").trim().toLowerCase();
+    const expiresAt = Number(payload?.expiresAt || 0);
+    if (!provider || !identityToken || !accountEmail || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+      return null;
+    }
+    return {
+      provider,
+      identityToken,
+      accountEmail,
+      accountName: String(payload?.accountName || "").trim(),
+      expiresAt
+    };
+  }
+
+  function cacheOauthIdentity(providerId, payload) {
+    const normalized = normalizeOauthIdentity(providerId, payload);
+    if (!normalized) {
+      oauthIdentityCache.delete(String(providerId || "").trim().toLowerCase());
+      return null;
+    }
+    oauthIdentityCache.set(normalized.provider, normalized);
+    return normalized;
+  }
+
+  window.addEventListener("go-toolkit:microsoft-oauth-success", event => {
+    cacheOauthIdentity("microsoft", event?.detail || {});
+  });
+
+  window.addEventListener("go-toolkit:gmail-oauth-success", event => {
+    cacheOauthIdentity("gmail", event?.detail || {});
+  });
+
   async function getOauthIdentityAssertion() {
     const now = Date.now();
     for (const provider of getOauthProviders()) {
@@ -182,18 +217,8 @@
       if (!api?.getIdentity) continue;
       try {
         const payload = await api.getIdentity();
-        const identityToken = String(payload?.identityToken || "").trim();
-        const accountEmail = String(payload?.accountEmail || "").trim().toLowerCase();
-        const expiresAt = Number(payload?.expiresAt || 0);
-        if (!identityToken || !accountEmail || !Number.isFinite(expiresAt)) continue;
-        const next = {
-          provider: provider.id,
-          identityToken,
-          accountEmail,
-          accountName: String(payload?.accountName || "").trim(),
-          expiresAt
-        };
-        oauthIdentityCache.set(provider.id, next);
+        const next = cacheOauthIdentity(provider.id, payload);
+        if (!next) continue;
         return next;
       } catch (err) {
         oauthIdentityCache.delete(provider.id);

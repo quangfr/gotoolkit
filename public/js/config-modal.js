@@ -1394,7 +1394,6 @@
             function cleanup() {
                 global.removeEventListener("message", onMessage);
                 if (closedTimer) clearInterval(closedTimer);
-                try { popup.close(); } catch (err) { /* noop */ }
             }
             global.addEventListener("message", onMessage);
             closedTimer = setInterval(() => {
@@ -1548,12 +1547,48 @@
     async function microsoftEnsureConnected() {
         try {
             const status = await microsoftGetAuthStatus();
-            if (status?.connected) return true;
+            if (status?.connected) {
+                try {
+                    return await microsoftGetIdentity();
+                } catch (err) {
+                    return true;
+                }
+            }
         } catch (err) {
-            console.warn("Microsoft auth status check failed, opening OAuth popup anyway", err);
+            console.info("[SSO Debug] Microsoft auth status unavailable, opening OAuth popup", {
+                error: err?.message || String(err)
+            });
         }
         await openMicrosoftOAuthPopup();
-        return true;
+        let identity = null;
+        try {
+            identity = await microsoftGetIdentity();
+        } catch (err) {
+            console.warn("[SSO Debug] Microsoft OAuth popup succeeded but identity lookup failed", err);
+        }
+        const accountEmail = String(identity?.accountEmail || "").trim().toLowerCase();
+        const accountName = String(identity?.accountName || "").trim();
+        console.log("[SSO Debug] Microsoft OAuth succeeded", {
+            provider: "Microsoft",
+            accountEmail,
+            accountName,
+            hasIdentityToken: Boolean(String(identity?.identityToken || "").trim()),
+            expiresAt: Number(identity?.expiresAt || 0)
+        });
+        try {
+            global.dispatchEvent(new CustomEvent("go-toolkit:microsoft-oauth-success", {
+                detail: {
+                    provider: "Microsoft",
+                    accountEmail,
+                    accountName,
+                    identityToken: String(identity?.identityToken || "").trim(),
+                    expiresAt: Number(identity?.expiresAt || 0)
+                }
+            }));
+        } catch (err) {
+            // noop
+        }
+        return identity || true;
     }
 
     global.GoToolkitMicrosoftPublish = {
@@ -1612,7 +1647,6 @@
             function cleanup() {
                 global.removeEventListener("message", onMessage);
                 if (closedTimer) clearInterval(closedTimer);
-                try { popup.close(); } catch (err) { /* noop */ }
             }
             global.addEventListener("message", onMessage);
             closedTimer = setInterval(() => {
@@ -1640,6 +1674,27 @@
         const status = await gmailGetAuthStatus();
         if (status?.connected) return true;
         await openGmailOAuthPopup();
+        let identity = null;
+        try {
+            identity = await gmailGetIdentity();
+        } catch (err) {
+            console.info("[SSO Debug] Gmail OAuth popup succeeded but identity lookup is not ready yet", {
+                error: err?.message || String(err)
+            });
+        }
+        try {
+            global.dispatchEvent(new CustomEvent("go-toolkit:gmail-oauth-success", {
+                detail: {
+                    provider: "Google",
+                    accountEmail: String(identity?.accountEmail || "").trim().toLowerCase(),
+                    accountName: String(identity?.accountName || "").trim(),
+                    identityToken: String(identity?.identityToken || "").trim(),
+                    expiresAt: Number(identity?.expiresAt || 0)
+                }
+            }));
+        } catch (err) {
+            // noop
+        }
         return true;
     }
 
