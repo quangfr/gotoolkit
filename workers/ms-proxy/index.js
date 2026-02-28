@@ -5,12 +5,11 @@ const ALLOWED_ORIGINS = [
 
 const MICROSOFT_AUTH_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
 const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-const GRAPH_API_BASE = "https://graph.microsoft.com/v1.0";
 const SESSION_COOKIE_NAME = "gt_ms_sid";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 const OAUTH_PROVIDER = "microsoft";
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
-const DEFAULT_SCOPE = "offline_access User.Read";
+const DEFAULT_SCOPE = "openid profile email offline_access";
 const IDENTITY_TOKEN_TTL_MS = 5 * 60 * 1000;
 
 function normalizeOrigin(origin) {
@@ -161,6 +160,20 @@ function decodeState(rawState) {
     const text = atob(rawState || "");
     const parsed = JSON.parse(text);
     return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (err) {
+    return {};
+  }
+}
+
+function decodeJwtPayload(token) {
+  const raw = String(token || "").trim();
+  const parts = raw.split(".");
+  if (parts.length < 2) return {};
+  try {
+    const normalized = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const pad = normalized.length % 4;
+    const base64 = normalized + (pad ? "=".repeat(4 - pad) : "");
+    return JSON.parse(atob(base64));
   } catch (err) {
     return {};
   }
@@ -324,24 +337,6 @@ function normalizeStoredToken(raw) {
   };
 }
 
-async function graphApiFetch(accessToken, path, options = {}) {
-  const response = await fetch(`${GRAPH_API_BASE}${path}`, {
-    method: options.method || "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const msg = payload?.error?.message || payload?.error_description || `Microsoft Graph error (${response.status})`;
-    throw new Error(msg);
-  }
-  return payload;
-}
-
 async function getValidAccessToken(request, env, sessionId) {
   const stored = normalizeStoredToken(await readToken(env, sessionId));
   if (!stored.access_token) return null;
@@ -358,6 +353,18 @@ async function getValidAccessToken(request, env, sessionId) {
     scope: String(refreshed.scope || stored.scope || DEFAULT_SCOPE).trim() || DEFAULT_SCOPE,
     expires_at: Date.now() + (Number(refreshed.expires_in || 3600) * 1000)
   };
+  const refreshedClaims = decodeJwtPayload(refreshed.id_token || "");
+  next.user_email = String(
+    refreshedClaims.email
+    || refreshedClaims.preferred_username
+    || stored.user_email
+    || ""
+  ).trim();
+  next.user_name = String(
+    refreshedClaims.name
+    || stored.user_name
+    || ""
+  ).trim();
   await writeToken(env, sessionId, next);
   return next;
 }
@@ -378,7 +385,7 @@ function renderOAuthCallbackPage(ok, message, targetOrigin) {
       }
     } catch (err) {}
     window.close();
-    document.body.textContent = ${JSON.stringify(ok ? "Connexion Outlook terminee." : `Erreur: ${safe}`)};
+    document.body.textContent = ${JSON.stringify(ok ? "Connexion Microsoft terminee." : `Erreur: ${safe}`)};
   })();
   </script></body></html>`;
 }
@@ -460,20 +467,15 @@ async function handleOAuthCallback(request, env) {
     if (!accessToken) {
       throw new Error("Token Microsoft introuvable");
     }
-    let profile = {};
-    try {
-      profile = await graphApiFetch(accessToken, "/me", { method: "GET" });
-    } catch (err) {
-      profile = {};
-    }
+    const claims = decodeJwtPayload(tokenPayload.id_token || "");
     const nextToken = {
       access_token: accessToken,
       refresh_token: String(tokenPayload.refresh_token || "").trim(),
       token_type: String(tokenPayload.token_type || "Bearer").trim() || "Bearer",
       scope: String(tokenPayload.scope || DEFAULT_SCOPE).trim() || DEFAULT_SCOPE,
       expires_at: Date.now() + (Number(tokenPayload.expires_in || 3600) * 1000),
-      user_email: String(profile?.mail || profile?.userPrincipalName || "").trim(),
-      user_name: String(profile?.displayName || "").trim()
+      user_email: String(claims.email || claims.preferred_username || "").trim(),
+      user_name: String(claims.name || "").trim()
     };
     const previous = normalizeStoredToken(await readToken(env, sessionId));
     if (!nextToken.refresh_token && previous.refresh_token) {
@@ -609,46 +611,6 @@ export default {
       if (!sessionId) return jsonResponse(cors.headers, { connected: false }, 200, { "Set-Cookie": buildSessionCookie("", 0) });
       await clearToken(env, sessionId);
       return jsonResponse(cors.headers, { connected: false }, 200, { "Set-Cookie": buildSessionCookie("", 0) });
-    }
-
-    if (request.method === "POST" && path === "/mail/draft/create") {
-      const body = await request.json().catch(() => ({}));
-      const sessionId = resolveSessionId(request);
-      const subject = String(body?.subject || "Document").trim() || "Document";
-      const html = normalizeHtmlInput(body?.html, body?.text);
-      const attachments = normalizeInlineImageAttachments(body?.attachments);
-      if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
-      if (!html.trim()) return errorResponse(cors.headers, 400, "Contenu HTML requis");
-
-      const token = await getValidAccessToken(request, env, sessionId).catch(() => null);
-      if (!token?.access_token) return errorResponse(cors.headers, 401, "Connexion Outlook requise");
-
-      try {
-        const draft = await graphApiFetch(token.access_token, "/me/messages", {
-          method: "POST",
-          body: {
-            subject,
-            body: {
-              contentType: "HTML",
-              content: html
-            },
-            ...(attachments.length ? { attachments } : {})
-          }
-        });
-        const draftId = String(draft?.id || "").trim();
-        const draftUrl = String(draft?.webLink || "").trim() || (draftId ? `https://outlook.office.com/mail/id/${encodeURIComponent(draftId)}` : "");
-        if (!draftId && !draftUrl) {
-          return errorResponse(cors.headers, 502, "Création du brouillon échouée");
-        }
-        return jsonResponse(cors.headers, {
-          ok: true,
-          draftId,
-          draftUrl,
-          webUrl: draftUrl
-        });
-      } catch (err) {
-        return errorResponse(cors.headers, 502, err?.message || "Création du brouillon Outlook impossible");
-      }
     }
 
     return new Response("Not found", { status: 404, headers: cors.headers });

@@ -633,7 +633,13 @@ function resolveAllowedSpacesForEmail(emailRaw) {
     allowed.add("golive");
     allowed.add("safran");
   }
-  return Array.from(allowed);
+  const resolved = Array.from(allowed);
+  console.log("share oauth email authorization", {
+    email,
+    domain,
+    allowedSpaces: resolved
+  });
+  return resolved;
 }
 
 function readManagedSpaceCode(env, spaceId) {
@@ -1594,9 +1600,20 @@ async function handleRequest(request, env) {
       const identityToken = String(body?.identityToken || "").trim();
       const identityCheck = await verifyOauthIdentityToken(env, identityToken);
       if (!identityCheck.ok) {
+        console.log("share oauth identity rejected", {
+          spaceId,
+          error: identityCheck.error || "Identité OAuth invalide"
+        });
         return errorResponse(identityCheck.error || "Identité OAuth invalide", 401, request, env);
       }
       const allowedSpaces = resolveAllowedSpacesForEmail(identityCheck.payload?.email || "");
+      console.log("share oauth space authorization decision", {
+        spaceId,
+        email: String(identityCheck.payload?.email || "").trim().toLowerCase(),
+        provider: String(identityCheck.payload?.provider || "").trim().toLowerCase(),
+        allowedSpaces,
+        granted: allowedSpaces.includes(spaceId)
+      });
       if (!allowedSpaces.includes(spaceId)) {
         return errorResponse("Accès refusé pour cet espace", 403, request, env);
       }

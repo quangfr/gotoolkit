@@ -87,11 +87,11 @@
         integrity="sha384-LlKSgo4Eo5GuF/ZrstLti44dE+GC5XAJ7TSu0Nw9Q3vIZF2QMnkRcK7BUoLabYLF" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js"
         integrity="sha384-o5vdFlIHJf1L/hUFEtj8tgNVtCT+02DKNT3MPA47wJ9Eo5HocC7qCL2YL+sWNsk8" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.18">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.19">
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.18">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.18">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.19">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.19">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js" defer></script>
     <style>
@@ -479,12 +479,14 @@
                     </button>
                 </div>
                 <div class="modal-actions" style="justify-content:space-between; align-items:center; gap:12px; margin-top: 4px; flex-wrap:nowrap;">
-                    <label for="connectionModalDismissToggle"
-                        style="display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer; margin:0;">
-                        <input id="connectionModalDismissToggle" type="checkbox"
-                            style="accent-color: var(--primary-color);" />
-                        <span>Ne plus afficher</span>
-                    </label>
+                    <div style="display:inline-flex; align-items:center; width:max-content; flex:0 0 auto;">
+                        <label for="connectionModalDismissToggle"
+                            style="display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer; margin:0; white-space:nowrap;">
+                            <input id="connectionModalDismissToggle" type="checkbox"
+                                style="accent-color: var(--primary-color);" />
+                            <span>Ne plus afficher</span>
+                        </label>
+                    </div>
                     <button id="connectionModalDoneBtn" type="button" class="btn-primary">Fermer</button>
                 </div>
             </div>
@@ -510,7 +512,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.18</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.19</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -593,25 +595,25 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.28.18" defer></script>
-    <script src="js/turnstile-helper.js?v=2026.02.28.18" defer></script>
-    <script src="js/config-modal.js?v=2026.02.28.18" defer></script>
-    <script src="js/feature-visibility.js?v=2026.02.28.18" defer></script>
-    <script src="js/document-storage.js?v=2026.02.28.18" defer></script>
-    <script src="js/storage-service.js?v=2026.02.28.18" defer></script>
-    <script src="js/shared-ui.js?v=2026.02.28.18" defer></script>
-    <script src="js/spaces-store.js?v=2026.02.28.18" defer></script>
-    <script src="js/share-worker-client.js?v=2026.02.28.18" defer></script>
-    <script src="js/share-history.js?v=2026.02.28.18" defer></script>
-    <script src="js/document-api.js?v=2026.02.28.18" defer></script>
-    <script src="js/keywordIndex.js?v=2026.02.28.18" defer></script>
-    <script src="js/document-rag.js?v=2026.02.28.18" defer></script>
-    <script src="js/ia-config.js?v=2026.02.28.18" defer></script>
-    <script src="preset.js?v=2026.02.28.18" defer></script>
-    <script src="prompt.js?v=2026.02.28.18" defer></script>
-    <script src="js/ia-client.js?v=2026.02.28.18" defer></script>
-    <script src="js/document-markdown.js?v=2026.02.28.18" defer></script>
-    <script src="js/notion-export.js?v=2026.02.28.18" defer></script>
+    <script src="js/config.js?v=2026.02.28.19" defer></script>
+    <script src="js/turnstile-helper.js?v=2026.02.28.19" defer></script>
+    <script src="js/config-modal.js?v=2026.02.28.19" defer></script>
+    <script src="js/feature-visibility.js?v=2026.02.28.19" defer></script>
+    <script src="js/document-storage.js?v=2026.02.28.19" defer></script>
+    <script src="js/storage-service.js?v=2026.02.28.19" defer></script>
+    <script src="js/shared-ui.js?v=2026.02.28.19" defer></script>
+    <script src="js/spaces-store.js?v=2026.02.28.19" defer></script>
+    <script src="js/share-worker-client.js?v=2026.02.28.19" defer></script>
+    <script src="js/share-history.js?v=2026.02.28.19" defer></script>
+    <script src="js/document-api.js?v=2026.02.28.19" defer></script>
+    <script src="js/keywordIndex.js?v=2026.02.28.19" defer></script>
+    <script src="js/document-rag.js?v=2026.02.28.19" defer></script>
+    <script src="js/ia-config.js?v=2026.02.28.19" defer></script>
+    <script src="preset.js?v=2026.02.28.19" defer></script>
+    <script src="prompt.js?v=2026.02.28.19" defer></script>
+    <script src="js/ia-client.js?v=2026.02.28.19" defer></script>
+    <script src="js/document-markdown.js?v=2026.02.28.19" defer></script>
+    <script src="js/notion-export.js?v=2026.02.28.19" defer></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -627,15 +629,15 @@
             }
         });
     </script>
-    <script src="js/news.js?v=2026.02.28.18" defer></script>
-    <script src="js/voice-video-player.js?v=2026.02.28.18" defer></script>
-    <script src="js/voice-audio-player.js?v=2026.02.28.18" defer></script>
-    <script src="js/youtube-publish.js?v=2026.02.28.18" defer></script>
-    <script src="js/voice.js?v=2026.02.28.18" defer></script>
-    <script src="js/voice-transcript.js?v=2026.02.28.18" defer></script>
-    <script src="js/googletts.js?v=2026.02.28.18" defer></script>
-    <script src="js/draw-memo.js?v=2026.02.28.18" defer></script>
-    <script src="js/document-tabs.js?v=2026.02.28.18" defer></script>
+    <script src="js/news.js?v=2026.02.28.19" defer></script>
+    <script src="js/voice-video-player.js?v=2026.02.28.19" defer></script>
+    <script src="js/voice-audio-player.js?v=2026.02.28.19" defer></script>
+    <script src="js/youtube-publish.js?v=2026.02.28.19" defer></script>
+    <script src="js/voice.js?v=2026.02.28.19" defer></script>
+    <script src="js/voice-transcript.js?v=2026.02.28.19" defer></script>
+    <script src="js/googletts.js?v=2026.02.28.19" defer></script>
+    <script src="js/draw-memo.js?v=2026.02.28.19" defer></script>
+    <script src="js/document-tabs.js?v=2026.02.28.19" defer></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -645,10 +647,10 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.28.18" defer></script>
-    <script src="js/assist.js?v=2026.02.28.18" defer></script>
-    <script src="js/space-sync.js?v=2026.02.28.18" defer></script>
-    <script src="js/document-panel.js?v=2026.02.28.18" defer></script>
+    <script src="js/memo.bundle.js?v=2026.02.28.19" defer></script>
+    <script src="js/assist.js?v=2026.02.28.19" defer></script>
+    <script src="js/space-sync.js?v=2026.02.28.19" defer></script>
+    <script src="js/document-panel.js?v=2026.02.28.19" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -1009,18 +1011,35 @@
                     try {
                         const identity = await provider.api?.getIdentity?.();
                         const accountEmail = String(identity?.accountEmail || "").trim().toLowerCase();
-                        if (!accountEmail) continue;
-                        return {
+                        if (!accountEmail) {
+                            console.log("[SSO Debug] provider has no email", {
+                                provider: provider.label,
+                                identity
+                            });
+                            continue;
+                        }
+                        const resolvedIdentity = {
                             provider: provider.label,
                             accountEmail,
                             accountName: String(identity?.accountName || "").trim(),
                             identityToken: String(identity?.identityToken || "").trim(),
                             expiresAt: Number(identity?.expiresAt || 0)
                         };
+                        console.log("[SSO Debug] resolved identity", {
+                            provider: resolvedIdentity.provider,
+                            accountEmail: resolvedIdentity.accountEmail,
+                            accountName: resolvedIdentity.accountName,
+                            expiresAt: resolvedIdentity.expiresAt
+                        });
+                        return resolvedIdentity;
                     } catch (err) {
-                        // try next provider
+                        console.log("[SSO Debug] provider identity lookup failed", {
+                            provider: provider.label,
+                            error: err?.message || String(err)
+                        });
                     }
                 }
+                console.log("[SSO Debug] no identity resolved");
                 return null;
             }
 
@@ -1031,6 +1050,13 @@
                 const currentSpaces = Array.isArray(spacesApi.readSpaces()) ? spacesApi.readSpaces() : [];
                 const unmanagedSpaces = currentSpaces.filter(space => !space?.accessManaged);
                 const authorizedIds = identity ? getAuthorizedManagedSpaceIdsForEmail(identity.accountEmail) : [];
+                console.log("[SSO Debug] managed space authorization", {
+                    identity: identity ? {
+                        provider: identity.provider,
+                        accountEmail: identity.accountEmail
+                    } : null,
+                    authorizedIds
+                });
                 const managedSpaces = authorizedIds.map(spaceId => {
                     const definition = MANAGED_SHARED_SPACES[spaceId];
                     const existing = currentSpaces.find(space => String(space?.id || "") === spaceId) || {};
@@ -1071,6 +1097,11 @@
                 void syncManagedSharedSpaces().then(result => {
                     if (!result.connected) {
                         setConnectionModalStatus("Aucune session connectée.");
+                        return;
+                    }
+                    if (connectionModal?.dataset.pendingMicrosoftConnect === "1" && result.identity?.provider === "Microsoft") {
+                        connectionModal.dataset.pendingMicrosoftConnect = "0";
+                        setConnectionModalVisible(false);
                         return;
                     }
                     const spaceNames = (result.spaces || []).map(space => String(space?.name || "").trim()).filter(Boolean);
@@ -10719,8 +10750,10 @@
             });
             connectionMicrosoftBtn?.addEventListener("click", async () => {
                 try {
+                    if (connectionModal) connectionModal.dataset.pendingMicrosoftConnect = "1";
                     await connectManagedSpaces("microsoft");
                 } catch (err) {
+                    if (connectionModal) connectionModal.dataset.pendingMicrosoftConnect = "0";
                     setStatus(err?.message || "Connexion Microsoft impossible", true);
                 }
             });
