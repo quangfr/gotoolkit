@@ -424,6 +424,10 @@
             delete requestPayload.stream;
         }
         const requestHeaders = buildHeaders(apiKey, headers);
+        const turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(endpoint, "openrouter");
+        if (turnstileHeaders && typeof turnstileHeaders === "object") {
+            Object.assign(requestHeaders, turnstileHeaders);
+        }
         if (wantsStream) {
             requestHeaders.Accept = "text/event-stream";
         }
@@ -593,6 +597,10 @@
         const requestPayload = buildOpenRouterPayload(payload, backend);
         const wantsStream = Boolean(requestPayload.stream);
         const requestHeaders = buildHeaders(backend.apiKey);
+        const turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(backend.endpoint, "openrouter");
+        if (turnstileHeaders && typeof turnstileHeaders === "object") {
+            Object.assign(requestHeaders, turnstileHeaders);
+        }
         if (wantsStream) {
             requestHeaders.Accept = "text/event-stream";
         }

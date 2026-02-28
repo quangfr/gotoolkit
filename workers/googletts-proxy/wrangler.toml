@@ -11,6 +11,7 @@ preview_urls = true
 # wrangler secret put GOOGLE_CLOUD_PROJECT_ID
 # wrangler secret put GOOGLE_TTS_VOICES_JSON
 # wrangler secret put GOOGLE_TTS_CHAR_LIMIT
+# wrangler secret put TURNSTILE_SECRET_KEY
 #
 # Non-secret local/default override:
 [vars]

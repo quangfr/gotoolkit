@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <script>
         (function () {
             const storedTheme = localStorage.getItem('go-toolkit-theme');
@@ -87,11 +87,11 @@
         integrity="sha384-LlKSgo4Eo5GuF/ZrstLti44dE+GC5XAJ7TSu0Nw9Q3vIZF2QMnkRcK7BUoLabYLF" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js"
         integrity="sha384-o5vdFlIHJf1L/hUFEtj8tgNVtCT+02DKNT3MPA47wJ9Eo5HocC7qCL2YL+sWNsk8" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.13">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.14">
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.13">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.13">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.14">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.14">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js" defer></script>
     <style>
@@ -477,11 +477,13 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.13</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.14</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
-                <div id="feedback-app-memo-inline-container" style="display: flex; flex: 1; min-width: 0;"></div>
+                <button id="memoResetAppBtn" type="button" class="secondary"
+                    onclick="window.GoToolkitResetApp && window.GoToolkitResetApp()"
+                    style="flex: 1; margin: 0; width: auto;">Réinitialiser</button>
                 <button id="memoGuidedTourBtn" type="button" class="secondary"
                     onclick="window.GoToolkitStartDocsTour && window.GoToolkitStartDocsTour()"
                     style="flex: 1; margin: 0; width: auto;"><i data-lucide="map"></i> Tour guidé</button>
@@ -543,6 +545,8 @@
     </div>
 
     <script>
+        window.GO_TOOLKIT_TURNSTILE_SITE_KEY =
+            window.GO_TOOLKIT_TURNSTILE_SITE_KEY || "0x4AAAAAACjmeCdEpb5qa3dL";
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
         window.GO_TOOLKIT_YOUTUBE_API_URL =
@@ -556,24 +560,25 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.28.13" defer></script>
-    <script src="js/config-modal.js?v=2026.02.28.13" defer></script>
-    <script src="js/feature-visibility.js?v=2026.02.28.13" defer></script>
-    <script src="js/document-storage.js?v=2026.02.28.13" defer></script>
-    <script src="js/storage-service.js?v=2026.02.28.13" defer></script>
-    <script src="js/shared-ui.js?v=2026.02.28.13" defer></script>
-    <script src="js/spaces-store.js?v=2026.02.28.13" defer></script>
-    <script src="js/share-worker-client.js?v=2026.02.28.13" defer></script>
-    <script src="js/share-history.js?v=2026.02.28.13" defer></script>
-    <script src="js/document-api.js?v=2026.02.28.13" defer></script>
-    <script src="js/keywordIndex.js?v=2026.02.28.13" defer></script>
-    <script src="js/document-rag.js?v=2026.02.28.13" defer></script>
-    <script src="js/ia-config.js?v=2026.02.28.13" defer></script>
-    <script src="preset.js?v=2026.02.28.13" defer></script>
-    <script src="prompt.js?v=2026.02.28.13" defer></script>
-    <script src="js/ia-client.js?v=2026.02.28.13" defer></script>
-    <script src="js/document-markdown.js?v=2026.02.28.13" defer></script>
-    <script src="js/notion-export.js?v=2026.02.28.13" defer></script>
+    <script src="js/config.js?v=2026.02.28.14" defer></script>
+    <script src="js/turnstile-helper.js?v=2026.02.28.14" defer></script>
+    <script src="js/config-modal.js?v=2026.02.28.14" defer></script>
+    <script src="js/feature-visibility.js?v=2026.02.28.14" defer></script>
+    <script src="js/document-storage.js?v=2026.02.28.14" defer></script>
+    <script src="js/storage-service.js?v=2026.02.28.14" defer></script>
+    <script src="js/shared-ui.js?v=2026.02.28.14" defer></script>
+    <script src="js/spaces-store.js?v=2026.02.28.14" defer></script>
+    <script src="js/share-worker-client.js?v=2026.02.28.14" defer></script>
+    <script src="js/share-history.js?v=2026.02.28.14" defer></script>
+    <script src="js/document-api.js?v=2026.02.28.14" defer></script>
+    <script src="js/keywordIndex.js?v=2026.02.28.14" defer></script>
+    <script src="js/document-rag.js?v=2026.02.28.14" defer></script>
+    <script src="js/ia-config.js?v=2026.02.28.14" defer></script>
+    <script src="preset.js?v=2026.02.28.14" defer></script>
+    <script src="prompt.js?v=2026.02.28.14" defer></script>
+    <script src="js/ia-client.js?v=2026.02.28.14" defer></script>
+    <script src="js/document-markdown.js?v=2026.02.28.14" defer></script>
+    <script src="js/notion-export.js?v=2026.02.28.14" defer></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -589,34 +594,15 @@
             }
         });
     </script>
-    <script>
-        // Initialize feedback configuration for Docs before loading feedback.js
-        window.GoToolkitAppFeedbackConfig = {
-            appId: "memo",
-            appName: "Docs",
-            defaultType: "bug-memo",
-            primaryColor: "#2563eb",
-            types: [
-                { value: "bug-memo", label: "Bug Docs" },
-                { value: "bug-assist", label: "Bug Assist" },
-                { value: "bug-draw", label: "Bug Draw" },
-                { value: "bug-grid", label: "Bug Grid" },
-                { value: "bug-timeline", label: "Bug Timeline" },
-                { value: "bug-voice", label: "Bug Voice" },
-                { value: "suggestion", label: "Suggestion" }
-            ]
-        };
-    </script>
-    <script src="js/feedback.js?v=2026.02.28.13" defer></script>
-    <script src="js/news.js?v=2026.02.28.13" defer></script>
-    <script src="js/voice-video-player.js?v=2026.02.28.13" defer></script>
-    <script src="js/voice-audio-player.js?v=2026.02.28.13" defer></script>
-    <script src="js/youtube-publish.js?v=2026.02.28.13" defer></script>
-    <script src="js/voice.js?v=2026.02.28.13" defer></script>
-    <script src="js/voice-transcript.js?v=2026.02.28.13" defer></script>
-    <script src="js/googletts.js?v=2026.02.28.13" defer></script>
-    <script src="js/draw-memo.js?v=2026.02.28.13" defer></script>
-    <script src="js/document-tabs.js?v=2026.02.28.13" defer></script>
+    <script src="js/news.js?v=2026.02.28.14" defer></script>
+    <script src="js/voice-video-player.js?v=2026.02.28.14" defer></script>
+    <script src="js/voice-audio-player.js?v=2026.02.28.14" defer></script>
+    <script src="js/youtube-publish.js?v=2026.02.28.14" defer></script>
+    <script src="js/voice.js?v=2026.02.28.14" defer></script>
+    <script src="js/voice-transcript.js?v=2026.02.28.14" defer></script>
+    <script src="js/googletts.js?v=2026.02.28.14" defer></script>
+    <script src="js/draw-memo.js?v=2026.02.28.14" defer></script>
+    <script src="js/document-tabs.js?v=2026.02.28.14" defer></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -626,10 +612,10 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.28.13" defer></script>
-    <script src="js/assist.js?v=2026.02.28.13" defer></script>
-    <script src="js/space-sync.js?v=2026.02.28.13" defer></script>
-    <script src="js/document-panel.js?v=2026.02.28.13" defer></script>
+    <script src="js/memo.bundle.js?v=2026.02.28.14" defer></script>
+    <script src="js/assist.js?v=2026.02.28.14" defer></script>
+    <script src="js/space-sync.js?v=2026.02.28.14" defer></script>
+    <script src="js/document-panel.js?v=2026.02.28.14" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -4005,7 +3991,7 @@
                     if (!codeInput) return;
                     codeInput.value = String(spacesApi?.createRandomCode?.() || "").trim();
                 });
-                overlay.querySelector("#spaceJoinBtn")?.addEventListener("click", async () => {
+                const submitJoinSpace = async () => {
                     const code = String(overlay.querySelector("#spaceJoinCode")?.value || "").trim();
                     const requestedSpaceIdRaw = String(createSpaceIdInput?.value || "").trim();
                     const requestedSpaceId = normalizeStrictSpaceId(requestedSpaceIdRaw);
@@ -4042,12 +4028,20 @@
                     refreshSpaceAwareUi();
                     if (joined?.id) {
                         selectedSpaceId = normalizeSpaceId(joined.id);
-                        setActiveTab("modify");
                         await reloadSpaceFromRemote(requestedSpaceId).catch(() => null);
                         setStatus("Accès à l'espace validé");
+                        close();
                         return;
                     }
                     setStatus("Impossible de rejoindre cet espace");
+                };
+                overlay.querySelector("#spaceJoinBtn")?.addEventListener("click", submitJoinSpace);
+                [createSpaceIdInput, overlay.querySelector("#spaceJoinCode")].forEach(input => {
+                    input?.addEventListener("keydown", event => {
+                        if (event.key !== "Enter") return;
+                        event.preventDefault();
+                        void submitJoinSpace();
+                    });
                 });
                 createSpaceIdInput?.addEventListener("input", () => {
                     const normalized = normalizeStrictSpaceId(createSpaceIdInput.value);

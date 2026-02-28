@@ -20,6 +20,13 @@
         return `${ASSEMBLY_PROXY_BASE_URL}/${normalized}`;
     }
 
+    async function getAssemblyTurnstileHeaders(path = "") {
+        const url = getAssemblyProxyUrl(path);
+        return window.GoToolkitTurnstile?.getHeadersForUrl
+            ? await window.GoToolkitTurnstile.getHeadersForUrl(url, "assemblyai")
+            : {};
+    }
+
     async function uploadAudioToAssembly(blob, key) {
         if (!blob) throw new Error("Audio absent");
         const url = getAssemblyProxyUrl("upload");
@@ -28,6 +35,7 @@
             method: "POST",
             headers: {
                 ...(key ? { "X-AssemblyAI-Key": key } : {}),
+                ...(await getAssemblyTurnstileHeaders("upload")),
                 "Content-Type": blob.type || "audio/webm"
             },
             body: blob
@@ -54,6 +62,7 @@
             method: "POST",
             headers: {
                 ...(key ? { "X-AssemblyAI-Key": key } : {}),
+                ...(await getAssemblyTurnstileHeaders("transcript")),
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(payload)
@@ -84,7 +93,10 @@
         if (!url) throw new Error("Proxy AssemblyAI indisponible");
         for (let attempt = 0; attempt < 40; attempt++) {
             const response = await fetch(url, {
-                headers: key ? { "X-AssemblyAI-Key": key } : {}
+                headers: {
+                    ...(key ? { "X-AssemblyAI-Key": key } : {}),
+                    ...(await getAssemblyTurnstileHeaders(`transcript/${transcriptId}`))
+                }
             });
             const responseText = await response.text();
             if (!response.ok) {
@@ -117,7 +129,10 @@
         if (!url) return "";
         try {
             const response = await fetch(url, {
-                headers: key ? { "X-AssemblyAI-Key": key } : {}
+                headers: {
+                    ...(key ? { "X-AssemblyAI-Key": key } : {}),
+                    ...(await getAssemblyTurnstileHeaders(`transcript/${transcriptId}/vtt`))
+                }
             });
             const vtt = await response.text();
             if (!response.ok) {
@@ -137,7 +152,10 @@
         try {
             const response = await fetch(url, {
                 method: "DELETE",
-                headers: key ? { "X-AssemblyAI-Key": key } : {}
+                headers: {
+                    ...(key ? { "X-AssemblyAI-Key": key } : {}),
+                    ...(await getAssemblyTurnstileHeaders(`transcript/${transcriptId}`))
+                }
             });
             if (!response.ok) {
                 const detail = (await response.text().catch(() => "")).replace(/\s+/g, " ").trim();

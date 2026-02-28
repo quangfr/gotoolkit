@@ -17,31 +17,27 @@ const DEFAULT_SCOPE = [
 ].join(" ");
 
 function normalizeOrigin(origin) {
-  return (origin || "").trim();
+  return String(origin || "").trim();
 }
 
 function isLocalOrigin(origin) {
-  if (!origin) return true;
-  return origin.startsWith("http://localhost")
-    || origin.startsWith("http://127.")
-    || origin.startsWith("http://192.168.");
+  if (!origin) return false;
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?$/i.test(origin);
 }
 
 function corsMeta(request) {
   const origin = normalizeOrigin(request.headers.get("Origin"));
   const allowLocal = isLocalOrigin(origin);
-  const defaultOrigin = ALLOWED_ORIGINS[0];
-  const corsOrigin = allowLocal
-    ? origin || "*"
-    : ALLOWED_ORIGINS.includes(origin) ? origin : defaultOrigin;
+  const allowed = allowLocal || ALLOWED_ORIGINS.includes(origin);
+  const corsOrigin = allowed ? origin : "null";
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Credentials": "true"
   };
-  if (!allowLocal) headers["Vary"] = "Origin";
-  return { origin, allowLocal, headers };
+  headers["Vary"] = "Origin";
+  return { origin, allowLocal, allowed, headers };
 }
 
 function jsonResponse(corsHeaders, payload, status = 200, extraHeaders = {}) {
@@ -592,7 +588,7 @@ async function handleOAuthCallback(request, env) {
 export default {
   async fetch(request, env) {
     const cors = corsMeta(request);
-    if (!cors.allowLocal && !ALLOWED_ORIGINS.includes(cors.origin)) {
+    if (!cors.allowed) {
       return new Response("Forbidden origin", { status: 403, headers: cors.headers });
     }
     if (request.method === "OPTIONS") {

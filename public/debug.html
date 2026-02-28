@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <script>
+    window.GO_TOOLKIT_TURNSTILE_SITE_KEY =
+      window.GO_TOOLKIT_TURNSTILE_SITE_KEY || "0x4AAAAAACjmeCdEpb5qa3dL";
+  </script>
+  <script src="js/turnstile-helper.js?v=2026.02.28.13"></script>
   <title>Debug | GoToolkit</title>
   <script>
     (function () {
@@ -428,7 +435,6 @@
       const WORKERS = [
         { id: "openrouter", label: "OpenRouter Proxy", endpoint: "https://openrouter.gotoolkit.workers.dev/api/v1/models/user", method: "GET", expected: "200/4xx expected" },
         { id: "share", label: "Share Proxy", endpoint: "https://share.gotoolkit.workers.dev/v1/shares/memos?view=tree&spaceId=golive", method: "GET", expected: "200/4xx expected" },
-        { id: "feedback", label: "Feedback Proxy", endpoint: "https://feedback.gotoolkit.workers.dev/v1/feedback", method: "GET", expected: "200 expected" },
         { id: "assemblyai", label: "AssemblyAI Proxy", endpoint: "https://assemblyai.gotoolkit.workers.dev/token", method: "GET", expected: "200/4xx expected" },
         { id: "googletts", label: "Google TTS Proxy", endpoint: "https://googletts.gotoolkit.workers.dev/speak", method: "OPTIONS", expected: "204/2xx expected" },
         { id: "notion", label: "Notion Proxy", endpoint: "https://notion.gotoolkit.workers.dev/auth/status", method: "GET", expected: "200/4xx expected" },
@@ -494,6 +500,9 @@
       async function probeWorker(worker) {
         const started = performance.now();
         try {
+          const extraHeaders = worker.method === "OPTIONS"
+            ? {}
+            : (await window.GoToolkitTurnstile?.getHeadersForUrl?.(worker.endpoint, worker.id === "assemblyai" ? "assemblyai" : worker.id === "openrouter" ? "openrouter" : worker.id === "googletts" ? "googletts" : "request")) || {};
           const response = await fetch(worker.endpoint, {
             method: worker.method,
             mode: "cors",
@@ -502,7 +511,7 @@
                   "Access-Control-Request-Method": "POST",
                   "Access-Control-Request-Headers": "content-type"
                 }
-              : undefined
+              : extraHeaders
           });
           const elapsed = performance.now() - started;
           const cors = readCorsMeta(response);
@@ -846,7 +855,12 @@
 
       async function fetchJsonWithMeta(url, init) {
         try {
-          const response = await fetch(url, init || {});
+          const nextInit = { ...(init || {}) };
+          const turnstileHeaders = await window.GoToolkitTurnstile?.getHeadersForUrl?.(url, "request");
+          if (turnstileHeaders && typeof turnstileHeaders === "object") {
+            nextInit.headers = { ...(nextInit.headers || {}), ...turnstileHeaders };
+          }
+          const response = await fetch(url, nextInit);
           const text = await response.text();
           let body = null;
           try {

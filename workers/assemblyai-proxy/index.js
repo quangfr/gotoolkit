@@ -2,6 +2,7 @@ const ALLOWED_ORIGINS = [
   "https://gotoolkit.fr",
   "https://gotoolkit.workers.dev"
 ];
+const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
 function normalizeClientIp(request) {
   const raw =
@@ -16,42 +17,80 @@ function normalizeClientIp(request) {
 }
 
 function normalizeOrigin(origin) {
-  if (!origin) return "";
-  return origin.trim();
+  return String(origin || "").trim();
 }
 
 function isLocalOrigin(origin) {
-  if (!origin) return true;
-  return (
-    origin.startsWith("http://localhost") ||
-    origin.startsWith("http://127.") ||
-    origin.startsWith("http://192.168.")
-  );
+  if (!origin) return false;
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?$/i.test(origin);
 }
 
 function computeCorsHeaders(request) {
   const rawOrigin = normalizeOrigin(request.headers.get("Origin"));
   const allowLocal = isLocalOrigin(rawOrigin);
-  const defaultOrigin = ALLOWED_ORIGINS[0];
-  const corsOrigin = allowLocal
-    ? rawOrigin || "*"
-    : ALLOWED_ORIGINS.includes(rawOrigin)
-      ? rawOrigin
-      : defaultOrigin;
+  const allowedOrigin = allowLocal || ALLOWED_ORIGINS.includes(rawOrigin);
+  const corsOrigin = allowedOrigin ? rawOrigin : "null";
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
     "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Authorization,X-AssemblyAI-Key,Content-Type"
+    "Access-Control-Allow-Headers": "Authorization,X-AssemblyAI-Key,Content-Type,X-Turnstile-Token,CF-Turnstile-Response"
   };
-  if (!allowLocal) {
-    headers["Vary"] = "Origin";
-  }
+  headers["Vary"] = "Origin";
   return {
     origin: rawOrigin,
     allowLocal,
     corsOrigin,
-    headers
+    headers,
+    allowed: allowedOrigin
   };
+}
+
+function getTurnstileSecret(env) {
+  return String(env?.TURNSTILE_SECRET_KEY || env?.CF_TURNSTILE_SECRET_KEY || "").trim();
+}
+
+function getTurnstileToken(request) {
+  return String(
+    request.headers.get("X-Turnstile-Token")
+    || request.headers.get("CF-Turnstile-Response")
+    || ""
+  ).trim();
+}
+
+async function enforceTurnstile(request, corsMeta, env, action) {
+  const secret = getTurnstileSecret(env);
+  if (!secret) return null;
+  const token = getTurnstileToken(request);
+  if (!token) {
+    return jsonError(corsMeta.headers, 403, "TURNSTILE_REQUIRED", "Turnstile token required.");
+  }
+  let response;
+  try {
+    response = await fetch(TURNSTILE_VERIFY_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        secret,
+        response: token,
+        remoteip: normalizeClientIp(request) || undefined,
+        idempotency_key: crypto.randomUUID()
+      })
+    });
+  } catch (error) {
+    return jsonError(corsMeta.headers, 502, "TURNSTILE_UNAVAILABLE", "Turnstile verification unavailable.");
+  }
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result?.success) {
+    console.warn("[assemblyai-proxy] turnstile rejected", {
+      action,
+      status: response.status,
+      errors: result?.["error-codes"] || []
+    });
+    return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
+  }
+  return null;
 }
 
 function resolveAssemblyKey(request, env) {
@@ -200,7 +239,7 @@ async function proxyTokenRequest(request, corsMeta, env) {
 export default {
   async fetch(request, env) {
     const corsMeta = computeCorsHeaders(request);
-    if (!corsMeta.allowLocal && !ALLOWED_ORIGINS.includes(corsMeta.origin)) {
+    if (!corsMeta.allowed) {
       return new Response("Forbidden origin", {
         status: 403,
         headers: corsMeta.headers
@@ -225,10 +264,14 @@ export default {
     }
 
     if (request.method === "POST" && pathname.endsWith("/upload")) {
+      const turnstileResponse = await enforceTurnstile(request, corsMeta, env, "upload");
+      if (turnstileResponse) return turnstileResponse;
       return proxyAssemblyRequest(request, corsMeta, env, "/upload");
     }
 
     if (request.method === "POST" && pathname.endsWith("/transcript")) {
+      const turnstileResponse = await enforceTurnstile(request, corsMeta, env, "transcript");
+      if (turnstileResponse) return turnstileResponse;
       return proxyAssemblyRequest(request, corsMeta, env, "/transcript");
     }
 
@@ -250,6 +293,8 @@ export default {
     }
 
     if (request.method === "GET" && pathname.endsWith("/token")) {
+      const turnstileResponse = await enforceTurnstile(request, corsMeta, env, "token");
+      if (turnstileResponse) return turnstileResponse;
       return proxyTokenRequest(request, corsMeta, env);
     }
 

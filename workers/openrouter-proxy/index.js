@@ -3,6 +3,7 @@ const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
   "https://www.gotoolkit.fr",
   "https://gotoolkit.workers.dev"
 ]);
+const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
 function normalizeOriginValue(value) {
   const candidate = String(value || "").trim();
@@ -39,6 +40,63 @@ function resolveCors(request, env) {
   const allowed = allowLocal || allowListed;
   const corsOrigin = allowed ? origin : "null";
   return { origin, corsOrigin, allowed, allowedOrigins };
+}
+
+function getClientIp(request) {
+  return (
+    request.headers.get("CF-Connecting-IP")
+    || request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim()
+    || ""
+  );
+}
+
+function getTurnstileSecret(env) {
+  return String(env?.TURNSTILE_SECRET_KEY || env?.CF_TURNSTILE_SECRET_KEY || "").trim();
+}
+
+function getTurnstileToken(request) {
+  return String(
+    request.headers.get("X-Turnstile-Token")
+    || request.headers.get("CF-Turnstile-Response")
+    || ""
+  ).trim();
+}
+
+async function enforceTurnstile(request, env, corsOrigin, action) {
+  const secret = getTurnstileSecret(env);
+  if (!secret) return null;
+  const token = getTurnstileToken(request);
+  if (!token) {
+    return jsonError(corsOrigin, 403, "TURNSTILE_REQUIRED", "Turnstile token required.");
+  }
+  let response;
+  try {
+    response = await fetch(TURNSTILE_VERIFY_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        secret,
+        response: token,
+        remoteip: getClientIp(request) || undefined,
+        idempotency_key: crypto.randomUUID()
+      })
+    });
+  } catch (error) {
+    console.error("Turnstile verification failed", error);
+    return jsonError(corsOrigin, 502, "TURNSTILE_UNAVAILABLE", "Turnstile verification unavailable.");
+  }
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result?.success) {
+    console.warn("Turnstile rejected request", {
+      action,
+      status: response.status,
+      errors: result?.["error-codes"] || []
+    });
+    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
+  }
+  return null;
 }
 
 export default {
@@ -87,6 +145,11 @@ export default {
           Vary: "Origin"
         }
       });
+    }
+
+    const turnstileResponse = await enforceTurnstile(request, env, corsOrigin, isEmbeddingsRoute ? "embeddings" : "chat");
+    if (turnstileResponse) {
+      return turnstileResponse;
     }
 
     const ipAddress = request.headers.get("cf-connecting-ip") || "";

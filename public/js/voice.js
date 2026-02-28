@@ -685,9 +685,13 @@
         if (!tokenUrl.searchParams.has("expires_in_seconds")) {
             tokenUrl.searchParams.set("expires_in_seconds", "60");
         }
+        const turnstileHeaders = await window.GoToolkitTurnstile?.getHeadersForUrl?.(tokenUrl.toString(), "assemblyai");
         const response = await fetch(tokenUrl.toString(), {
             method: "GET",
-            headers: key ? { "X-AssemblyAI-Key": key } : {}
+            headers: {
+                ...(key ? { "X-AssemblyAI-Key": key } : {}),
+                ...(turnstileHeaders || {})
+            }
         });
         const raw = await response.text();
         if (!response.ok) {

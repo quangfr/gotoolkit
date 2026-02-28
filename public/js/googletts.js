@@ -76,10 +76,12 @@
     };
 
     try {
+      const turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(resolveApiBaseUrl() + "/speak", "googletts");
       const response = await fetch(resolveApiBaseUrl() + "/speak", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...(turnstileHeaders || {})
         },
         body: JSON.stringify(body),
         signal: abortController.signal

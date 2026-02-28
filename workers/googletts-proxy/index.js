@@ -14,6 +14,7 @@ const DEFAULT_CHAR_LIMITS = {
 };
 const CUSTOM_METRIC_TYPE = "custom.googleapis.com/gotoolkit/googletts/characters";
 const TOKEN_AUDIENCE = "https://oauth2.googleapis.com/token";
+const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const TOKEN_SCOPE = [
   "https://www.googleapis.com/auth/cloud-platform",
   "https://www.googleapis.com/auth/monitoring.read",
@@ -53,35 +54,26 @@ function normalizeClientIp(request) {
 }
 
 function normalizeOrigin(origin) {
-  if (!origin) return "";
-  return origin.trim();
+  return String(origin || "").trim();
 }
 
 function isLocalOrigin(origin) {
-  if (!origin) return true;
-  return (
-    origin.startsWith("http://localhost") ||
-    origin.startsWith("http://127.") ||
-    origin.startsWith("http://192.168.")
-  );
+  if (!origin) return false;
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?$/i.test(origin);
 }
 
 function computeCorsHeaders(request) {
   const rawOrigin = normalizeOrigin(request.headers.get("Origin"));
   const allowLocal = isLocalOrigin(rawOrigin);
-  const defaultOrigin = ALLOWED_ORIGINS[0];
-  const corsOrigin = allowLocal
-    ? rawOrigin || "*"
-    : ALLOWED_ORIGINS.includes(rawOrigin)
-      ? rawOrigin
-      : defaultOrigin;
+  const allowedOrigin = allowLocal || ALLOWED_ORIGINS.includes(rawOrigin);
+  const corsOrigin = allowedOrigin ? rawOrigin : "null";
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,x-client-id"
+    "Access-Control-Allow-Headers": "Content-Type,x-client-id,X-Turnstile-Token,CF-Turnstile-Response"
   };
-  if (!allowLocal) headers.Vary = "Origin";
-  return { origin: rawOrigin, allowLocal, corsOrigin, headers };
+  headers.Vary = "Origin";
+  return { origin: rawOrigin, allowLocal, corsOrigin, headers, allowed: allowedOrigin };
 }
 
 function jsonError(corsHeaders, status, code, message, extra) {
@@ -100,6 +92,61 @@ function jsonError(corsHeaders, status, code, message, extra) {
 function formatErrorDetails(error) {
   const raw = String(error?.message || error || "unknown_error");
   return raw.slice(0, 400);
+}
+
+function getTurnstileSecret(env) {
+  return String(env?.TURNSTILE_SECRET_KEY || env?.CF_TURNSTILE_SECRET_KEY || "").trim();
+}
+
+function getTurnstileToken(request, payload) {
+  const headerToken = String(
+    request.headers.get("X-Turnstile-Token")
+    || request.headers.get("CF-Turnstile-Response")
+    || ""
+  ).trim();
+  if (headerToken) return headerToken;
+  return String(
+    payload?.turnstileToken
+    || payload?.cfTurnstileResponse
+    || payload?.["cf-turnstile-response"]
+    || ""
+  ).trim();
+}
+
+async function enforceTurnstile(request, corsMeta, env, payload, action) {
+  const secret = getTurnstileSecret(env);
+  if (!secret) return null;
+  const token = getTurnstileToken(request, payload);
+  if (!token) {
+    return jsonError(corsMeta.headers, 403, "TURNSTILE_REQUIRED", "Turnstile token required.");
+  }
+  let response;
+  try {
+    response = await fetch(TURNSTILE_VERIFY_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        secret,
+        response: token,
+        remoteip: normalizeClientIp(request) || undefined,
+        idempotency_key: crypto.randomUUID()
+      })
+    });
+  } catch (error) {
+    return jsonError(corsMeta.headers, 502, "TURNSTILE_UNAVAILABLE", "Turnstile verification unavailable.");
+  }
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result?.success) {
+    console.warn("[googletts-proxy] turnstile rejected", {
+      action,
+      status: response.status,
+      errors: result?.["error-codes"] || []
+    });
+    return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
+  }
+  return null;
 }
 
 function toBase64Url(input) {
@@ -414,7 +461,7 @@ async function enforceRateLimit(request, corsMeta, env) {
 export default {
   async fetch(request, env) {
     const corsMeta = computeCorsHeaders(request);
-    if (!corsMeta.allowLocal && !ALLOWED_ORIGINS.includes(corsMeta.origin)) {
+    if (!corsMeta.allowed) {
       return new Response("Forbidden origin", {
         status: 403,
         headers: corsMeta.headers
@@ -503,6 +550,9 @@ export default {
     } catch (err) {
       return jsonError(corsMeta.headers, 400, "BAD_JSON", "Invalid JSON payload.");
     }
+
+    const turnstileResponse = await enforceTurnstile(request, corsMeta, env, payload, "speak");
+    if (turnstileResponse) return turnstileResponse;
 
     const text = String(payload?.text || "").trim();
     const requestedLanguageCode = String(payload?.languageCode || "").trim();

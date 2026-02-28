@@ -106,7 +106,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>GoToolkit</title>
     <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"
         integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin></script>
@@ -147,12 +147,6 @@
                 <button id="openSettingsBtn" class="feedback-button" type="button" title="Paramètres">
                     <i data-lucide="settings" style="width:16px;height:16px;vertical-align:middle;"></i>
                 </button>
-                <button id="openRequestsBtn" class="feedback-button" type="button" title="Feedback"
-                    style="position: relative;">
-                    <i data-lucide="message-square-plus" style="width:16px;height:16px;vertical-align:middle;"></i>
-                    <span id="requestsCount" class="chat-header-badge"
-                        style="font-size: 10px; min-width: 16px; height: 16px; top: -4px; right: -4px;">0</span>
-                </button>
                 <a href="mobile" class="feedback-button" title="Mobile">
                     <i data-lucide="tablet-smartphone" style="width:16px;height:16px;vertical-align:middle;"></i>
                 </a>
@@ -188,75 +182,6 @@
             <p id="shareError" class="share-helper share-helper-error" hidden></p>
         </section>
 
-        <div id="requestsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
-            <div class="requests-modal">
-                <header style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                    <h3 style="margin:0;font-size:1rem;"><i data-lucide="message-square"
-                            style="width:18px;height:18px;vertical-align:middle;margin-right:6px;"></i>Liste des
-                        feedback </h3>
-                    <button id="addFeedbackBtn" class="btn" type="button" style="margin-left:auto;">+ Ajouter</button>
-                    <button id="closeRequestsBtn" class="btn-secondary" type="button" aria-label="Fermer"><i
-                            data-lucide="x" style="width:16px;height:16px;"></i></button>
-                </header>
-                <div class="requests-body">
-                    <aside class="requests-list-panel">
-                        <div class="requests-filter">
-                            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
-                                Statut
-                                <select id="requestsStatusFilter">
-                                    <option value="tous" selected>Tous</option>
-                                    <option value="recue">Reçues</option>
-                                    <option value="traitee">Traitées</option>
-                                    <option value="planifiee">Planifiées</option>
-                                    <option value="reportee">Reportées</option>
-                                </select>
-                            </label>
-                            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
-                                Type
-                                <select id="requestsTypeFilter">
-                                    <option value="tous" selected>Tous</option>
-                                    <option value="bug-general">Bug Général</option>
-                                    <option value="bug-assist">Bug Assist</option>
-                                    <option value="bug-grid">Bug Grid</option>
-                                    <option value="bug-timeline">Bug Timeline</option>
-                                    <option value="suggestion">Suggestion</option>
-                                </select>
-                            </label>
-
-                        </div>
-                        <div id="requestsList" class="requests-list" aria-live="polite"></div>
-                    </aside>
-                    <section class="requests-content">
-                        <div class="request-content-body">
-                            <input id="requestSubject" type="text" readonly />
-                            <select id="requestType" disabled>
-                                <option value="bug-general">Bug Général</option>
-                                <option value="bug-assist">Bug Assist</option>
-                                <option value="bug-grid">Bug Grid</option>
-                                <option value="bug-timeline">Bug Timeline</option>
-                                <option value="suggestion">Suggestion</option>
-                            </select>
-                            <div id="requestStatusWrapper">
-                                <select id="requestStatus" disabled>
-                                    <option value="recue">Reçue</option>
-                                    <option value="traitee">Traitée</option>
-                                    <option value="planifiee">Planifiée</option>
-                                    <option value="reportee">Reportée</option>
-                                </select>
-                            </div>
-                            <textarea id="requestMessage" rows="12" readonly></textarea>
-                            <div id="requestMediaList" class="request-media-list"></div>
-                        </div>
-                        <div class="requests-actions">
-                            <button id="saveRequestBtn" class="btn-primary" type="button" disabled>Sauvegarder</button>
-                            <button id="deleteRequestBtn" class="btn-secondary" type="button"
-                                disabled>Supprimer</button>
-                        </div>
-                    </section>
-                </div>
-            </div>
-        </div>
-
         <div id="superpowerModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="superpower-modal">
                 <header>
@@ -288,10 +213,13 @@
     <div id="chat-root"></div>
 
     <script>
+        window.GO_TOOLKIT_TURNSTILE_SITE_KEY =
+            window.GO_TOOLKIT_TURNSTILE_SITE_KEY || "0x4AAAAAACjmeCdEpb5qa3dL";
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
     <script src="js/config.js?v=2026.02.21.9"></script>
+    <script src="js/turnstile-helper.js?v=2026.02.28.13"></script>
     <script src="js/config-modal.js?v=2026.02.21.9"></script>
     <script src="js/feature-visibility.js?v=2026.02.21.9"></script>
     <script src="js/document-storage.js?v=2026.02.21.9"></script>
@@ -321,16 +249,6 @@
             }
         });
     </script>
-    <script>
-        // Initialize feedback configuration before loading feedback.js
-        window.GoToolkitAppFeedbackConfig = {
-            appId: "index",
-            appName: "GoToolkit",
-            defaultType: "bug-general",
-            primaryColor: "#2a7a57"
-        };
-    </script>
-    <script src="js/feedback.js?v=2026.02.21.9"></script>
     <script src="js/youtube-publish.js?v=2026.02.21.9"></script>
 
     <script>
@@ -374,25 +292,7 @@
     </script>
     <script src="js/index-gallery.js?v=2026.02.21.9"></script>
     <script type="module">
-        const openFeedbackBtn = document.getElementById("openFeedbackBtn");
         const toastEl = document.getElementById("feedbackToast");
-        const requestsBtn = document.getElementById("openRequestsBtn");
-        const requestsModal = document.getElementById("requestsModal");
-        const addFeedbackBtn = document.getElementById("addFeedbackBtn");
-        const closeRequestsBtn = document.getElementById("closeRequestsBtn");
-        const requestsList = document.getElementById("requestsList");
-        const requestsStatusFilter = document.getElementById("requestsStatusFilter");
-        const requestsTypeFilter = document.getElementById("requestsTypeFilter");
-        const requestsCountLabel = document.getElementById("requestsCount");
-        const requestSubject = document.getElementById("requestSubject");
-        const requestTypeField = document.getElementById("requestType");
-        const requestStatusSelect = document.getElementById("requestStatus");
-        const requestStatusWrapper = document.getElementById("requestStatusWrapper");
-        const requestMessageField = document.getElementById("requestMessage");
-        const requestMediaList = document.getElementById("requestMediaList");
-        const saveRequestBtn = document.getElementById("saveRequestBtn");
-        const deleteRequestBtn = document.getElementById("deleteRequestBtn");
-        const feedbackWebsite = document.getElementById("feedbackWebsite");
         const ownerToken = document.getElementById("ownerToken");
         function normalizeOwnerTokenInput(value) {
             return String(value || "")
@@ -411,27 +311,8 @@
                 localStorage.setItem("feedback-admin-token", normalizedAdmin);
             }
         } catch (e) { /* noop */ }
-        const REQUEST_STATUS_LABELS = {
-            recue: "Reçue",
-            traitee: "Traitée",
-            planifiee: "Planifiée",
-            reportee: "Reportée"
-        };
-        let requestsState = { items: [], canEdit: false };
-        let activeRequestId = null;
-
         function updateRequestsButtonVisibility() {
-            const token = normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || "");
-            const hasToken = Boolean(token);
-            if (requestsBtn) requestsBtn.hidden = !hasToken;
-            // Hide feedback-app-index-openBtn when admin token is filled
-            const feedbackOpenBtn = document.getElementById("feedback-app-index-openBtn");
-            if (feedbackOpenBtn) feedbackOpenBtn.style.display = hasToken ? "none" : "";
-            if (!hasToken) {
-                activeRequestId = null;
-                closeRequestsModal();
-            }
-            return hasToken;
+            return false;
         }
 
         function formatFriendlyDate(isoString) {
@@ -479,315 +360,6 @@
             return `${(value / (1024 * 1024)).toFixed(1)} Mo`;
         }
 
-        function renderRequestMediaList(item) {
-            if (!requestMediaList) return;
-            requestMediaList.innerHTML = "";
-            const media = Array.isArray(item?.media) ? item.media : [];
-            const feedbackApiBase = String(window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback")
-                .replace(/\/v1\/feedback\/?$/i, "");
-            if (!media.length) {
-                const empty = document.createElement("p");
-                empty.className = "share-helper";
-                empty.textContent = "Aucun média";
-                requestMediaList.appendChild(empty);
-                return;
-            }
-            media.forEach(entry => {
-                const row = document.createElement("div");
-                row.className = "request-media-item";
-                const preview = document.createElement("div");
-                preview.className = "request-media-preview";
-                const mimeType = String(entry?.mimeType || "");
-                const isImage = mimeType.startsWith("image/");
-                const isVideo = mimeType.startsWith("video/");
-                const nameEl = document.createElement("span");
-                nameEl.className = "request-media-name";
-                nameEl.textContent = `${entry.fileName || "fichier"} (${formatFileSize(entry.size)})`;
-                const typeEl = document.createElement("span");
-                typeEl.className = "share-helper";
-                typeEl.textContent = entry.mimeType || "";
-                const details = document.createElement("div");
-                details.className = "request-media-details";
-                details.appendChild(nameEl);
-                details.appendChild(typeEl);
-                const url = String(entry?.url || "").trim();
-                if (url) {
-                    const resolvedUrl = url.startsWith("http") ? url : `${feedbackApiBase}${url}`;
-                    if (isImage) {
-                        const img = document.createElement("img");
-                        img.className = "request-media-thumb";
-                        img.src = resolvedUrl;
-                        img.alt = entry.fileName || "aperçu média";
-                        preview.appendChild(img);
-                    } else if (isVideo) {
-                        const video = document.createElement("video");
-                        video.className = "request-media-thumb";
-                        video.src = resolvedUrl;
-                        video.controls = true;
-                        video.preload = "metadata";
-                        preview.appendChild(video);
-                    } else {
-                        const generic = document.createElement("span");
-                        generic.className = "share-helper";
-                        generic.textContent = "Fichier";
-                        preview.appendChild(generic);
-                    }
-                    const viewLink = document.createElement("a");
-                    viewLink.href = resolvedUrl;
-                    viewLink.target = "_blank";
-                    viewLink.rel = "noreferrer noopener";
-                    viewLink.className = "share-helper";
-                    viewLink.textContent = "ouvrir";
-                    details.appendChild(viewLink);
-                }
-                row.appendChild(preview);
-                row.appendChild(details);
-                requestMediaList.appendChild(row);
-            });
-        }
-
-        function renderRequestDetail(item) {
-            const hasItem = Boolean(item);
-            if (requestSubject) requestSubject.value = hasItem ? (item.subject || "") : "";
-            if (requestTypeField) requestTypeField.value = hasItem ? (item.type || "") : "";
-            if (requestStatusSelect) requestStatusSelect.value = hasItem ? (item.status || "recue") : "recue";
-            if (requestMessageField) requestMessageField.value = hasItem ? (item.message || "") : "";
-            renderRequestMediaList(item);
-            if (requestsState.canEdit && hasItem) {
-                requestSubject?.removeAttribute("readonly");
-                requestMessageField?.removeAttribute("readonly");
-                requestStatusSelect?.removeAttribute("disabled");
-                requestTypeField?.removeAttribute("disabled");
-                saveRequestBtn.disabled = false;
-                if (deleteRequestBtn) deleteRequestBtn.disabled = false;
-            } else {
-                requestSubject?.setAttribute("readonly", "true");
-                requestMessageField?.setAttribute("readonly", "true");
-                requestStatusSelect?.setAttribute("disabled", "true");
-                requestTypeField?.setAttribute("disabled", "true");
-                saveRequestBtn.disabled = true;
-                if (deleteRequestBtn) deleteRequestBtn.disabled = true;
-            }
-        }
-
-        function ensureSelectBaseLabels(selectEl) {
-            if (!selectEl) return;
-            Array.from(selectEl.options).forEach(opt => {
-                if (!opt.dataset.baseLabel) opt.dataset.baseLabel = opt.textContent || "";
-            });
-        }
-
-        function renderRequestsList() {
-            if (!requestsList) return;
-            requestsList.innerHTML = "";
-            const statusFilter = requestsStatusFilter?.value || "tous";
-            const typeFilter = (requestsTypeFilter?.value || "tous").toLowerCase();
-            const items = requestsState.items
-                .filter(item => {
-                    const normalizedStatus = item.status || "recue";
-                    const normalizedType = (item.type || "").toLowerCase();
-                    const statusMatches = statusFilter === "tous" ? true : normalizedStatus === statusFilter;
-                    const typeMatches = typeFilter === "tous" ? true : normalizedType === typeFilter;
-                    return statusMatches && typeMatches;
-                })
-                .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-            if (!items.length) {
-                const empty = document.createElement("p");
-                empty.textContent = "Aucune demande pour ces filtres.";
-                empty.className = "share-helper";
-                requestsList.appendChild(empty);
-                return;
-            }
-            items.forEach(item => {
-                const el = document.createElement("div");
-                el.className = "requests-item";
-                if (item.id === activeRequestId) el.classList.add("active");
-                const title = document.createElement("p");
-                title.className = "requests-item-title";
-                title.textContent = item.subject || "(sans sujet)";
-                const meta = document.createElement("p");
-                meta.className = "requests-item-meta";
-                meta.textContent = `${REQUEST_STATUS_LABELS[item.status] || "Reçue"} · ${(item.type || "").toUpperCase()} · ${item.name || "Anonyme"} · ${formatFriendlyDate(item.createdAt)}`;
-                const msg = document.createElement("p");
-                el.appendChild(title);
-                el.appendChild(meta);
-                el.addEventListener("click", () => {
-                    activeRequestId = item.id;
-                    renderRequestsList();
-                    renderRequestDetail(item);
-                });
-                requestsList.appendChild(el);
-            });
-        }
-
-        function updateRequestCounters() {
-            const statusFilter = requestsStatusFilter?.value || "tous";
-            const typeFilter = (requestsTypeFilter?.value || "tous").toLowerCase();
-
-            ensureSelectBaseLabels(requestsStatusFilter);
-            ensureSelectBaseLabels(requestsTypeFilter);
-
-            const itemsForStatusCounts = requestsState.items.filter(item => {
-                const normalizedType = (item.type || "").toLowerCase();
-                return typeFilter === "tous" ? true : normalizedType === typeFilter;
-            });
-            const statusCounts = itemsForStatusCounts.reduce((acc, item) => {
-                const key = item.status || "recue";
-                acc[key] = (acc[key] || 0) + 1;
-                return acc;
-            }, {});
-
-            const receivedCount = requestsState.items.reduce((acc, item) => acc + ((item.status || "recue") === "recue" ? 1 : 0), 0);
-            if (requestsCountLabel) requestsCountLabel.textContent = receivedCount;
-
-            if (requestsStatusFilter) {
-                const statusTotal = itemsForStatusCounts.length;
-                Array.from(requestsStatusFilter.options).forEach(opt => {
-                    const key = opt.value;
-                    const count = key === "tous" ? statusTotal : (statusCounts[key] || 0);
-                    const label = opt.dataset.baseLabel || (key === "tous" ? "Tous" : (REQUEST_STATUS_LABELS[key] || key));
-                    opt.textContent = `${label} (${count})`;
-                });
-            }
-
-            const itemsForTypeCounts = requestsState.items.filter(item => {
-                const normalizedStatus = item.status || "recue";
-                return statusFilter === "tous" ? true : normalizedStatus === statusFilter;
-            });
-            const typeCounts = itemsForTypeCounts.reduce((acc, item) => {
-                const key = (item.type || "").toLowerCase() || "inconnu";
-                acc[key] = (acc[key] || 0) + 1;
-                return acc;
-            }, {});
-
-            if (requestsTypeFilter) {
-                const typeTotal = itemsForTypeCounts.length;
-                Array.from(requestsTypeFilter.options).forEach(opt => {
-                    const key = (opt.value || "").toLowerCase();
-                    const count = key === "tous" ? typeTotal : (typeCounts[key] || 0);
-                    const label = opt.dataset.baseLabel || (key === "tous" ? "Tous" : key);
-                    opt.textContent = `${label} (${count})`;
-                });
-            }
-        }
-
-        async function fetchRequests() {
-            try {
-                const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "";
-                const response = await fetch(endpoint, { method: "GET" });
-                if (!response.ok) {
-                    throw new Error("HTTP " + response.status);
-                }
-                const data = await response.json();
-                const items = Array.isArray(data.items) ? data.items : [];
-                // Ignore server-side IP-based admin flag and allow editing in the UI
-                requestsState = { items, canEdit: true };
-                if (requestStatusWrapper) {
-                    requestStatusWrapper.style.display = "";
-                }
-                updateRequestCounters();
-                renderRequestsList();
-                if (items.length) {
-                    activeRequestId = items[0].id;
-                    renderRequestDetail(items[0]);
-                } else {
-                    activeRequestId = null;
-                    renderRequestDetail(null);
-                }
-            } catch (err) {
-                console.warn("Impossible de charger les demandes", err);
-                if (requestsList) {
-                    requestsList.innerHTML = "";
-                    const p = document.createElement("p");
-                    p.className = "share-helper share-helper-error";
-                    p.textContent = "Impossible de charger les demandes : " + (err && err.message ? err.message : "erreur");
-                    requestsList.appendChild(p);
-                }
-                if (requestsCountLabel) requestsCountLabel.textContent = "0";
-            }
-        }
-
-        async function saveCurrentRequest() {
-            if (!requestsState.canEdit || !activeRequestId) return;
-            saveRequestBtn.disabled = true;
-            saveRequestBtn.textContent = "Sauvegarde...";
-            try {
-                const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "/" + encodeURIComponent(activeRequestId);
-                const current = requestsState.items.find(i => i.id === activeRequestId) || {};
-                const payload = {
-                    subject: (requestSubject?.value || "").trim(),
-                    message: (requestMessageField?.value || "").trim(),
-                    status: (requestStatusSelect?.value || "recue"),
-                    type: (requestTypeField?.value || "").toLowerCase(),
-                    name: current.name || null
-                };
-                const headers = { "Content-Type": "application/json" };
-                try {
-                    const token = normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || "");
-                    if (token) headers["Authorization"] = "Bearer " + token;
-                } catch (e) { /* noop */ }
-                const response = await fetch(endpoint, {
-                    method: "PUT",
-                    headers,
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) {
-                    const text = await response.text().catch(() => "");
-                    if (response.status === 401 || response.status === 403 || /token invalide/i.test(text || "")) {
-                        showToast("Accès non autorisé. Token invalide", true);
-                        return;
-                    }
-                    throw new Error(text || "Sauvegarde impossible");
-                }
-                await fetchRequests();
-                showToast("Demande mise à jour.");
-            } catch (err) {
-                console.error("Sauvegarde demande impossible", err);
-                showToast("Sauvegarde impossible", true);
-            } finally {
-                saveRequestBtn.disabled = false;
-                saveRequestBtn.textContent = "Sauvegarder";
-            }
-        }
-
-        async function deleteCurrentRequest() {
-            if (!requestsState.canEdit || !activeRequestId) return;
-            const confirmed = window.confirm("Supprimer définitivement cette demande ?");
-            if (!confirmed) return;
-
-            if (deleteRequestBtn) {
-                deleteRequestBtn.disabled = true;
-                deleteRequestBtn.textContent = "Suppression...";
-            }
-            try {
-                const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "/" + encodeURIComponent(activeRequestId);
-                const headers = {};
-                try {
-                    const token = normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || "");
-                    if (token) headers["Authorization"] = "Bearer " + token;
-                } catch (e) { /* noop */ }
-                const response = await fetch(endpoint, { method: "DELETE", headers });
-                if (!response.ok) {
-                    const text = await response.text().catch(() => "");
-                    if (response.status === 401 || response.status === 403 || /token invalide/i.test(text || "")) {
-                        showToast("Accès non autorisé. Token invalide", true);
-                        return;
-                    }
-                    throw new Error(text || "Suppression impossible");
-                }
-                activeRequestId = null;
-                await fetchRequests();
-                showToast("Demande supprimée.");
-            } catch (err) {
-                console.error("Suppression demande impossible", err);
-                showToast("Suppression impossible", true);
-            } finally {
-                if (deleteRequestBtn) {
-                    deleteRequestBtn.disabled = !requestsState.canEdit || !activeRequestId;
-                    deleteRequestBtn.textContent = "Supprimer";
-                }
-            }
-        }
         const IA_STATUS_ICONS = {
             ready: "check-circle",
             verifying: "loader-2",
@@ -1091,6 +663,11 @@
             const headers = { "Content-Type": "application/json" };
             if (!useProxy && apiKey) {
                 headers.Authorization = "Bearer " + apiKey;
+            } else {
+                const turnstileHeaders = await window.GoToolkitTurnstile?.getHeadersForUrl?.(endpoint, "openrouter");
+                if (turnstileHeaders && typeof turnstileHeaders === "object") {
+                    Object.assign(headers, turnstileHeaders);
+                }
             }
 
             const response = await fetch(endpoint, {
@@ -1292,10 +869,12 @@
             }
             updateStatusIcon(assemblyAiStatusEl, "verifying");
             try {
+                const turnstileHeaders = await window.GoToolkitTurnstile?.getHeadersForUrl?.(proxyBase + "/transcript", "assemblyai");
                 const response = await fetch(proxyBase + "/transcript", {
                     method: "GET",
                     headers: {
-                        Authorization: apiKey
+                        Authorization: apiKey,
+                        ...(turnstileHeaders || {})
                     }
                 });
                 if (!response.ok) {
@@ -1332,21 +911,6 @@
                 return verifyOpenRouterProxy({ showToasts });
             }
         }
-        function openRequestsModal() {
-            if (!requestsModal) return;
-            requestsModal.classList.add("open");
-            requestsModal.setAttribute("aria-hidden", "false");
-            fetchRequests();
-        }
-
-        function closeRequestsModal() {
-            if (!requestsModal) return;
-            requestsModal.classList.remove("open");
-            requestsModal.setAttribute("aria-hidden", "true");
-        }
-
-
-
         // Settings modal (global Réglages)
         const openSettingsBtn = document.getElementById("openSettingsBtn");
         const settingsModal = document.getElementById("settingsModal");
@@ -2126,9 +1690,6 @@
                     testOpenRouterConnection({ showToasts: true }).catch(() => { /* noop */ });
                 }
             }
-            if (updateRequestsButtonVisibility()) {
-                fetchRequests().catch(() => { /* noop */ });
-            }
         }
 
         window.GoToolkitSettingsModalHandlers = {
@@ -2361,50 +1922,12 @@
             refreshOpenRouterModelLabel();
         });
 
-        openFeedbackBtn?.addEventListener("click", function () {
-            // Click the feedback.js launcher button to open the modal
-            const feedbackBtn = document.getElementById("feedback-app-index-openBtn");
-            feedbackBtn?.click();
-        });
         document.addEventListener("keydown", event => {
             if (event.key !== "Escape" && event.key !== "Esc") return;
             if (settingsModal?.classList?.contains("open")) {
                 closeSettings();
                 return;
             }
-            if (requestsModal?.classList?.contains("open")) {
-                closeRequestsModal();
-                return;
-            }
-
-        });
-
-        requestsBtn?.addEventListener("click", openRequestsModal);
-        closeRequestsBtn?.addEventListener("click", closeRequestsModal);
-        addFeedbackBtn?.addEventListener("click", () => {
-            // Close requests modal and open feedback modal
-            closeRequestsModal();
-            const feedbackBackdrop = document.getElementById("feedback-app-index-backdrop");
-            if (feedbackBackdrop) {
-                feedbackBackdrop.classList.add("open");
-            }
-        });
-        requestsModal?.addEventListener("click", event => {
-            if (event.target === requestsModal) closeRequestsModal();
-        });
-        requestsStatusFilter?.addEventListener("change", () => {
-            renderRequestsList();
-            updateRequestCounters();
-        });
-        requestsTypeFilter?.addEventListener("change", () => {
-            renderRequestsList();
-            updateRequestCounters();
-        });
-        saveRequestBtn?.addEventListener("click", () => {
-            saveCurrentRequest();
-        });
-        deleteRequestBtn?.addEventListener("click", () => {
-            deleteCurrentRequest();
         });
         ownerToken?.addEventListener("input", () => {
             const normalized = normalizeOwnerTokenInput(ownerToken.value || "");
@@ -2416,14 +1939,7 @@
                     localStorage.removeItem("feedback-admin-token");
                 }
             } catch (e) { /* noop */ }
-            if (updateRequestsButtonVisibility()) {
-                fetchRequests().catch(() => { /* noop */ });
-            }
         });
-
-        if (updateRequestsButtonVisibility()) {
-            fetchRequests().catch(() => { /* noop */ });
-        }
 
         function setIaStatus(backend) {
             if (openaiStatusEl && !openaiStatusEl.dataset.openaiStatusSticky) {
@@ -2509,10 +2025,7 @@
             function handleFragment(hash) {
                 if (!hash) return;
                 const h = String(hash).toLowerCase();
-                if (h === '#feedback') {
-                    const feedbackBtn = document.getElementById("feedback-app-index-openBtn");
-                    feedbackBtn?.click();
-                } else if (h === '#config' || h === '#parametres' || h === '#paramètres' || h === '#settings') {
+                if (h === '#config' || h === '#parametres' || h === '#paramètres' || h === '#settings') {
                     if (typeof openSettings === 'function') {
                         try { openSettings(); } catch (e) { showModalById('settingsModal', '#saveSettingsBtn'); }
                     } else {

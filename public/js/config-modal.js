@@ -689,9 +689,13 @@
         } catch (err) {
             const proxyBase = (global.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token").replace(/\/token$/, "");
             try {
+                const turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(proxyBase + "/transcript", "assemblyai");
                 const proxyResponse = await fetch(proxyBase + "/transcript", {
                     method: "GET",
-                    headers: { Authorization: key }
+                    headers: {
+                        Authorization: key,
+                        ...(turnstileHeaders || {})
+                    }
                 });
                 if (!proxyResponse.ok) throw new Error("HTTP " + proxyResponse.status);
                 setStatus(statusEl, { state: "warning", label: "Clé invalide" });
@@ -715,6 +719,12 @@
         async function tryEndpoint(url, useKey) {
             const headers = { "Content-Type": "application/json" };
             if (useKey && apiKey) headers.Authorization = "Bearer " + apiKey;
+            if (!useKey) {
+                const turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(url, "openrouter");
+                if (turnstileHeaders && typeof turnstileHeaders === "object") {
+                    Object.assign(headers, turnstileHeaders);
+                }
+            }
             const start = getTimestampMs();
             const response = await fetch(url, {
                 method: "POST",
