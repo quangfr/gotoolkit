@@ -1,16 +1,11 @@
 (function () {
     "use strict";
 
-    const STORAGE_KEY = "go-toolkit-assemblyai-key";
     const ASSEMBLY_PROXY_TOKEN_URL = (window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token").replace(/\/$/, "");
     const ASSEMBLY_PROXY_BASE_URL = ASSEMBLY_PROXY_TOKEN_URL.replace(/\/token\/?$/i, "").replace(/\/$/, "") || ASSEMBLY_PROXY_TOKEN_URL;
 
     function getAssemblyApiKey() {
-        try {
-            const stored = (localStorage.getItem(STORAGE_KEY) || "").trim();
-            if (stored) return stored;
-        } catch (err) { /* noop */ }
-        return (window.GoToolkitAssemblyAiKey || "").trim();
+        return "";
     }
 
     function getAssemblyProxyUrl(path = "") {

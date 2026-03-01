@@ -493,7 +493,7 @@
     function populateAssemblyAiInput() {
         const input = doc.getElementById("assemblyAiKeyInput");
         if (!input) return;
-        input.value = localStorage.getItem("go-toolkit-assemblyai-key") || "";
+        input.value = "";
     }
 
     function populateGoogleTtsInput() {

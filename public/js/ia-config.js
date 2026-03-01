@@ -4,14 +4,10 @@
     };
     var STORAGE_KEYS_BACKEND = "go-toolkit-ai-backend";
     var STORAGE_KEYS_OPENROUTER = {
-        API_KEY: "go-toolkit-openrouter-key",
         MODEL: "go-toolkit-openrouter-model",
         OCR_MODEL: "go-toolkit-openrouter-ocr-model",
         EMBEDDINGS_MODEL: "go-toolkit-openrouter-embeddings-model",
         REASONING_EFFORT: "go-toolkit-openrouter-reasoning-effort"
-    };
-    var STORAGE_KEYS_SERVICES = {
-        GOOGLE_TTS_API_KEY: "go-toolkit-googletts-key"
     };
 
     var DEFAULTS = {
@@ -30,7 +26,6 @@
     var OPENROUTER_PROXY_ENDPOINT = "https://openrouter.gotoolkit.workers.dev/api/v1/chat/completions";
     var OPENROUTER_EMBEDDINGS_ENDPOINT = "https://openrouter.ai/api/v1/embeddings";
     var OPENROUTER_EMBEDDINGS_PROXY_ENDPOINT = "https://openrouter.gotoolkit.workers.dev/api/v1/embeddings";
-
 
     function safeStorageRead(key) {
         if (!global || !global.localStorage) {
@@ -89,10 +84,10 @@
             safeStorageWrite(STORAGE_KEYS.CONTEXT_WINDOW, normalized);
         },
         getOpenRouterApiKey: function () {
-            return (safeStorageRead(STORAGE_KEYS_OPENROUTER.API_KEY) || "").trim();
+            return "";
         },
         setOpenRouterApiKey: function (value) {
-            safeStorageWrite(STORAGE_KEYS_OPENROUTER.API_KEY, (value || "").trim());
+            safeStorageWrite("go-toolkit-openrouter-key", "");
         },
         getOpenRouterModel: function () {
             var model = safeStorageRead(STORAGE_KEYS_OPENROUTER.MODEL);
@@ -154,10 +149,10 @@
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.REASONING_EFFORT, normalized);
         },
         getGoogleTtsApiKey: function () {
-            return (safeStorageRead(STORAGE_KEYS_SERVICES.GOOGLE_TTS_API_KEY) || "").trim();
+            return "";
         },
         setGoogleTtsApiKey: function (value) {
-            safeStorageWrite(STORAGE_KEYS_SERVICES.GOOGLE_TTS_API_KEY, (value || "").trim());
+            safeStorageWrite("go-toolkit-googletts-key", "");
         },
         isOpenRouterAvailable: function () {
             return Boolean(GoToolkitIAConfig.getOpenRouterApiKey() || OPENROUTER_PROXY_ENDPOINT);

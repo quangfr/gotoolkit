@@ -5,18 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; frame-ancestors 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>Mentions légales | GoToolkit</title>
-    <script>
-        (function () {
-            const storedTheme = localStorage.getItem('go-toolkit-theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = storedTheme || (prefersDark ? 'dark' : 'cream');
-            const resolvedTheme = theme === 'auto' ? (prefersDark ? 'dark' : 'cream') : theme;
-            document.documentElement.setAttribute('data-theme', resolvedTheme);
-        })();
-    </script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.03.01.7">
+    <script src="js/bootstrap-theme.js?v=2026.03.01.8"></script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.03.01.8">
     <style>
         .legal-page {
             max-width: 920px;
@@ -80,97 +72,168 @@
 
         <section id="tos" class="legal-section">
             <h2>Conditions d'utilisation</h2>
-            <p>GoToolkit est un outil professionnel réalisé pour Savane Go-Live destiné à l’animation d’ateliers, au
-                cadrage, à la documentation
-                et à la collaboration produit.</p>
-            <p><strong>1. Acceptation</strong><br>L’accès et l’utilisation de GoToolkit impliquent l’acceptation des
-                présentes conditions. En cas de désaccord, vous ne devez pas utiliser le service.</p>
-            <p><strong>2. Usage autorisé</strong><br>Vous vous engagez à utiliser l’outil de manière licite, conforme
-                aux droits des tiers et à la réglementation applicable. Vous êtes seul responsable des contenus,
-                instructions et publications réalisés via l’outil.</p>
-            <p><strong>3. Comptes et accès</strong><br>Certaines fonctionnalités sont accessibles sans compte. D’autres
-                intégrations peuvent nécessiter une authentification auprès de services tiers soumis à leurs propres
-                conditions.</p>
-            <p><strong>4. Services tiers et IA</strong><br>GoToolkit peut s’interfacer avec des services tiers (IA,
-                transcription, publication, partage). Leur disponibilité, leurs performances et leurs conditions
-                contractuelles relèvent de ces fournisseurs.</p>
-            <p><strong>5. Partage et publication</strong><br>Les liens de partage donnent accès aux contenus aux
-                détenteurs du lien. Vous devez vérifier le périmètre de diffusion avant tout partage ou publication.
-            </p>
-            <p><strong>6. Propriété intellectuelle</strong><br>Les droits sur les contenus que vous créez ou importez
-                vous appartiennent ou appartiennent à leurs titulaires légitimes. Vous garantissez disposer des droits
-                nécessaires pour leur utilisation dans GoToolkit.</p>
-            <p><strong>7. Disponibilité et évolution</strong><br>Le service est fourni « en l’état ». Il peut évoluer,
-                être modifié, suspendu ou interrompu, en tout ou partie, sans garantie de continuité.</p>
-            <p><strong>8. Limitation de responsabilité</strong><br>Dans les limites permises par la loi, Savane Go Live
-                ne saurait être responsable des dommages indirects, pertes d’exploitation, pertes de données ou
-                conséquences liées à l’usage de services tiers.</p>
-            <p><strong>9. Hiérarchie documentaire</strong><br>Les règles relatives à la protection des données
-                personnelles sont décrites à la section <a href="#privacy">Politique de confidentialité</a>.</p>
+            <p>GoToolkit est un outil professionnel conçu pour préparer, animer et documenter des ateliers, centraliser
+                des contenus de travail et faciliter certaines actions de collaboration, de partage et de production.
+                Ces conditions ont pour but d’expliquer simplement ce que vous pouvez faire avec le service, ce qui
+                relève de votre responsabilité et ce que nous faisons pour l’exploiter.</p>
+            <p><strong>1. Acceptation</strong><br>En utilisant GoToolkit, vous acceptez les présentes conditions
+                d’utilisation. Si vous n’êtes pas d’accord avec ces règles, vous ne devez pas utiliser le service.</p>
+            <p><strong>2. Utilisation attendue</strong><br>GoToolkit doit être utilisé de manière licite, loyale et
+                compatible avec les droits des tiers. Cela signifie notamment que vous ne devez pas y déposer,
+                partager, publier ou faire traiter des contenus illicites, confidentiels sans autorisation, trompeurs
+                ou portant atteinte à des personnes ou à des organisations. Vous restez responsable des contenus que
+                vous créez, importez, modifiez, partagez ou publiez via l’outil.</p>
+            <p><strong>3. Comptes, accès et intégrations</strong><br>Certaines fonctionnalités fonctionnent sans compte
+                dédié. D’autres nécessitent de connecter un service tiers comme Gmail, YouTube, Notion ou Outlook.
+                Lorsque vous activez une intégration, vous autorisez GoToolkit à utiliser les accès nécessaires à la
+                fonctionnalité demandée, dans le périmètre que vous avez accepté auprès du fournisseur concerné. Les
+                règles propres à ces services continuent de s’appliquer en parallèle.</p>
+            <p><strong>4. Services tiers et fonctions assistées par IA</strong><br>Certaines fonctions reposent sur des
+                prestataires externes, par exemple pour la transcription, la synthèse vocale, l’analyse de contenu, la
+                génération assistée par IA, l’hébergement ou la publication. Nous sélectionnons ces services pour faire
+                fonctionner GoToolkit, mais leur disponibilité, leurs performances et leurs engagements contractuels
+                dépendent de chaque fournisseur. Lorsque vous utilisez ces fonctions, vous acceptez que les données
+                strictement nécessaires soient transmises au service concerné.</p>
+            <p><strong>5. Partage et publication</strong><br>GoToolkit permet de partager des contenus, parfois via un
+                lien ou via un espace partagé. Toute personne disposant du bon accès peut alors consulter les contenus
+                concernés. Avant de partager, vous devez vérifier que le bon périmètre de diffusion a été choisi et que
+                le contenu peut effectivement être communiqué. Cette vigilance est particulièrement importante pour les
+                documents internes, les données personnelles, les comptes rendus d’atelier et les médias.</p>
+            <p><strong>6. Propriété intellectuelle et droits d’usage</strong><br>Les contenus que vous créez ou
+                importez restent votre propriété ou celle de leurs titulaires légitimes. Vous garantissez disposer des
+                droits et autorisations nécessaires pour les utiliser dans GoToolkit, y compris lorsqu’ils sont
+                analysés, transcrits, transformés, partagés ou publiés à votre demande. L’utilisation du service ne
+                vous transfère aucun droit sur les technologies, interfaces, éléments graphiques ou composants
+                applicatifs de GoToolkit, sauf mention contraire.</p>
+            <p><strong>7. Disponibilité, maintenance et évolution</strong><br>Nous faisons le nécessaire pour maintenir
+                le service disponible et utile, mais GoToolkit peut évoluer, être mis à jour, corrigé, limité,
+                suspendu ou interrompu, notamment pour des raisons techniques, de sécurité, de maintenance, de coût ou
+                d’évolution produit. Le service est fourni « en l’état », sans garantie de disponibilité permanente ni
+                d’adéquation à un usage particulier.</p>
+            <p><strong>8. Responsabilité</strong><br>Nous répondons de nos obligations dans les limites prévues par la
+                loi. En revanche, nous ne pouvons pas être responsables des conséquences liées à un mauvais usage du
+                service, à un partage involontaire, à une erreur de paramétrage, à l’usage de contenus sans droits, à
+                l’indisponibilité d’un service tiers, ni des dommages indirects tels que pertes d’exploitation,
+                d’opportunité ou de données.</p>
+            <p><strong>9. Lien avec la politique de confidentialité</strong><br>Les règles relatives aux données
+                personnelles, au stockage, aux destinataires et à vos droits sont détaillées dans la section <a
+                    href="#privacy">Politique de confidentialité</a>, qui complète les présentes conditions.</p>
         </section>
 
         <section id="privacy" class="legal-section">
             <h2>Politique de confidentialité</h2>
+            <p>Cette politique explique quelles données peuvent être utilisées lorsque vous vous servez de GoToolkit,
+                pourquoi elles le sont, où elles sont stockées et quels choix vous gardez. L’objectif est de décrire le
+                fonctionnement réel du produit de manière compréhensible, pas uniquement de lister des catégories
+                juridiques.</p>
             <p><strong>1. Responsable du traitement</strong><br>Le responsable du traitement est Xuan Quang Tran. Les
                 coordonnées de contact figurent en bas de cette page.</p>
-            <p><strong>2. Catégories de données traitées</strong><br>Selon les fonctionnalités utilisées, les données
-                peuvent inclure : contenus saisis/importés (documents, messages, prompts), métadonnées techniques
-                nécessaires au fonctionnement, historiques de partage, et, sur action de l’utilisateur, flux audio ou
-                transcriptions.</p>
-            <p><strong>3. Finalités et bases légales (RGPD)</strong><br>Les traitements sont réalisés pour : (i)
-                exécuter le service demandé (base contractuelle), (ii) assurer la sécurité, la maintenance et la
-                prévention des abus (intérêt légitime), (iii) gérer les retours utilisateurs (intérêt légitime), (iv)
-                traiter des flux audio/IA et publier vers des services tiers sur instruction explicite de l’utilisateur
-                (exécution du service et, selon les cas, consentement).</p>
-            <p><strong>4. Stockage local et cookies techniques OAuth</strong><br>Une part importante des données est
-                stockée localement dans votre navigateur (IndexedDB/localStorage) pour le fonctionnement de
-                l’application. Les seuls cookies utilisés sont des cookies techniques strictement nécessaires à la
-                gestion de session OAuth (connexion, vérification d’état de session, rafraîchissement et déconnexion)
-                pour les services Gmail, YouTube, Notion et Outlook. Ces cookies ne contiennent qu’un identifiant de
-                session opaque (non directement identifiant). Les données de session OAuth associées (jetons et
-                métadonnées techniques minimales) sont stockées côté serveur dans Cloudflare D1, avec suppression lors
-                de la déconnexion via l’outil. Aucun cookie publicitaire ou de mesure d’audience n’est déposé par
-                GoToolkit.</p>
-            <p><strong>5. Destinataires et sous-traitants</strong><br>Des données peuvent être transmises, uniquement
-                lorsque nécessaire à la fonctionnalité déclenchée, à des prestataires techniques (ex. IA, transcription
-                vocale, hébergement cloud, publication vidéo, connecteurs externes). Chaque service tiers applique ses
-                propres conditions et politiques. Les services intégrés (YouTube, Notion, Outlook, Gmail) nécessitent
-                un consentement spécifique de votre part et disposent de leur propre politique de confidentialité.</p>
-            <p><strong>6. Durées de conservation</strong><br>Les données locales sont conservées jusqu’à suppression par
-                l’utilisateur (ou nettoyage navigateur). Les contenus partagés en ligne sont conservés jusqu’à
-                suppression via l’outil ou archivage/suppression par vos soins. Les données OAuth et journaux
-                techniques sont conservés pour une durée limitée et proportionnée aux besoins de sécurité, de
-                maintenance et de continuité de service. Lorsque des services tiers sont utilisés, leurs propres
-                durées de conservation s’appliquent.</p>
-            <p><strong>7. Vos droits</strong><br>Conformément au RGPD, vous disposez des droits d’accès, rectification,
+            <p><strong>2. Données concernées</strong><br>Selon les fonctionnalités que vous utilisez, GoToolkit peut
+                traiter plusieurs types de données : contenus que vous saisissez ou importez (documents, notes,
+                messages, prompts, fichiers), informations techniques nécessaires au fonctionnement de l’application,
+                historiques de partage, ainsi que, si vous activez les fonctions concernées, enregistrements audio,
+                vidéo, captures, transcriptions ou données de connexion à des services tiers.</p>
+            <p><strong>3. Pourquoi ces données sont utilisées</strong><br>Ces traitements servent principalement à :
+                faire fonctionner l’outil demandé, enregistrer votre espace de travail local, permettre le partage de
+                contenus, exécuter les actions que vous lancez volontairement, sécuriser le service, prévenir les abus,
+                corriger les incidents et améliorer la continuité de fonctionnement. Lorsqu’une fonction IA,
+                transcription, synthèse vocale ou publication externe est déclenchée, les données nécessaires sont
+                traitées pour exécuter cette action à votre demande.</p>
+            <p><strong>4. Base légale des traitements</strong><br>Au sens du RGPD, les traitements reposent selon les
+                cas sur l’exécution du service que vous demandez, sur notre intérêt légitime à sécuriser et exploiter
+                GoToolkit, et, lorsque cela est requis, sur votre consentement, notamment pour certaines captations,
+                intégrations ou actions lancées vers des services tiers.</p>
+            <p><strong>5. Stockage local et cookies techniques OAuth</strong><br>Une part importante des données est
+                conservée localement dans votre navigateur, via IndexedDB ou localStorage, afin que l’application reste
+                rapide et que vous gardiez la main sur votre espace de travail. GoToolkit n’utilise pas de cookies
+                publicitaires ni de mesure d’audience. Les seuls cookies déposés sont des cookies techniques
+                strictement nécessaires aux parcours OAuth, par exemple pour connecter Gmail, YouTube, Notion ou
+                Outlook. Ils servent à gérer une session de connexion sécurisée, vérifier l’état du parcours
+                d’authentification, renouveler la session si nécessaire et permettre la déconnexion. Ces cookies ne
+                contiennent pas directement vos contenus. Les informations de session associées sont stockées côté
+                serveur avec les seules métadonnées techniques nécessaires, puis supprimées à la déconnexion via
+                l’outil.</p>
+            <p><strong>6. Destinataires et sous-traitants</strong><br>Nous ne transmettons pas vos données de manière
+                générale ou indiscriminée. En pratique, certaines données peuvent être envoyées à un prestataire
+                uniquement lorsqu’une fonctionnalité l’exige : hébergement, partage en ligne, transcription, synthèse
+                vocale, IA, publication ou connexion à un service tiers. Chaque fournisseur traite alors les données
+                selon ses propres conditions. Lorsque vous connectez un service externe, vous acceptez également les
+                règles de ce service.</p>
+            <p><strong>7. Durées de conservation</strong><br>Les données stockées localement restent dans votre
+                navigateur jusqu’à leur suppression par vos soins, jusqu’au nettoyage du navigateur ou jusqu’à une
+                éventuelle réinitialisation locale. Les contenus partagés en ligne restent disponibles tant qu’ils ne
+                sont pas supprimés via l’outil ou retirés de l’espace concerné. Les données OAuth et les journaux
+                techniques utiles à la sécurité et à la maintenance sont conservés pour une durée limitée et
+                proportionnée. Lorsqu’un service tiers intervient, sa propre politique de conservation s’ajoute à la
+                nôtre.</p>
+            <p><strong>8. Ce qu’il faut vérifier selon les fonctionnalités</strong><br>Certaines fonctions demandent
+                une vigilance particulière de votre part, notamment lorsque vous utilisez GoToolkit dans un cadre
+                professionnel, avec des tiers ou avec des données personnelles :</p>
+            <table class="legal-table">
+                <thead>
+                    <tr>
+                        <th>Fonctionnalité</th>
+                        <th>Obligation principale</th>
+                        <th>Conséquence pratique</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Enregistrement et transcription</td>
+                        <td>Informer les personnes concernées et recueillir leur accord lorsque la loi l’impose</td>
+                        <td>Si vous enregistrez une réunion, un atelier ou une interview, vous devez vérifier que les
+                            participants savent qu’une captation est en cours et que les conditions de recueil du
+                            consentement sont respectées lorsque cela est nécessaire.</td>
+                    </tr>
+                    <tr>
+                        <td>IA et partage cloud</td>
+                        <td>Expliquer aux personnes concernées comment les contenus sont traités, partagés et conservés
+                        </td>
+                        <td>Si vous utilisez GoToolkit pour traiter des contenus comportant des données personnelles ou
+                            confidentielles, vous devez vous assurer que vos propres informations internes ou externes
+                            couvrent bien l’usage d’outils IA, le partage en ligne et le recours à des prestataires
+                            techniques.</td>
+                    </tr>
+                    <tr>
+                        <td>Intégrations OAuth</td>
+                        <td>Comprendre précisément l’action autorisée sur le service connecté</td>
+                        <td>Les intégrations OAuth de GoToolkit sont limitées à des usages ciblés : identification
+                            Microsoft pour l’accès SSO et le contrôle d’espaces selon le domaine autorisé, création de
+                            brouillons Gmail, publication de vidéos sur YouTube et publication de documents sur Notion.
+                            Elles ne sont pas conçues pour lire, modifier ou explorer librement les données du compte
+                            connecté au-delà de l’action demandée.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>9. Vos droits</strong><br>Conformément au RGPD, vous disposez des droits d’accès, rectification,
                 effacement, limitation, opposition et portabilité, selon les conditions légales applicables. Pour
                 exercer vos droits, vous pouvez écrire à <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a>.
                 En cas de doute raisonnable sur l’identité du demandeur, un justificatif d’identité peut être demandé.
                 Une réponse vous est adressée dans les meilleurs délais, et en principe sous un mois (prolongeable dans
                 les cas prévus par la réglementation). Vous pouvez également introduire une réclamation auprès de la
                 CNIL.</p>
-            <p><strong>8. Protection des contenus partagés</strong><br>Les contenus et fichiers associés des espaces
+            <p><strong>10. Protection des contenus partagés</strong><br>Les contenus et fichiers associés des espaces
                 partagés peuvent faire l’objet d’un chiffrement applicatif avant stockage dans les services de
                 persistance utilisés par GoToolkit. Ce mécanisme vise principalement à éviter le stockage en clair des
                 contenus dans les bases et stockages d’objets sous-jacents. Il ne constitue pas un chiffrement de bout
                 en bout : les composants serveurs GoToolkit participant à l’autorisation d’accès et à la remise du
                 matériel de chiffrement sont dans le périmètre de confiance du service.</p>
-            <p><strong>9. Portée et limites de cette protection</strong><br>La protection couvre prioritairement le
+            <p><strong>11. Portée et limites de cette protection</strong><br>La protection couvre prioritairement le
                 contenu des pages et certains fichiers associés. Certaines métadonnées restent nécessaires au
                 fonctionnement (ex. identifiants techniques, espace, horodatages, statut, taille/type de fichier,
                 structure de partage) et peuvent ne pas être chiffrées. Le dispositif améliore la confidentialité
                 opérationnelle au repos, sans constituer une garantie absolue contre tous les risques (poste compromis,
                 partage involontaire, service tiers, erreur de configuration, etc.).</p>
-            <p><strong>10. Contrôle d’accès aux espaces</strong><br>L’accès à certains espaces partagés peut être
+            <p><strong>12. Contrôle d’accès aux espaces</strong><br>L’accès à certains espaces partagés peut être
                 soumis à un code d’accès, à une authentification OAuth ou à d’autres mécanismes de contrôle d’accès
                 gérés par GoToolkit. Vous êtes responsable de l’usage des accès qui vous sont confiés et de la
                 vérification du périmètre de diffusion avant tout partage.</p>
-            <p><strong>11. Conformité et standards professionnels</strong><br>L’architecture (stockage local lorsque
+            <p><strong>13. Conformité et standards professionnels</strong><br>L’architecture (stockage local lorsque
                 possible, contrôle d’accès dédié, chiffrement applicatif des contenus partagés, séparation
                 contenu/métadonnées) s’aligne avec des pratiques reconnues de protection des données en contexte
                 professionnel. Toutefois, la conformité réglementaire globale dépend aussi de votre usage, de vos bases
                 légales, de votre gouvernance interne et des services tiers éventuellement connectés.</p>
-            <p><strong>12. Services tiers, politique de données et chiffrement</strong><br>Les échanges de données
+            <p><strong>14. Services tiers, politique de données et chiffrement</strong><br>Les échanges de données
                 personnelles sont réalisés avec des fournisseurs tiers uniquement lorsque la fonctionnalité utilisée le
                 nécessite. Selon le fournisseur et la configuration retenue, les traitements peuvent être réalisés dans
                 l’Union européenne ou en dehors de l’Union européenne. Lorsque des transferts hors UE existent, ils
@@ -188,7 +251,9 @@
                     <tr>
                         <td>Hébergement application</td>
                         <td>Google Firebase (UE) - Hosting</td>
-                        <td>Ressources applicatives de GoToolkit envoyées à l'utilisateur. Pas de données personnelles.
+                        <td>Ressources applicatives de GoToolkit envoyées à l'utilisateur. Des données techniques de
+                            connexion peuvent être traitées par l'infrastructure d'hébergement comme pour tout accès
+                            web.
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
                         </td>
                     </tr>
@@ -227,10 +292,43 @@
                     <tr>
                         <td>Session OAuth</td>
                         <td>Cloudflare (UE) - D1</td>
-                        <td>Identifiant OAuth non identifiable généré par GoToolkit lors du consentement de
-                            l'utilisateur pour utiliser un service tiers. Stockée dans D1. Suppression à la
-                            déconnexion ou renouvellement de la clé tous les 24h.
+                        <td>Données techniques minimales nécessaires à la gestion des sessions OAuth et à la
+                            sécurisation du parcours de connexion. Suppression à la déconnexion via l'outil ou à
+                            l'expiration de la session selon les mécanismes applicables.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Connexion Microsoft</td>
+                        <td>Microsoft OAuth</td>
+                        <td>Utilisé pour l'identification SSO et, lorsqu'un espace le prévoit, pour vérifier qu'un
+                            compte appartient à un domaine autorisé. GoToolkit ne demande pas d'autorisation de lecture
+                            ou de modification générale des contenus Microsoft de l'utilisateur.</td>
+                    </tr>
+                    <tr>
+                        <td>Gmail</td>
+                        <td>Google OAuth / Gmail API</td>
+                        <td>Utilisé pour créer un brouillon d'email depuis GoToolkit. L'intégration n'est pas conçue
+                            pour lire la boîte mail, parcourir les messages ou modifier d'autres contenus du compte.
+                            <a href="https://developers.google.com/workspace/gmail/api/auth/scopes">Lien</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>YouTube</td>
+                        <td>Google OAuth / YouTube API</td>
+                        <td>Utilisé pour publier une vidéo et gérer la chaîne ciblée pour cette publication.
+                            L'intégration n'est pas conçue pour parcourir librement l'ensemble des données du compte
+                            au-delà de ce qui est nécessaire à l'opération de publication.
+                            <a href="https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps">Lien</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Notion</td>
+                        <td>Notion OAuth / Notion API</td>
+                        <td>Utilisé pour publier un document dans l'espace de travail Notion sélectionné. L'intégration
+                            n'est pas destinée à explorer ou modifier librement l'ensemble du compte en dehors de la
+                            destination de publication choisie.
+                            <a href="https://developers.notion.com/docs/authorization">Lien</a>
                         </td>
                     </tr>
                     <tr>
@@ -251,7 +349,9 @@
                     <tr>
                         <td>IA + Reconnaissance d'image (OCR) + Ingestion fichiers volumineux</td>
                         <td>OpenRouter / Nebius Token Factory (UE)</td>
-                        <td>Traitement IA via un unique fournisseur. Pas de rétention des données.
+                        <td>Traitement IA activé uniquement lorsque vous utilisez les fonctions concernées. La
+                            configuration actuelle privilégie un traitement sans rétention applicative volontaire côté
+                            GoToolkit ; la politique exacte dépend ensuite du fournisseur mobilisé.
                             <a
                                 href="https://openrouter.ai/docs/guides/features/zdr#openrouters-retention-policy">Lien</a>
                         </td>
@@ -276,17 +376,17 @@
                     </tr>
                 </tbody>
             </table>
-            <p><strong>13. Services tierces et contenus embarqués</strong><br>Certaines ressources techniques
+            <p><strong>15. Services tiers et contenus embarqués</strong><br>Certaines ressources techniques
                 nécessaires à l’interface (CDN, polices) sont chargées au démarrage de l’application. En outre, les
                 contenus vidéo externes (YouTube/Loom) sont fournis par des services tiers susceptibles d’appliquer
                 leurs propres cookies/traceurs et règles de traitement. Selon le type de traceurs, votre consentement
                 peut être requis avant dépôt/lecture, conformément à la réglementation applicable. Nous vous invitons à
                 consulter leurs politiques de confidentialité respectives.</p>
-            <p><strong>14. Transferts internationaux</strong><br>Lorsque des prestataires situés hors de l’Union
+            <p><strong>16. Transferts internationaux</strong><br>Lorsque des prestataires situés hors de l’Union
                 européenne sont utilisés, les transferts de données sont encadrés par des garanties appropriées
                 prévues par le RGPD (par exemple clauses contractuelles types), sous réserve des options activées et de
                 la configuration contractuelle retenue.</p>
-            <p><strong>15. Mises à jour</strong><br>La présente section peut évoluer pour refléter les changements
+            <p><strong>17. Mises à jour</strong><br>La présente section peut évoluer pour refléter les changements
                 réglementaires, techniques ou fonctionnels. Dernière mise à jour : 28 février 2026.</p>
         </section>
         <p style="margin-top:6px;font-size:0.85em;opacity:0.85;">
@@ -294,8 +394,6 @@
             (EI - contact@gotoolkit.fr) – Adresse : 19 rue Marie Madeleine Fourcade, 69007 LYON – Hébergement technique
             :
             Google / Cloudflare.
-            <br>Informations légales complémentaires à compléter si applicables : forme juridique, adresse du siège
-            social, capital social, numéro RCS et coordonnées complètes des hébergeurs.
         </p>
     </main>
 </body>
