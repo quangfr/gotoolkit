@@ -246,7 +246,11 @@ function normalizeSpaceId(value) {
 }
 
 function resolvePayloadSpaceId(payload) {
-  return normalizeSpaceId(payload?.spaceId || "golive");
+  const raw = String(payload?.spaceId || "").trim().toLowerCase();
+  if (!raw) return "";
+  const normalized = normalizeSpaceId(raw);
+  if (!normalized || normalized !== raw) return "";
+  return normalized;
 }
 
 function isSpaceProtectedCollection(collection) {
@@ -1130,7 +1134,7 @@ function buildShareSummary(entry) {
     superpowers: Array.isArray(firstTab?.superpowers) ? firstTab.superpowers : [],
     icon: String(payload?.icon || "file-symlink").trim() || "file-symlink",
     parentId: String(payload?.parentId || "").trim(),
-    spaceId: String(payload?.spaceId || "golive").trim().toLowerCase() || "golive",
+    spaceId: resolvePayloadSpaceId(payload),
     updatedAt: String(entry?.meta?.updatedAt || entry?.meta?.updatedDate || "").trim(),
     status,
     position
@@ -1357,7 +1361,7 @@ function normalizeMemosMetaPayloadFromContent(contentPayload, fallbackTitle = "D
   const superpowers = Array.isArray(firstTab?.superpowers) ? firstTab.superpowers : [];
   const icon = String(payload?.icon || "file-symlink").trim() || "file-symlink";
   const parentId = String(payload?.parentId || "").trim();
-  const spaceId = String(payload?.spaceId || "golive").trim().toLowerCase() || "golive";
+  const spaceId = resolvePayloadSpaceId(payload);
   const status = String(payload?.status || "active").trim().toLowerCase() || "active";
   const positionNum = Number(payload?.position);
   const metaPayload = {
@@ -1398,7 +1402,7 @@ function buildEmptyMemosContentPayloadFromMeta(metaPayload) {
     description,
     icon: String(payload?.icon || "file-symlink").trim() || "file-symlink",
     parentId: String(payload?.parentId || "").trim(),
-    spaceId: String(payload?.spaceId || "golive").trim().toLowerCase() || "golive",
+    spaceId: resolvePayloadSpaceId(payload),
     position: Number.isFinite(Number(payload?.position)) ? Number(payload.position) : Date.now(),
     status: String(payload?.status || "active").trim().toLowerCase() || "active"
   };
@@ -1418,7 +1422,7 @@ function buildArchivedMemosMetaPayload(metaPayload, contentPayload, options = {}
     superpowers: Array.isArray(base?.superpowers) ? base.superpowers : (Array.isArray(normalizedFromContent?.superpowers) ? normalizedFromContent.superpowers : []),
     icon: String(base?.icon || normalizedFromContent?.icon || "file-symlink").trim() || "file-symlink",
     parentId: String(base?.parentId || normalizedFromContent?.parentId || "").trim(),
-    spaceId: String(base?.spaceId || normalizedFromContent?.spaceId || "golive").trim().toLowerCase() || "golive",
+    spaceId: resolvePayloadSpaceId(base) || resolvePayloadSpaceId(normalizedFromContent),
     status: "archived",
     position: Number.isFinite(Number(base?.position))
       ? Number(base.position)
@@ -1740,9 +1744,21 @@ async function handleRequest(request, env) {
       if (!assetPath.action || assetPath.action === "upload") {
         return errorResponse("Identifiant d'asset manquant", 400, request, env);
       }
+      const authHeaders = readSpaceAuthHeaders(request);
+      if (!authHeaders.spaceId || !authHeaders.token) {
+        return errorResponse("Authentification espace requise: fournir X-Space-Id et X-Space-Auth valides", 401, request, env);
+      }
+      const verification = await verifySpaceAuthToken(env, authHeaders.token, authHeaders.spaceId);
+      if (!verification.ok) {
+        return errorResponse(verification.error || "Token espace invalide", 401, request, env);
+      }
       const result = await readAssetFromStorage(env, assetPath.action);
       if (!result) {
         return notFoundResponse(request, env);
+      }
+      const assetSpaceId = readAssetSpaceId(result.object);
+      if (!assetSpaceId || assetSpaceId !== authHeaders.spaceId) {
+        return errorResponse("Asset hors scope: l'asset demandé n'appartient pas au X-Space-Id fourni", 403, request, env);
       }
       const contentType = result.object.httpMetadata?.contentType || "application/octet-stream";
       const streamHeaders = Object.assign({}, corsHeaders(request, env), {
@@ -1947,8 +1963,12 @@ async function handleRequest(request, env) {
         return errorResponse(`Payload manquant pour ${id}`, 400, request, env);
       }
       if (isSpaceProtectedCollection(batchPath.collection)) {
-        const payloadSpaceId = resolvePayloadSpaceId(entry?.payload && typeof entry.payload === "object" ? entry.payload : {});
-        if (!payloadSpaceId || payloadSpaceId !== authHeaders.spaceId) {
+        const rawPayload = entry?.payload && typeof entry.payload === "object" ? entry.payload : {};
+        const payloadSpaceId = resolvePayloadSpaceId(rawPayload);
+        if (!payloadSpaceId) {
+          return errorResponse(`spaceId payload manquant ou invalide pour ${id}`, 400, request, env);
+        }
+        if (payloadSpaceId !== authHeaders.spaceId) {
           return errorResponse(`Scope espace invalide pour ${id}`, 403, request, env);
         }
       }
@@ -2124,6 +2144,12 @@ async function handleRequest(request, env) {
       if (isSpaceProtectedCollection(batchCreatePath.collection)) {
         const contentSpaceId = resolvePayloadSpaceId(contentPayload);
         const metaSpaceId = resolvePayloadSpaceId(metaPayload);
+        if (!contentSpaceId) {
+          return errorResponse(`contentPayload.spaceId manquant ou invalide pour ${id}`, 400, request, env);
+        }
+        if (!metaSpaceId) {
+          return errorResponse(`metaPayload.spaceId manquant ou invalide pour ${id}`, 400, request, env);
+        }
         if (contentSpaceId !== authHeaders.spaceId || metaSpaceId !== authHeaders.spaceId) {
           return errorResponse(`Scope espace invalide pour ${id}`, 403, request, env);
         }
@@ -2255,7 +2281,7 @@ async function handleRequest(request, env) {
     await deleteShareDocument(env, path.collection, path.documentId);
     return jsonResponse({ success: true }, 200, request, env);
   }
-  if (request.method === "PUT" || request.method === "POST") {
+    if (request.method === "PUT" || request.method === "POST") {
     const rateLimitResponse = await enforceWriteRateLimit(request, env);
     if (rateLimitResponse) {
       return rateLimitResponse;
@@ -2273,8 +2299,12 @@ async function handleRequest(request, env) {
       return errorResponse("Payload manquant", 400, request, env);
     }
     if (isSpaceProtectedCollection(path.collection)) {
-      const payloadSpaceId = resolvePayloadSpaceId(body.payload && typeof body.payload === "object" ? body.payload : {});
-      if (!payloadSpaceId || payloadSpaceId !== authHeaders.spaceId) {
+      const rawPayload = body.payload && typeof body.payload === "object" ? body.payload : {};
+      const payloadSpaceId = resolvePayloadSpaceId(rawPayload);
+      if (!payloadSpaceId) {
+        return errorResponse("spaceId payload manquant ou invalide", 400, request, env);
+      }
+      if (payloadSpaceId !== authHeaders.spaceId) {
         return errorResponse("Scope espace invalide", 403, request, env);
       }
     }

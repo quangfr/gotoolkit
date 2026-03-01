@@ -1,6 +1,7 @@
 ; (function (global) {
     const doc = global.document;
     if (!doc) return;
+    const ENABLE_AI_SERVICES_TAB = false;
     const SETTINGS_HELP = Object.freeze({
         assemblyAi: "Utilisation : transcription des enregistrements.\nPolitique actuelle : environ 50 $ de crédits gratuits, puis 0,15 $/h.",
         googleTts: "Utilisation : téléchargement audio d'un fichier et lecture audio dans mobile.html.\nGratuit estimé : Neural2 + WaveNet + Studio + Chirp HD ~60 h/mois puis Standard + Wavenet ~120 h/mois ;\nAprès gratuité : Standard ~0,23 $/h ; Neural2 et WaveNet ~0,91 $/h ; Chirp 3 HD ~1,71 $/h ; Studio ~9,14 $/h.\n",
@@ -20,10 +21,10 @@
                     <button type="button" class="tab-btn" data-tab="categoryTab"><i data-lucide="tag" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Catégorie</button>
                     <button type="button" class="tab-btn" data-tab="integrationsTab"><i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations</button>
                     <button type="button" class="tab-btn" data-tab="promptTab"><i data-lucide="square-terminal" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Instructions</button>
-                    <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>
+                    ${ENABLE_AI_SERVICES_TAB ? `<button type="button" class="tab-btn" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>` : ""}
                 </div>
                 <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">
-                    <div class="settings-tab-panel" data-panel="servicesTab">
+                    <div class="settings-tab-panel" data-panel="servicesTab" ${ENABLE_AI_SERVICES_TAB ? "" : "hidden"}>
                         <div class="field-row">
                             <label style="width:100%">
                                 <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
@@ -118,20 +119,9 @@
                                     </label>
                                 </div>
                             </div>
-                            <div class="field-row">
-                                <label style="width:100%">
-                                    <span class="label-title">Effort</span>
-                                    <select id="openrouterEffortSelect">
-                                        <option value="minimal">Minimal</option>
-                                        <option value="low" selected>Faible</option>
-                                        <option value="medium">Moyen</option>
-                                        <option value="high">Élevé</option>
-                                    </select>
-                                </label>
-                            </div>
                         </div>
                     </div>
-                    <div class="settings-tab-panel" data-panel="paramsTab" hidden>
+                    <div class="settings-tab-panel" data-panel="paramsTab">
                         <div class="field-row">
                             <label style="width:100%">
                                 <span class="label-title">Thème</span>
@@ -170,6 +160,17 @@
                                 <select id="voiceScreenCaptureQualitySelect">
                                     <option value="1080">Haute qualité 1080p</option>
                                     <option value="720">Bonne qualité 720p</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <span class="label-title">Effort IA</span>
+                                <select id="openrouterEffortSelect">
+                                    <option value="minimal">Minimal</option>
+                                    <option value="low" selected>Faible</option>
+                                    <option value="medium">Moyen</option>
+                                    <option value="high">Élevé</option>
                                 </select>
                             </label>
                         </div>
@@ -967,7 +968,9 @@
     function activateSettingsTab(modal, tabId) {
         const { buttons, panels } = getSettingsTabNodes(modal);
         if (!buttons.length || !panels.length) return;
-        const resolvedTabId = tabId || buttons[0]?.dataset?.tab || "servicesTab";
+        const candidateTabId = tabId || buttons[0]?.dataset?.tab || "paramsTab";
+        const hasCandidate = buttons.some(function (btn) { return btn.dataset.tab === candidateTabId; });
+        const resolvedTabId = hasCandidate ? candidateTabId : (buttons[0]?.dataset?.tab || "paramsTab");
         buttons.forEach(function (btn) {
             btn.classList.toggle("active", btn.dataset.tab === resolvedTabId);
         });

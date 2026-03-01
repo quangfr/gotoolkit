@@ -6,16 +6,16 @@ Method: repository-grounded static review of `public/`, `src/`, `workers/`, and 
 
 ## Executive Summary
 
-The codebase has several solid controls already in place: explicit origin checks on browser-facing workers, Turnstile support on expensive proxy routes, short-lived `X-Space-Auth` tokens for protected share operations, replay protection for sync, and server-side OAuth token storage with `HttpOnly` cookies.
+The codebase has several solid controls in place: explicit origin checks on browser-facing workers, Turnstile support on expensive proxy routes, short-lived `X-Space-Auth` tokens for protected share operations, replay protection for sync, authenticated and space-scoped asset reads in `share-proxy`, and server-side OAuth token storage with `HttpOnly` cookies.
 
-The main remaining risks are concentrated in four areas:
+The main remaining risks are concentrated in two areas:
 
 1. Browser-side storage and global exposure of third-party API keys.
-2. Public-by-URL asset reads in `share-proxy`.
-3. A hardcoded fallback that treats missing `spaceId` as `golive`.
-4. A permissive CSP that still allows inline script execution and does not define `frame-ancestors`.
+2. A permissive CSP that still allows inline script execution and does not define `frame-ancestors`.
 
-I did not find a single code path that is obviously critical and immediately exploitable without additional conditions. The highest-confidence issues are architectural and trust-boundary weaknesses that materially increase blast radius if any XSS, browser compromise, or data-model drift occurs.
+Two previously material worker findings are no longer current in this repository state: share asset reads are now protected by `X-Space-Auth`, and protected `pages` / `pages-meta` writes no longer fall back to `"golive"` when `spaceId` is missing or invalid.
+
+I did not find a single code path that is obviously critical and immediately exploitable without additional conditions. The highest-confidence issues are architectural and trust-boundary weaknesses that materially increase blast radius if any XSS, browser compromise, or malicious browser context occurs.
 
 ## Scope
 
@@ -51,45 +51,6 @@ I did not find a single code path that is obviously critical and immediately exp
 
 ### GTK-002
 
-- Severity: High
-- Title: Share assets are readable without `X-Space-Auth` and are returned as publicly cacheable objects
-- Location:
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1738)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1747)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1750)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1174)
-- Evidence:
-  - `GET /v1/assets/:id` reads directly from R2 and returns the body without checking `X-Space-Id` or `X-Space-Auth`.
-  - Responses are marked `Cache-Control: public, max-age=31536000, immutable`.
-  - Uploads do tag objects with `customMetadata.spaceId`, but that metadata is only enforced for `DELETE`, not `GET`.
-- Impact: Any party that obtains an asset URL can fetch the object directly and cross-origin. The object then becomes effectively bearer-by-URL and may also be retained by downstream caches for a year.
-- False positive note: if public asset URLs are an intentional product requirement, this is a design tradeoff rather than an implementation bug. The current code should then document that shared assets are public-by-URL, because the write path suggests stronger space scoping than the read path actually enforces.
-- Recommended fix:
-  - Require valid space auth for asset reads on protected spaces, or
-  - issue signed short-lived download URLs/tokens, or
-  - explicitly separate "public assets" from "space-private assets" at the route and storage-model level.
-
-### GTK-003
-
-- Severity: Medium
-- Title: Missing `spaceId` is silently coerced to `golive`
-- Location:
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L248)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L249)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1950)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1993)
-- Evidence:
-  - `resolvePayloadSpaceId(payload)` returns `normalizeSpaceId(payload?.spaceId || "golive")`.
-  - That resolver is then used to scope protected `pages` and `pages-meta` reads and writes.
-- Impact: Any record that omits `payload.spaceId` is treated as belonging to `golive`. In a multi-space system, silent tenant defaults are dangerous because malformed, legacy, or partially migrated records can be mis-scoped instead of being rejected.
-- Why this matters here: protected collections are explicitly space-scoped elsewhere. A permissive default works against that boundary.
-- Recommended fix:
-  - Remove the `"golive"` default from protected collection scoping.
-  - Reject writes for `pages` and `pages-meta` when `payload.spaceId` is absent or invalid.
-  - For legacy data, run an explicit migration instead of depending on an implicit default.
-
-### GTK-004
-
 - Severity: Medium
 - Title: CSP still permits inline scripts and does not define `frame-ancestors`
 - Location:
@@ -111,9 +72,13 @@ I did not find a single code path that is obviously critical and immediately exp
 
 ## Positive Controls Observed
 
-- `share-proxy` requires `X-Space-Auth` for protected collections and asset writes/deletes.
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1765)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1852)
+- `share-proxy` requires `X-Space-Auth` for protected collections and for asset reads, writes, and deletes.
+  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1747)
+  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1781)
+  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1819)
+- `share-proxy` rejects missing or invalid `payload.spaceId` for protected `pages` and `pages-meta` writes instead of silently defaulting to `"golive"`.
+  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L248)
+  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L2301)
 - `share-proxy` issues short-lived space tokens instead of long-lived bearer credentials.
   - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1724)
 - OAuth workers use `HttpOnly`, `Secure`, `SameSite=None` cookies.
@@ -134,7 +99,6 @@ I did not find a single code path that is obviously critical and immediately exp
 
 ## Suggested Remediation Order
 
-1. Decide whether shared assets are intended to be public-by-URL. If not, fix `GET /v1/assets/:id` first.
-2. Remove the implicit `golive` tenant fallback and make missing `spaceId` a hard error for protected collections.
-3. Reduce browser secret exposure by removing `window` mirrors and minimizing persistent key storage.
-4. Tighten CSP after inventorying the remaining inline script dependencies.
+1. Reduce browser secret exposure by removing `window` mirrors and minimizing persistent key storage.
+2. Tighten CSP after inventorying the remaining inline script dependencies.
+3. Audit legacy protected records in `pages` / `pages-meta` to ensure no old data still depends on pre-fix `spaceId` defaults.

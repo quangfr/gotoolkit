@@ -1339,8 +1339,9 @@ const insertExternalEmbedAtSelection = (
 ) => {
   const match = parseExternalVideoUrl(rawUrl);
   if (!match) return false;
-  const embedType = editor.state.schema.nodes.externalVideoEmbed;
-  const paragraphType = editor.state.schema.nodes.paragraph;
+  const { schema, selection } = editor.state;
+  const embedType = schema.nodes.externalVideoEmbed;
+  const paragraphType = schema.nodes.paragraph;
   if (!embedType || !paragraphType) return false;
   const safeFrom = Math.max(1, Math.min(from, editor.state.doc.content.size));
   const safeTo = Math.max(safeFrom, Math.min(to, editor.state.doc.content.size));
@@ -1349,10 +1350,28 @@ const insertExternalEmbedAtSelection = (
     title: match.title,
     provider: match.provider,
   });
-  let tr = editor.state.tr.replaceWith(safeFrom, safeTo, embedNode);
-  const nextPos = safeFrom + embedNode.nodeSize;
-  tr = tr.insert(nextPos, paragraphType.create());
-  tr = tr.setSelection(TextSelection.near(tr.doc.resolve(nextPos + 1), 1));
+  const trailingParagraph = paragraphType.create();
+  const fragment = schema.nodes.doc.create(null, [embedNode, trailingParagraph]).content;
+  let tr = editor.state.tr;
+  const $from = selection.$from;
+  const inParagraph = $from.parent?.type?.name === 'paragraph';
+  const paragraphText = String($from.parent?.textContent || '');
+  const selectedText = editor.state.doc.textBetween(safeFrom, safeTo, ' ', ' ');
+  const fullParagraphMatchesUrl = inParagraph
+    && paragraphText.trim() === selectedText.trim()
+    && selectedText.trim() === String(rawUrl || '').trim();
+
+  if (inParagraph && $from.depth > 0 && (selection.empty ? $from.parent.content.size === 0 : fullParagraphMatchesUrl)) {
+    const paraFrom = $from.before($from.depth);
+    const paraTo = paraFrom + $from.parent.nodeSize;
+    tr = tr.replaceWith(paraFrom, paraTo, fragment);
+    tr = tr.setSelection(TextSelection.near(tr.doc.resolve(paraFrom + embedNode.nodeSize + 1), 1));
+  } else {
+    tr = tr.replaceWith(safeFrom, safeTo, embedNode);
+    const nextPos = safeFrom + embedNode.nodeSize;
+    tr = tr.insert(nextPos, trailingParagraph);
+    tr = tr.setSelection(TextSelection.near(tr.doc.resolve(nextPos + 1), 1));
+  }
   editor.view.dispatch(tr.scrollIntoView());
   return true;
 };
@@ -3439,6 +3458,17 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     },
     editorProps: {
       handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
+      handlePaste: (_view, event) => {
+        if (!(event instanceof ClipboardEvent)) return false;
+        const text = String(event.clipboardData?.getData('text/plain') || '').trim();
+        if (!text || text.includes('\n')) return false;
+        if (!parseExternalVideoUrl(text)) return false;
+        const { from, to } = editor.state.selection;
+        const inserted = insertExternalEmbedAtSelection(editor, from, to, text);
+        if (!inserted) return false;
+        event.preventDefault();
+        return true;
+      },
       handleDOMEvents: {
         dragstart: (view, event) => {
           const selection = view.state.selection;

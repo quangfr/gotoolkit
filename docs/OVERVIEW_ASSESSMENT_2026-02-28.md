@@ -17,7 +17,7 @@ Method: repository-grounded qualitative review of `public/`, `src/`, `workers/`,
 
 GoToolkit is a high-capability product with real engineering substance. The codebase is not a thin wrapper around one feature: it combines document editing, structured data workflows, AI assistance, local and cloud storage, media capture, transcription, sharing, templates, exports, and multiple OAuth-backed integrations.
 
-Its strongest qualities are product value and architectural coherence. Its weakest areas are security hardening, legal clarity implied by the amount of sensitive functionality, and UX simplicity as the feature surface grows.
+Its strongest qualities are product value and architectural coherence. Its weakest areas are now mostly browser-side secret handling, CSP hardening, legal clarity implied by the amount of sensitive functionality, and UX simplicity as the feature surface grows.
 
 ## Category Review
 
@@ -27,7 +27,7 @@ Its strongest qualities are product value and architectural coherence. Its weake
 
 The code shows clear security intent. Browser-facing workers implement origin allowlists, several expensive routes support Turnstile, share sync uses short-lived `X-Space-Auth` tokens plus replay protection, and OAuth flows use `HttpOnly` server-managed cookies instead of leaving provider tokens in browser storage.
 
-The score remains moderate rather than high because the frontend still stores third-party API keys in browser storage, some secrets are mirrored onto `window`, the share asset read path is public-by-URL, and CSP still allows inline scripts. The result is a system that is meaningfully defended, but not yet hardened.
+The score remains moderate rather than high because the frontend still stores third-party API keys in browser storage, some secrets are mirrored onto `window`, and CSP still allows inline scripts. The share worker is materially stronger than before: asset reads are now space-authenticated and protected writes no longer silently fall back to `"golive"` when `spaceId` is missing or malformed. The result is a system that is meaningfully defended, but not yet hardened.
 
 ### What is strong
 
@@ -35,13 +35,14 @@ The score remains moderate rather than high because the frontend still stores th
 - Cost-bearing upstream APIs are not exposed as raw secrets in shipped code.
 - OAuth flows use server-side token persistence and secure cookie flags.
 - Share sync includes replay-defense mechanics rather than simple bearer-only calls.
+- Share asset reads now enforce `X-Space-Auth` and space scoping.
+- Protected page writes now reject missing or invalid `spaceId` instead of applying an implicit tenant default.
 
 ### What holds the score back
 
 - Browser-resident API keys increase blast radius for any XSS or browser compromise.
-- Some trust-boundary defaults are too permissive.
 - CSP is still weaker than a hardened production policy should be.
-- Asset confidentiality is weaker than the write-path auth model suggests.
+- The frontend still depends heavily on globals and browser-resident trust.
 
 ## Legal
 
@@ -159,8 +160,8 @@ GoToolkit has strong product value and solid architecture, with moderate securit
 ### Security
 
 1. Reduce browser-side secret storage and remove unnecessary `window` exposure for API keys.
-2. Tighten share asset read access if assets are meant to remain space-scoped.
-3. Harden CSP by reducing inline script dependence.
+2. Harden CSP by reducing inline script dependence.
+3. Audit existing protected share records to confirm no legacy data still relies on pre-fix tenant defaults.
 
 ### Legal
 

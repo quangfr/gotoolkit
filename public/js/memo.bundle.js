@@ -56103,10 +56103,12 @@ ${promptInput.trim()}`
     }
   };
   var insertExternalEmbedAtSelection = (editor, from2, to, rawUrl) => {
+    var _a, _b, _c;
     const match = parseExternalVideoUrl(rawUrl);
     if (!match) return false;
-    const embedType = editor.state.schema.nodes.externalVideoEmbed;
-    const paragraphType = editor.state.schema.nodes.paragraph;
+    const { schema, selection } = editor.state;
+    const embedType = schema.nodes.externalVideoEmbed;
+    const paragraphType = schema.nodes.paragraph;
     if (!embedType || !paragraphType) return false;
     const safeFrom = Math.max(1, Math.min(from2, editor.state.doc.content.size));
     const safeTo = Math.max(safeFrom, Math.min(to, editor.state.doc.content.size));
@@ -56115,10 +56117,25 @@ ${promptInput.trim()}`
       title: match.title,
       provider: match.provider
     });
-    let tr2 = editor.state.tr.replaceWith(safeFrom, safeTo, embedNode);
-    const nextPos = safeFrom + embedNode.nodeSize;
-    tr2 = tr2.insert(nextPos, paragraphType.create());
-    tr2 = tr2.setSelection(TextSelection.near(tr2.doc.resolve(nextPos + 1), 1));
+    const trailingParagraph = paragraphType.create();
+    const fragment = schema.nodes.doc.create(null, [embedNode, trailingParagraph]).content;
+    let tr2 = editor.state.tr;
+    const $from = selection.$from;
+    const inParagraph = ((_b = (_a = $from.parent) == null ? void 0 : _a.type) == null ? void 0 : _b.name) === "paragraph";
+    const paragraphText = String(((_c = $from.parent) == null ? void 0 : _c.textContent) || "");
+    const selectedText = editor.state.doc.textBetween(safeFrom, safeTo, " ", " ");
+    const fullParagraphMatchesUrl = inParagraph && paragraphText.trim() === selectedText.trim() && selectedText.trim() === String(rawUrl || "").trim();
+    if (inParagraph && $from.depth > 0 && (selection.empty ? $from.parent.content.size === 0 : fullParagraphMatchesUrl)) {
+      const paraFrom = $from.before($from.depth);
+      const paraTo = paraFrom + $from.parent.nodeSize;
+      tr2 = tr2.replaceWith(paraFrom, paraTo, fragment);
+      tr2 = tr2.setSelection(TextSelection.near(tr2.doc.resolve(paraFrom + embedNode.nodeSize + 1), 1));
+    } else {
+      tr2 = tr2.replaceWith(safeFrom, safeTo, embedNode);
+      const nextPos = safeFrom + embedNode.nodeSize;
+      tr2 = tr2.insert(nextPos, trailingParagraph);
+      tr2 = tr2.setSelection(TextSelection.near(tr2.doc.resolve(nextPos + 1), 1));
+    }
     editor.view.dispatch(tr2.scrollIntoView());
     return true;
   };
@@ -57662,6 +57679,18 @@ ${promptInput.trim()}`
       },
       editorProps: {
         handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
+        handlePaste: (_view, event) => {
+          var _a2;
+          if (!(event instanceof ClipboardEvent)) return false;
+          const text = String(((_a2 = event.clipboardData) == null ? void 0 : _a2.getData("text/plain")) || "").trim();
+          if (!text || text.includes("\n")) return false;
+          if (!parseExternalVideoUrl(text)) return false;
+          const { from: from2, to } = editor.state.selection;
+          const inserted = insertExternalEmbedAtSelection(editor, from2, to, text);
+          if (!inserted) return false;
+          event.preventDefault();
+          return true;
+        },
         handleDOMEvents: {
           dragstart: (view, event) => {
             const selection = view.state.selection;
@@ -61717,4 +61746,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map
