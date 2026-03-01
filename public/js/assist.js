@@ -941,6 +941,16 @@
         return renderBotMarkdown(text);
     }
 
+    function normalizeImportedMemoContent(fileName, text) {
+        var content = String(text || "");
+        if (!content.trim()) return "";
+        var ext = getFileExtension(fileName);
+        if (ext === "md" || ext === "markdown") {
+            return renderDocumentMarkdown(content);
+        }
+        return content;
+    }
+
     function getFileExtension(fileName) {
         var parts = String(fileName || "").split(".");
         if (parts.length < 2) return "";
@@ -6295,7 +6305,7 @@
                         if (directContent && String(directContent).trim()) {
                             parsedEntries.push({
                                 name: directFile.name || ("Document " + (parsedEntries.length + 1)),
-                                content: String(directContent)
+                                content: normalizeImportedMemoContent(directFile.name, directContent)
                             });
                         }
                     } catch (err) {
@@ -6758,7 +6768,7 @@
                         if (fullDoc && fullDoc.rawText) {
                             parsedEntries.push({
                                 name: docName,
-                                content: fullDoc.rawText
+                                content: normalizeImportedMemoContent(docName, fullDoc.rawText)
                             });
                         }
                     } catch (err) {

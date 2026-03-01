@@ -1,4 +1,20 @@
 (function (global) {
+    function resolveBreadcrumbSpaceLabel(deps, activeDocument) {
+        var d = deps || {};
+        var doc = activeDocument || null;
+        if (!doc || !d.getSpaceById) return "";
+        var normalizeSpaceId = typeof d.normalizeSpaceId === "function"
+            ? d.normalizeSpaceId
+            : function (value) { return String(value || "").trim().toLowerCase(); };
+        var defaultSpaceId = normalizeSpaceId(d.defaultSpaceId || "");
+        var rawSpaceId = doc.spaceId || doc.payload?.spaceId || "";
+        var spaceId = normalizeSpaceId(rawSpaceId);
+        if (!spaceId || (defaultSpaceId && spaceId === defaultSpaceId)) return "";
+        var space = d.getSpaceById(spaceId);
+        var label = String(space?.name || space?.id || spaceId || "").trim();
+        return label;
+    }
+
     async function renderDocumentTabs(deps) {
         var d = deps || {};
         var documentBreadcrumbEl = d.documentBreadcrumbEl;
@@ -54,16 +70,33 @@
             }
         }
 
+        var activeChainDoc = chain[chain.length - 1]
+            || openDocuments.find(function (item) { return item.id === activeDocumentId; })
+            || null;
+        var spaceLabel = resolveBreadcrumbSpaceLabel(d, activeChainDoc);
+        if (spaceLabel) {
+            var firstCrumbTitle = String(chain[0]?.title || "").trim().toLowerCase();
+            if (firstCrumbTitle !== spaceLabel.trim().toLowerCase()) {
+                chain.unshift({
+                    id: "",
+                    title: spaceLabel,
+                    isSpaceCrumb: true
+                });
+            }
+        }
+
         chain.forEach(function (doc, index) {
             if (renderToken !== getRenderToken()) return;
-            var crumb = document.createElement("button");
+            var isSpaceCrumb = Boolean(doc?.isSpaceCrumb);
+            var crumb = document.createElement(isSpaceCrumb ? "span" : "button");
             var fullTitle = String(doc.title || "Document");
             var isActiveCrumb = index === chain.length - 1;
-            crumb.type = "button";
             crumb.className = "document-breadcrumb__item" + (isActiveCrumb ? " active" : "");
             crumb.textContent = isActiveCrumb ? fullTitle : d.formatMiddleEllipsis(fullTitle, 22);
             crumb.title = fullTitle;
-            crumb.addEventListener("click", function () {
+            if (!isSpaceCrumb) {
+                crumb.type = "button";
+                crumb.addEventListener("click", function () {
                 var targetId = String(doc?.id || "").trim();
                 var targetSection = String(doc?.section || d.inferSectionFromId(targetId)).trim();
                 if (targetId && d.isSharedSection(targetSection) && !targetId.startsWith("share:")) {
@@ -78,7 +111,8 @@
                 }
                 if (!targetId) return;
                 d.setActiveDocument?.(targetId);
-            });
+                });
+            }
             documentBreadcrumbEl.appendChild(crumb);
             if (index < chain.length - 1) {
                 var sep = document.createElement("span");
@@ -100,4 +134,3 @@
         renderDocumentTabs: renderDocumentTabs
     };
 })(window);
-

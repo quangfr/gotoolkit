@@ -792,7 +792,17 @@
   function isExpiredSpaceAuthResponse(response, bodyText) {
     if (!response || response.ok) return false;
     const normalized = String(bodyText || "").trim().toLowerCase();
-    return response.status === 401 && normalized.includes("token expir");
+    return response.status === 401 && (
+      normalized.includes("jeton x-space-auth expir")
+      || normalized.includes("token x-space-auth expir")
+      || normalized.includes("token expir")
+    );
+  }
+
+  function clearCachedSpaceAuth(spaceId) {
+    const normalizedSpaceId = normalizeSpaceId(spaceId || "");
+    if (!normalizedSpaceId) return;
+    spaceAuthTokenCache.delete(normalizedSpaceId);
   }
 
   async function fetchWithSpaceAuthRetry(base, url, requestOptions, spaceId) {
@@ -811,7 +821,7 @@
     if (!isExpiredSpaceAuthResponse(response, errorText)) {
       return response;
     }
-    spaceAuthTokenCache.delete(normalizedSpaceId);
+    clearCachedSpaceAuth(normalizedSpaceId);
     return execute();
   }
 

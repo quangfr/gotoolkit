@@ -59,6 +59,7 @@ Only `public/js` may touch `window`:
 - Build: `npm install` → `npm run build`. This runs drawing and memo bundles in parallel using `esbuild`. 
 - Production: Build is automated via GitHub Actions (`npm run build:prod`). Local build outputs in `public/js` may still appear in Git status depending on changes.
 - For Wrangler/Cloudflare commands in this repo, run them through `scripts/with-env-local.sh` so `CLOUDFLARE_API_TOKEN` from `.env.local` is exported in non-interactive shells. Example: `scripts/with-env-local.sh npx wrangler secret put OPENROUTER_API_KEY`.
+- After modifying any worker under `workers/`, deploy that worker with Wrangler using `.env.local` via `scripts/with-env-local.sh`. Example: `scripts/with-env-local.sh npx wrangler deploy --config workers/share-proxy/wrangler.jsonc`.
 - CSP guardrail: when editing CSP in `firebase.json` or any HTML `<meta http-equiv="Content-Security-Policy">`, run `npm run check:csp` and keep Hosting headers aligned with the canonical app CSP used by the HTML entry points.
 - Heavy Libraries: React, ReactDOM, Excalidraw, and Mermaid are loaded via CDN (see `index.html`).
 - Shims: Build aliases in `package.json` map module imports (e.g., `react`, `react-dom`, `excalidraw`, `mermaid`) to `window` globals via `src/*-shim.ts` files (react-shim, react-dom-shim, etc.) to keep bundles small and fast.

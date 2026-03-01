@@ -17,7 +17,7 @@ const DEFAULT_SCOPE = [
   "email",
   "profile"
 ].join(" ");
-const IDENTITY_TOKEN_TTL_MS = 60 * 60 * 1000;
+const IDENTITY_TOKEN_TTL_MS = 5 * 60 * 1000;
 
 function normalizeOrigin(origin) {
   return (origin || "").trim();

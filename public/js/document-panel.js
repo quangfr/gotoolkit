@@ -1859,10 +1859,6 @@
                             refreshBtn.addEventListener("click", (event) => {
                                 event.preventDefault();
                                 event.stopPropagation();
-                                if (hasSharedSpaceSyncError) {
-                                    onSectionSettings?.(sectionName);
-                                    return;
-                                }
                                 onSectionRefresh?.(sectionName);
                             });
                             actions.appendChild(refreshBtn);
