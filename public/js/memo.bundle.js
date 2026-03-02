@@ -57602,6 +57602,7 @@ ${promptInput.trim()}`
     const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = react_shim_default.useState(false);
     const [tableSelectionBox, setTableSelectionBox] = react_shim_default.useState(null);
     const [tableSelectionResize, setTableSelectionResize] = react_shim_default.useState(null);
+    const saveTimeoutRef = react_shim_default.useRef(null);
     const blockDragMovedRef = react_shim_default.useRef(false);
     const tableLayoutRafRef = react_shim_default.useRef(null);
     const isAutoLayoutRef = react_shim_default.useRef(false);
@@ -58310,12 +58311,13 @@ ${promptInput.trim()}`
         const html2 = editor2.getHTML();
         setEditorHtmlSnapshot(html2);
         if (onChange) {
-          if (window._memoSaveTimeout) {
-            clearTimeout(window._memoSaveTimeout);
+          if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
           }
-          window._memoSaveTimeout = setTimeout(() => {
+          saveTimeoutRef.current = window.setTimeout(() => {
             const innerStart = performance.now();
             onChange(html2, editorId);
+            saveTimeoutRef.current = null;
             const duration = Math.round(performance.now() - innerStart);
             if (duration > 50) {
               console.warn(`[SimpleEditor] debounced onChange: getHTML/onChange took ${duration}ms`);
@@ -58329,13 +58331,22 @@ ${promptInput.trim()}`
       onBlur: ({ editor: editor2 }) => {
         setEditorHtmlSnapshot(editor2.getHTML());
         if (onChange) {
-          if (window._memoSaveTimeout) {
-            clearTimeout(window._memoSaveTimeout);
+          if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+            saveTimeoutRef.current = null;
           }
           onChange(editor2.getHTML());
         }
       }
     });
+    react_shim_default.useEffect(() => {
+      return () => {
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = null;
+        }
+      };
+    }, []);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       const syncSpellcheck = () => {
@@ -61420,7 +61431,42 @@ ${innerMarkdown}
     const editorOrderRef = react_shim_default.useRef([]);
     const editorsRef = react_shim_default.useRef({});
     const activeIdRef = react_shim_default.useRef("");
+    const suppressedProgrammaticChangeRef = react_shim_default.useRef({});
     const activeInstanceRef = react_shim_default.useRef(null);
+    const normalizeProgrammaticContent = react_shim_default.useCallback((content) => {
+      return String(content || "").replace(/>\s+</g, "><").replace(/\s+/g, " ").trim();
+    }, []);
+    const hashProgrammaticContent = react_shim_default.useCallback((content) => {
+      const normalized = normalizeProgrammaticContent(content);
+      let hash2 = 2166136261;
+      for (let i = 0; i < normalized.length; i += 1) {
+        hash2 ^= normalized.charCodeAt(i);
+        hash2 = Math.imul(hash2, 16777619);
+      }
+      return `${normalized.length}:${(hash2 >>> 0).toString(16)}`;
+    }, [normalizeProgrammaticContent]);
+    const suppressProgrammaticChange = react_shim_default.useCallback((id, content) => {
+      const targetId = String(id || "").trim();
+      if (!targetId) return;
+      suppressedProgrammaticChangeRef.current = {
+        ...suppressedProgrammaticChangeRef.current,
+        [targetId]: hashProgrammaticContent(content)
+      };
+    }, [hashProgrammaticContent]);
+    const applyProgrammaticContent = react_shim_default.useCallback((id, methods, content) => {
+      var _a, _b;
+      const targetId = String(id || "").trim();
+      if (!targetId || !((_b = (_a = methods == null ? void 0 : methods.instance) == null ? void 0 : _a.commands) == null ? void 0 : _b.setContent)) return;
+      suppressProgrammaticChange(targetId, content);
+      try {
+        methods.instance.commands.setContent(content);
+      } catch (err) {
+        const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
+        delete nextSuppressed[targetId];
+        suppressedProgrammaticChangeRef.current = nextSuppressed;
+        throw err;
+      }
+    }, [suppressProgrammaticChange]);
     const handleEditorReady = react_shim_default.useCallback((id, methods) => {
       setEditors((prev) => {
         var _a;
@@ -61435,6 +61481,27 @@ ${innerMarkdown}
       const targetId = String(id || "").trim();
       if (!targetId) {
         if (onChangeCb) onChangeCb(newContent, id);
+        return;
+      }
+      const suppressedContentHash = suppressedProgrammaticChangeRef.current[targetId];
+      const nextContentHash = hashProgrammaticContent(newContent);
+      if (typeof suppressedContentHash === "string" && suppressedContentHash === nextContentHash) {
+        const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
+        delete nextSuppressed[targetId];
+        suppressedProgrammaticChangeRef.current = nextSuppressed;
+        setEditors((prev) => {
+          const current = prev[targetId];
+          if (!current || current.content === newContent) return prev;
+          const next2 = {
+            ...prev,
+            [targetId]: {
+              ...current,
+              content: newContent
+            }
+          };
+          editorsRef.current = next2;
+          return next2;
+        });
         return;
       }
       setEditors((prev) => {
@@ -61452,7 +61519,7 @@ ${innerMarkdown}
         return next2;
       });
       if (onChangeCb) onChangeCb(newContent, targetId);
-    }, [onChangeCb]);
+    }, [hashProgrammaticContent, onChangeCb]);
     useEffect(() => {
       const api = {
         setValue: (newContent) => {
@@ -61460,8 +61527,11 @@ ${innerMarkdown}
           const contentLength = (newContent == null ? void 0 : newContent.length) || 0;
           const start = performance.now();
           if (methods == null ? void 0 : methods.instance) {
-            methods.instance.commands.setContent(newContent);
+            const targetId = String(activeIdRef.current || "default");
+            applyProgrammaticContent(targetId, methods, newContent);
           } else if (window.MemoEditor) {
+            const targetId = String(activeIdRef.current || "default");
+            suppressProgrammaticChange(targetId, newContent);
             window.MemoEditor.commands.setContent(newContent);
           }
           const duration = Math.round(performance.now() - start);
@@ -61531,7 +61601,7 @@ ${innerMarkdown}
           setActiveId(id);
           activeIdRef.current = id;
           setEditors((prev) => {
-            var _a, _b, _c, _d;
+            var _a, _b, _c, _d, _e, _f;
             const hasExisting = Boolean(prev[id]);
             const nextContent = typeof initialContent === "string" ? initialContent : "";
             const existingContent = hasExisting && typeof ((_a = prev[id]) == null ? void 0 : _a.content) === "string" ? prev[id].content : "";
@@ -61547,10 +61617,9 @@ ${innerMarkdown}
               [id]: { id, content: resolvedContent }
             };
             const existingMethods = (_b = next2[id]) == null ? void 0 : _b.methods;
-            const existingInstance = existingMethods == null ? void 0 : existingMethods.instance;
-            if (hasExisting && ((_c = existingInstance == null ? void 0 : existingInstance.commands) == null ? void 0 : _c.setContent)) {
+            if (hasExisting && ((_d = (_c = existingMethods == null ? void 0 : existingMethods.instance) == null ? void 0 : _c.commands) == null ? void 0 : _d.setContent)) {
               try {
-                existingInstance.commands.setContent(resolvedContent);
+                applyProgrammaticContent(id, existingMethods, resolvedContent);
               } catch (err) {
               }
             }
@@ -61568,10 +61637,9 @@ ${innerMarkdown}
             }
             if (!hasExisting) {
               const currentMethods = activeInstanceRef.current;
-              const currentInstance = currentMethods == null ? void 0 : currentMethods.instance;
-              if ((_d = currentInstance == null ? void 0 : currentInstance.commands) == null ? void 0 : _d.setContent) {
+              if ((_f = (_e = currentMethods == null ? void 0 : currentMethods.instance) == null ? void 0 : _e.commands) == null ? void 0 : _f.setContent) {
                 try {
-                  currentInstance.commands.setContent(resolvedContent);
+                  applyProgrammaticContent(id, currentMethods, resolvedContent);
                 } catch (err) {
                 }
               }
@@ -61632,7 +61700,7 @@ ${innerMarkdown}
       setActiveId((prev) => prev || "default");
       window.GoToolkitMemoEditorReady = Promise.resolve(api);
       window.GoToolkitMemoInstance = api;
-    }, []);
+    }, [applyProgrammaticContent, suppressProgrammaticChange]);
     useEffect(() => {
       editorsRef.current = editors;
     }, [editors]);

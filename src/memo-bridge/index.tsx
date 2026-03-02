@@ -57,9 +57,50 @@ const App = () => {
     const editorOrderRef = React.useRef<string[]>([]);
     const editorsRef = React.useRef<Record<string, EditorInstance>>({});
     const activeIdRef = React.useRef<string>('');
+    const suppressedProgrammaticChangeRef = React.useRef<Record<string, string>>({});
 
     // Track active instance for global functions
     const activeInstanceRef = React.useRef<any>(null);
+
+    const normalizeProgrammaticContent = React.useCallback((content: string) => {
+        return String(content || '')
+            .replace(/>\s+</g, '><')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }, []);
+
+    const hashProgrammaticContent = React.useCallback((content: string) => {
+        const normalized = normalizeProgrammaticContent(content);
+        let hash = 2166136261;
+        for (let i = 0; i < normalized.length; i += 1) {
+            hash ^= normalized.charCodeAt(i);
+            hash = Math.imul(hash, 16777619);
+        }
+        return `${normalized.length}:${(hash >>> 0).toString(16)}`;
+    }, [normalizeProgrammaticContent]);
+
+    const suppressProgrammaticChange = React.useCallback((id: string, content: string) => {
+        const targetId = String(id || '').trim();
+        if (!targetId) return;
+        suppressedProgrammaticChangeRef.current = {
+            ...suppressedProgrammaticChangeRef.current,
+            [targetId]: hashProgrammaticContent(content)
+        };
+    }, [hashProgrammaticContent]);
+
+    const applyProgrammaticContent = React.useCallback((id: string, methods: any, content: string) => {
+        const targetId = String(id || '').trim();
+        if (!targetId || !methods?.instance?.commands?.setContent) return;
+        suppressProgrammaticChange(targetId, content);
+        try {
+            methods.instance.commands.setContent(content);
+        } catch (err) {
+            const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
+            delete nextSuppressed[targetId];
+            suppressedProgrammaticChangeRef.current = nextSuppressed;
+            throw err;
+        }
+    }, [suppressProgrammaticChange]);
 
     // Stable callback to prevent render loops
     const handleEditorReady = React.useCallback((id: string, methods: any) => {
@@ -79,6 +120,27 @@ const App = () => {
             if (onChangeCb) onChangeCb(newContent, id);
             return;
         }
+        const suppressedContentHash = suppressedProgrammaticChangeRef.current[targetId];
+        const nextContentHash = hashProgrammaticContent(newContent);
+        if (typeof suppressedContentHash === 'string' && suppressedContentHash === nextContentHash) {
+            const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
+            delete nextSuppressed[targetId];
+            suppressedProgrammaticChangeRef.current = nextSuppressed;
+            setEditors(prev => {
+                const current = prev[targetId];
+                if (!current || current.content === newContent) return prev;
+                const next = {
+                    ...prev,
+                    [targetId]: {
+                        ...current,
+                        content: newContent
+                    }
+                };
+                editorsRef.current = next;
+                return next;
+            });
+            return;
+        }
         setEditors(prev => {
             const current = prev[targetId];
             if (!current) return prev;
@@ -94,7 +156,7 @@ const App = () => {
             return next;
         });
         if (onChangeCb) onChangeCb(newContent, targetId);
-    }, [onChangeCb]);
+    }, [hashProgrammaticContent, onChangeCb]);
 
     useEffect(() => {
         const api: MemoEditorApi = {
@@ -103,8 +165,11 @@ const App = () => {
                 const contentLength = newContent?.length || 0;
                 const start = performance.now();
                 if (methods?.instance) {
-                    methods.instance.commands.setContent(newContent);
+                    const targetId = String(activeIdRef.current || 'default');
+                    applyProgrammaticContent(targetId, methods, newContent);
                 } else if ((window as any).MemoEditor) {
+                    const targetId = String(activeIdRef.current || 'default');
+                    suppressProgrammaticChange(targetId, newContent);
                     (window as any).MemoEditor.commands.setContent(newContent);
                 }
                 const duration = Math.round(performance.now() - start);
@@ -192,10 +257,9 @@ const App = () => {
                         };
 
                     const existingMethods = next[id]?.methods;
-                    const existingInstance = existingMethods?.instance;
-                    if (hasExisting && existingInstance?.commands?.setContent) {
+                    if (hasExisting && existingMethods?.instance?.commands?.setContent) {
                         try {
-                            existingInstance.commands.setContent(resolvedContent);
+                            applyProgrammaticContent(id, existingMethods, resolvedContent);
                         } catch (err) {
                             // ignore editor hydration failures and keep state content as fallback
                         }
@@ -214,10 +278,9 @@ const App = () => {
                     }
                     if (!hasExisting) {
                         const currentMethods = activeInstanceRef.current;
-                        const currentInstance = currentMethods?.instance;
-                        if (currentInstance?.commands?.setContent) {
+                        if (currentMethods?.instance?.commands?.setContent) {
                             try {
-                                currentInstance.commands.setContent(resolvedContent);
+                                applyProgrammaticContent(id, currentMethods, resolvedContent);
                             } catch (err) {
                                 // ignore immediate hydration fallback failures
                             }
@@ -286,7 +349,7 @@ const App = () => {
         // Expose the API to the window as expected by index.html
         (window as any).GoToolkitMemoEditorReady = Promise.resolve(api);
         (window as any).GoToolkitMemoInstance = api;
-    }, []);
+    }, [applyProgrammaticContent, suppressProgrammaticChange]);
 
     // Update global methods whenever active instance changes
     useEffect(() => {

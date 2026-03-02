@@ -11,6 +11,7 @@
     const CLICK_HIGHLIGHT_RADIUS_PX = 26;
     const CLICK_HIGHLIGHT_Y_OFFSET_PX = 12;
     const RECORDING_BEFORE_UNLOAD_MESSAGE = "Un enregistrement est en cours. Voulez-vous vraiment quitter ?";
+    const METER_FRAME_INTERVAL_MS = 50;
 
     const state = {
         currentMemoId: null,
@@ -73,6 +74,15 @@
         micWavePhase: 0,
         systemWavePhase: 0,
         meterLastTs: 0,
+        meterRenderLastTs: 0,
+        meterCanvasSizes: {
+            mic: null,
+            "system-audio": null
+        },
+        meterBuffers: {
+            mic: null,
+            "system-audio": null
+        },
         videoCompositorCanvas: null,
         videoCompositorRafId: null,
         videoCompositorStream: null,
@@ -1628,19 +1638,48 @@
         return false;
     }
 
-    function drawWave(kind, analyser) {
+    function syncMeterCanvasSize(kind, options = {}) {
         const canvas = getMeterCanvas(kind);
-        if (!canvas) return;
-        const rect = canvas.getBoundingClientRect();
-        if (!rect.width || !rect.height) return;
-        if (canvas.width !== Math.floor(rect.width) || canvas.height !== Math.floor(rect.height)) {
-            canvas.width = Math.floor(rect.width);
-            canvas.height = Math.floor(rect.height);
+        if (!canvas) return null;
+        const cached = state.meterCanvasSizes[kind] || null;
+        if (!options.force && cached && cached.canvas === canvas && cached.width > 0 && cached.height > 0) {
+            return cached;
         }
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.floor(rect.width);
+        const height = Math.floor(rect.height);
+        if (!width || !height) {
+            state.meterCanvasSizes[kind] = null;
+            return null;
+        }
+        if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
+        const next = { canvas, width, height };
+        state.meterCanvasSizes[kind] = next;
+        return next;
+    }
+
+    function getMeterDataBuffer(kind, bufferLength) {
+        if (!bufferLength || bufferLength < 1) return null;
+        const existing = state.meterBuffers[kind];
+        if (existing && existing.length === bufferLength) {
+            return existing;
+        }
+        const next = new Uint8Array(bufferLength);
+        state.meterBuffers[kind] = next;
+        return next;
+    }
+
+    function drawWave(kind, analyser) {
+        const metrics = syncMeterCanvasSize(kind);
+        if (!metrics) return;
+        const canvas = metrics.canvas;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
-        const w = canvas.width;
-        const h = canvas.height;
+        const w = metrics.width;
+        const h = metrics.height;
         ctx.clearRect(0, 0, w, h);
         const midY = h / 2;
 
@@ -1650,7 +1689,8 @@
         }
 
         const bufferLength = analyser?.fftSize || 512;
-        const data = new Uint8Array(bufferLength);
+        const data = getMeterDataBuffer(kind, bufferLength);
+        if (!data) return;
         if (analyser) {
             analyser.getByteTimeDomainData(data);
         } else {
@@ -1730,6 +1770,11 @@
         state.systemAnalyserStream = null;
         state.micWavePhase = 0;
         state.systemWavePhase = 0;
+        state.meterRenderLastTs = 0;
+        state.meterCanvasSizes.mic = null;
+        state.meterCanvasSizes["system-audio"] = null;
+        state.meterBuffers.mic = null;
+        state.meterBuffers["system-audio"] = null;
         if (state.meterContext) {
             try { state.meterContext.close(); } catch (err) { /* noop */ }
             state.meterContext = null;
@@ -1773,11 +1818,21 @@
             }
         }
 
+        syncMeterCanvasSize("mic", { force: true });
+        syncMeterCanvasSize("system-audio", { force: true });
+
         if (!state.meterRafId) {
             const tick = (ts) => {
                 if (!state.meterLastTs) state.meterLastTs = ts;
+                if (!state.meterRenderLastTs) state.meterRenderLastTs = ts;
                 const dt = Math.max(0, ts - state.meterLastTs);
+                const renderDt = Math.max(0, ts - state.meterRenderLastTs);
                 state.meterLastTs = ts;
+                if (renderDt < METER_FRAME_INTERVAL_MS) {
+                    state.meterRafId = requestAnimationFrame(tick);
+                    return;
+                }
+                state.meterRenderLastTs = ts;
                 const maxPhase = state.micAnalyser?.fftSize || 512;
                 const phaseSpeed = maxPhase * (dt / 2000);
                 state.micWavePhase = (state.micWavePhase + phaseSpeed) % maxPhase;
@@ -2470,6 +2525,16 @@
         let existingButton = document.querySelector(".go-toolkit-voice-button");
         const bindVoiceButton = button => {
             if (!button) return;
+            button.classList.add(
+                "feedback-app-button",
+                "btn",
+                "btn-secondary",
+                "app-header-btn",
+                "chat-header-btn",
+                "go-toolkit-voice-button"
+            );
+            button.title = "Enregistrer une conversation";
+            button.dataset.app = "voice";
             if (button.dataset.voiceBound !== "1") {
                 button.addEventListener("click", handleButtonClick);
                 button.dataset.voiceBound = "1";
@@ -2568,6 +2633,10 @@
             if (state.conversionRunning === running) return;
             state.conversionRunning = running;
             updateButton();
+        });
+        window.addEventListener("resize", () => {
+            state.meterCanvasSizes.mic = null;
+            state.meterCanvasSizes["system-audio"] = null;
         });
         const observer = new MutationObserver(() => ensureVoiceButton());
         observer.observe(document.body, { childList: true, subtree: true });

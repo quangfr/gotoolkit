@@ -4801,6 +4801,70 @@
             }
           };
           const Surface = ({ onReady }) => {
+            useEffect(() => {
+              const hostEl = this.host;
+              if (!hostEl) {
+                return;
+              }
+              let boundEditor = null;
+              const interceptTextEditorRelease = (event) => {
+                var _a2;
+                const target = event.currentTarget;
+                if (!target) {
+                  return;
+                }
+                if (document.activeElement !== target) {
+                  return;
+                }
+                event.stopPropagation();
+                (_a2 = event.stopImmediatePropagation) == null ? void 0 : _a2.call(event);
+              };
+              const bindEditor = (editor) => {
+                if (boundEditor === editor) {
+                  return;
+                }
+                if (boundEditor) {
+                  boundEditor.removeEventListener("pointerup", interceptTextEditorRelease, true);
+                  boundEditor.removeEventListener("mouseup", interceptTextEditorRelease, true);
+                  boundEditor.removeEventListener("dblclick", interceptTextEditorRelease, true);
+                }
+                boundEditor = editor;
+                if (!boundEditor) {
+                  return;
+                }
+                boundEditor.addEventListener("pointerup", interceptTextEditorRelease, true);
+                boundEditor.addEventListener("mouseup", interceptTextEditorRelease, true);
+                boundEditor.addEventListener("dblclick", interceptTextEditorRelease, true);
+              };
+              const syncActiveEditor = () => {
+                const editor = hostEl.querySelector(
+                  ".excalidraw-textEditorContainer textarea, .text-editor-container textarea"
+                );
+                bindEditor(editor);
+              };
+              const handleFocusIn = () => {
+                syncActiveEditor();
+              };
+              const handlePointerDown = (event) => {
+                const target = event.target;
+                if (!target) {
+                  return;
+                }
+                const textEditor = target.closest("textarea");
+                if (!textEditor || !hostEl.contains(textEditor)) {
+                  return;
+                }
+                bindEditor(textEditor);
+              };
+              hostEl.addEventListener("focusin", handleFocusIn, true);
+              hostEl.addEventListener("pointerdown", handlePointerDown, true);
+              syncActiveEditor();
+              return () => {
+                hostEl.removeEventListener("focusin", handleFocusIn, true);
+                hostEl.removeEventListener("pointerdown", handlePointerDown, true);
+                bindEditor(null);
+              };
+            }, []);
             const syncApi = useCallback(
               (api) => {
                 if (api) {

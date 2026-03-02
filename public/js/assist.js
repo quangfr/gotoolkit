@@ -12117,4 +12117,7 @@
     global.sendInlineEditToAssist = sendInlineEditToAssist;
 
     global.GoToolkitAssist = global.GoToolkitAssist || GoToolkitAssist;
+    if (global.document && typeof global.document.dispatchEvent === "function" && typeof global.CustomEvent === "function") {
+        global.document.dispatchEvent(new global.CustomEvent("goToolkitAssistApiReady"));
+    }
 })(typeof window !== "undefined" ? window : this);

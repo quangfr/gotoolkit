@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type {
     BinaryFiles,
@@ -539,6 +539,69 @@ class ExcalidrawBridge {
                     }
                 };
                 const Surface: React.FC<{ onReady: (api: ExcalidrawImperativeAPI) => void }> = ({ onReady }) => {
+                    useEffect(() => {
+                        const hostEl = this.host;
+                        if (!hostEl) {
+                            return;
+                        }
+                        let boundEditor: HTMLTextAreaElement | null = null;
+                        const interceptTextEditorRelease = (event: Event) => {
+                            const target = event.currentTarget as HTMLTextAreaElement | null;
+                            if (!target) {
+                                return;
+                            }
+                            if (document.activeElement !== target) {
+                                return;
+                            }
+                            event.stopPropagation();
+                            (event as any).stopImmediatePropagation?.();
+                        };
+                        const bindEditor = (editor: HTMLTextAreaElement | null) => {
+                            if (boundEditor === editor) {
+                                return;
+                            }
+                            if (boundEditor) {
+                                boundEditor.removeEventListener("pointerup", interceptTextEditorRelease, true);
+                                boundEditor.removeEventListener("mouseup", interceptTextEditorRelease, true);
+                                boundEditor.removeEventListener("dblclick", interceptTextEditorRelease, true);
+                            }
+                            boundEditor = editor;
+                            if (!boundEditor) {
+                                return;
+                            }
+                            boundEditor.addEventListener("pointerup", interceptTextEditorRelease, true);
+                            boundEditor.addEventListener("mouseup", interceptTextEditorRelease, true);
+                            boundEditor.addEventListener("dblclick", interceptTextEditorRelease, true);
+                        };
+                        const syncActiveEditor = () => {
+                            const editor = hostEl.querySelector(
+                                ".excalidraw-textEditorContainer textarea, .text-editor-container textarea"
+                            ) as HTMLTextAreaElement | null;
+                            bindEditor(editor);
+                        };
+                        const handleFocusIn = () => {
+                            syncActiveEditor();
+                        };
+                        const handlePointerDown = (event: PointerEvent) => {
+                            const target = event.target as HTMLElement | null;
+                            if (!target) {
+                                return;
+                            }
+                            const textEditor = target.closest("textarea");
+                            if (!textEditor || !hostEl.contains(textEditor)) {
+                                return;
+                            }
+                            bindEditor(textEditor as HTMLTextAreaElement);
+                        };
+                        hostEl.addEventListener("focusin", handleFocusIn, true);
+                        hostEl.addEventListener("pointerdown", handlePointerDown, true);
+                        syncActiveEditor();
+                        return () => {
+                            hostEl.removeEventListener("focusin", handleFocusIn, true);
+                            hostEl.removeEventListener("pointerdown", handlePointerDown, true);
+                            bindEditor(null);
+                        };
+                    }, []);
                     const syncApi = useCallback(
                         (api: ExcalidrawImperativeAPI | null) => {
                             if (api) {

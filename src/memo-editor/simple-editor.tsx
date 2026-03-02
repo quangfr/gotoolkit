@@ -3384,6 +3384,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = React.useState(false);
   const [tableSelectionBox, setTableSelectionBox] = React.useState<{ top: number, left: number, width: number, height: number } | null>(null);
   const [tableSelectionResize, setTableSelectionResize] = React.useState<{ anchorPos: number, tablePos: number } | null>(null);
+  const saveTimeoutRef = React.useRef<number | null>(null);
   const blockDragMovedRef = React.useRef(false);
   const tableLayoutRafRef = React.useRef<number | null>(null);
   const isAutoLayoutRef = React.useRef(false);
@@ -4171,12 +4172,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       setEditorHtmlSnapshot(html);
       if (onChange) {
         // Debounce the onChange call to avoid excessive saves
-        if ((window as any)._memoSaveTimeout) {
-          clearTimeout((window as any)._memoSaveTimeout);
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
         }
-        (window as any)._memoSaveTimeout = setTimeout(() => {
+        saveTimeoutRef.current = window.setTimeout(() => {
           const innerStart = performance.now();
           onChange(html, editorId);
+          saveTimeoutRef.current = null;
           const duration = Math.round(performance.now() - innerStart);
           if (duration > 50) {
              console.warn(`[SimpleEditor] debounced onChange: getHTML/onChange took ${duration}ms`);
@@ -4192,13 +4194,23 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       setEditorHtmlSnapshot(editor.getHTML());
       if (onChange) {
         // Save immediately on blur
-        if ((window as any)._memoSaveTimeout) {
-          clearTimeout((window as any)._memoSaveTimeout);
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = null;
         }
         onChange(editor.getHTML());
       }
     },
   });
+
+  React.useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     if (!editor) return;
