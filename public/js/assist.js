@@ -383,8 +383,24 @@
         }
     }
 
+    function getActiveMemoTabId() {
+        if (CHAT_APP_ID !== "memo") return null;
+        try {
+            var tabIdFromApi = typeof global.getMemoActiveTabId === "function"
+                ? global.getMemoActiveTabId()
+                : null;
+            var tabIdFromState = global.__memoState?.activeTabId;
+            var tabId = tabIdFromApi || tabIdFromState || null;
+            return (tabId || "").toString().trim() || null;
+        } catch (err) {
+            return null;
+        }
+    }
+
     function getConversationScopeId() {
         if (CHAT_APP_ID !== "memo") return DEFAULT_CONVERSATION_SCOPE;
+        var tabId = getActiveMemoTabId();
+        if (tabId) return "tab:" + tabId;
         var docId = getActiveMemoDocumentId();
         if (docId) return "doc:" + docId;
         return DEFAULT_CONVERSATION_SCOPE;
@@ -392,9 +408,25 @@
 
     function getConversationScopeIdForDocument(documentId) {
         if (CHAT_APP_ID !== "memo") return DEFAULT_CONVERSATION_SCOPE;
+        var activeTabId = getActiveMemoTabId();
+        if (activeTabId) return "tab:" + activeTabId;
         var docId = (documentId || "").toString().trim();
         if (!docId) return getConversationScopeId();
         return "doc:" + docId;
+    }
+
+    function getTargetTabIdFromConversationScope(scopeId) {
+        if (CHAT_APP_ID !== "memo") return null;
+        var scoped = (scopeId || "").toString().trim();
+        if (!scoped) return null;
+        if (scoped.indexOf("tab:") === 0) {
+            return scoped.substring(4) || null;
+        }
+        if (scoped.indexOf("doc:") === 0 && typeof window.GoToolkitMemoGetDocumentActiveTabId === "function") {
+            var docId = scoped.substring(4);
+            return window.GoToolkitMemoGetDocumentActiveTabId(docId) || null;
+        }
+        return null;
     }
 
     function buildConversationId(scopeId) {
@@ -4608,11 +4640,7 @@
                 }
                 return false;
             }
-            var targetDocId = conversationScopeId.startsWith("doc:") ? conversationScopeId.substring(4) : null;
-            var targetTabId = null;
-            if (targetDocId && typeof window.GoToolkitMemoGetDocumentActiveTabId === "function") {
-                targetTabId = window.GoToolkitMemoGetDocumentActiveTabId(targetDocId);
-            }
+            var targetTabId = getTargetTabIdFromConversationScope(conversationScopeId);
             if (targetTabId && window.GoToolkitMemoInstance?.applyStructuredOpsTo) {
                 window.GoToolkitMemoInstance.applyStructuredOpsTo(targetTabId, normalizedOps);
                 return true;
@@ -4840,11 +4868,7 @@
                                 applied = true;
                             }
                         } else {
-                            var targetDocId = conversationScopeId.startsWith("doc:") ? conversationScopeId.substring(4) : null;
-                            var targetTabId = null;
-                            if (targetDocId && typeof window.GoToolkitMemoGetDocumentActiveTabId === "function") {
-                                targetTabId = window.GoToolkitMemoGetDocumentActiveTabId(targetDocId);
-                            }
+                            var targetTabId = getTargetTabIdFromConversationScope(conversationScopeId);
                             if (targetTabId && window.GoToolkitMemoInstance?.applyOutputTo) {
                                 window.GoToolkitMemoInstance.applyOutputTo(targetTabId, parsed.output, "suggest");
                                 applied = true;
@@ -4857,11 +4881,7 @@
                                 applied = true;
                             }
                         } else {
-                            var targetDocId = conversationScopeId.startsWith("doc:") ? conversationScopeId.substring(4) : null;
-                            var targetTabId = null;
-                            if (targetDocId && typeof window.GoToolkitMemoGetDocumentActiveTabId === "function") {
-                                targetTabId = window.GoToolkitMemoGetDocumentActiveTabId(targetDocId);
-                            }
+                            var targetTabId = getTargetTabIdFromConversationScope(conversationScopeId);
                             if (targetTabId && window.GoToolkitMemoInstance?.applyOutputTo) {
                                 window.GoToolkitMemoInstance.applyOutputTo(targetTabId, parsed.output, "suggest");
                                 applied = true;
