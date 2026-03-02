@@ -227,6 +227,8 @@
             var attemptedReauth = false;
             try {
                 var hadPendingSync = hasPendingSharedSyncInSpace(targetSpaceId);
+                // A manual reclick should clear the latched warning state and visibly retry the sync.
+                d.setSpaceSyncError?.(targetSpaceId, "");
                 updateSharedSpaceSyncButtonState(targetSpaceId, true);
                 await syncSpaceFromRemote(targetSpaceId, { refreshExplorer: true });
                 markSpaceLastSynced(targetSpaceId);

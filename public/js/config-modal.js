@@ -155,6 +155,16 @@
                         </div>
                         <div class="field-row">
                             <label style="width:100%">
+                                <span class="label-title">Correcteur orthographique</span>
+                                <select id="editorSpellcheckSelect">
+                                    <option value="auto" selected>Auto</option>
+                                    <option value="fr">Français</option>
+                                    <option value="off">Désactivé</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label style="width:100%">
                                 <span class="settings-label-row">
                                     <span class="label-title">Vitesse de lecture</span>
                                     <button class="settings-help-btn" type="button" data-help-key="voicePlaybackSpeed" aria-label="Aide Vitesse de lecture">

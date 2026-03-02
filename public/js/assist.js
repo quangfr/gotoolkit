@@ -1755,14 +1755,25 @@
         }
 
         this.lastObservedMemoDocumentId = getActiveMemoDocumentId();
+        var attempts = 0;
+        var maxAttempts = 12;
         this.scopeSyncIntervalId = setInterval(function () {
+            attempts += 1;
             var observedDocId = getActiveMemoDocumentId();
             if (observedDocId === this.lastObservedMemoDocumentId) {
+                if (attempts >= maxAttempts) {
+                    clearInterval(this.scopeSyncIntervalId);
+                    this.scopeSyncIntervalId = null;
+                }
                 return;
             }
             this.lastObservedMemoDocumentId = observedDocId;
             this.syncScopeFromActiveDocument({ documentId: observedDocId });
-        }.bind(this), 300);
+            if (attempts >= maxAttempts) {
+                clearInterval(this.scopeSyncIntervalId);
+                this.scopeSyncIntervalId = null;
+            }
+        }.bind(this), 250);
     };
 
     AssistSidebar.prototype.persistPendingAttachments = function () {
@@ -1863,8 +1874,7 @@
         if (!this.toggleButton) return;
         var icon = this.toggleButton.querySelector("i[data-lucide]");
         if (!icon) return;
-        var isActuallyOpen = Boolean(this.isOpen && this.sidebar && this.sidebar.classList.contains("chat-sidebar--open"));
-        var nextIcon = isActuallyOpen ? "panel-right-dashed" : "panel-right";
+        var nextIcon = "bot";
         if (icon.getAttribute("data-lucide") === nextIcon) return;
         icon.setAttribute("data-lucide", nextIcon);
         if (global.lucide) global.lucide.createIcons();
@@ -5587,11 +5597,15 @@
         var title = document.createElement("span");
         title.className = "chat-header-title";
         title.innerHTML = ''
-            + '<span class="chat-header-title-icon" aria-hidden="true">'
-            + '<i data-lucide="bot"></i>'
-            + '</span>'
+            + '<button type="button" class="chat-header-title-icon chat-header-close-btn" title="Fermer" aria-label="Fermer l’assistant">'
+            + '<i data-lucide="chevron-left"></i>'
+            + '</button>'
             + '<span class="chat-header-title-brand">Assistant</span>';
         header.appendChild(title);
+        var headerCloseBtn = title.querySelector(".chat-header-close-btn");
+        if (headerCloseBtn) {
+            headerCloseBtn.addEventListener("click", this.close.bind(this));
+        }
 
         var headerActions = document.createElement("div");
         headerActions.className = "chat-header-actions";

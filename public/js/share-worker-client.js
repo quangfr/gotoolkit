@@ -468,14 +468,29 @@
     }
     let response;
     try {
-      response = await fetch(buildAssetUrl(base, assetId), {
+      const headers = await withSpaceAuthHeaders(base, {}, {
         method: "GET",
-        cache: "force-cache"
+        collection: "assets",
+        spaceId
+      });
+      response = await fetchWithSyncRetry(buildAssetUrl(base, assetId), {
+        method: "GET",
+        cache: "force-cache",
+        headers
       });
     } catch (error) {
       return assetUrl;
     }
-    if (!response.ok) return assetUrl;
+    if (!response.ok) {
+      if (response.status === 404) {
+        logShareDebug("r2-asset-load:missing", {
+          assetId,
+          spaceId: String(spaceId || "").trim().toLowerCase()
+        });
+        return null;
+      }
+      return assetUrl;
+    }
     const contentType = String(response.headers.get("content-type") || "").toLowerCase();
     const bytes = new Uint8Array(await response.arrayBuffer());
     let blob = null;
@@ -511,6 +526,13 @@
       const src = String(node.getAttribute("src") || "").trim();
       if (!src || !src.includes("/v1/assets/")) continue;
       const blobUrl = await resolveAssetBlobUrl(base, src, spaceId);
+      if (blobUrl === null) {
+        const parentMedia = node.parentElement && /^(video|audio)$/i.test(node.parentElement.tagName)
+          ? node.parentElement
+          : null;
+        (parentMedia || node).remove();
+        continue;
+      }
       if (!blobUrl || blobUrl === src) continue;
       node.setAttribute("src", blobUrl);
     }
@@ -676,6 +698,9 @@
       fileName: uploadPayload.fileName,
       mimeType: uploadPayload.mimeType,
       contentBase64: uploadPayload.contentBase64
+    }, {
+      spaceId,
+      collection: "assets"
     });
     const assetId = String(uploadResult?.asset?.id || "").trim();
     if (!assetId) return payload;
@@ -716,12 +741,17 @@
 
     let response;
     try {
+      const headers = await withSpaceAuthHeaders(base, {
+        Accept: "application/json"
+      }, {
+        method: "GET",
+        collection: "assets",
+        spaceId: String(payload.spaceId || "").trim().toLowerCase()
+      });
       response = await fetchWithSyncRetry(buildAssetUrl(base, assetId), {
         method: "GET",
         cache: "no-store",
-        headers: {
-          Accept: "application/json"
-        }
+        headers
       });
     } catch (error) {
       throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
@@ -854,7 +884,7 @@
     return fetchWithSyncRetry(url, requestOptions);
   }
 
-  async function uploadAssetWithBase(base, uploadPayload) {
+  async function uploadAssetWithBase(base, uploadPayload, options = {}) {
     const url = `${base}/${API_VERSION}/assets/upload`;
     logShareDebug("r2-asset-upload:start", {
       scope: uploadPayload?.scope || "",
@@ -862,12 +892,17 @@
       mimeType: uploadPayload?.mimeType || "",
       contentBase64Length: String(uploadPayload?.contentBase64 || "").length
     });
+    const headers = await withSpaceAuthHeaders(base, {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    }, {
+      method: "POST",
+      collection: "assets",
+      spaceId: options?.spaceId || ""
+    });
     const response = await fetchWithSyncRetry(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json"
-      },
+      headers,
       body: JSON.stringify(uploadPayload || {})
     });
     if (!response.ok) {
@@ -922,6 +957,9 @@
         fileName: encryptedAsset.fileName,
         mimeType: encryptedAsset.mimeType,
         contentBase64: encryptedAsset.contentBase64
+      }, {
+        spaceId: options?.spaceId || "",
+        collection: "assets"
       });
       const assetId = String(uploadResult?.asset?.id || "").trim();
       if (!assetId) continue;
@@ -1462,7 +1500,7 @@
     const collection = String(options?.collection || "").trim().toLowerCase();
     const shouldAuth = Boolean(
       method !== "OPTIONS"
-      && (collection === "pages" || collection === "pages-meta")
+      && (collection === "pages" || collection === "pages-meta" || collection === "assets")
     );
     if (!shouldAuth) return headers || {};
     const spaceId = normalizeSpaceId(options?.spaceId || "");
@@ -1761,7 +1799,10 @@
         );
         finalPayload = Object.assign({}, finalPayload, encryptedAsset);
       }
-      const data = await uploadAssetWithBase(base, finalPayload);
+      const data = await uploadAssetWithBase(base, finalPayload, {
+        spaceId,
+        collection: "assets"
+      });
       if (data?.asset?.id) {
         data.asset.url = buildAssetUrl(base, data.asset.id);
       }
@@ -1769,15 +1810,22 @@
     });
   }
 
-  async function deleteAsset(assetId) {
+  async function deleteAsset(assetId, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
       const url = buildAssetUrl(base, assetId);
       let response;
       try {
+        const headers = await withSpaceAuthHeaders(base, {
+          Accept: "application/json"
+        }, {
+          method: "DELETE",
+          collection: "assets",
+          spaceId: String(options?.spaceId || "").trim().toLowerCase()
+        });
         response = await fetchWithSyncRetry(url, {
           method: "DELETE",
-          headers: { Accept: "application/json" }
+          headers
         });
       } catch (error) {
         throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));

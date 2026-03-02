@@ -55126,6 +55126,57 @@ ${promptInput.trim()}`
     }
     return "";
   };
+  var EDITOR_SPELLCHECK_STORAGE_KEY = "go-toolkit-editor-spellcheck";
+  var EDITOR_SPELLCHECK_EVENT = "go-toolkit:editor-spellcheck-changed";
+  var normalizeEditorSpellcheckMode = (value) => {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (normalized === "fr" || normalized === "off") return normalized;
+    return "auto";
+  };
+  var readEditorSpellcheckMode = () => {
+    const fromGlobal = window.GoToolkitEditorSpellcheckMode;
+    if (fromGlobal != null) return normalizeEditorSpellcheckMode(fromGlobal);
+    try {
+      const fromLocal = window.localStorage.getItem(EDITOR_SPELLCHECK_STORAGE_KEY);
+      if (fromLocal != null) return normalizeEditorSpellcheckMode(fromLocal);
+    } catch (err) {
+    }
+    return "auto";
+  };
+  var detectEditorSpellcheckLanguage = (text) => {
+    var _a;
+    const sample = String(text || "").toLowerCase().replace(/\s+/g, " ").trim().slice(0, 1500);
+    if (!sample) {
+      const browserLang = String(((_a = window.navigator) == null ? void 0 : _a.language) || "").toLowerCase();
+      return browserLang.startsWith("fr") ? "fr" : "en";
+    }
+    let frenchScore = 0;
+    let englishScore = 0;
+    if (/[àâçéèêëîïôûùüÿœæ]/.test(sample)) frenchScore += 3;
+    if (/\b(le|la|les|des|une|un|et|est|dans|pour|avec|sur|pas|que|qui|nous|vous)\b/.test(sample)) frenchScore += 2;
+    if (/\b(the|and|is|are|with|for|this|that|you|your|not|from|have)\b/.test(sample)) englishScore += 2;
+    if (/\b(j'|l'|d'|qu'|c'|n'|s')/.test(sample)) frenchScore += 2;
+    if (/\b(i|i'm|we|they|don't|can't|it's)\b/.test(sample)) englishScore += 2;
+    return frenchScore >= englishScore ? "fr" : "en";
+  };
+  var applyEditorSpellcheckPreferences = (editor) => {
+    var _a;
+    const dom = (_a = editor == null ? void 0 : editor.view) == null ? void 0 : _a.dom;
+    if (!dom) return;
+    const mode = readEditorSpellcheckMode();
+    const enabled = mode !== "off";
+    const text = typeof (editor == null ? void 0 : editor.getText) === "function" ? editor.getText() : "";
+    const lang = !enabled ? "" : mode === "fr" ? "fr" : detectEditorSpellcheckLanguage(text);
+    dom.spellcheck = enabled;
+    dom.setAttribute("spellcheck", enabled ? "true" : "false");
+    dom.setAttribute("autocorrect", enabled ? "on" : "off");
+    dom.setAttribute("autocapitalize", enabled ? "sentences" : "off");
+    if (lang) {
+      dom.setAttribute("lang", lang);
+    } else {
+      dom.removeAttribute("lang");
+    }
+  };
   var isFlowchartDiagram = (code) => {
     const header = getDiagramHeaderLine(code).toLowerCase();
     return header.startsWith("flowchart") || header.startsWith("graph");
@@ -58285,6 +58336,21 @@ ${promptInput.trim()}`
         }
       }
     });
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      const syncSpellcheck = () => {
+        applyEditorSpellcheckPreferences(editor);
+      };
+      syncSpellcheck();
+      editor.on("create", syncSpellcheck);
+      editor.on("update", syncSpellcheck);
+      window.addEventListener(EDITOR_SPELLCHECK_EVENT, syncSpellcheck);
+      return () => {
+        editor.off("create", syncSpellcheck);
+        editor.off("update", syncSpellcheck);
+        window.removeEventListener(EDITOR_SPELLCHECK_EVENT, syncSpellcheck);
+      };
+    }, [editor]);
     const insertImageFiles = react_shim_default.useCallback(async (files) => {
       if (!editor || !(files == null ? void 0 : files.length)) return;
       const selected = Array.from(files).filter(isSupportedImageFile);

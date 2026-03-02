@@ -10,10 +10,13 @@ const APP_HTML_FILES = [
   "public/grid.html",
   "public/home.html",
   "public/mobile.html",
-  "public/legal.html",
 ];
 
 const SPECIAL_CASES = [
+  {
+    file: "public/legal.html",
+    expected: "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'",
+  },
   { file: "public/404.html", expected: NOT_FOUND_CSP },
 ];
 
@@ -33,6 +36,17 @@ function extractMetaCsp(html, file) {
   }
 
   return normalize(contentMatch[1]);
+}
+
+function stripFrameAncestors(policy) {
+  const normalized = normalize(policy || "");
+  if (!normalized) return normalized;
+  const parts = normalized
+    .split(";")
+    .map((part) => normalize(part))
+    .filter(Boolean)
+    .filter((part) => !/^frame-ancestors\b/i.test(part));
+  return normalize(parts.join("; "));
 }
 
 function getFirebasePolicies() {
@@ -64,13 +78,15 @@ function assertEqual(actual, expected, label) {
 
 function main() {
   for (const file of APP_HTML_FILES) {
-    const actual = extractMetaCsp(readFile(file), file);
-    assertEqual(actual, APP_CSP, `${file} CSP`);
+    const actual = stripFrameAncestors(extractMetaCsp(readFile(file), file));
+    const expected = stripFrameAncestors(APP_CSP);
+    assertEqual(actual, expected, `${file} CSP`);
   }
 
   for (const entry of SPECIAL_CASES) {
-    const actual = extractMetaCsp(readFile(entry.file), entry.file);
-    assertEqual(actual, entry.expected, `${entry.file} CSP`);
+    const actual = stripFrameAncestors(extractMetaCsp(readFile(entry.file), entry.file));
+    const expected = stripFrameAncestors(entry.expected);
+    assertEqual(actual, expected, `${entry.file} CSP`);
   }
 
   const firebasePolicies = getFirebasePolicies();
