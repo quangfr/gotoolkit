@@ -1492,6 +1492,28 @@
     });
   }
 
+  async function refreshSpaceAuth(spaceId) {
+    assertReady();
+    const normalizedSpaceId = normalizeSpaceId(spaceId);
+    if (!normalizedSpaceId) {
+      throw new Error("spaceId requis");
+    }
+    return withWorkerFallback(async base => {
+      clearCachedSpaceAuth(normalizedSpaceId);
+      const identity = await getOauthIdentityAssertion();
+      if (!identity?.identityToken) {
+        return { ok: false, spaceId: normalizedSpaceId, reason: "missing-oauth-session" };
+      }
+      const token = await authenticateSpaceWithOauth(base, normalizedSpaceId);
+      return {
+        ok: Boolean(token),
+        token: String(token || "").trim(),
+        spaceId: normalizedSpaceId,
+        provider: String(identity?.provider || "").trim().toLowerCase()
+      };
+    });
+  }
+
   function collectAssetIdsFromPayload(payload) {
     const ids = new Set();
     const walk = value => {
@@ -1811,6 +1833,7 @@
     deleteAsset,
     rotateSpaceJoinCode,
     verifySpaceCredentials,
+    refreshSpaceAuth,
     probePagePayloadJoinCode,
     buildAssetUrl: assetId => buildAssetUrl(workerBases[0], assetId)
   };

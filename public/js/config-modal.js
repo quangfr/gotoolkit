@@ -7,7 +7,12 @@
         googleTts: "Utilisation : téléchargement audio d'un fichier et lecture audio dans mobile.html.\nGratuit estimé : Neural2 + WaveNet + Studio + Chirp HD ~60 h/mois puis Standard + Wavenet ~120 h/mois ;\nAprès gratuité : Standard ~0,23 $/h ; Neural2 et WaveNet ~0,91 $/h ; Chirp 3 HD ~1,71 $/h ; Studio ~9,14 $/h.\n",
         openRouterModel: "Utilisation : chat Assist.\nOrdre de grandeur : ~100 à 500 requêtes par euro sur des échanges courts à moyens, selon le modèle et la taille des prompts.",
         openRouterOcr: "Utilisation : importeur d'images et images à l'intérieur des documents.\nOrdre de grandeur : ~0,01 à 0,03 €/image selon la résolution et la quantité de texte.",
-        openRouterEmbeddings: "Utilisation : indexation RAG et recherche sémantique des documents.\nOrdre de grandeur : ~0,001 à 0,003 €/MB de texte selon le volume réellement vectorisé."
+        openRouterEmbeddings: "Utilisation : indexation RAG et recherche sémantique des documents.\nOrdre de grandeur : ~0,001 à 0,003 €/MB de texte selon le volume réellement vectorisé.",
+        notionIntegration: "Publier le document dans une page",
+        youtubeIntegration: "Publier un enregistrement comme vidéo sur sa chaîne Youtube",
+        gmailIntegration: "Envoyer le document comme email HTML depuis sa messagerie Gmail",
+        voicePlaybackSpeed: "Vitesse de lecture par défaut d'un enregistrement vidéo",
+        voiceScreenCaptureQuality: "Qualité de l'enregistrement vidéo WebM. Baisser dans le cas où le rendu n'est pas fluide"
     });
     const SHARED_SETTINGS_MODAL_HTML = `
         <div class="modal settings-modal" style="max-height: 98vh; overflow-y: auto; display: flex; flex-direction: column; max-width: 640px; width: min(640px, 94vw); min-width: min(100vw, 520px); min-height: min(100vh, 720px); padding: 12px; margin-right: -8px;">
@@ -20,7 +25,7 @@
                     <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="palette" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personnalisation</button>
                     <button type="button" class="tab-btn" data-tab="categoryTab"><i data-lucide="tag" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Catégorie</button>
                     <button type="button" class="tab-btn" data-tab="integrationsTab"><i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations</button>
-                    <button type="button" class="tab-btn" data-tab="promptTab"><i data-lucide="square-terminal" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Instructions</button>
+                    <button type="button" class="tab-btn" data-tab="promptTab"><i data-lucide="bot" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Assistant</button>
                     ${ENABLE_AI_SERVICES_TAB ? `<button type="button" class="tab-btn" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>` : ""}
                 </div>
                 <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">
@@ -150,27 +155,26 @@
                         </div>
                         <div class="field-row">
                             <label style="width:100%">
-                                <span class="label-title">Vitesse de lecture</span>
+                                <span class="settings-label-row">
+                                    <span class="label-title">Vitesse de lecture</span>
+                                    <button class="settings-help-btn" type="button" data-help-key="voicePlaybackSpeed" aria-label="Aide Vitesse de lecture">
+                                        <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                    </button>
+                                </span>
                                 <select id="voiceRecordingSpeedSelect"></select>
                             </label>
                         </div>
                         <div class="field-row">
                             <label style="width:100%">
-                                <span class="label-title">Capture d'écran</span>
+                                <span class="settings-label-row">
+                                    <span class="label-title">Capture d'écran</span>
+                                    <button class="settings-help-btn" type="button" data-help-key="voiceScreenCaptureQuality" aria-label="Aide Capture d'écran">
+                                        <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                    </button>
+                                </span>
                                 <select id="voiceScreenCaptureQualitySelect">
                                     <option value="1080">Haute qualité 1080p</option>
                                     <option value="720">Bonne qualité 720p</option>
-                                </select>
-                            </label>
-                        </div>
-                        <div class="field-row">
-                            <label style="width:100%">
-                                <span class="label-title">Effort IA</span>
-                                <select id="openrouterEffortSelect">
-                                    <option value="minimal">Minimal</option>
-                                    <option value="low" selected>Faible</option>
-                                    <option value="medium">Moyen</option>
-                                    <option value="high">Élevé</option>
                                 </select>
                             </label>
                         </div>
@@ -190,7 +194,12 @@
                         <div class="field-row">
                             <label style="width:100%">
                                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;">
-                                    <span class="label-title">Notion</span>
+                                    <span class="settings-label-row">
+                                        <span class="label-title">Notion</span>
+                                        <button class="settings-help-btn" type="button" data-help-key="notionIntegration" aria-label="Aide Notion">
+                                            <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                        </button>
+                                    </span>
                                     <a id="notionAuthLink" class="label-title dashed-link" href="#">Se connecter</a>
                                 </div>
                             </label>
@@ -206,7 +215,12 @@
                         <div class="field-row">
                             <label style="width:100%">
                                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;">
-                                    <span class="label-title">YouTube</span>
+                                    <span class="settings-label-row">
+                                        <span class="label-title">YouTube</span>
+                                        <button class="settings-help-btn" type="button" data-help-key="youtubeIntegration" aria-label="Aide YouTube">
+                                            <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                        </button>
+                                    </span>
                                     <a id="youtubeAuthLink" class="label-title dashed-link" href="#">Se connecter</a>
                                 </div>
                             </label>
@@ -230,13 +244,29 @@
                         <div class="field-row">
                             <label style="width:100%">
                                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;">
-                                    <span class="label-title">Gmail</span>
+                                    <span class="settings-label-row">
+                                        <span class="label-title">Gmail</span>
+                                        <button class="settings-help-btn" type="button" data-help-key="gmailIntegration" aria-label="Aide Gmail">
+                                            <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                        </button>
+                                    </span>
                                     <a id="gmailAuthLink" class="label-title dashed-link" href="#">Se connecter</a>
                                 </div>
                             </label>
                         </div>
                     </div>
                     <div class="settings-tab-panel" data-panel="promptTab" hidden>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <span class="label-title">Effort IA</span>
+                                <select id="openrouterEffortSelect">
+                                    <option value="minimal">Minimal</option>
+                                    <option value="low" selected>Faible</option>
+                                    <option value="medium">Moyen</option>
+                                    <option value="high">Élevé</option>
+                                </select>
+                            </label>
+                        </div>
                         <div class="header-row ia-header-actions" style="display:block;">
                             <div id="memoPromptPresetSelect"></div>
                             <textarea id="memoPromptEditor" rows="24" placeholder="Entrez le prompt personnalisé..."></textarea>
@@ -1247,7 +1277,7 @@
 
         modal.addEventListener("click", function (event) {
             if (event.target === modal) {
-                api.close();
+                event.stopPropagation();
             }
         });
 

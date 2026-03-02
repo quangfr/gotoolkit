@@ -224,6 +224,7 @@
                 setStatus?.("Service de partage indisponible", true);
                 return;
             }
+            var attemptedReauth = false;
             try {
                 var hadPendingSync = hasPendingSharedSyncInSpace(targetSpaceId);
                 updateSharedSpaceSyncButtonState(targetSpaceId, true);
@@ -237,6 +238,29 @@
                     setStatus?.(("Espace " + (space?.name || "") + " récupéré").trim());
                 }
             } catch (err) {
+                if (typeof isSpaceAuthInvalidError === "function" && isSpaceAuthInvalidError(err)) {
+                    const canAttemptOauthRefresh = isManagedOauthSpace?.(targetSpaceId) && typeof shareWorker?.refreshSpaceAuth === "function";
+                    if (!attemptedReauth && canAttemptOauthRefresh) {
+                        attemptedReauth = true;
+                        try {
+                            setStatus?.("Session cloud expirée. Reconnexion en cours...");
+                            updateSharedSpaceSyncButtonState(targetSpaceId, true);
+                            const refreshResult = await shareWorker.refreshSpaceAuth(targetSpaceId);
+                            if (refreshResult?.ok) {
+                                await syncSpaceFromRemote(targetSpaceId, { refreshExplorer: true });
+                                markSpaceLastSynced(targetSpaceId);
+                                d.setSpaceSyncError?.(targetSpaceId, "");
+                                setStatus?.("Connexion rétablie, espace synchronisé");
+                                return;
+                            }
+                        } catch (reauthErr) {
+                            err = reauthErr;
+                        }
+                    }
+                    d.setSpaceSyncError?.(targetSpaceId, String(err?.message || "Authentification espace requise"));
+                    setStatus?.("Accès à l'espace cloud invalide. Réauthentifiez puis relancez la synchronisation.", true);
+                    return;
+                }
                 console.error("Space refresh failed", err);
                 d.setSpaceSyncError?.(targetSpaceId, String(err?.message || "Erreur Firestore"));
                 setStatus?.("Impossible de rafraîchir cet espace", true);

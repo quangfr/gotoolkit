@@ -3610,6 +3610,14 @@ ul.release-roadmap-text li::before {
   color: var(--text-main);
 }
 
+.settings-modal .feedback-form input:focus,
+.settings-modal .feedback-form select:focus,
+.settings-modal .feedback-form textarea:focus {
+  outline: none;
+  border-color: var(--border-main);
+  box-shadow: none;
+}
+
 .chat-delete .chat-docs-indicator__delete {
   padding-left: 8px;
   cursor: pointer;
