@@ -27,7 +27,6 @@ Public entry points:
 - `public/index.html`
 - `public/mobile.html`
 - `public/grid.html`
-- `public/home.html`
 - `public/legal.html`
 - `public/404.html`
 
@@ -58,13 +57,25 @@ Used for lightweight persistent state such as:
 - cloud draft queues
 - some user-entered configuration
 
+AI debug payload capture is not persisted in `localStorage`.
+
 Examples of current keys:
 
 - `go-toolkit-theme`
 - `go-toolkit-ai-backend`
-- `go-toolkit-api-key`
 - `go-toolkit-speech-mode`
 - `go-toolkit-share-records`
+
+### `sessionStorage`
+
+The AI client records the last full AI request and response in `sessionStorage`.
+
+Behavior:
+
+- scoped to the current tab/session
+- exposed through `window.GoToolkitIA.getLastAIRequest()` and `window.GoToolkitIA.getLastAIResponse()`
+
+This reduces persistence compared with `localStorage`, but those payloads can still contain sensitive content while the tab remains open. Avoid using shared or untrusted browsers when working with sensitive data.
 
 ### IndexedDB
 
@@ -362,6 +373,7 @@ Current client-side Turnstile behavior:
 - the helper first tries a background/off-screen execution
 - if that times out, it can escalate to a visible interactive challenge
 - the client records diagnostics and last-attempt summaries for debugging
+- full AI request/response payload capture is dev-only and stored in `sessionStorage` behind `?mode=dev`
 
 This means Turnstile failures can occur in two distinct places:
 
@@ -412,7 +424,6 @@ Other current request-hardening mechanisms that are easy to miss:
 - `public/index.html`
 - `public/mobile.html`
 - `public/grid.html`
-- `public/home.html`
 - `public/js/share-worker-client.js`
 - `public/js/document-storage.js`
 - `public/js/document-rag.js`

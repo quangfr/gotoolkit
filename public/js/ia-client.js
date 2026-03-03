@@ -1,6 +1,8 @@
 (function (global) {
     const hasStreamingSupport =
         typeof ReadableStream !== "undefined" && typeof TextDecoder !== "undefined";
+    const LAST_AI_REQUEST_KEY = "goToolkit.chat.lastAIRequest";
+    const LAST_AI_RESPONSE_KEY = "goToolkit.chat.lastAIResponse";
 
     function stringifyContent(content) {
         if (typeof content === "string") {
@@ -680,9 +682,21 @@
         }
     }
 
-    function recordAIRequest(payload) {
+    function getAIDebugStorage() {
         try {
-            global.localStorage.setItem("goToolkit.chat.lastAIRequest", JSON.stringify({
+            return global.sessionStorage || null;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function recordAIRequest(payload) {
+        const storage = getAIDebugStorage();
+        if (!storage) {
+            return;
+        }
+        try {
+            storage.setItem(LAST_AI_REQUEST_KEY, JSON.stringify({
                 timestamp: new Date().toISOString(),
                 payload: payload
             }));
@@ -692,8 +706,12 @@
     }
 
     function recordAIResponse(result) {
+        const storage = getAIDebugStorage();
+        if (!storage) {
+            return;
+        }
         try {
-            global.localStorage.setItem("goToolkit.chat.lastAIResponse", JSON.stringify({
+            storage.setItem(LAST_AI_RESPONSE_KEY, JSON.stringify({
                 timestamp: new Date().toISOString(),
                 payload: result
             }));
@@ -703,8 +721,10 @@
     }
 
     function getLastAIRequest() {
+        const storage = getAIDebugStorage();
+        if (!storage) return null;
         try {
-            const stored = global.localStorage.getItem("goToolkit.chat.lastAIRequest");
+            const stored = storage.getItem(LAST_AI_REQUEST_KEY);
             return stored ? JSON.parse(stored) : null;
         } catch (err) {
             return null;
@@ -712,8 +732,10 @@
     }
 
     function getLastAIResponse() {
+        const storage = getAIDebugStorage();
+        if (!storage) return null;
         try {
-            const stored = global.localStorage.getItem("goToolkit.chat.lastAIResponse");
+            const stored = storage.getItem(LAST_AI_RESPONSE_KEY);
             return stored ? JSON.parse(stored) : null;
         } catch (err) {
             return null;

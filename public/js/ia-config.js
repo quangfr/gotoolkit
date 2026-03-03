@@ -60,8 +60,7 @@
             return "";
         },
         setApiKey: function (value) {
-            // Remove legacy key if still present.
-            safeStorageWrite("go-toolkit-api-key", "");
+            // API keys are not stored in browser storage.
         },
         getOpenAiModel: function () {
             // OpenAI model selection is no longer supported.
@@ -87,7 +86,7 @@
             return "";
         },
         setOpenRouterApiKey: function (value) {
-            safeStorageWrite("go-toolkit-openrouter-key", "");
+            // API keys are not stored in browser storage.
         },
         getOpenRouterModel: function () {
             var model = safeStorageRead(STORAGE_KEYS_OPENROUTER.MODEL);
