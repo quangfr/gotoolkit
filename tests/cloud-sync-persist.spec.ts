@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
-import { ensureCloudConnected } from "./helpers/cloud-auth";
+import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
 
 test.describe("Cloud sync persistency", () => {
   test("persists cloud create/edit/rename/move/reorder/delete operations and cleans up", async ({ page }) => {
@@ -68,7 +68,7 @@ test.describe("Cloud sync persistency", () => {
     };
 
     try {
-      await ensureCloudConnected(page, baseUrl);
+      await ensureCloudConnectedWithSpaceCode(page, baseUrl);
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 45_000 });
@@ -285,7 +285,7 @@ test.describe("Cloud sync persistency", () => {
         child: { metaStatus: "deleted", contentMissing: true }
       });
 
-      await page.reload({ waitUntil: "load" });
+      await page.reload({ waitUntil: "commit", timeout: 20_000 });
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.evaluate(async () => {
         await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });

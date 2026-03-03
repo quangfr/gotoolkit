@@ -1,4 +1,258 @@
 (function (global) {
+    function createCloudDraftManager(deps) {
+        var d = deps || {};
+        var storageKey = String(d.storageKey || "goToolkit.memo.cloudDrafts.v1").trim() || "goToolkit.memo.cloudDrafts.v1";
+        var store = d.store || null;
+        var normalizeSpaceId = typeof d.normalizeSpaceId === "function" ? d.normalizeSpaceId : function (value) { return String(value || "").trim().toLowerCase(); };
+        var getDeviceId = typeof d.getDeviceId === "function" ? d.getDeviceId : function () { return "device-local"; };
+        var onDraftSpaceChanged = typeof d.onDraftSpaceChanged === "function" ? d.onDraftSpaceChanged : function () { };
+        var channelName = String(d.channelName || "goToolkit.memo.cloudDrafts").trim() || "goToolkit.memo.cloudDrafts";
+        var broadcastChannel = d.channel || (typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(channelName) : null);
+        var cloudDraftsCache = {};
+        var cloudDraftsLoaded = false;
+        var cloudDraftsLoadPromise = null;
+        var cloudDraftsMutationVersion = 0;
+        var cloudDraftsDeletedWhileLoading = new Set();
+        var deviceId = String(getDeviceId() || "device-local").trim() || "device-local";
+
+        function normalizeCloudDraftStore(value) {
+            if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+            return Object.keys(value).reduce(function (acc, key) {
+                var normalizedKey = String(key || "").trim();
+                if (!normalizedKey) return acc;
+                var entry = value[key];
+                if (!entry || typeof entry !== "object") return acc;
+                acc[normalizedKey] = entry;
+                return acc;
+            }, {});
+        }
+
+        function cloneCloudDraftStore(value) {
+            return { ...normalizeCloudDraftStore(value) };
+        }
+
+        function readLegacyCloudDraftsFromLocalStorage() {
+            if (typeof localStorage === "undefined") return {};
+            try {
+                var raw = localStorage.getItem(storageKey);
+                if (!raw) return {};
+                return normalizeCloudDraftStore(JSON.parse(raw));
+            } catch (err) {
+                return {};
+            }
+        }
+
+        async function persistCloudDraftStore(nextStore) {
+            if (!store?.write) return;
+            try {
+                await store.write(cloneCloudDraftStore(nextStore));
+            } catch (err) {
+                console.warn("Impossible de persister les brouillons cloud", err);
+            }
+        }
+
+        async function ensureReady() {
+            if (cloudDraftsLoaded) return cloudDraftsCache;
+            if (cloudDraftsLoadPromise) return cloudDraftsLoadPromise;
+            var mutationVersionAtLoadStart = cloudDraftsMutationVersion;
+            cloudDraftsLoadPromise = (async function () {
+                var loaded = {};
+                if (store?.read) {
+                    try {
+                        loaded = normalizeCloudDraftStore(await store.read());
+                    } catch (err) {
+                        loaded = {};
+                    }
+                }
+                if (!Object.keys(loaded).length) {
+                    var migrated = readLegacyCloudDraftsFromLocalStorage();
+                    if (Object.keys(migrated).length) {
+                        loaded = migrated;
+                        await persistCloudDraftStore(loaded);
+                    }
+                }
+                var currentCacheSnapshot = cloneCloudDraftStore(cloudDraftsCache);
+                var didMutateDuringLoad = cloudDraftsMutationVersion !== mutationVersionAtLoadStart;
+                if (didMutateDuringLoad) {
+                    var merged = {
+                        ...cloneCloudDraftStore(loaded),
+                        ...currentCacheSnapshot
+                    };
+                    cloudDraftsDeletedWhileLoading.forEach(function (key) {
+                        delete merged[key];
+                    });
+                    cloudDraftsDeletedWhileLoading.clear();
+                    cloudDraftsCache = cloneCloudDraftStore(merged);
+                    await persistCloudDraftStore(cloudDraftsCache);
+                } else {
+                    cloudDraftsCache = cloneCloudDraftStore(loaded);
+                    cloudDraftsDeletedWhileLoading.clear();
+                }
+                cloudDraftsLoaded = true;
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        localStorage.removeItem(storageKey);
+                    } catch (err) {
+                        // ignore
+                    }
+                }
+                return cloudDraftsCache;
+            })();
+            cloudDraftsLoadPromise.finally(function () {
+                cloudDraftsLoadPromise = null;
+            });
+            return cloudDraftsLoadPromise;
+        }
+
+        function publishChange() {
+            if (!broadcastChannel) return;
+            try {
+                broadcastChannel.postMessage({
+                    type: "cloud-drafts-updated",
+                    source: deviceId,
+                    at: Date.now()
+                });
+            } catch (err) {
+                // ignore
+            }
+        }
+
+        broadcastChannel?.addEventListener("message", async function (event) {
+            var payload = event?.data || {};
+            if (!payload || payload.type !== "cloud-drafts-updated") return;
+            if (payload.source === deviceId) return;
+            cloudDraftsLoaded = false;
+            cloudDraftsLoadPromise = null;
+            await ensureReady();
+        });
+
+        function readAllSync() {
+            if (!cloudDraftsLoaded && !cloudDraftsLoadPromise) {
+                ensureReady();
+            }
+            return cloudDraftsCache;
+        }
+
+        function writeAllSync(nextStore) {
+            cloudDraftsCache = cloneCloudDraftStore(nextStore);
+            cloudDraftsLoaded = true;
+            if (typeof localStorage !== "undefined") {
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify(cloudDraftsCache));
+                } catch (err) {
+                    // ignore
+                }
+            }
+            void persistCloudDraftStore(cloudDraftsCache);
+            publishChange();
+        }
+
+        function get(docId) {
+            var key = String(docId || "").trim();
+            if (!key) return null;
+            var currentStore = readAllSync();
+            var value = currentStore[key];
+            return value && typeof value === "object" ? value : null;
+        }
+
+        function normalizeDraftOpType(value) {
+            return String(value || "").trim().toLowerCase();
+        }
+
+        function isTerminalDraftOpType(value) {
+            var opType = normalizeDraftOpType(value);
+            return opType === "archive" || opType === "delete";
+        }
+
+        function mergeDraftValue(existingValue, nextValue) {
+            var existing = existingValue && typeof existingValue === "object" ? existingValue : null;
+            var next = nextValue && typeof nextValue === "object" ? nextValue : null;
+            if (!existing || !next) {
+                return nextValue;
+            }
+            var existingOpType = normalizeDraftOpType(existing?.opType || existing?.reason);
+            var nextOpType = normalizeDraftOpType(next?.opType || next?.reason);
+            if (!isTerminalDraftOpType(existingOpType)) {
+                return nextValue;
+            }
+            if (!nextOpType || nextOpType === "edit" || nextOpType === "content" || nextOpType === "move") {
+                return {
+                    ...next,
+                    ...existing,
+                    updatedAt: String(next?.updatedAt || new Date().toISOString()).trim() || new Date().toISOString()
+                };
+            }
+            return nextValue;
+        }
+
+        function set(docId, value, options) {
+            var key = String(docId || "").trim();
+            if (!key) return;
+            var draftOptions = options || {};
+            cloudDraftsMutationVersion += 1;
+            if (cloudDraftsLoadPromise) {
+                cloudDraftsDeletedWhileLoading.delete(key);
+            }
+            var currentStore = readAllSync();
+            currentStore[key] = mergeDraftValue(currentStore[key], value);
+            writeAllSync(currentStore);
+            var persistedValue = currentStore[key];
+            var draftSpaceId = normalizeSpaceId(
+                persistedValue?.spaceId
+                || persistedValue?.payload?.spaceId
+                || draftOptions.spaceId
+                || ""
+            );
+            onDraftSpaceChanged(draftSpaceId);
+        }
+
+        function remove(docId, options) {
+            var key = String(docId || "").trim();
+            if (!key) return;
+            var draftOptions = options || {};
+            cloudDraftsMutationVersion += 1;
+            if (cloudDraftsLoadPromise) {
+                cloudDraftsDeletedWhileLoading.add(key);
+            }
+            var currentStore = readAllSync();
+            if (!Object.prototype.hasOwnProperty.call(currentStore, key)) return;
+            var previous = currentStore[key];
+            delete currentStore[key];
+            writeAllSync(currentStore);
+            var draftSpaceId = normalizeSpaceId(
+                previous?.spaceId
+                || previous?.payload?.spaceId
+                || draftOptions.spaceId
+                || ""
+            );
+            onDraftSpaceChanged(draftSpaceId);
+        }
+
+        return {
+            ensureReady: ensureReady,
+            normalizeStore: normalizeCloudDraftStore,
+            cloneStore: cloneCloudDraftStore,
+            readAll: function () {
+                return readAllSync();
+            },
+            writeAll: function (nextStore) {
+                writeAllSync(nextStore);
+            },
+            get: get,
+            set: set,
+            remove: remove,
+            api: {
+                readAll: async function () {
+                    await ensureReady();
+                    return cloneCloudDraftStore(cloudDraftsCache);
+                },
+                get: get,
+                set: set,
+                remove: remove
+            }
+        };
+    }
+
     function createSpaceSyncHelpers(deps) {
         var d = deps || {};
         var normalizeSharedToken = d.normalizeSharedToken;
@@ -343,6 +597,7 @@
     }
 
     global.GoToolkitSpaceSync = {
-        create: createSpaceSyncHelpers
+        create: createSpaceSyncHelpers,
+        createCloudDraftManager: createCloudDraftManager
     };
 })(window);

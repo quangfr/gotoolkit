@@ -1166,7 +1166,7 @@
     });
   }
 
-  async function saveSharePayloadBatch(collection, writes) {
+  async function saveSharePayloadBatch(collection, writes, options = {}) {
     assertReady();
     const normalizedWrites = Array.isArray(writes)
       ? writes
@@ -1187,11 +1187,23 @@
         base
       });
       const preparedWrites = [];
+      const inlineAssetsExplicit = Object.prototype.hasOwnProperty.call(options || {}, "inlineAssets");
+      const shouldInlineAssets = inlineAssetsExplicit
+        ? Boolean(options?.inlineAssets)
+        : isPageCollection(collection);
       for (const entry of normalizedWrites) {
         const payload = entry?.payload;
-        const spaceId = resolveSpaceIdForPayload(payload || {}, {});
-        const preparedPayload = await maybeOffloadPagePayload(base, collection, payload, {
-          assetScope: collection,
+        const spaceId = resolveSpaceIdForPayload(payload || {}, options);
+        const preparedInlinePayload = shouldInlineAssets
+          ? await processPayloadInlineAssets(payload, base, {
+            assetScope: options.assetScope || collection,
+            collection,
+            spaceId
+          })
+          : payload;
+        const preparedPayload = await maybeOffloadPagePayload(base, collection, preparedInlinePayload, {
+          assetScope: options.assetScope || collection,
+          scope: options.scope,
           spaceId
         });
         const encryptedPayload = await encryptPagePayload(base, preparedPayload, collection, spaceId);
@@ -1670,7 +1682,7 @@
     });
   }
 
-  async function createSharePayloadBatch(collection, writes) {
+  async function createSharePayloadBatch(collection, writes, options = {}) {
     assertReady();
     const normalizedWrites = Array.isArray(writes)
       ? writes
@@ -1692,11 +1704,23 @@
         base
       });
       const preparedWrites = [];
+      const inlineAssetsExplicit = Object.prototype.hasOwnProperty.call(options || {}, "inlineAssets");
+      const shouldInlineAssets = inlineAssetsExplicit
+        ? Boolean(options?.inlineAssets)
+        : isPageCollection(collection);
       for (const entry of normalizedWrites) {
         const contentPayload = entry?.contentPayload;
-        const spaceId = resolveSpaceIdForPayload(contentPayload || {}, {});
-        const preparedContentPayload = await maybeOffloadPagePayload(base, collection, contentPayload, {
-          assetScope: collection,
+        const spaceId = resolveSpaceIdForPayload(contentPayload || {}, options);
+        const preparedInlineContentPayload = shouldInlineAssets
+          ? await processPayloadInlineAssets(contentPayload, base, {
+            assetScope: options.assetScope || collection,
+            collection,
+            spaceId
+          })
+          : contentPayload;
+        const preparedContentPayload = await maybeOffloadPagePayload(base, collection, preparedInlineContentPayload, {
+          assetScope: options.assetScope || collection,
+          scope: options.scope,
           spaceId
         });
         const encryptedContentPayload = await encryptPagePayload(base, preparedContentPayload, collection, spaceId);

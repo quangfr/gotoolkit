@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
-import { ensureCloudConnected } from "./helpers/cloud-auth";
+import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
 
 test.describe("Cloud/private transfer sync", () => {
   test("archives cloud doc to private and promotes private doc to cloud with sync persist", async ({ page }) => {
@@ -50,22 +50,22 @@ test.describe("Cloud/private transfer sync", () => {
     };
 
     try {
-      await ensureCloudConnected(page, baseUrl);
+      await ensureCloudConnectedWithSpaceCode(page, baseUrl);
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitCloudDrafts?.set), null, { timeout: 45_000 });
 
-    const seeded = await page.evaluate(async ({ cloudToken, cloudMarker, privateMarker }) => {
+    const seeded = await page.evaluate(async ({ cloudToken, cloudMarker, privateMarker, spaceId, spaceCode }) => {
       const worker = (window as any).goToolkitShareWorker;
       const history = (window as any).goToolkitShareHistory;
       const spaces = (window as any).GoToolkitSpaces;
-      spaces?.upsertSpace?.({ id: PW_TEST_SPACE_ID, name: "Go Live", icon: "cloud-upload", spaceJoinCode: PW_TEST_SPACE_CODE, isDefault: true });
+      spaces?.upsertSpace?.({ id: spaceId, name: "Go Live", icon: "cloud-upload", spaceJoinCode: spaceCode, isDefault: true });
 
       const cloudPayload = {
         tabs: [{ id: `tab-${cloudToken}`, title: `Cloud ${cloudToken}`, description: "", superpowers: [], content: `<p>${cloudMarker}</p>` }],
         activeTabId: `tab-${cloudToken}`,
         parentId: "",
-        spaceId: PW_TEST_SPACE_ID,
+        spaceId,
         status: "active",
         position: Date.now()
       };
@@ -76,7 +76,7 @@ test.describe("Cloud/private transfer sync", () => {
         superpowers: [],
         icon: "file-symlink",
         parentId: "",
-        spaceId: PW_TEST_SPACE_ID,
+        spaceId,
         position: Date.now(),
         status: "active"
       });
@@ -89,7 +89,7 @@ test.describe("Cloud/private transfer sync", () => {
         payload: cloudPayload,
         icon: "file-symlink",
         parentId: "",
-        spaceId: PW_TEST_SPACE_ID,
+        spaceId,
         position: Date.now(),
         updatedAt: new Date().toISOString()
       });
@@ -100,7 +100,7 @@ test.describe("Cloud/private transfer sync", () => {
       });
       await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
       return { privateId };
-    }, { cloudToken, cloudMarker, privateMarker });
+    }, { cloudToken, cloudMarker, privateMarker, spaceId: PW_TEST_SPACE_ID, spaceCode: PW_TEST_SPACE_CODE });
 
     const cloudRow = page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`).first();
     const privateSectionHeader = page.locator('.document-explorer__section-header[data-section="private"]').first();
@@ -109,13 +109,13 @@ test.describe("Cloud/private transfer sync", () => {
     await cloudRow.dragTo(privateSectionHeader);
     await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(0, { timeout: 20_000 });
 
-      await page.evaluate(async ({ privateId, promotedToken }) => {
+      await page.evaluate(async ({ privateId, promotedToken, spaceId }) => {
       const docApi = (window as any).goToolkitDocumentApi;
       const history = (window as any).goToolkitShareHistory;
       const local = await docApi.getRecord(privateId);
       const payload = local?.payload && typeof local.payload === "object"
-        ? { ...local.payload, spaceId: PW_TEST_SPACE_ID, parentId: "", status: "active", position: Date.now() }
-        : { tabs: [{ id: "tab-1", title: "Page 1", description: "", superpowers: [], content: "<p></p>" }], activeTabId: "tab-1", spaceId: PW_TEST_SPACE_ID, parentId: "", status: "active", position: Date.now() };
+        ? { ...local.payload, spaceId, parentId: "", status: "active", position: Date.now() }
+        : { tabs: [{ id: "tab-1", title: "Page 1", description: "", superpowers: [], content: "<p></p>" }], activeTabId: "tab-1", spaceId, parentId: "", status: "active", position: Date.now() };
       const title = String(local?.name || local?.title || "Promoted private").trim() || "Promoted private";
       const docId = `share:${promotedToken}`;
       (window as any).goToolkitCloudDrafts.set(docId, {
@@ -128,7 +128,7 @@ test.describe("Cloud/private transfer sync", () => {
         superpowers: [],
         icon: "file-symlink",
         parentId: "",
-        spaceId: PW_TEST_SPACE_ID,
+        spaceId,
         position: Date.now(),
         payload,
         updatedAt: new Date().toISOString()
@@ -141,12 +141,12 @@ test.describe("Cloud/private transfer sync", () => {
         payload,
         icon: "file-symlink",
         parentId: "",
-        spaceId: PW_TEST_SPACE_ID,
+        spaceId,
         position: Date.now(),
         updatedAt: new Date().toISOString()
       });
       await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
-      }, { privateId: seeded.privateId, promotedToken });
+      }, { privateId: seeded.privateId, promotedToken, spaceId: PW_TEST_SPACE_ID });
 
       await syncGolive();
 
@@ -163,7 +163,7 @@ test.describe("Cloud/private transfer sync", () => {
       expect(promoteState.exists).toBe(true);
       expect(promoteState.hasMarker).toBe(true);
 
-      await page.reload({ waitUntil: "load" });
+      await page.reload({ waitUntil: "commit", timeout: 20_000 });
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.evaluate(async () => {
         await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });

@@ -1,6 +1,9 @@
 (function () {
   const STORAGE_KEY = "go-toolkit-spaces";
   const DEFAULT_SPACE_ID = "golive";
+  const CLOUD_DRAFTS_STORAGE_KEY = "goToolkit.memo.cloudDrafts.v1";
+  const CLOUD_DRAFTS_STORE_NAME = "cloud-drafts";
+  const CLOUD_DRAFTS_RECORD_KEY = "records";
 
   const DICEWARE_FR_WORDS = [
     "abricot", "abeille", "abri", "acier", "acrobate", "adieu", "agenda", "agile", "aigle", "aile",
@@ -54,6 +57,18 @@
     const noAccent = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const withSpaces = noAccent.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
     return withSpaces;
+  }
+
+  function normalizeCloudDraftStore(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+    return Object.keys(value).reduce((acc, key) => {
+      const normalizedKey = String(key || "").trim();
+      if (!normalizedKey) return acc;
+      const entry = value[key];
+      if (!entry || typeof entry !== "object") return acc;
+      acc[normalizedKey] = entry;
+      return acc;
+    }, {});
   }
 
   function createRandomCode() {
@@ -201,9 +216,49 @@
     return upsertSpace({ ...space, spaceJoinCode: createRandomCode() });
   }
 
-  window.GoToolkitSpaces = window.GoToolkitSpaces || {
+  function createCloudDraftStore() {
+    const storageService = window.goToolkitStorageService;
+    if (storageService?.createStore) {
+      return storageService.createStore({
+        storeName: CLOUD_DRAFTS_STORE_NAME,
+        localStorageKey: CLOUD_DRAFTS_STORAGE_KEY,
+        recordKey: CLOUD_DRAFTS_RECORD_KEY,
+        defaultValue: () => ({}),
+        normalize: normalizeCloudDraftStore,
+        logPrefix: "GoToolkitCloudDraftStore"
+      });
+    }
+    return {
+      STORAGE_KEY: CLOUD_DRAFTS_STORAGE_KEY,
+      async read() {
+        try {
+          const raw = localStorage.getItem(CLOUD_DRAFTS_STORAGE_KEY);
+          return normalizeCloudDraftStore(raw ? JSON.parse(raw) : {});
+        } catch (err) {
+          return {};
+        }
+      },
+      async write(value) {
+        const next = normalizeCloudDraftStore(value);
+        try {
+          localStorage.setItem(CLOUD_DRAFTS_STORAGE_KEY, JSON.stringify(next));
+        } catch (err) {
+          // ignore
+        }
+        return next;
+      },
+      async refresh() {
+        return this.read();
+      }
+    };
+  }
+
+  const api = {
     STORAGE_KEY,
     DEFAULT_SPACE_ID,
+    CLOUD_DRAFTS_STORAGE_KEY,
+    CLOUD_DRAFTS_STORE_NAME,
+    CLOUD_DRAFTS_RECORD_KEY,
     readSpaces,
     writeSpaces,
     upsertSpace,
@@ -211,10 +266,15 @@
     getSpaceById,
     normalizeSpaceId,
     normalizeSpaceJoinCode,
+    normalizeCloudDraftStore,
     createRandomCode,
     createRandomName,
     joinByCode,
     createSpace,
-    regenerateCode
+    regenerateCode,
+    createCloudDraftStore
   };
+
+  window.GoToolkitSpaceStore = window.GoToolkitSpaceStore || api;
+  window.GoToolkitSpaces = window.GoToolkitSpaces || window.GoToolkitSpaceStore;
 })();

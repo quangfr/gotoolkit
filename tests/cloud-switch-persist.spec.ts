@@ -1,19 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
-import { ensureCloudConnected } from "./helpers/cloud-auth";
+import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
 
 test.describe("Cloud page switching persistency", () => {
   test("keeps cloud edits across cloud page switches and reload", async ({ page }) => {
     test.setTimeout(120_000);
     const baseUrl = "http://127.0.0.1:5000";
 
-    await ensureCloudConnected(page, baseUrl);
+    await ensureCloudConnectedWithSpaceCode(page, baseUrl);
     await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 30_000 });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 30_000 });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 30_000 });
     await page.waitForSelector(".ProseMirror:visible", { timeout: 30_000 });
 
-    const seed = await page.evaluate(async () => {
+    const seed = await page.evaluate(async ({ spaceId, spaceCode }) => {
       const ts = Date.now();
       const tokenA = `pw-cloud-a-${ts}`;
       const tokenB = `pw-cloud-b-${ts}`;
@@ -35,16 +35,16 @@ test.describe("Cloud page switching persistency", () => {
         ],
         activeTabId: tabId,
         parentId: "",
-        spaceId: PW_TEST_SPACE_ID,
+        spaceId,
         status: "active",
         position: ts
       });
 
       (window as any).GoToolkitSpaces?.upsertSpace?.({
-        id: PW_TEST_SPACE_ID,
+        id: spaceId,
         name: "Go Live",
         icon: "cloud-upload",
-        spaceJoinCode: PW_TEST_SPACE_CODE,
+        spaceJoinCode: spaceCode,
         isDefault: true
       });
 
@@ -57,7 +57,7 @@ test.describe("Cloud page switching persistency", () => {
         superpowers: [],
         icon: "file-symlink",
         parentId: "",
-        spaceId: PW_TEST_SPACE_ID,
+        spaceId,
         position: ts,
         status: "active"
       });
@@ -69,7 +69,7 @@ test.describe("Cloud page switching persistency", () => {
         superpowers: [],
         icon: "file-symlink",
         parentId: "",
-        spaceId: PW_TEST_SPACE_ID,
+        spaceId,
         position: ts + 1,
         status: "active"
       });
@@ -83,7 +83,7 @@ test.describe("Cloud page switching persistency", () => {
         payload: payloadA,
         icon: "file-symlink",
         parentId: "",
-        spaceId: PW_TEST_SPACE_ID,
+        spaceId,
         position: ts,
         updatedAt: String(savedMetaA?.updatedAt || new Date().toISOString())
       });
@@ -96,14 +96,14 @@ test.describe("Cloud page switching persistency", () => {
         payload: payloadB,
         icon: "file-symlink",
         parentId: "",
-        spaceId: PW_TEST_SPACE_ID,
+        spaceId,
         position: ts + 1,
         updatedAt: String(savedMetaB?.updatedAt || new Date().toISOString())
       });
 
       await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
       return { cloudAId, cloudBId, cloudAEdit };
-    });
+    }, { spaceId: PW_TEST_SPACE_ID, spaceCode: PW_TEST_SPACE_CODE });
 
     const clickDoc = async (docId: string) => {
       const item = page.locator(`.document-explorer__item[data-document-id="${docId}"]`).first();
@@ -128,7 +128,7 @@ test.describe("Cloud page switching persistency", () => {
     await clickDoc(seed.cloudAId);
     await expect.poll(getEditorHtml, { timeout: 15_000 }).toContain(seed.cloudAEdit);
 
-    await page.reload({ waitUntil: "load" });
+    await page.reload({ waitUntil: "commit", timeout: 20_000 });
     await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 30_000 });
     await page.evaluate(async () => {
       await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
