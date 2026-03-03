@@ -28319,95 +28319,118 @@ img.ProseMirror-separator {
   ];
   var Download = createLucideIcon("download", __iconNode22);
 
-  // node_modules/lucide-react/dist/esm/icons/fullscreen.js
+  // node_modules/lucide-react/dist/esm/icons/folder-tree.js
   init_define_process_env();
   init_polyfills();
   var __iconNode23 = [
+    [
+      "path",
+      {
+        d: "M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z",
+        key: "hod4my"
+      }
+    ],
+    [
+      "path",
+      {
+        d: "M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z",
+        key: "w4yl2u"
+      }
+    ],
+    ["path", { d: "M3 5a2 2 0 0 0 2 2h3", key: "f2jnh7" }],
+    ["path", { d: "M3 3v13a2 2 0 0 0 2 2h3", key: "k8epm1" }]
+  ];
+  var FolderTree = createLucideIcon("folder-tree", __iconNode23);
+
+  // node_modules/lucide-react/dist/esm/icons/fullscreen.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode24 = [
     ["path", { d: "M3 7V5a2 2 0 0 1 2-2h2", key: "aa7l1z" }],
     ["path", { d: "M17 3h2a2 2 0 0 1 2 2v2", key: "4qcy5o" }],
     ["path", { d: "M21 17v2a2 2 0 0 1-2 2h-2", key: "6vwrx8" }],
     ["path", { d: "M7 21H5a2 2 0 0 1-2-2v-2", key: "ioqczr" }],
     ["rect", { width: "10", height: "8", x: "7", y: "8", rx: "1", key: "vys8me" }]
   ];
-  var Fullscreen = createLucideIcon("fullscreen", __iconNode23);
+  var Fullscreen = createLucideIcon("fullscreen", __iconNode24);
 
   // node_modules/lucide-react/dist/esm/icons/heading-1.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode24 = [
-    ["path", { d: "M4 12h8", key: "17cfdx" }],
-    ["path", { d: "M4 18V6", key: "1rz3zl" }],
-    ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
-  ];
-  var Heading1 = createLucideIcon("heading-1", __iconNode24);
-
-  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode25 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
   ];
-  var Heading2 = createLucideIcon("heading-2", __iconNode25);
+  var Heading1 = createLucideIcon("heading-1", __iconNode25);
 
-  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode26 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
+    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+  ];
+  var Heading2 = createLucideIcon("heading-2", __iconNode26);
+
+  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode27 = [
+    ["path", { d: "M4 12h8", key: "17cfdx" }],
+    ["path", { d: "M4 18V6", key: "1rz3zl" }],
+    ["path", { d: "M12 18V6", key: "zqpxq5" }],
     ["path", { d: "M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2", key: "68ncm8" }],
     ["path", { d: "M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2", key: "1ejuhz" }]
   ];
-  var Heading3 = createLucideIcon("heading-3", __iconNode26);
+  var Heading3 = createLucideIcon("heading-3", __iconNode27);
 
   // node_modules/lucide-react/dist/esm/icons/highlighter.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode27 = [
+  var __iconNode28 = [
     ["path", { d: "m9 11-6 6v3h9l3-3", key: "1a3l36" }],
     ["path", { d: "m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4", key: "14a9rk" }]
   ];
-  var Highlighter = createLucideIcon("highlighter", __iconNode27);
+  var Highlighter = createLucideIcon("highlighter", __iconNode28);
 
   // node_modules/lucide-react/dist/esm/icons/image.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode28 = [
+  var __iconNode29 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
     ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
     ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
   ];
-  var Image2 = createLucideIcon("image", __iconNode28);
+  var Image2 = createLucideIcon("image", __iconNode29);
 
   // node_modules/lucide-react/dist/esm/icons/info.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode29 = [
+  var __iconNode30 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "M12 16v-4", key: "1dtifu" }],
     ["path", { d: "M12 8h.01", key: "e9boi3" }]
   ];
-  var Info = createLucideIcon("info", __iconNode29);
+  var Info = createLucideIcon("info", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/italic.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode30 = [
+  var __iconNode31 = [
     ["line", { x1: "19", x2: "10", y1: "4", y2: "4", key: "15jd3p" }],
     ["line", { x1: "14", x2: "5", y1: "20", y2: "20", key: "bu0au3" }],
     ["line", { x1: "15", x2: "9", y1: "4", y2: "20", key: "uljnxc" }]
   ];
-  var Italic2 = createLucideIcon("italic", __iconNode30);
+  var Italic2 = createLucideIcon("italic", __iconNode31);
 
   // node_modules/lucide-react/dist/esm/icons/lightbulb.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode31 = [
+  var __iconNode32 = [
     [
       "path",
       {
@@ -28418,17 +28441,7 @@ img.ProseMirror-separator {
     ["path", { d: "M9 18h6", key: "x1upvd" }],
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ];
-  var Lightbulb = createLucideIcon("lightbulb", __iconNode31);
-
-  // node_modules/lucide-react/dist/esm/icons/link-2.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode32 = [
-    ["path", { d: "M9 17H7A5 5 0 0 1 7 7h2", key: "8i5ue5" }],
-    ["path", { d: "M15 7h2a5 5 0 1 1 0 10h-2", key: "1b9ql8" }],
-    ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
-  ];
-  var Link2 = createLucideIcon("link-2", __iconNode32);
+  var Lightbulb = createLucideIcon("lightbulb", __iconNode32);
 
   // node_modules/lucide-react/dist/esm/icons/link.js
   init_define_process_env();
@@ -28437,7 +28450,7 @@ img.ProseMirror-separator {
     ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
     ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
   ];
-  var Link3 = createLucideIcon("link", __iconNode33);
+  var Link2 = createLucideIcon("link", __iconNode33);
 
   // node_modules/lucide-react/dist/esm/icons/list-tree.js
   init_define_process_env();
@@ -55552,7 +55565,7 @@ ${promptInput.trim()}`
                 children: [
                   /* @__PURE__ */ jsxs("div", { className: "link-search-item-info", children: [
                     /* @__PURE__ */ jsxs("div", { className: "link-search-item-title", children: [
-                      item.type === "url" ? /* @__PURE__ */ jsx(Link3, { size: 12, style: { marginRight: 8, opacity: 0.6 } }) : /* @__PURE__ */ jsx(Link3, { size: 12, style: { marginRight: 8, opacity: 0.6 } }),
+                      item.type === "url" ? /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }) : /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }),
                       item.title
                     ] }),
                     item.type === "document" && /* @__PURE__ */ jsx("div", { className: "link-search-item-path", children: item.section === "shared" ? "Partag\xE9" : item.section === "common" ? "Commun" : "Priv\xE9" })
@@ -56478,7 +56491,7 @@ ${promptInput.trim()}`
                 onClick: onLink,
                 "data-active-state": editor.isActive("link") ? "on" : "off",
                 title: "Lien",
-                children: /* @__PURE__ */ jsx(Link3, { size: 14 })
+                children: /* @__PURE__ */ jsx(Link2, { size: 14 })
               }
             )
           ] }),
@@ -56900,11 +56913,11 @@ ${promptInput.trim()}`
       { label: "Liste \xE0 puces", value: "bulletList", icon: List, active: editor.isActive("bulletList") },
       { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, active: editor.isActive("taskList") },
       { label: "Bloc de code", value: "codeBlock", icon: SquareCode, active: editor.isActive("codeBlock") },
-      { label: "Lien", value: "link", icon: Link3, active: editor.isActive("link") },
-      { label: "Navigation", value: "navigation", icon: List, active: editor.isActive("memoSummaryBlock") },
-      { label: "Sommaire", value: "summary", icon: List, active: editor.isActive("memoPageSummaryBlock") },
+      { label: "Lien", value: "link", icon: Link2, active: editor.isActive("link") },
+      { label: "Navigation", value: "navigation", icon: FolderTree, active: editor.isActive("memoSummaryBlock") },
+      { label: "Sommaire", value: "summary", icon: ListTree, active: editor.isActive("memoPageSummaryBlock") },
       { label: "Libell\xE9", value: "label", icon: Tag, active: editor.isActive("code") },
-      { label: "Citation", value: "quote", icon: Shapes, active: editor.isActive("blockquote") },
+      { label: "Citation", value: "quote", icon: Quote, active: editor.isActive("blockquote") },
       { label: "Tableau", value: "table", icon: Table2, active: editor.isActive("table") },
       { label: "Diagramme", value: "diagram", icon: Shapes, active: editor.isActive("mermaidDiagram") },
       { label: "Image", value: "image", icon: Image2, active: false },
@@ -60608,11 +60621,11 @@ ${innerMarkdown}
       { label: "Liste \xE0 puces", value: "bulletList", icon: List, markdownShortcut: "-", aliases: ["liste", "puce", "list"] },
       { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, markdownShortcut: "[]", aliases: ["todo", "task", "checklist"] },
       { label: "Bloc de code", value: "codeBlock", icon: SquareCode, markdownShortcut: "```", aliases: ["code", "snippet"] },
-      { label: "Lien", value: "link", icon: Link3, markdownShortcut: "[texte](url)", aliases: ["url", "hyperlink"] },
-      { label: "Navigation", value: "navigation", icon: Link2, markdownShortcut: "navigation", aliases: ["children", "enfants", "pages"] },
+      { label: "Lien", value: "link", icon: Link2, markdownShortcut: "[texte](url)", aliases: ["url", "hyperlink"] },
+      { label: "Navigation", value: "navigation", icon: FolderTree, markdownShortcut: "navigation", aliases: ["children", "enfants", "pages"] },
       { label: "Sommaire", value: "summary", icon: ListTree, markdownShortcut: "sommaire", aliases: ["summary", "toc", "titres", "headings"] },
       { label: "Libell\xE9", value: "label", icon: Tag, markdownShortcut: "@", aliases: ["tag", "etiquette"] },
-      { label: "Citation", value: "quote", icon: Shapes, markdownShortcut: ">", aliases: ["blockquote", "citation"] },
+      { label: "Citation", value: "quote", icon: Quote, markdownShortcut: ">", aliases: ["blockquote", "citation"] },
       { label: "Tableau", value: "table", icon: Table2, markdownShortcut: "|", aliases: ["table", "grille"] },
       { label: "Diagramme", value: "diagram", icon: Shapes, markdownShortcut: "mermaid", aliases: ["schema", "graph", "mermaid"] },
       { label: "Image", value: "image", icon: Image2, markdownShortcut: "![alt](url)", aliases: ["photo", "illustration"] },
@@ -61823,6 +61836,7 @@ lucide-react/dist/esm/icons/clapperboard.js:
 lucide-react/dist/esm/icons/copy.js:
 lucide-react/dist/esm/icons/crop.js:
 lucide-react/dist/esm/icons/download.js:
+lucide-react/dist/esm/icons/folder-tree.js:
 lucide-react/dist/esm/icons/fullscreen.js:
 lucide-react/dist/esm/icons/heading-1.js:
 lucide-react/dist/esm/icons/heading-2.js:
@@ -61832,7 +61846,6 @@ lucide-react/dist/esm/icons/image.js:
 lucide-react/dist/esm/icons/info.js:
 lucide-react/dist/esm/icons/italic.js:
 lucide-react/dist/esm/icons/lightbulb.js:
-lucide-react/dist/esm/icons/link-2.js:
 lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/list-tree.js:
 lucide-react/dist/esm/icons/list.js:

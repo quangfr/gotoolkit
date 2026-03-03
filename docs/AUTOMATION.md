@@ -94,11 +94,19 @@ Current Playwright config already supports:
 Preferred usage:
 
 - create or maintain one dedicated automation/test space
+- upsert that space locally in `GoToolkitSpaces` with `id + spaceJoinCode` before cloud writes
+- prefer the browser-client bootstrap path (`goToolkitShareWorker.verifySpaceCredentials(...)`) over manual UI login when the test only needs cloud access
 - authenticate with `POST /v1/spaces/auth`
 - reuse returned `token` as `X-Space-Auth`
 - reuse returned `contentKey` for encrypted page/media handling
 
 This is the cleanest way to manipulate cloud documents programmatically without UI login.
+
+Operational note from current tests:
+
+- in Playwright, the most reliable readiness gate for this path is the minimum bootstrap state:
+  `goToolkitShareWorker.isReady` and `GoToolkitSpaces.upsertSpace`
+- do not block on broader app readiness if the test only needs cloud auth/bootstrap
 
 ## 5. Programmatic cloud document manipulation
 
@@ -172,6 +180,12 @@ Additional improvements worth adopting:
 - split auth bootstrap from content bootstrap so tests can reuse auth while resetting data
 - capture and reuse a pre-authenticated cloud space state file per environment
 
+Practical reliability notes for this repo:
+
+- `index.html` is heavy; avoid `page.goto(..., { waitUntil: "load" })` and `page.reload(..., { waitUntil: "load" })` in cloud flows
+- prefer `waitUntil: "commit"` or `domcontentloaded`, then wait explicitly for the app primitive you need
+- when running many cloud specs in one command, prefer a prestarted server (`npm run start:test`) over relying on Playwright-managed `webServer`
+
 ## 7. Programmatic access to browser-local persisted state
 
 The app stores important state in:
@@ -185,6 +199,11 @@ Programmatic automation options:
 - Playwright `page.evaluate(...)` for localStorage/sessionStorage reads/writes
 - Playwright page scripts to inspect IndexedDB contents
 - a repo-local Node helper that opens a page and dumps selected IndexedDB stores for assertions
+
+Important Playwright rule:
+
+- never rely on imported Node constants directly inside `page.evaluate(...)`
+- always pass values (for example `spaceId`, `spaceCode`, tokens, markers) as explicit `page.evaluate(arg => ..., arg)` arguments
 
 High-value stores for automation:
 
@@ -351,6 +370,8 @@ Recommended CI tiers:
 
 - `tests/cloud-sync-persist.spec.ts`
 - `tests/cloud-private-transfer-sync.spec.ts`
+- `tests/cloud-archive-retry.spec.ts`
+- `tests/cloud-draft-terminal-ops.spec.ts`
 - one API smoke script for `share-proxy`
 
 ### Conditional checks on worker changes
@@ -387,6 +408,16 @@ Goal:
 Goal:
 
 - assert `document-api`, `cloud-drafts`, `voice-recordings`, and RAG stores directly from Playwright
+
+### 13.3 Stable shared-server cloud suite
+
+Goal:
+
+- run the cloud persistence specs against a prestarted `npm run start:test` server instead of relying on Playwright to repeatedly manage the server lifecycle
+
+Rationale:
+
+- the current cloud specs are more stable individually than in one large grouped run when the built-in `webServer` is under load
 
 ### 13.3 Cloud asset round-trip test
 
@@ -451,6 +482,7 @@ When automating work in this repo:
 - prefer API bootstrap over repeated UI login
 - prefer dedicated test spaces over production-managed spaces
 - reuse persistent browser state
+- prefer `spaceCode` bootstrap for non-managed/test-space coverage
 - verify both UI result and underlying storage/API result
 - deploy only changed workers
 - run one focused regression after each worker or sync change

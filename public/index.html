@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
-    <script src="js/bootstrap-theme-fontsize.js?v=2026.03.03.3"></script>
-    <script src="js/bootstrap-mobile-redirect.js?v=2026.03.03.3"></script>
-    <script src="js/bootstrap-polyfills.js?v=2026.03.03.3"></script>
+    <script src="js/bootstrap-theme-fontsize.js?v=2026.03.03.4"></script>
+    <script src="js/bootstrap-mobile-redirect.js?v=2026.03.03.4"></script>
+    <script src="js/bootstrap-polyfills.js?v=2026.03.03.4"></script>
     <title>GoToolkit | Savane Go-Live</title>
     <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"
         integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin defer></script>
@@ -20,11 +20,11 @@
         integrity="sha384-LlKSgo4Eo5GuF/ZrstLti44dE+GC5XAJ7TSu0Nw9Q3vIZF2QMnkRcK7BUoLabYLF" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js"
         integrity="sha384-o5vdFlIHJf1L/hUFEtj8tgNVtCT+02DKNT3MPA47wJ9Eo5HocC7qCL2YL+sWNsk8" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.03.03.3">
+    <link rel="stylesheet" href="styles/style.css?v=2026.03.03.4">
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.03.03.3">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.03.03.3">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.03.03.4">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.03.03.4">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js" defer></script>
     <style>
@@ -39,8 +39,10 @@
             position: fixed;
             border: 2px solid var(--color-primary);
             border-radius: 10px;
-            background: rgba(16, 185, 129, 0.05);
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+            box-shadow:
+                0 0 0 9999px rgba(6, 9, 17, 0.28),
+                0 0 0 2px rgba(16, 185, 129, 0.08);
             z-index: 30001;
             pointer-events: none;
         }
@@ -60,6 +62,17 @@
             font-size: 12px;
             opacity: 0.7;
             margin-bottom: 6px;
+        }
+
+        .docs-tour-help-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            color: var(--color-primary);
+            margin-bottom: 8px;
         }
 
         .docs-tour-title {
@@ -474,16 +487,15 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.03.03.3</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.03.03.4</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
                 <button id="memoResetAppBtn" type="button" class="secondary"
                     onclick="window.GoToolkitResetApp && window.GoToolkitResetApp()"
-                    style="flex: 1; margin: 0; width: auto;">Réinitialiser</button>
-                <button id="memoGuidedTourBtn" type="button" class="secondary"
-                    onclick="window.GoToolkitStartDocsTour && window.GoToolkitStartDocsTour()"
-                    style="flex: 1; margin: 0; width: auto;"><i data-lucide="map"></i> Tour guidé</button>
+                    style="flex: 1; margin: 0; width: auto;"><i data-lucide="octagon-x"></i> Réinitialiser</button>
+                <button id="memoHelpBtn" type="button" class="secondary"
+                    style="flex: 1; margin: 0; width: auto;"><i data-lucide="file-question"></i> Aide</button>
             </div>
         </div>
         <div
@@ -557,25 +569,25 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.03.03.3" defer></script>
-    <script src="js/turnstile-helper.js?v=2026.03.03.3" defer></script>
-    <script src="js/config-modal.js?v=2026.03.03.3" defer></script>
-    <script src="js/feature-visibility.js?v=2026.03.03.3" defer></script>
-    <script src="js/document-storage.js?v=2026.03.03.3" defer></script>
-    <script src="js/storage-service.js?v=2026.03.03.3" defer></script>
-    <script src="js/shared-ui.js?v=2026.03.03.3" defer></script>
-    <script src="js/space-store.js?v=2026.03.03.3" defer></script>
-    <script src="js/share-worker-client.js?v=2026.03.03.3" defer></script>
-    <script src="js/share-history.js?v=2026.03.03.3" defer></script>
-    <script src="js/document-api.js?v=2026.03.03.3" defer></script>
-    <script src="js/keywordIndex.js?v=2026.03.03.3" defer></script>
-    <script src="js/document-rag.js?v=2026.03.03.3" defer></script>
-    <script src="js/ia-config.js?v=2026.03.03.3" defer></script>
-    <script src="preset.js?v=2026.03.03.3" defer></script>
-    <script src="prompt.js?v=2026.03.03.3" defer></script>
-    <script src="js/ia-client.js?v=2026.03.03.3" defer></script>
-    <script src="js/document-markdown.js?v=2026.03.03.3" defer></script>
-    <script src="js/notion-export.js?v=2026.03.03.3" defer></script>
+    <script src="js/config.js?v=2026.03.03.4" defer></script>
+    <script src="js/turnstile-helper.js?v=2026.03.03.4" defer></script>
+    <script src="js/config-modal.js?v=2026.03.03.4" defer></script>
+    <script src="js/feature-visibility.js?v=2026.03.03.4" defer></script>
+    <script src="js/document-storage.js?v=2026.03.03.4" defer></script>
+    <script src="js/storage-service.js?v=2026.03.03.4" defer></script>
+    <script src="js/shared-ui.js?v=2026.03.03.4" defer></script>
+    <script src="js/space-store.js?v=2026.03.03.4" defer></script>
+    <script src="js/share-worker-client.js?v=2026.03.03.4" defer></script>
+    <script src="js/share-history.js?v=2026.03.03.4" defer></script>
+    <script src="js/document-api.js?v=2026.03.03.4" defer></script>
+    <script src="js/keywordIndex.js?v=2026.03.03.4" defer></script>
+    <script src="js/document-rag.js?v=2026.03.03.4" defer></script>
+    <script src="js/ia-config.js?v=2026.03.03.4" defer></script>
+    <script src="preset.js?v=2026.03.03.4" defer></script>
+    <script src="prompt.js?v=2026.03.03.4" defer></script>
+    <script src="js/ia-client.js?v=2026.03.03.4" defer></script>
+    <script src="js/document-markdown.js?v=2026.03.03.4" defer></script>
+    <script src="js/notion-export.js?v=2026.03.03.4" defer></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -591,15 +603,15 @@
             }
         });
     </script>
-    <script src="js/news.js?v=2026.03.03.3" defer></script>
-    <script src="js/voice-video-player.js?v=2026.03.03.3" defer></script>
-    <script src="js/voice-audio-player.js?v=2026.03.03.3" defer></script>
-    <script src="js/youtube-publish.js?v=2026.03.03.3" defer></script>
-    <script src="js/voice.js?v=2026.03.03.3" defer></script>
-    <script src="js/voice-transcript.js?v=2026.03.03.3" defer></script>
-    <script src="js/googletts.js?v=2026.03.03.3" defer></script>
-    <script src="js/draw-memo.js?v=2026.03.03.3" defer></script>
-    <script src="js/document-tabs.js?v=2026.03.03.3" defer></script>
+    <script src="js/news.js?v=2026.03.03.4" defer></script>
+    <script src="js/voice-video-player.js?v=2026.03.03.4" defer></script>
+    <script src="js/voice-audio-player.js?v=2026.03.03.4" defer></script>
+    <script src="js/youtube-publish.js?v=2026.03.03.4" defer></script>
+    <script src="js/voice.js?v=2026.03.03.4" defer></script>
+    <script src="js/voice-transcript.js?v=2026.03.03.4" defer></script>
+    <script src="js/googletts.js?v=2026.03.03.4" defer></script>
+    <script src="js/draw-memo.js?v=2026.03.03.4" defer></script>
+    <script src="js/document-tabs.js?v=2026.03.03.4" defer></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -609,10 +621,10 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.03.03.3" defer></script>
-    <script src="js/assist.js?v=2026.03.03.3" defer></script>
-    <script src="js/space-sync.js?v=2026.03.03.3" defer></script>
-    <script src="js/document-panel.js?v=2026.03.03.3" defer></script>
+    <script src="js/memo.bundle.js?v=2026.03.03.4" defer></script>
+    <script src="js/assist.js?v=2026.03.03.4" defer></script>
+    <script src="js/space-sync.js?v=2026.03.03.4" defer></script>
+    <script src="js/document-panel.js?v=2026.03.03.4" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -1421,7 +1433,7 @@
             const fileMenuSourceBtn = document.getElementById("fileMenuSourceBtn");
             const fileMenuMobileBtn = document.getElementById("fileMenuMobileBtn");
             const memoInfoPopup = document.getElementById("memoInfoPopup");
-            const memoGuidedTourBtn = document.getElementById("memoGuidedTourBtn");
+            const memoHelpBtn = document.getElementById("memoHelpBtn");
             const memoDocsBtn = document.getElementById("memoDocsBtn");
             const memoLegalBtn = document.getElementById("memoLegalBtn");
             const shareBtn = document.getElementById("shareBtn");
@@ -1431,6 +1443,7 @@
             const shareUpdateBtn = document.getElementById("shareUpdateBtn");
             const shareMenuStatus = document.getElementById("shareMenuStatus");
             const memoCardEl = document.querySelector(".memo-card");
+            const DOCS_TOUR_SEEN_KEY = "go-toolkit-docs-tour-seen.v1";
             const memoEmptyStateEl = document.getElementById("memoEmptyState");
             const memoHeadingRail = document.getElementById("memoHeadingRail");
             const memoHeadingRailBars = document.getElementById("memoHeadingRailBars");
@@ -11602,7 +11615,7 @@
                 const steps = [
                     {
                         title: "Bienvenue sur GoToolkit",
-                        text: "GoToolkit est un outil de prise de notes gratuit, respectueux de ta vie privée. Tes données sont stockées en local, et les espaces partagés sont chiffrés avec une clé que toi seul connais. Aucun compte n’est requis. Les échanges d’informations se font uniquement avec ton consentement, selon une politique de rétention de données minimale.",
+                        text: "GoToolkit est un outil de notes à usage professionnel sécurisé qui ne nécessite pas de compte. Tes données privées sont en local. Les échanges d’informations se font uniquement avec ton consentement, selon une politique de rétention de données minimale.",
                         noFocus: true,
                         focus: () => null
                     },
@@ -11610,12 +11623,6 @@
                         title: "Écrire dans le document",
                         text: "Tape directement dans l'éditeur pour rédiger. Ouvre les actions document avec <i data-lucide=\"file-text\"></i> puis importe, envoie ou télécharge rapidement.",
                         focus: () => document.querySelector("#editor .ProseMirror") || document.getElementById("editor")
-                    },
-                    {
-                        title: "Blocs et mise en forme",
-                        text: "Tape <code>/</code> pour ouvrir le menu slash, puis sélectionne du texte pour afficher le bubble menu et lancer des actions rapides.",
-                        before: () => simulateSlashTypingInSimpleEditor(),
-                        focus: () => document.getElementById("goToolkitTourSlashMenu") || document.querySelector(".memo-slash-actions-menu") || document.querySelector("#editor .ProseMirror") || document.getElementById("editor")
                     },
                     {
                         title: "Explorateur de document",
@@ -11644,27 +11651,18 @@
                         ].filter(Boolean))
                     },
                     {
-                        title: "Cloud chiffré + partage de lien",
-                        text: "L'accès à l'espace partagé se fait via passphrase ou via le lien de la page unique. Les données sont synchronisées en ligne automatiquement <i data-lucide=\"refresh-cw\"></i>, etc.).",
+                        title: "Accès SSO aux espaces partagés",
+                        text: "L'authentification SSO Microsoft via <i data-lucide=\"lock-open\"></i> permet d'accéder aux espaces partagés \"GO LIVE\" et \"SAFRAN\". Les données sont chiffrées en ligne.",
                         before: () => {
                             ensureDocumentPanelOpen();
-                            const sharedHeader = document.querySelector("#documentExplorer .document-explorer__section-header[data-section^='shared:']");
-                            if (sharedHeader instanceof HTMLElement) {
-                                sharedHeader.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
-                            }
-                            const sectionActions = document.querySelector("#documentExplorer .document-explorer__section-header[data-section^='shared:'] .document-explorer__section-actions");
-                            forceVisibleForTour(sectionActions);
-                            const hoverOnlyActions = document.querySelectorAll("#documentExplorer .document-explorer__section-header[data-section^='shared:'] .document-explorer__section-actions .document-explorer__item-action--hover-only");
-                            hoverOnlyActions.forEach(action => forceVisibleForTour(action));
+                            memoConnectionBtn?.classList.add("connection-pending");
                         },
-                        focus: () => ([
-                            document.querySelector("#documentExplorer .document-explorer__section-header[data-section^='shared:'] .document-explorer__section-actions")
-                        ].filter(Boolean))
+                        focus: () => document.getElementById("memoConnectionBtn")
                     },
                     {
                         title: "Discussion ou édition augmentée avec l'IA",
                         text: "Choisir entre <i data-lucide=\"pen-line\"></i> <strong>Éditer</strong> pour créer ou modifier la page et <i data-lucide=\"message-square\"></i> <strong>Explorer</strong> pour poser des questions.",
-                        cardPosition: "bottom-left",
+                        cardPosition: "left",
                         before: () => {
                             closeSpaceEditorModal();
                             const assist = window.GoToolkitAssistInstance;
@@ -11681,9 +11679,10 @@
                                 }
                             }
                         },
+                        cardAnchor: () => document.getElementById("chatClearBtn"),
                         focus: () => ([
-                            document.getElementById("assistLauncherBtn"),
-                            document.querySelector("#assistSidebar .chat-prompt-btn")
+                            document.querySelector("#assistSidebar .chat-prompt-btn"),
+                            document.querySelector("#assistSidebar .chat-prompt-menu")
                         ].filter(Boolean))
                     },
                     {
@@ -11712,7 +11711,6 @@
                         cardPosition: "left",
                         before: () => window.GoToolkitAssistInstance?.open?.(),
                         focus: () => ([
-                            document.querySelector("#assistSidebar .chat-prompt-btn"),
                             document.querySelector("#assistSidebar #chatAttachFilesBtn"),
                             document.getElementById("chatMemoryBtn")
                         ].filter(Boolean))
@@ -11723,6 +11721,15 @@
                         keepFileMenuOpen: true,
                         before: () => ensureFileMenuOpen(),
                         focus: () => document.getElementById("fileMenu")
+                    },
+                    {
+                        title: "Support et réinitialisation",
+                        text: "En cas de problème persistent reproductible, envoyer un mail à contact@gotoolkit.fr avec une capture ou créer une page dans le dossier \"Go Live / Feedback\".",
+                        cardPosition: "left",
+                        before: () => {
+                            memoInfoPopup?.classList.add("open");
+                        },
+                        focus: () => document.getElementById("memoResetAppBtn")
                     }
                 ];
 
@@ -11760,6 +11767,8 @@
                     resetForcedTourVisibility();
                     closeAssistPresetDropdown();
                     closeSpaceEditorModal();
+                    memoInfoPopup?.classList.remove("open");
+                    memoConnectionBtn?.classList.remove("connection-pending");
                     overlay.remove();
                     clearHighlights();
                     card.remove();
@@ -11826,6 +11835,8 @@
                     resetForcedTourVisibility();
                     closeAssistPresetDropdown();
                     closeSpaceEditorModal();
+                    memoInfoPopup?.classList.remove("open");
+                    memoConnectionBtn?.classList.remove("connection-pending");
                     closeMenus();
                     if (window.__goToolkitDocsTourState) {
                         window.__goToolkitDocsTourState.keepFileMenuOpen = Boolean(step.keepFileMenuOpen);
@@ -11838,15 +11849,22 @@
                     const target = visibleTargets[0] || document.getElementById("page") || document.body;
                     let rect;
                     if (step.noFocus) {
+                        overlay.style.background = "rgba(6, 9, 17, 0.28)";
                         clearHighlights();
                         rect = getViewportAnchorRect();
                     } else {
+                        overlay.style.background = "transparent";
                         target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
                         rect = getUnionRect(visibleTargets) || target.getBoundingClientRect();
                         renderHighlights(visibleTargets.length ? visibleTargets : [target]);
                     }
+                    const cardAnchorTarget = step.cardAnchor?.();
+                    const cardAnchorRect = cardAnchorTarget
+                        ? (getUnionRect(Array.isArray(cardAnchorTarget) ? cardAnchorTarget : [cardAnchorTarget]) || rect)
+                        : rect;
                     const hasCloseAndPrev = activeIndex > 0;
                     card.innerHTML = `
+                        <a class="docs-tour-help-link" href="help.html" target="_blank" rel="noopener noreferrer"><i data-lucide="file-question"></i> Aide</a>
                         <div class="docs-tour-step">Étape ${activeIndex + 1} / ${steps.length}</div>
                         <div class="docs-tour-title">${step.title}</div>
                         <p class="docs-tour-text">${step.text}</p>
@@ -11856,7 +11874,7 @@
                             <button type="button" class="btn-primary" data-tour-next>${activeIndex === steps.length - 1 ? "Terminer" : "Suivant"}</button>
                         </div>
                     `;
-                    positionCard(rect, step.cardPosition);
+                    positionCard(cardAnchorRect, step.cardPosition);
                     card.querySelector("[data-tour-close]")?.addEventListener("click", () => {
                         cleanup();
                     });
@@ -11881,6 +11899,11 @@
 
             window.GoToolkitStartDocsTour = function () {
                 try {
+                    try {
+                        localStorage.setItem(DOCS_TOUR_SEEN_KEY, "1");
+                    } catch (storageErr) {
+                        // ignore
+                    }
                     memoInfoPopup?.classList.remove("open");
                     createDocsSpotlightTour();
                 } catch (err) {
@@ -11919,9 +11942,10 @@
                 window.open("https://gotoolkit.fr/mobile", "_blank", "noopener,noreferrer");
             });
 
-            memoGuidedTourBtn?.addEventListener("click", event => {
+            memoHelpBtn?.addEventListener("click", event => {
                 event.stopPropagation();
-                window.GoToolkitStartDocsTour?.();
+                memoInfoPopup?.classList.remove("open");
+                window.location.href = "https://gotoolkit.fr/help";
             });
 
             memoDocsBtn?.addEventListener("click", event => {
@@ -11988,6 +12012,20 @@
                     closeHandoffModal();
                 }
             });
+
+            setTimeout(() => {
+                if (window.location.hash === "#tour") {
+                    window.GoToolkitStartDocsTour?.();
+                    return;
+                }
+                try {
+                    if (localStorage.getItem(DOCS_TOUR_SEEN_KEY) === "1") return;
+                } catch (storageErr) {
+                    // ignore and continue
+                }
+                window.GoToolkitStartDocsTour?.();
+            }, 500);
+
             handoffCopyCode?.addEventListener("click", async () => {
                 if (!activeHandoff?.shortCode) return;
                 try {
@@ -12805,7 +12843,7 @@
         </div>
     </div>
 
-    <script src="js/memo-source-modal.js?v=2026.03.03.3" defer></script>
+    <script src="js/memo-source-modal.js?v=2026.03.03.4" defer></script>
 </body>
 
 </html>

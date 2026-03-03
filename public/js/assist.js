@@ -2146,6 +2146,11 @@
                     } catch (err) { /* ignore */ }
                 } else if (command === "annule") {
                     self.speechClearRequested = true;
+                    if (self.textarea) {
+                        self.textarea.value = "";
+                        self.handleInputResize();
+                        self.updateComposerState();
+                    }
                     const lastUserMessage = self.conversation?.messages
                         ? [...self.conversation.messages].reverse().find(function (message) {
                             return message && message.role === "user" && !message.isDocRestore;
@@ -2156,7 +2161,7 @@
                     }
                     self.speechResultStartIndex = results.length;
                     self.speechLastResultsLength = results.length;
-                    self.speechBaseText = self.textarea ? (self.textarea.value || "") : "";
+                    self.speechBaseText = "";
                     try {
                         self.speechRecognition?.start?.();
                     } catch (err) { /* ignore */ }

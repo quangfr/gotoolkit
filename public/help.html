@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <title>Aide | GoToolkit</title>
+    <script src="js/bootstrap-theme.js?v=2026.03.03.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
+        integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.03.03.3">
+    <style>
+        .legal-page {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 24px 16px 48px;
+        }
+
+        .legal-nav {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .legal-nav a {
+            text-decoration: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: var(--bg-surface-soft);
+            color: var(--text-primary);
+        }
+
+        .legal-section {
+            margin-bottom: 24px;
+            scroll-margin-top: 12px;
+        }
+
+        .help-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .help-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .help-list p {
+            margin: 6px 0 0;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="legal-page">
+        <p><a href="./">← Retour</a></p>
+        <h1>Foire aux questions</h1>
+        <p>Cette page regroupe les questions les plus fréquentes pour utiliser GoToolkit rapidement, sans compte, avec
+            un maximum de contrôle sur vos données.</p>
+
+        <div class="legal-nav">
+            <a href="#demarrage">Démarrage</a>
+            <a href="#documents">Documents</a>
+            <a href="#edition">Édition</a>
+            <a href="#ia">IA</a>
+            <a href="#partage">Partage</a>
+            <a href="#support">Support</a>
+        </div>
+
+        <section id="demarrage" class="legal-section">
+            <h2>Démarrage</h2>
+            <div class="help-list">
+                <div>
+                    <strong>1. Faut-il créer un compte pour utiliser GoToolkit ?</strong>
+                    <p>Non. GoToolkit fonctionne sans compte. Vos notes privées restent d’abord en local dans votre
+                        navigateur. Les connexions à des services tiers sont optionnelles et limitées à l’action que
+                        vous déclenchez.</p>
+                </div>
+                <div>
+                    <strong>2. Où sont stockées mes données privées ?</strong>
+                    <p>Par défaut, elles sont stockées localement sur votre appareil. Tant que vous ne publiez pas une
+                        page, ne partagez pas un espace ou n’utilisez pas une fonction externe, rien n’est envoyé en
+                        ligne.</p>
+                </div>
+                <div>
+                    <strong>3. Comment ouvrir l’aide générale de l’application ?</strong>
+                    <p>Cliquez sur <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> dans la barre
+                        du haut, puis sur <span class="help-icon"><i data-lucide="file-question"></i> Aide</span> dans
+                        le panneau d’information.</p>
+                </div>
+                <div>
+                    <strong>4. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire ?</strong>
+                    <p>Sauvegardez d’abord vos données sur votre ordinateur, puis ouvrez
+                        <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> et cliquez sur
+                        <span class="help-icon"><i data-lucide="octagon-x"></i> Réinitialiser</span> pour repartir
+                        d’un état propre.</p>
+                </div>
+                <div>
+                    <strong>5. À quoi sert le bouton <span class="help-icon"><i data-lucide="settings"></i> Paramètres</span> ?</strong>
+                    <p>Il permet d’ajuster les préférences, les intégrations et certains réglages avancés. Utilisez-le
+                        pour changer la configuration avant de modifier vos flux de travail.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="documents" class="legal-section">
+            <h2>Documents</h2>
+            <div class="help-list">
+                <div>
+                    <strong>6. Comment créer ou organiser des pages ?</strong>
+                    <p>Ouvrez le panneau de documents avec <span class="help-icon"><i data-lucide="panel-left"></i></span>,
+                        puis utilisez <span class="help-icon"><i data-lucide="plus"></i></span> pour créer une page ou
+                        une sous-page. Vous pouvez ensuite glisser-déposer les éléments pour réorganiser l’arborescence.</p>
+                </div>
+                <div>
+                    <strong>7. Comment renommer une page ?</strong>
+                    <p>Vous pouvez soit modifier directement le champ de titre en haut du document, soit renommer
+                        depuis le panneau de documents en double-cliquant sur le nom de la page. Le nouveau titre est
+                        enregistré avec la page active.</p>
+                </div>
+                <div>
+                    <strong>8. Comment importer un fichier dans une page ?</strong>
+                    <p>Ouvrez <span class="help-icon"><i data-lucide="file-text"></i> Document</span>, puis cliquez
+                        sur <span class="help-icon"><i data-lucide="file-down"></i> Importer</span>. L’import lit le
+                        contenu du fichier et l’insère dans votre document pour le transformer en note éditable.
+                        Formats usuels pris en charge : PDF, DOCX, PPTX, XLSX, JSON, CSV, TSV, TXT, Markdown, ODF,
+                        RTF et fichiers de log.</p>
+                </div>
+                <div>
+                    <strong>9. Comment exporter ou envoyer un document ?</strong>
+                    <p>Dans le même menu <span class="help-icon"><i data-lucide="file-text"></i> Document</span>,
+                        utilisez <span class="help-icon"><i data-lucide="download"></i> Télécharger</span> ou
+                        <span class="help-icon"><i data-lucide="send"></i> Envoyer</span>. Les exports proposés
+                        incluent Word, PDF, HTML, Markdown, Texte et Audio selon le type de contenu.</p>
+                </div>
+                <div>
+                    <strong>10. Comment supprimer une page ?</strong>
+                    <p>Ouvrez le menu document, puis choisissez <span class="help-icon"><i data-lucide="trash-2"></i> Supprimer</span>.
+                        Vérifiez bien la page active avant de confirmer.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="edition" class="legal-section">
+            <h2>Éditer un document</h2>
+            <div class="help-list">
+                <div>
+                    <strong>11. Comment ouvrir l’assistant IA et l’édition inline ?</strong>
+                    <p>Cliquez sur <span class="help-icon"><i data-lucide="panel-right"></i> Assist</span> pour ouvrir
+                        le panneau latéral. Vous pouvez aussi déclencher l’édition inline depuis une sélection dans le
+                        document pour travailler directement au plus près du texte. En mode <strong>Sélection auto</strong>,
+                        GoToolkit reprend automatiquement la sélection en cours ou le bloc actif. En mode
+                        <strong>Sélection manuelle</strong>, vous choisissez explicitement la zone de texte à cibler
+                        avant d’envoyer la demande.</p>
+                </div>
+                <div>
+                    <strong>12. Quelle est la différence entre Éditer, Explorer et Suggérer ?</strong>
+                    <p><strong>Éditer</strong> modifie, reformule ou enrichit le contenu à votre demande.
+                        <strong>Explorer</strong> sert à poser des questions, analyser et naviguer dans vos contenus,
+                        sans modifier le fichier. <strong>Suggérer</strong> propose des pistes, formulations ou plans
+                        d’amélioration, que vous restez libre d’appliquer ou non.</p>
+                </div>
+                <div>
+                    <strong>13. À quoi sert l’enregistrement vocal avec partage d’écran et transcription ?</strong>
+                    <p>Le module voix permet d’enregistrer la voix, l’écran ou la caméra pour documenter une démo, une
+                        réunion, un retour utilisateur ou une explication métier. Vous pouvez lancer la capture avec
+                        <span class="help-icon"><i data-lucide="mic"></i></span>, activer le partage d’écran, suivre
+                        la transcription en direct, puis réutiliser ce contenu dans vos notes. C’est utile pour
+                        produire un compte rendu, une preuve visuelle, un support de relecture ou une capsule à
+                        exporter ensuite en média.</p>
+                </div>
+                <div>
+                    <strong>15. Comment éditer rapidement avec les blocs disponibles ?</strong>
+                    <p>Utilisez le menu slash <code>/</code> ou les menus contextuels pour insérer des blocs :
+                        texte, titres, listes, tâches, liens, libellés, citations, tableaux, diagrammes, images,
+                        vidéos, navigation et sommaire.</p>
+                </div>
+                <div>
+                    <strong>16. Quelles mises en forme de texte sont disponibles ?</strong>
+                    <p>Vous pouvez appliquer <span class="help-icon"><i data-lucide="bold"></i></span> gras,
+                        <span class="help-icon"><i data-lucide="italic"></i></span> italique,
+                        <span class="help-icon"><i data-lucide="underline"></i></span> souligné,
+                        <span class="help-icon"><i data-lucide="strikethrough"></i></span> barré,
+                        <span class="help-icon"><i data-lucide="highlighter"></i></span> surlignage,
+                        du code inline, des titres, des listes, et des alignements selon le bloc concerné.</p>
+                </div>
+                <div>
+                    <strong>17. Comment insérer un diagramme ?</strong>
+                    <p>Choisissez le bloc <span class="help-icon"><i data-lucide="shapes"></i> Diagramme</span>.
+                        Il permet d’insérer des schémas de type Mermaid pour visualiser des flux, structures ou
+                        séquences dans le document.</p>
+                </div>
+                <div>
+                    <strong>18. Comment insérer une image, une vidéo ou une vidéo embarquée ?</strong>
+                    <p>Utilisez <span class="help-icon"><i data-lucide="image"></i> Image</span> pour un média local,
+                        <span class="help-icon"><i data-lucide="clapperboard"></i> Vidéo</span> pour une vidéo dans le
+                        document, et les liens de vidéo embarquée pour des contenus externes affichés comme blocs
+                        intégrés (par exemple une vidéo en ligne consultable sans quitter la page).</p>
+                </div>
+                <div>
+                    <strong>19. À quoi servent les blocs Lien, Sommaire et Navigation ?</strong>
+                    <p><span class="help-icon"><i data-lucide="link"></i> Lien</span> crée un accès cliquable vers une
+                        URL. <span class="help-icon"><i data-lucide="list-tree"></i> Sommaire</span> génère la liste
+                        des titres de la page courante. <span class="help-icon"><i data-lucide="folder-tree"></i> Navigation</span>
+                        affiche les pages liées à l’arborescence pour naviguer dans le dossier courant. La mise à jour
+                        du contenu de ces blocs est automatique : ils se recalculent lorsque la structure du document
+                        ou les titres changent.</p>
+                </div>
+                <div>
+                    <strong>20. Comment utiliser un tableau ?</strong>
+                    <p>Le bloc <span class="help-icon"><i data-lucide="table"></i> Tableau</span> permet de structurer
+                        des données en lignes et colonnes, de réorganiser l’information et de produire des contenus
+                        lisibles pour des comparatifs, listes ou suivis. Avec les poignées et actions
+                        <span class="help-icon"><i data-lucide="arrow-down-a-z"></i></span>,
+                        <span class="help-icon"><i data-lucide="arrow-up-a-z"></i></span>,
+                        <span class="help-icon"><i data-lucide="plus"></i></span>,
+                        <span class="help-icon"><i data-lucide="arrow-up-right"></i></span> et
+                        <span class="help-icon"><i data-lucide="trash-2"></i></span>, vous pouvez trier les colonnes,
+                        ajouter, déplacer et supprimer des lignes ou des colonnes. Vous pouvez aussi sélectionner
+                        plusieurs cellules pour changer la mise en forme ou vider le contenu en une seule action.</p>
+                </div>
+                <div>
+                    <strong>21. Quels types de citation existent ?</strong>
+                    <p>Le bloc <span class="help-icon"><i data-lucide="quote"></i> Citation</span> couvre la citation
+                        simple ainsi que plusieurs variantes visuelles de type note, tip, important, warning ou
+                        caution, selon le message que vous voulez mettre en avant. Raccourcis d’accès :
+                        <code>/citation</code> dans le menu slash, ou le menu contextuel de bloc avec
+                        <span class="help-icon"><i data-lucide="quote"></i></span>.</p>
+                </div>
+                <div>
+                    <strong>22. À quoi sert le bloc Libellé ?</strong>
+                    <p>Le bloc <span class="help-icon"><i data-lucide="tag"></i> Libellé</span> sert à poser des tags
+                        et repères rapides dans vos contenus. L’autocomplétion propose les libellés existants pour
+                        accélérer la saisie et garder des conventions cohérentes.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="ia" class="legal-section">
+            <h2>IA et assistance</h2>
+            <div class="help-list">
+                <div>
+                    <strong>23. Comment utiliser la base de connaissance ?</strong>
+                    <p>Dans l’assistant, cliquez sur <span class="help-icon"><i data-lucide="brain"></i></span> pour
+                        sélectionner les espaces ou sources à inclure dans le contexte de l’IA. Astuce : vous pouvez
+                        aussi importer des fichiers pour les transformer en pages, puis les intégrer ensuite à cette
+                        base de connaissance afin qu’Assist.js puisse les exploiter comme sources durables.</p>
+                </div>
+                <div>
+                    <strong>24. Quelle est la différence entre joindre un fichier à l’IA et importer un fichier dans le document ?</strong>
+                    <p><span class="help-icon"><i data-lucide="paperclip"></i></span> <strong>Joindre</strong> envoie
+                        le fichier comme contexte temporaire à l’assistant pour analyser, résumer ou répondre, sans en
+                        faire automatiquement une page. <span class="help-icon"><i data-lucide="file-down"></i></span>
+                        <strong>Importer</strong> lit le fichier, l’insère dans le document et le transforme en contenu
+                        éditable et durable. Si vous voulez enrichir votre base de connaissance sur la durée,
+                        l’import est le bon choix.</p>
+                </div>
+                <div>
+                    <strong>25. Les réponses de l’IA remplacent-elles automatiquement mon texte ?</strong>
+                    <p>Par défaut, quand il y a une sélection de texte, seul le texte sélectionné est remplacé.
+                        Quand il n’y a aucune sélection de texte, notamment en mode manuel
+                        (<span class="help-icon"><i data-lucide="mouse-pointer-click"></i></span> désactivé), tout le
+                        texte peut être remplacé selon l’action lancée. En mode sélection automatique
+                        (<span class="help-icon"><i data-lucide="mouse-pointer-click"></i></span> activé), le texte
+                        est sélectionné automatiquement par rapport au curseur, ce qui permet d’ajouter du texte sans
+                        modifier le contenu existant lorsque le contexte ciblé est bien identifié.</p>
+                </div>
+                <div>
+                    <strong>26. Puis-je envoyer du contexte sans modifier le document ?</strong>
+                    <p>Oui. Vous pouvez joindre des fichiers, choisir des sources mémoire et utiliser
+                        <strong>Explorer</strong> pour travailler en lecture et en analyse, sans altérer la page.
+                        C’est le mode adapté pour comparer, questionner, résumer ou préparer une action avant
+                        d’appliquer une modification réelle.</p>
+                </div>
+                <div>
+                    <strong>27. À quoi servent les raccourcis de prompt ?</strong>
+                    <p>Les raccourcis accélèrent les actions fréquentes comme résumer, reformuler, analyser ou produire
+                        une variante. Ils évitent de retaper les mêmes consignes manuellement.</p>
+                </div>
+                <div>
+                    <strong>28. Comment fonctionnent les commandes vocales “Ok go”, “Ok efface” et “Ok annule” ?</strong>
+                    <p>Dans le champ de discussion, la dictée vocale reconnaît trois commandes rapides.
+                        <strong>“Ok go”</strong> envoie le texte dicté. <strong>“Ok efface”</strong> vide le contenu
+                        du composeur. <strong>“Ok annule”</strong> tente d’annuler la dernière action utilisateur
+                        réversible, puis efface aussi le texte de dictée en cours dans le composeur pour repartir
+                        proprement.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="partage" class="legal-section">
+            <h2>Partage et cloud</h2>
+            <div class="help-list">
+                <div>
+                    <strong>29. Comment accéder aux espaces partagés GO LIVE et SAFRAN ?</strong>
+                    <p>Utilisez le bouton <span class="help-icon"><i data-lucide="lock-open"></i></span> pour
+                        l’authentification SSO Microsoft. L’accès aux espaces partagés est accordé selon le domaine
+                        de l’adresse e-mail professionnelle authentifiée, avec une exception possible pour
+                        <strong>quang.tran</strong> qui peut disposer d’un accès administrateur ou de support selon la
+                        configuration en place.</p>
+                </div>
+                <div>
+                    <strong>30. Les données cloud sont-elles chiffrées ?</strong>
+                    <p>Oui. Les données partagées en ligne utilisent un chiffrement côté application afin de limiter
+                        l’exposition des contenus synchronisés. En pratique, cela réduit le risque d’accès non autorisé
+                        au contenu brut. L’authentification, les droits d’accès à l’espace, et le partage restreint
+                        aux utilisateurs autorisés complètent cette protection. Le cloud sert à collaborer, mais
+                        l’accès reste conditionné par l’identité et les autorisations attribuées.</p>
+                </div>
+                <div>
+                    <strong>31. Comment publier une page ou partager un lien ?</strong>
+                    <p>Le plus simple est de copier directement le lien partagé. Seul un utilisateur authentifié qui
+                        dispose déjà de l’accès nécessaire peut voir et éditer la page directement depuis ce lien.</p>
+                </div>
+                <div>
+                    <strong>32. Que faire si la synchronisation semble bloquée ?</strong>
+                    <p>Commencez par vérifier votre connexion et l’espace ciblé. Ensuite, rafraîchissez l’interface ou
+                        relancez l’action de publication. Évitez de dupliquer les clics tant qu’une opération est en
+                        cours.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="support" class="legal-section">
+            <h2>Support</h2>
+            <div class="help-list">
+                <div>
+                    <strong>33. Que faire en cas de problème persistant reproductible ?</strong>
+                    <p>Utilisez <span class="help-icon"><i data-lucide="octagon-x"></i> Réinitialiser</span> dans le
+                        panneau d’information si vous devez repartir d’un état propre. Si le problème persiste, envoyez
+                        un mail à <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a> avec une capture ou
+                        créez une page dans le dossier <strong>Go Live / Feedback</strong>.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            window.lucide?.createIcons?.();
+        });
+    </script>
+</body>
+
+</html>

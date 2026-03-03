@@ -284,7 +284,8 @@
                     </div>
                 </div>
                 <div class="feedback-actions" style="margin-top: auto;">
-                    <button id="refreshCacheBtn" type="button" class="btn-secondary" title="Reset">Reset</button>
+                    <button id="refreshCacheBtn" type="button" class="btn-secondary" title="Vider le cache"><i data-lucide="rotate-ccw"
+                            style="width:14px;height:14px;vertical-align:middle;"></i></button>
                     <div style="flex: 1;"></div>
                     <button id="resetPromptBtn" type="button" class="btn-secondary" hidden><i data-lucide="rotate-ccw"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Réinitialiser</button>
