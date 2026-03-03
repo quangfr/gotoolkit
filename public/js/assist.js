@@ -4926,10 +4926,33 @@
                 var isBadRequest = /400|Bad Request/i.test(msg) || Number(err?.status) === 400;
                 var isMissingProxySecret = errorCode === "MISSING_ENV" || /OpenRouter API key missing/i.test(msg);
                 var isTurnstileIssue = /^TURNSTILE_/.test(errorCode) || /Turnstile/i.test(msg);
+                var turnstileDetail = "";
+                if (isTurnstileIssue) {
+                    try {
+                        turnstileDetail = String(window.GoToolkitTurnstile?.getFailureSummary?.() || "").trim();
+                        if (!turnstileDetail && /TURNSTILE_CLIENT_FAILED\s*:\s*/.test(msg)) {
+                            turnstileDetail = msg.replace(/^TURNSTILE_CLIENT_FAILED\s*:\s*/i, "").trim();
+                        }
+                    } catch (detailErr) {
+                        turnstileDetail = "";
+                    }
+                    try {
+                        console.error("Assist OpenRouter Turnstile failure", {
+                            errorCode: errorCode,
+                            message: msg,
+                            turnstileDetail: turnstileDetail,
+                            turnstileLastAttempt: window.GoToolkitTurnstile?.getLastAttemptSummary?.() || null,
+                            turnstileDiagnostics: window.GoToolkitTurnstile?.getDiagnostics?.() || []
+                        });
+                    } catch (logErr) {
+                        // noop
+                    }
+                }
                 botMessage.content = isMissingProxySecret
                     ? "Le proxy OpenRouter partagé n'est plus configuré: le secret `OPENROUTER_API_KEY` manque côté worker."
                     : isTurnstileIssue
-                        ? "La vérification anti-bot du proxy OpenRouter a échoué. Recharge la page puis réessaie."
+                        ? "La vérification anti-bot du proxy OpenRouter a échoué."
+                            + (turnstileDetail ? " Détail: " + turnstileDetail + "." : " Recharge la page puis réessaie.")
                         : isBadRequest
                             ? "Désolé, une erreur de configuration est survenue (400). Vérifie le moteur IA ou ta clé dans Paramètres."
                             : "Désolé, une erreur est survenue.";

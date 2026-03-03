@@ -186,6 +186,44 @@ Practical reliability notes for this repo:
 - prefer `waitUntil: "commit"` or `domcontentloaded`, then wait explicitly for the app primitive you need
 - when running many cloud specs in one command, prefer a prestarted server (`npm run start:test`) over relying on Playwright-managed `webServer`
 
+### 6.1 UI testing workflow for local/private pages
+
+For fast UI debugging on private pages, use a lightweight local-only workflow:
+
+1. prestart the static app with `npm run start:test`
+2. navigate to `http://127.0.0.1:5000/index` (not `index.html`, which redirects)
+3. use `waitUntil: "commit"` or `domcontentloaded`
+4. wait for the exact mounted feature you need, not full-page readiness
+5. keep the test focused on the private/local path unless cloud behavior is the target
+
+Current practical guidance from repo debugging:
+
+- prefer the repo-local Playwright runtime (`./node_modules/.bin/playwright` or `require("playwright")`) over the bundled Playwright CLI wrapper when working from this machine
+- the bundled Playwright CLI wrapper currently tries to launch the `chrome` channel and fails here because the Chrome channel is not installed
+- for one-off repros, use a short Node script with `require("playwright")` instead of writing a full spec first
+- when reproducing UI issues, attach listeners for `console`, `pageerror`, `request`, and `response` before navigation so transient failures are captured
+
+Recommended readiness pattern:
+
+- wait for feature APIs like `window.GoToolkitAssistInstance`
+- if needed, open panels programmatically after mount, for example `window.GoToolkitAssistInstance?.open?.()`
+- query visible controls explicitly, for example `textarea.chat-input:visible` and `button.chat-send-btn:visible`
+- avoid broad selectors like plain `textarea` on complex screens because hidden modals and editors can match first
+
+Recommended local-state setup:
+
+- if the guided tour is not under test, suppress it before navigation with `localStorage.setItem("go-toolkit-docs-tour-seen.v1", "1")`
+- when a repro only concerns private pages, do not spend time authenticating cloud spaces or bootstrapping OAuth state
+- if a feature depends on a specific prompt preset or panel mode, set that state directly after mount before interacting
+
+Recommended assertion pattern for UI debugging:
+
+- capture the user-visible message or DOM state
+- also capture any relevant client diagnostics, for example `window.GoToolkitTurnstile.getDiagnostics()`
+- distinguish between “browser never sent the request” and “worker rejected the request” by inspecting network events
+
+This distinction matters in this repo because anti-bot and auth flows can fail before the worker is ever reached.
+
 ## 7. Programmatic access to browser-local persisted state
 
 The app stores important state in:

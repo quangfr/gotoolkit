@@ -34,6 +34,7 @@ This file is the short operational guide. Use the docs below as the canonical re
 
 ## Testing defaults
 - Prefer the local Playwright binary: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`.
+- On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails because Chrome is not installed here. Use the repo-local `playwright` package (`./node_modules/.bin/playwright ...`) or small ad hoc Node scripts with `require("playwright")` instead.
 - Prestart the server when possible; grouped cloud suites are more stable against a prestarted `start:test` server than Playwright-managed `webServer` restarts.
 - For cloud/test-space coverage, prefer `spaceCode` bootstrap over repeated OAuth UI.
 - In Playwright, avoid `waitUntil: "load"` on `index.html`; prefer `commit` or `domcontentloaded`, then wait for the exact app primitive you need.

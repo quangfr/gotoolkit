@@ -10,10 +10,15 @@
     let loadPromise = null;
     let widgetPromise = null;
     let widgetId = null;
+    let interactiveWidgetPromise = null;
+    let interactiveWidgetId = null;
     let executeChain = Promise.resolve();
     let widgetTokenResolver = null;
     let widgetTokenRejecter = null;
+    let lastAttemptSummary = null;
     const WIDGET_CONTAINER_ID = "go-toolkit-turnstile-container";
+    const INTERACTIVE_OVERLAY_ID = "go-toolkit-turnstile-overlay";
+    const INTERACTIVE_CONTAINER_ID = "go-toolkit-turnstile-interactive";
     const DIAGNOSTIC_LIMIT = 50;
 
     function pushDiagnostic(event, details) {
@@ -35,6 +40,19 @@
         }
     }
 
+    function setLastAttemptSummary(summary) {
+        lastAttemptSummary = summary && typeof summary === "object"
+            ? {
+                at: new Date().toISOString(),
+                ...summary
+            }
+            : null;
+    }
+
+    function readLastAttemptSummary() {
+        return lastAttemptSummary ? { ...lastAttemptSummary } : null;
+    }
+
     function getSiteKey() {
         return String(global.GO_TOOLKIT_TURNSTILE_SITE_KEY || DEFAULT_SITE_KEY || "").trim();
     }
@@ -52,7 +70,17 @@
     function shouldProtectUrl(input) {
         const url = normalizeUrl(input);
         if (!url) return false;
+        const pageOrigin = normalizeUrl(global.location?.href || "");
+        if (pageOrigin && isLocalOrigin(pageOrigin.origin)) {
+            return false;
+        }
         return PROTECTED_HOSTS.has(String(url.hostname || "").trim().toLowerCase());
+    }
+
+    function isLocalOrigin(origin) {
+        const normalized = String(origin || "").trim();
+        if (!normalized) return false;
+        return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?$/i.test(normalized);
     }
 
     function deriveAction(input, fallbackAction) {
@@ -124,15 +152,87 @@
         container.id = WIDGET_CONTAINER_ID;
         container.setAttribute("aria-hidden", "true");
         container.style.position = "fixed";
-        container.style.right = "0";
-        container.style.bottom = "0";
-        container.style.width = "1px";
-        container.style.height = "1px";
+        container.style.left = "-10000px";
+        container.style.top = "0";
+        // Keep a valid render box for Turnstile even though it remains off-screen.
+        container.style.width = "320px";
+        container.style.height = "70px";
         container.style.opacity = "0";
         container.style.pointerEvents = "none";
         container.style.zIndex = "-1";
         document.body.appendChild(container);
         return container;
+    }
+
+    function ensureInteractiveOverlay() {
+        let overlay = document.getElementById(INTERACTIVE_OVERLAY_ID);
+        if (overlay) {
+            return {
+                overlay,
+                container: overlay.querySelector("#" + INTERACTIVE_CONTAINER_ID)
+            };
+        }
+        overlay = document.createElement("div");
+        overlay.id = INTERACTIVE_OVERLAY_ID;
+        overlay.style.position = "fixed";
+        overlay.style.inset = "0";
+        overlay.style.display = "none";
+        overlay.style.alignItems = "center";
+        overlay.style.justifyContent = "center";
+        overlay.style.background = "rgba(15, 23, 42, 0.65)";
+        overlay.style.zIndex = "2147483647";
+
+        const card = document.createElement("div");
+        card.style.width = "min(92vw, 420px)";
+        card.style.padding = "16px";
+        card.style.borderRadius = "14px";
+        card.style.background = "#ffffff";
+        card.style.boxShadow = "0 24px 64px rgba(15, 23, 42, 0.28)";
+        card.style.color = "#0f172a";
+        card.style.fontFamily = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+        const title = document.createElement("div");
+        title.textContent = "Vérification anti-bot requise";
+        title.style.fontSize = "16px";
+        title.style.fontWeight = "700";
+        title.style.marginBottom = "8px";
+        card.appendChild(title);
+
+        const text = document.createElement("div");
+        text.textContent = "Cloudflare demande une vérification visible avant d'utiliser le proxy OpenRouter.";
+        text.style.fontSize = "13px";
+        text.style.lineHeight = "1.45";
+        text.style.marginBottom = "12px";
+        card.appendChild(text);
+
+        const container = document.createElement("div");
+        container.id = INTERACTIVE_CONTAINER_ID;
+        container.style.minHeight = "70px";
+        container.style.display = "flex";
+        container.style.alignItems = "center";
+        container.style.justifyContent = "center";
+        card.appendChild(container);
+
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        return { overlay, container };
+    }
+
+    function showInteractiveOverlay() {
+        const parts = ensureInteractiveOverlay();
+        if (parts?.overlay) {
+            parts.overlay.style.display = "flex";
+            pushDiagnostic("interactive-overlay-shown");
+        }
+        return parts;
+    }
+
+    function hideInteractiveOverlay() {
+        const overlay = document.getElementById(INTERACTIVE_OVERLAY_ID);
+        if (overlay) {
+            overlay.style.display = "none";
+            pushDiagnostic("interactive-overlay-hidden");
+        }
     }
 
     function settleTokenResolver(error, token) {
@@ -198,14 +298,111 @@
         return widgetPromise;
     }
 
+    async function ensureInteractiveWidget() {
+        if (interactiveWidgetPromise) {
+            showInteractiveOverlay();
+            return interactiveWidgetPromise;
+        }
+        interactiveWidgetPromise = ensureTurnstileLoaded().then(function (turnstile) {
+            const parts = showInteractiveOverlay();
+            const container = parts?.container;
+            if (!container) {
+                throw new Error("TURNSTILE_INTERACTIVE_CONTAINER_MISSING");
+            }
+            if (interactiveWidgetId !== null && interactiveWidgetId !== undefined) {
+                try {
+                    if (typeof turnstile.reset === "function") {
+                        turnstile.reset(interactiveWidgetId);
+                        pushDiagnostic("interactive-reset", { widgetId: String(interactiveWidgetId) });
+                    }
+                } catch (error) {
+                    pushDiagnostic("interactive-reset-error", { error: String(error?.message || error || "") });
+                }
+                pushDiagnostic("interactive-widget-reused", { widgetId: String(interactiveWidgetId) });
+                return { turnstile, widgetId: interactiveWidgetId };
+            }
+            const renderedId = turnstile.render(container, {
+                sitekey: getSiteKey(),
+                appearance: "always",
+                size: "normal",
+                callback: function (token) {
+                    const normalizedToken = String(token || "").trim();
+                    pushDiagnostic("interactive-callback", {
+                        hasToken: Boolean(normalizedToken),
+                        tokenLength: normalizedToken.length
+                    });
+                    setLastAttemptSummary({
+                        stage: "interactive-token",
+                        hasToken: Boolean(normalizedToken),
+                        tokenLength: normalizedToken.length,
+                        widgetId: String(renderedId)
+                    });
+                    hideInteractiveOverlay();
+                    settleTokenResolver(null, token);
+                },
+                "expired-callback": function () {
+                    pushDiagnostic("interactive-expired");
+                    setLastAttemptSummary({
+                        stage: "interactive-expired",
+                        widgetId: String(renderedId)
+                    });
+                },
+                "error-callback": function () {
+                    pushDiagnostic("interactive-error");
+                    setLastAttemptSummary({
+                        stage: "interactive-error",
+                        error: "TURNSTILE_INTERACTIVE_FAILED",
+                        widgetId: String(renderedId)
+                    });
+                    hideInteractiveOverlay();
+                    settleTokenResolver(new Error("TURNSTILE_INTERACTIVE_FAILED"));
+                },
+                "timeout-callback": function () {
+                    pushDiagnostic("interactive-timeout-callback");
+                    setLastAttemptSummary({
+                        stage: "interactive-timeout-callback",
+                        widgetId: String(renderedId)
+                    });
+                }
+            });
+            interactiveWidgetId = renderedId;
+            pushDiagnostic("interactive-widget-rendered", {
+                widgetId: String(renderedId),
+                siteKey: getSiteKey().slice(0, 8)
+            });
+            return { turnstile, widgetId: renderedId };
+        }).catch(function (error) {
+            interactiveWidgetPromise = null;
+            interactiveWidgetId = null;
+            hideInteractiveOverlay();
+            pushDiagnostic("interactive-widget-error-final", { error: String(error?.message || error || "") });
+            throw error;
+        });
+        return interactiveWidgetPromise;
+    }
+
     async function getTokenForUrl(input, action) {
         const siteKey = getSiteKey();
         if (!siteKey || !shouldProtectUrl(input)) return "";
+        setLastAttemptSummary({
+            stage: "start",
+            host: String(normalizeUrl(input)?.hostname || ""),
+            action: deriveAction(input, action),
+            siteKeyConfigured: Boolean(siteKey)
+        });
         const rendered = await ensureWidget();
         const runExecute = async function () {
+            const normalizedHost = String(normalizeUrl(input)?.hostname || "");
+            const actionName = deriveAction(input, action);
+            setLastAttemptSummary({
+                stage: "executing",
+                host: normalizedHost,
+                action: actionName,
+                widgetId: String(rendered.widgetId)
+            });
             pushDiagnostic("execute-start", {
-                host: String(normalizeUrl(input)?.hostname || ""),
-                action: deriveAction(input, action),
+                host: normalizedHost,
+                action: actionName,
                 widgetId: String(rendered.widgetId)
             });
             if (widgetTokenResolver || widgetTokenRejecter) {
@@ -220,17 +417,80 @@
                 pushDiagnostic("widget-reset-error", { error: String(err?.message || err || "") });
                 // ignore reset issues and attempt execution anyway
             }
-            const actionName = deriveAction(input, action);
             const token = await new Promise(function (resolve, reject) {
+                let interactiveTimeoutId = 0;
+                let interactiveStarted = false;
                 const timeoutId = global.setTimeout(function () {
-                    settleTokenResolver(new Error("TURNSTILE_EXECUTE_TIMEOUT"));
+                    if (interactiveStarted) return;
+                    interactiveStarted = true;
+                    setLastAttemptSummary({
+                        stage: "interactive-required",
+                        host: normalizedHost,
+                        action: actionName,
+                        widgetId: String(rendered.widgetId),
+                        error: "TURNSTILE_EXECUTE_TIMEOUT"
+                    });
+                    pushDiagnostic("interactive-required", {
+                        host: normalizedHost,
+                        action: actionName,
+                        widgetId: String(rendered.widgetId)
+                    });
+                    interactiveTimeoutId = global.setTimeout(function () {
+                        setLastAttemptSummary({
+                            stage: "timeout",
+                            host: normalizedHost,
+                            action: actionName,
+                            widgetId: String(rendered.widgetId),
+                            error: "TURNSTILE_EXECUTE_TIMEOUT"
+                        });
+                        hideInteractiveOverlay();
+                        settleTokenResolver(new Error("TURNSTILE_EXECUTE_TIMEOUT"));
+                    }, 120000);
+                    void ensureInteractiveWidget().catch(function (error) {
+                        setLastAttemptSummary({
+                            stage: "interactive-failed",
+                            host: normalizedHost,
+                            action: actionName,
+                            widgetId: String(rendered.widgetId),
+                            error: String(error?.message || error || "")
+                        });
+                        if (interactiveTimeoutId) {
+                            global.clearTimeout(interactiveTimeoutId);
+                            interactiveTimeoutId = 0;
+                        }
+                        hideInteractiveOverlay();
+                        settleTokenResolver(error);
+                    });
                 }, 15000);
                 widgetTokenResolver = function (nextToken) {
                     global.clearTimeout(timeoutId);
+                    if (interactiveTimeoutId) {
+                        global.clearTimeout(interactiveTimeoutId);
+                        interactiveTimeoutId = 0;
+                    }
+                    setLastAttemptSummary({
+                        stage: "token",
+                        host: normalizedHost,
+                        action: actionName,
+                        widgetId: String(rendered.widgetId),
+                        hasToken: Boolean(String(nextToken || "").trim())
+                    });
                     resolve(nextToken);
                 };
                 widgetTokenRejecter = function (error) {
                     global.clearTimeout(timeoutId);
+                    if (interactiveTimeoutId) {
+                        global.clearTimeout(interactiveTimeoutId);
+                        interactiveTimeoutId = 0;
+                    }
+                    hideInteractiveOverlay();
+                    setLastAttemptSummary({
+                        stage: "reject",
+                        host: normalizedHost,
+                        action: actionName,
+                        widgetId: String(rendered.widgetId),
+                        error: String(error?.message || error || "")
+                    });
                     reject(error);
                 };
                 try {
@@ -259,7 +519,18 @@
             return String(token || "").trim();
         };
 
-        const token = await executeChain.then(runExecute, runExecute);
+        let token = "";
+        try {
+            token = await executeChain.then(runExecute, runExecute);
+        } catch (error) {
+            setLastAttemptSummary({
+                stage: "failed",
+                host: String(normalizeUrl(input)?.hostname || ""),
+                action: deriveAction(input, action),
+                error: String(error?.message || error || "")
+            });
+            throw error;
+        }
         executeChain = Promise.resolve(token).catch(function () {
             return "";
         });
@@ -277,6 +548,21 @@
         shouldProtectUrl,
         getTokenForUrl,
         getHeadersForUrl,
+        getLastAttemptSummary: function () {
+            return readLastAttemptSummary();
+        },
+        getFailureSummary: function () {
+            const latest = readLastAttemptSummary();
+            if (!latest) return "";
+            const parts = [];
+            if (latest.stage) parts.push("etape=" + latest.stage);
+            if (latest.error) parts.push("erreur=" + latest.error);
+            if (latest.action) parts.push("action=" + latest.action);
+            if (latest.host) parts.push("hote=" + latest.host);
+            if (latest.widgetId) parts.push("widget=" + latest.widgetId);
+            if (typeof latest.hasToken === "boolean") parts.push("token=" + (latest.hasToken ? "oui" : "non"));
+            return parts.join(", ");
+        },
         getDiagnostics: function () {
             return Array.isArray(global.__goToolkitTurnstileDiagnostics)
                 ? global.__goToolkitTurnstileDiagnostics.slice()
@@ -284,6 +570,7 @@
         },
         clearDiagnostics: function () {
             global.__goToolkitTurnstileDiagnostics = [];
+            lastAttemptSummary = null;
         }
     };
 })(window);

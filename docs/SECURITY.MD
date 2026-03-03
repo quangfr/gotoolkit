@@ -129,6 +129,30 @@ The browser then uses:
 
 for protected share routes.
 
+### Signed space tokens
+
+`X-Space-Auth` is not a raw `spaceCode`.
+
+Current worker behavior in `workers/share-proxy/index.js`:
+
+- `spaceCode` (or verified managed-space OAuth identity) is only used to obtain an auth token
+- the worker signs an auth payload with HMAC-SHA256
+- the token payload includes at least:
+  - `spaceId`
+  - `exp`
+- the worker verifies:
+  - token format
+  - HMAC signature
+  - JSON payload validity
+  - `spaceId` scope match against `X-Space-Id`
+  - expiration time
+
+So the effective protection is:
+
+- scoped bearer token
+- tamper detection
+- expiration-based replay reduction for stale tokens
+
 ### Sync protection
 
 Write and sync-sensitive operations also use:
@@ -139,6 +163,30 @@ Write and sync-sensitive operations also use:
 
 These are validated server-side to reject missing or replayed sync requests.
 
+Current server-side checks include:
+
+- all three headers are required when sync protection is enabled
+- `X-Sync-TS` must be within an allowed clock-skew window
+- `X-Sync-Session` can be revoked server-side
+- non-read operations treat `X-Sync-JTI` as single-use per session
+
+Replay protection is enforced with two layers:
+
+- KV-backed replay keys:
+  - `sync:replay:${X-Sync-Session}:${X-Sync-JTI}`
+- in-worker local caches to short-circuit repeated replays without extra KV reads
+
+Revocation also has two layers:
+
+- KV-backed revoked-session keys:
+  - `sync:revoked:${X-Sync-Session}`
+- local cache of revoked sessions for faster rejection
+
+Practical consequence:
+
+- a captured write request cannot simply be replayed with the same `X-Sync-Session` + `X-Sync-JTI`
+- a revoked sync session is denied even if the bearer token is otherwise still valid
+
 ### Content key
 
 `share-proxy` returns a per-space `contentKey` after successful auth.
@@ -147,6 +195,17 @@ Current client behavior:
 
 - cache the `contentKey`
 - import/use it for local encryption/decryption of some shared content flows
+
+The `contentKey` is stored server-side in KV and is separate from:
+
+- the `spaceCode`
+- the signed `X-Space-Auth` token
+
+So current responsibilities are split:
+
+- `spaceCode`: secret used to obtain access
+- `X-Space-Auth`: signed scoped access token
+- `contentKey`: encryption/decryption material for protected content flows
 
 ## 5. SSO / OAuth
 
@@ -171,6 +230,23 @@ Cookie attributes used by OAuth workers include:
 - `HttpOnly`
 - `Secure`
 - `SameSite=None`
+
+### OAuth state / CSRF protection
+
+OAuth workers for Microsoft, Gmail, Notion, and YouTube all use nonce-based state protection.
+
+Current behavior:
+
+- worker generates a nonce for the outbound OAuth request
+- worker persists that nonce server-side in `OAUTH_DB`
+- the browser/provider round-trip returns a signed/encoded `state`
+- the callback consumes the stored nonce exactly once
+
+So the effective protection is:
+
+- CSRF protection for OAuth callbacks
+- one-time-use state
+- short-lived transient state instead of trusting browser-only state
 
 ## 6. Microsoft SSO
 
@@ -237,13 +313,13 @@ So the effective rule is:
 - worker: `workers/openrouter-proxy/index.js`
 - holds `OPENROUTER_API_KEY`
 - used for chat and embeddings
-- supports origin allowlist and Turnstile
+- supports origin allowlist, Turnstile, payload size limits, and rate limiting
 
 ### Google TTS
 
 - worker: `workers/googletts-proxy/index.js`
 - keeps Google credentials server-side
-- supports origin allowlist, Turnstile, and rate limiting
+- supports origin allowlist, Turnstile, rate limiting, and server-side service-account token minting
 
 ### AssemblyAI
 
@@ -271,6 +347,65 @@ Workers expect headers such as:
 
 - `X-Turnstile-Token`
 - `CF-Turnstile-Response`
+
+Current server-side Turnstile behavior:
+
+- workers verify the token against Cloudflare `siteverify`
+- `remoteip` is forwarded from `CF-Connecting-IP` / `X-Forwarded-For`
+- verification requests use an `idempotency_key`
+- if `TURNSTILE_SECRET_KEY` is unset, enforcement is skipped
+- for some workers, localhost requests are exempted from Turnstile
+
+Current client-side Turnstile behavior:
+
+- the browser requests Turnstile only for protected worker hosts
+- the helper first tries a background/off-screen execution
+- if that times out, it can escalate to a visible interactive challenge
+- the client records diagnostics and last-attempt summaries for debugging
+
+This means Turnstile failures can occur in two distinct places:
+
+- client-side before any worker request is sent
+- worker-side after a request is sent but Cloudflare rejects the token
+
+### Origin allowlists
+
+The proxy workers do not accept arbitrary browser origins.
+
+Current behavior:
+
+- workers normalize and compare `Origin`
+- production origins are explicitly allowlisted
+- localhost / loopback origins are allowed for development
+- disallowed origins receive `403` with a constrained CORS response
+
+This is an important control in addition to bearer headers because it reduces cross-origin browser abuse against public worker endpoints.
+
+### Rate limiting
+
+Rate limiting is implemented in multiple worker paths through `env.MY_RATE_LIMITER`.
+
+Current behavior:
+
+- keying is based on client IP (`CF-Connecting-IP` or forwarded equivalent)
+- rate-limited requests return `429 RATE_LIMIT_EXCEEDED`
+- OpenRouter, Google TTS, AssemblyAI token routes, and share write-sensitive paths all use worker-side throttling
+
+This is separate from:
+
+- Turnstile challenge enforcement
+- replay protection
+- bearer-token verification
+
+### Input and request hardening
+
+Other current request-hardening mechanisms that are easy to miss:
+
+- `openrouter-proxy` enforces a maximum request body size before forwarding upstream
+- sync protection is stricter on writes than reads
+- browser clients generate fresh `X-Sync-JTI` values per request
+- workers derive client IP from Cloudflare headers rather than trusting only browser-provided metadata
+- some privileged share operations also support explicit admin/create secrets (`X-Admin-Token`, `X-Space-Create-Secret`) for worker-controlled paths
 
 ## 10. Files to inspect first
 

@@ -455,6 +455,16 @@
         if (turnstileHeaders && typeof turnstileHeaders === "object") {
             Object.assign(requestHeaders, turnstileHeaders);
         }
+        try {
+            console.info("OpenRouter request starting", {
+                endpoint: backend?.endpoint || "",
+                hasTurnstileHeader: Boolean(requestHeaders["X-Turnstile-Token"]),
+                turnstileHeaderLength: String(requestHeaders["X-Turnstile-Token"] || "").length,
+                turnstileLastAttempt: global.GoToolkitTurnstile?.getLastAttemptSummary?.() || null
+            });
+        } catch (logErr) {
+            // noop
+        }
         if (wantsStream) {
             requestHeaders.Accept = "text/event-stream";
         }
@@ -624,7 +634,19 @@
         const requestPayload = buildOpenRouterPayload(payload, backend);
         const wantsStream = Boolean(requestPayload.stream);
         const requestHeaders = buildHeaders(backend.apiKey);
-        const turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(backend.endpoint, "openrouter");
+        let turnstileHeaders = null;
+        try {
+            turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(backend.endpoint, "openrouter");
+        } catch (error) {
+            const detail = global.GoToolkitTurnstile?.getFailureSummary?.() || "";
+            const wrapped = new Error(
+                "TURNSTILE_CLIENT_FAILED"
+                + (detail ? ": " + detail : "")
+            );
+            wrapped.code = "TURNSTILE_CLIENT_FAILED";
+            wrapped.cause = error;
+            throw wrapped;
+        }
         if (turnstileHeaders && typeof turnstileHeaders === "object") {
             Object.assign(requestHeaders, turnstileHeaders);
         }
