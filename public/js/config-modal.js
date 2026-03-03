@@ -268,7 +268,14 @@
                     <div class="settings-tab-panel" data-panel="promptTab" hidden>
                         <div class="field-row">
                             <label style="width:100%">
-                                <span class="label-title">Effort IA</span>
+                                <span class="settings-label-row">
+                                    <span class="label-title">Effort IA</span>
+                                    <button class="settings-help-btn" type="button"
+                                        title="Plus l'effort est élevé et plus la réponse sera pertinente et exhaustive mais le temps de réflexion sera plus long."
+                                        aria-label="Aide Effort IA">
+                                        <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                    </button>
+                                </span>
                                 <select id="openrouterEffortSelect">
                                     <option value="minimal">Minimal</option>
                                     <option value="low" selected>Faible</option>
