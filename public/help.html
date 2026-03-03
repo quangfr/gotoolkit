@@ -81,20 +81,32 @@
                         vous déclenchez.</p>
                 </div>
                 <div>
-                    <strong>2. Où sont stockées mes données privées ?</strong>
+                    <strong>2. Est-ce que l’application est sécurisée et adaptée à un usage professionnel ?</strong>
+                    <p>Oui, l’application a été pensée pour un usage professionnel avec plusieurs protections simples
+                        du point de vue utilisateur : les documents privés restent d’abord en local, l’accès aux
+                        espaces partagés passe par une authentification contrôlée, et les contenus cloud protégés
+                        reposent sur des mécanismes de chiffrement et de droits d’accès. Cela ne remplace pas les
+                        bonnes pratiques internes de votre organisation, mais l’outil est conçu pour limiter
+                        l’exposition inutile des données. Pour plus de détails, consultez aussi
+                        <a href="legal.html#privacy">la politique de confidentialité</a>.
+                    </p>
+                </div>
+                <div>
+                    <strong>3. Où sont stockées mes données privées ?</strong>
                     <p>Par défaut, elles sont stockées localement sur votre appareil. Tant que vous ne publiez pas une
                         page sur un espace de partage ou n’utilisez pas une fonction externe, rien n’est envoyé en
                         ligne. Pour plus de détails, consultez aussi
-                        <a href="legal.html#privacy">la politique de confidentialité</a>.</p>
+                        <a href="legal.html#privacy">la politique de confidentialité</a>.
+                    </p>
                 </div>
                 <div>
-                    <strong>3. Comment ouvrir l’aide générale de l’application ?</strong>
+                    <strong>4. Comment ouvrir l’aide générale de l’application ?</strong>
                     <p>Cliquez sur <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> dans la barre
                         du haut, puis sur <span class="help-icon"><i data-lucide="file-question"></i> Aide</span> dans
                         le panneau d’information.</p>
                 </div>
                 <div>
-                    <strong>4. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire ?</strong>
+                    <strong>5. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire ?</strong>
                     <p>Sauvegardez d’abord vos données sur votre ordinateur, puis ouvrez
                         <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> et cliquez sur
                         <span class="help-icon"><i data-lucide="octagon-x"></i> Réinitialiser</span> pour repartir
@@ -104,13 +116,13 @@
                     </p>
                 </div>
                 <div>
-                    <strong>5. À quoi sert le bouton <span class="help-icon"><i data-lucide="settings"></i>
+                    <strong>6. À quoi sert le bouton <span class="help-icon"><i data-lucide="settings"></i>
                             Paramètres</span> ?</strong>
                     <p>Il permet d’ajuster les préférences, les intégrations et certains réglages avancés. Utilisez-le
                         pour changer la configuration avant de modifier vos flux de travail.</p>
                 </div>
                 <div>
-                    <strong>6. Puis-je utiliser GoToolkit sur mobile ?</strong>
+                    <strong>7. Puis-je utiliser GoToolkit sur mobile ?</strong>
                     <p>Oui. L’application peut rediriger directement vers <code>mobile.html</code>. Sur mobile, vous
                         pouvez écrire des notes, transcrire un enregistrement vocal, transformer une note manuscrite
                         ou un document scanné en texte, réutiliser les mêmes raccourcis IA pour transformer ce texte,
@@ -282,46 +294,51 @@
                 <div>
                     <strong>21. Quels types de citation existent ?</strong>
                     <p>Le bloc <span class="help-icon"><i data-lucide="quote"></i> Citation</span> couvre la citation
-                        simple ainsi que plusieurs variantes visuelles de type note, tip, important, warning ou
-                        caution, selon le message que vous voulez mettre en avant. Raccourcis d’accès :
+                        simple ainsi que plusieurs variantes visuelles pour mettre en avant une information, un
+                        conseil, un point clé, une alerte ou une action dangereuse / interdite. Raccourcis d’accès :
                         <code>/citation</code> dans le menu slash, ou le menu contextuel de bloc avec
                         <span class="help-icon"><i data-lucide="quote"></i></span>. Vous pouvez aussi taper
-                        <code>&gt;</code> pour une citation simple, ou utiliser des variantes comme
-                        <code>&gt;info</code>, <code>&gt;important</code>, <code>&gt;warning</code>,
-                        <code>&gt;tip</code> et <code>&gt;caution</code>.
+                        <code>&gt;</code> pour une citation simple, <code>&gt;info</code> pour un bloc d’information,
+                        <code>&gt;tip</code> pour un bloc de conseil, <code>&gt;important</code> pour un point clé ou
+                        un résumé, <code>&gt;alerte</code> pour un bloc d’avertissement, et
+                        <code>&gt;danger</code> pour une action dangereuse ou interdite.
                     </p>
                 </div>
                 <div>
                     <strong>22. À quoi sert le libellé ?</strong>
-                    <p>Le bloc <span class="help-icon"><i data-lucide="tag"></i> Libellé</span> sert à poser des tags
-                        et repères rapides dans vos contenus. L’autocomplétion propose les libellés existants de la page
-                        pour
-                        accélérer la saisie et garder des conventions cohérentes. Raccourcis d’accès :
-                        <code>/libellé</code> ou <code>@</code> pour créer rapidement un libellé inline.
-                    </p>
+                    <p>Le bloc <span class="help-icon"><i data-lucide="tag"></i> Libellé</span> sert à créer un tag
+                        inline dans le texte pour marquer un thème, un mot-clé ou un repère métier. L’autocomplétion
+                        propose les libellés déjà utilisés afin d’harmoniser votre vocabulaire dans la page.</p>
+                    <p>Vous pouvez l’insérer via <code>/libellé</code> ou directement au clavier en ouvrant puis en
+                        refermant le libellé avec un backtick :</p>
+                    <pre><code>`mon-libelle`</code></pre>
                 </div>
             </div>
         </section>
 
         <section id="ia" class="legal-section">
-            <h2>IA et assistance</h2>
+            <h2>IA et services tiers</h2>
             <div class="help-list">
                 <div>
-                    <strong>23. Comment utiliser la base de connaissance ?</strong>
+                    <strong>23. Comment ajouter un fichier à la base de connaissance et à quoi ça sert ?</strong>
                     <p>Dans l’assistant, cliquez sur <span class="help-icon"><i data-lucide="brain"></i></span> pour
                         sélectionner les espaces ou sources à inclure dans le contexte de l’IA. Astuce : vous pouvez
                         aussi importer des fichiers pour les transformer en pages, puis les intégrer ensuite à cette
-                        base de connaissance afin qu’Assist.js puisse les exploiter comme sources durables.</p>
+                        base de connaissance afin que l'Assistant puisse les exploiter comme sources durables.</p>
                 </div>
                 <div>
-                    <strong>24. Quelle est la différence entre joindre un fichier à l’IA et importer un fichier dans le
-                        document ?</strong>
+                    <strong>24. Quelle est la différence entre joindre un fichier à l’IA en contexte et importer un
+                        fichier dans le
+                        document en base de connaissance ?</strong>
                     <p><span class="help-icon"><i data-lucide="paperclip"></i></span> <strong>Joindre</strong> envoie
                         le fichier comme contexte temporaire à l’assistant pour analyser, résumer ou répondre, sans en
                         faire automatiquement une page. <span class="help-icon"><i data-lucide="file-down"></i></span>
                         <strong>Importer</strong> lit le fichier, l’insère dans le document et le transforme en contenu
                         éditable et durable. Si vous voulez enrichir votre base de connaissance sur la durée,
-                        l’import est le bon choix.
+                        l’import est le bon choix. En revanche, pour le moment, les fichiers de données volumineux ou
+                        très structurés (par exemple JSON, tableurs ou autres fichiers de données) sont surtout pris en
+                        charge via les pièces jointes ; ils ne sont pas toujours adaptés à un import direct comme
+                        document éditable.
                     </p>
                 </div>
                 <div>
@@ -349,12 +366,47 @@
                         l’IA selon votre usage.</p>
                 </div>
                 <div>
-                    <strong>28. À quoi servent les raccourcis de prompt ?</strong>
+                    <strong>28. Quelles informations sont partagées avec l’IA et les services externes ?</strong>
+                    <p>Pour produire une réponse, l’IA peut recevoir le contenu utile de votre document courant ainsi
+                        que les extraits les plus pertinents issus de la base de connaissance locale (RAG), c’est-à-dire
+                        des passages sélectionnés plutôt qu’un envoi systématique de tout votre historique. D’autres
+                        services externes reçoivent uniquement les données nécessaires à l’action demandée :
+                        transcription vocale, OCR / reconnaissance de document ou d’image, synthèse vocale
+                        (text-to-speech), publication, partage, ou intégrations tierces selon la fonction utilisée.
+                        Pour plus de détails sur les usages de données, consultez
+                        <a href="legal.html#privacy">la politique de confidentialité</a>.
+                    </p>
+                </div>
+                <div>
+                    <strong>29. Quels sont les autres services tiers proposés et à quoi servent-ils ?</strong>
+                    <p>En plus de l’assistant IA, GoToolkit peut s’appuyer sur plusieurs services tiers pour vous
+                        rendre des actions concrètes plus simples : transcription vocale pour transformer un enregistrement
+                        en texte, OCR pour extraire le texte d’un document ou d’une image, synthèse vocale pour lire
+                        un contenu à voix haute, et certaines intégrations de publication ou de partage selon le flux
+                        que vous déclenchez. Du point de vue utilisateur, cela permet surtout d’éviter des manipulations
+                        manuelles : réécouter moins, retaper moins, convertir plus vite, et réutiliser plus facilement
+                        vos contenus dans le bon format. Pour plus de détails sur la confidentialité et les données
+                        échangées avec ces services, consultez
+                        <a href="legal.html#privacy">la politique de confidentialité</a>.
+                    </p>
+                </div>
+                <div>
+                    <strong>30. À quoi servent les raccourcis de prompt ?</strong>
                     <p>Les raccourcis accélèrent les actions fréquentes comme résumer, reformuler, analyser ou produire
                         une variante. Ils évitent de retaper les mêmes consignes manuellement.</p>
                 </div>
                 <div>
-                    <strong>29. Comment fonctionnent les commandes vocales “Ok go”, “Ok efface” et “Ok annule”
+                    <strong>31. Y a-t-il des limites de requêtes pour l’IA et les autres services externes ?</strong>
+                    <p>Oui. Les proxys utilisés pour l’IA, la transcription, la synthèse vocale et certains autres
+                        services appliquent des limites de requêtes pour éviter les abus, protéger les secrets côté
+                        serveur et maintenir une bonne disponibilité. En pratique, si vous enchaînez beaucoup de
+                        demandes en peu de temps, vous pouvez voir un refus temporaire, un délai, ou un message
+                        demandant de réessayer un peu plus tard. Ces limites ne sont pas nécessairement identiques
+                        selon le service utilisé, et elles peuvent dépendre du contexte (par exemple navigation locale,
+                        session active, ou utilisation cloud).</p>
+                </div>
+                <div>
+                    <strong>32. Comment fonctionnent les commandes vocales “Ok go”, “Ok efface” et “Ok annule”
                         ?</strong>
                     <p>Dans le champ de discussion, la dictée vocale reconnaît trois commandes rapides.
                         <strong>“Ok go”</strong> envoie le texte dicté. <strong>“Ok efface”</strong> vide le contenu
@@ -370,18 +422,19 @@
             <h2>Partage et cloud</h2>
             <div class="help-list">
                 <div>
-                    <strong>30. Comment accéder aux espaces partagés GO LIVE et SAFRAN ?</strong>
+                    <strong>33. Comment accéder aux espaces partagés GO LIVE et SAFRAN ?</strong>
                     <p>Utilisez le bouton <span class="help-icon"><i data-lucide="lock-open"></i></span> pour
-                        l’authentification SSO Microsoft. L’accès aux espaces partagés est accordé selon le domaine
-                        de l’adresse e-mail professionnelle authentifiée, avec une exception possible pour
-                        <strong>quang.tran</strong> qui peut disposer d’un accès administrateur ou de support selon la
-                        configuration en place. En pratique, l’ouverture d’un espace partagé dépend du domaine de
-                        l’e-mail professionnel autorisé : si le domaine ne correspond pas à une règle d’accès valide,
-                        l’espace ne s’ouvre pas, même avec une authentification réussie.
+                        l’authentification SSO Microsoft. L’accès aux espaces partagés dépend du domaine de votre
+                        adresse e-mail professionnelle authentifiée. Pour le moment, les deux espaces partagés
+                        disponibles sont réservés aux domaines <strong>savane-group.com</strong> et
+                        <strong>safran-group.com</strong>. Si votre domaine ne correspond pas à un domaine autorisé,
+                        l’espace ne s’ouvre pas, même avec une authentification réussie. Si vous souhaitez ouvrir
+                        votre propre espace professionnel, envoyez un mail à
+                        <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a>.
                     </p>
                 </div>
                 <div>
-                    <strong>31. Les données cloud sont-elles chiffrées ?</strong>
+                    <strong>34. Les données cloud sont-elles chiffrées ?</strong>
                     <p>Oui. Les données partagées en ligne utilisent un chiffrement côté application afin de limiter
                         l’exposition des contenus synchronisés. En pratique, cela réduit le risque d’accès non autorisé
                         au contenu brut. L’authentification, les droits d’accès à l’espace, et le partage restreint
@@ -391,7 +444,7 @@
                         d’accès et disposer d’une authentification valide pour voir ou modifier une page.</p>
                 </div>
                 <div>
-                    <strong>32. Comment fonctionne la stratégie de synchronisation cloud ?</strong>
+                    <strong>35. Comment fonctionne la stratégie de synchronisation cloud ?</strong>
                     <p>Lorsqu’une page doit être synchronisée, GoToolkit conserve d’abord les opérations en attente en
                         local (pending operations), puis les pousse vers le cloud dès que la synchronisation peut se
                         faire. En cas de divergence, la résolution de conflit suit une logique
@@ -400,20 +453,20 @@
                     </p>
                 </div>
                 <div>
-                    <strong>33. Peut-on déplacer des pages par glisser-déposer entre privé et cloud ?</strong>
+                    <strong>36. Peut-on déplacer des pages par glisser-déposer entre privé et cloud ?</strong>
                     <p>Oui. Vous pouvez réorganiser des pages dans vos pages privées, dans un espace cloud, et selon le
                         contexte déplacer par glisser-déposer entre privé et cloud. À l’intérieur des pages cloud,
                         le glisser-déposer permet aussi de changer la hiérarchie entre pages et sous-pages.</p>
                 </div>
                 <div>
-                    <strong>34. Comment publier une page ou partager un lien ?</strong>
+                    <strong>37. Comment publier une page ou partager un lien ?</strong>
                     <p>Le plus simple est de copier directement le lien partagé. Seul un utilisateur authentifié qui
                         dispose déjà de l’accès nécessaire peut voir et éditer la page directement depuis ce lien.
                         Il n’est pas nécessaire de republier à chaque ouverture : le lien partagé est le point d’accès
                         direct tant que la page reste disponible dans l’espace autorisé.</p>
                 </div>
                 <div>
-                    <strong>35. Que faire si la synchronisation semble bloquée ?</strong>
+                    <strong>38. Que faire si la synchronisation semble bloquée ?</strong>
                     <p>Commencez par vérifier votre connexion et l’espace ciblé. Ensuite, rafraîchissez l’interface ou
                         relancez l’action de publication. Évitez de dupliquer les clics tant qu’une opération est en
                         cours.</p>
