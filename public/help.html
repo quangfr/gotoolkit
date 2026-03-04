@@ -41,8 +41,22 @@
         .help-icon {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             font-weight: 600;
+            vertical-align: text-top;
+        }
+
+        .help-icon i,
+        .help-icon svg.lucide {
+            width: 14px;
+            height: 14px;
+            flex: 0 0 14px;
+        }
+
+        .help-icon svg.lucide {
+            display: block;
+            position: relative;
+            top: -1px;
         }
 
         .help-list {
@@ -92,37 +106,33 @@
                     </p>
                 </div>
                 <div>
-                    <strong>3. Où sont stockées mes données privées ?</strong>
-                    <p>Par défaut, elles sont stockées localement sur votre appareil. Tant que vous ne publiez pas une
-                        page sur un espace de partage ou n’utilisez pas une fonction externe, rien n’est envoyé en
-                        ligne. Pour plus de détails, consultez aussi
-                        <a href="legal.html#privacy">la politique de confidentialité</a>.
-                    </p>
-                </div>
-                <div>
-                    <strong>4. Comment ouvrir l’aide générale de l’application ?</strong>
+                    <strong>3. Comment ouvrir l’aide générale de l’application ?</strong>
                     <p>Cliquez sur <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> dans la barre
                         du haut, puis sur <span class="help-icon"><i data-lucide="file-question"></i> Aide</span> dans
                         le panneau d’information.</p>
                 </div>
                 <div>
-                    <strong>5. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire ?</strong>
-                    <p>Sauvegardez d’abord vos données sur votre ordinateur, puis ouvrez
+                    <strong>4. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire ?</strong>
+                    <p>Vérifiez d’abord que vous êtes bien connecté à Internet, puis mettez l’application à jour avec
+                        <a href="./?v=2026.03.04">la dernière version</a>. Videz ensuite le stockage local et les
+                        cookies du site dans votre navigateur (par exemple les données du site sur l’appareil dans
+                        Chrome). Avant toute remise à zéro, sauvegardez vos fichiers locaux vers le cloud ou exportez-
+                        les sur votre appareil, puis ouvrez
                         <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> et cliquez sur
-                        <span class="help-icon"><i data-lucide="octagon-x"></i> Réinitialiser</span> pour repartir
-                        d’un état propre. Si le problème persiste, envoyez un mail à
+                        <span class="help-icon"><i data-lucide="octagon-x"></i> Réinitialiser</span> dans le panneau
+                        d’information. Si le problème persiste, envoyez un mail à
                         <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a> avec une capture ou créez une
                         page dans le dossier <strong>Go Live / Feedback</strong>.
                     </p>
                 </div>
                 <div>
-                    <strong>6. À quoi sert le bouton <span class="help-icon"><i data-lucide="settings"></i>
+                    <strong>5. À quoi sert le bouton <span class="help-icon"><i data-lucide="settings"></i>
                             Paramètres</span> ?</strong>
                     <p>Il permet d’ajuster les préférences, les intégrations et certains réglages avancés. Utilisez-le
                         pour changer la configuration avant de modifier vos flux de travail.</p>
                 </div>
                 <div>
-                    <strong>7. Puis-je utiliser GoToolkit sur mobile ?</strong>
+                    <strong>6. Puis-je utiliser GoToolkit sur mobile ?</strong>
                     <p>Oui. L’application peut rediriger directement vers <code>mobile.html</code>. Sur mobile, vous
                         pouvez écrire des notes, transcrire un enregistrement vocal, transformer une note manuscrite
                         ou un document scanné en texte, réutiliser les mêmes raccourcis IA pour transformer ce texte,
@@ -379,21 +389,28 @@
                 </div>
                 <div>
                     <strong>29. Quels sont les autres services tiers proposés et à quoi servent-ils ?</strong>
-                    <p>En plus de l’assistant IA, GoToolkit peut s’appuyer sur plusieurs services tiers pour vous
-                        rendre des actions concrètes plus simples : transcription vocale pour transformer un enregistrement
-                        en texte, OCR pour extraire le texte d’un document ou d’une image, synthèse vocale pour lire
-                        un contenu à voix haute, et certaines intégrations de publication ou de partage selon le flux
-                        que vous déclenchez. Du point de vue utilisateur, cela permet surtout d’éviter des manipulations
-                        manuelles : réécouter moins, retaper moins, convertir plus vite, et réutiliser plus facilement
-                        vos contenus dans le bon format. Pour plus de détails sur la confidentialité et les données
-                        échangées avec ces services, consultez
+                    <p>En plus de l’assistant IA, GoToolkit peut s’appuyer sur plusieurs services tiers selon l’action
+                        lancée : <strong>AssemblyAI</strong> pour la transcription vocale, <strong>Google Cloud
+                            Text-to-Speech</strong> pour la synthèse vocale, <strong>OpenRouter / Nebius Token
+                            Factory</strong> pour l’IA, l’OCR et certains traitements de fichiers, <strong>Microsoft
+                            OpenID Connect</strong> pour certains accès SSO, <strong>Google Gmail API</strong> pour
+                        créer des brouillons Gmail, <strong>Google YouTube API</strong> pour publier des vidéos, et
+                        <strong>Notion API</strong> pour publier dans Notion. Cela permet d’éviter des manipulations
+                        manuelles et de réutiliser plus vite vos contenus dans le bon format. Pour plus de détails sur
+                        la confidentialité et les données échangées avec ces services, consultez
                         <a href="legal.html#privacy">la politique de confidentialité</a>.
                     </p>
                 </div>
                 <div>
                     <strong>30. À quoi servent les raccourcis de prompt ?</strong>
-                    <p>Les raccourcis accélèrent les actions fréquentes comme résumer, reformuler, analyser ou produire
-                        une variante. Ils évitent de retaper les mêmes consignes manuellement.</p>
+                    <p>Les raccourcis de prompt servent à lancer rapidement des consignes déjà prêtes, classées par
+                        catégories selon le besoin. Les catégories couvrent par exemple la
+                        <strong>rédaction / reformulation</strong>, l’<strong>analyse / exploration</strong>, et la
+                        <strong>structuration / transformation</strong> du contenu.
+                    </p>
+                    <p>Exemples : <strong>Résumer</strong> pour condenser un texte, <strong>Reformuler</strong> pour
+                        changer le ton ou clarifier, <strong>Extraire les actions</strong> pour identifier les tâches,
+                        ou <strong>Faire un plan</strong> pour transformer un contenu en structure exploitable.</p>
                 </div>
                 <div>
                     <strong>31. Y a-t-il des limites de requêtes pour l’IA et les autres services externes ?</strong>
@@ -406,14 +423,16 @@
                         session active, ou utilisation cloud).</p>
                 </div>
                 <div>
-                    <strong>32. Comment fonctionnent les commandes vocales “Ok go”, “Ok efface” et “Ok annule”
-                        ?</strong>
-                    <p>Dans le champ de discussion, la dictée vocale reconnaît trois commandes rapides.
-                        <strong>“Ok go”</strong> envoie le texte dicté. <strong>“Ok efface”</strong> vide le contenu
-                        du composeur. <strong>“Ok annule”</strong> tente d’annuler la dernière action utilisateur
-                        réversible, puis efface aussi le texte de dictée en cours dans le composeur pour repartir
-                        proprement.
+                    <strong>32. Puis-je lancer des commandes à la voix ?</strong>
+                    <p>Oui. Il est possible de discuter avec l’Assistant
+                        <span class="help-icon"><i data-lucide="bot"></i></span> en cliquant sur
+                        <span class="help-icon"><i data-lucide="mic"></i></span>. Toutes les paroles prononcées sont
+                        reconnues comme une instruction envoyée à l’assistant.
                     </p>
+                    <p>Vous pouvez ensuite utiliser trois commandes vocales rapides :
+                        <strong>“Ok go”</strong> pour envoyer la commande, <strong>“Ok efface”</strong> pour annuler la
+                        commande en cours dans le composeur, et <strong>“Ok annule”</strong> pour revenir à la version
+                        du document avant la commande précédente.</p>
                 </div>
             </div>
         </section>
@@ -422,7 +441,16 @@
             <h2>Partage et cloud</h2>
             <div class="help-list">
                 <div>
-                    <strong>33. Comment accéder aux espaces partagés GO LIVE et SAFRAN ?</strong>
+                    <strong>33. Comment publier une page ou partager un lien ?</strong>
+                    <p>Pour publier une page, copiez-la vers un espace partagé en la glissant-déposant, ou cliquez sur
+                        <strong>File Menu</strong> puis <strong>Publish</strong>. Cliquez ensuite sur
+                        <span class="help-icon"><i data-lucide="rotate-cw"></i> Sync</span> pour l’envoyer en ligne.
+                        Vous pouvez enfin envoyer l’URL de la page ou partager le chemin du stockage partagé avec
+                        l’autre personne. Seuls les utilisateurs qui ont déjà accès à l’espace partagé peuvent voir la
+                        page.</p>
+                </div>
+                <div>
+                    <strong>34. Comment accéder aux espaces partagés GO LIVE et SAFRAN ?</strong>
                     <p>Utilisez le bouton <span class="help-icon"><i data-lucide="lock-open"></i></span> pour
                         l’authentification SSO Microsoft. L’accès aux espaces partagés dépend du domaine de votre
                         adresse e-mail professionnelle authentifiée. Pour le moment, les deux espaces partagés
@@ -434,7 +462,7 @@
                     </p>
                 </div>
                 <div>
-                    <strong>34. Les données cloud sont-elles chiffrées ?</strong>
+                    <strong>35. Les données cloud sont-elles chiffrées ?</strong>
                     <p>Oui. Les données partagées en ligne utilisent un chiffrement côté application afin de limiter
                         l’exposition des contenus synchronisés. En pratique, cela réduit le risque d’accès non autorisé
                         au contenu brut. L’authentification, les droits d’accès à l’espace, et le partage restreint
@@ -444,7 +472,7 @@
                         d’accès et disposer d’une authentification valide pour voir ou modifier une page.</p>
                 </div>
                 <div>
-                    <strong>35. Comment fonctionne la stratégie de synchronisation cloud ?</strong>
+                    <strong>36. Comment fonctionne la stratégie de synchronisation cloud ?</strong>
                     <p>Lorsqu’une page doit être synchronisée, GoToolkit conserve d’abord les opérations en attente en
                         local (pending operations), puis les pousse vers le cloud dès que la synchronisation peut se
                         faire. En cas de divergence, la résolution de conflit suit une logique
@@ -453,17 +481,10 @@
                     </p>
                 </div>
                 <div>
-                    <strong>36. Peut-on déplacer des pages par glisser-déposer entre privé et cloud ?</strong>
+                    <strong>37. Peut-on déplacer des pages par glisser-déposer entre privé et cloud ?</strong>
                     <p>Oui. Vous pouvez réorganiser des pages dans vos pages privées, dans un espace cloud, et selon le
                         contexte déplacer par glisser-déposer entre privé et cloud. À l’intérieur des pages cloud,
                         le glisser-déposer permet aussi de changer la hiérarchie entre pages et sous-pages.</p>
-                </div>
-                <div>
-                    <strong>37. Comment publier une page ou partager un lien ?</strong>
-                    <p>Le plus simple est de copier directement le lien partagé. Seul un utilisateur authentifié qui
-                        dispose déjà de l’accès nécessaire peut voir et éditer la page directement depuis ce lien.
-                        Il n’est pas nécessaire de republier à chaque ouverture : le lien partagé est le point d’accès
-                        direct tant que la page reste disponible dans l’espace autorisé.</p>
                 </div>
                 <div>
                     <strong>38. Que faire si la synchronisation semble bloquée ?</strong>
@@ -476,9 +497,23 @@
 
     </main>
     <script>
-        window.addEventListener("DOMContentLoaded", () => {
-            window.lucide?.createIcons?.();
-        });
+        const renderHelpIcons = () => {
+            window.lucide?.createIcons?.({
+                attrs: {
+                    width: "14",
+                    height: "14",
+                    "stroke-width": "2"
+                }
+            });
+        };
+
+        if (document.readyState !== "loading") {
+            renderHelpIcons();
+        } else {
+            window.addEventListener("DOMContentLoaded", renderHelpIcons, { once: true });
+        }
+
+        window.addEventListener("load", renderHelpIcons, { once: true });
     </script>
 </body>
 

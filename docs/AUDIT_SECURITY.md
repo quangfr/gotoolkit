@@ -13,15 +13,15 @@ Method:
 
 ## Executive Summary
 
-The codebase has several solid controls already in place, including CSP, worker-side auth gates, Turnstile enforcement in proxy workers, and replay protection in sync flows. The most important remaining issues are on the browser side: sensitive data is persisted in `localStorage`, some UI paths still build DOM with raw `innerHTML`, and Turnstile validation in the worker accepts any successful token without verifying returned metadata such as hostname or action.
+The codebase has several solid controls already in place, including CSP, worker-side auth gates, Turnstile enforcement in proxy workers, replay protection in sync flows, and removal of the old `home.html` entry point. The most important remaining issues are now hardening gaps rather than obvious secret leaks: full AI payloads are still cached on the client (now in `sessionStorage` instead of `localStorage`), some UI paths still build DOM with raw `innerHTML`, and Turnstile validation in the worker accepts any successful token without verifying returned metadata such as hostname or action.
 
 ## Findings
 
-### 1. High: AI request and response payloads are persisted in browser `localStorage`
+### 1. Medium: AI request and response payloads are still cached in browser `sessionStorage`
 
 Risk:
 - Full AI prompts and model responses can contain sensitive user content, copied documents, or confidential context.
-- `localStorage` is long-lived and readable by any script running on the same origin, including future XSS.
+- `sessionStorage` is shorter-lived than `localStorage`, but it is still readable by any script running on the same origin, including future XSS in the active tab.
 - This increases the blast radius of any frontend compromise.
 
 Evidence:
@@ -31,21 +31,22 @@ Evidence:
 Code:
 - `recordAIRequest(...)` stores `goToolkit.chat.lastAIRequest`
 - `recordAIResponse(...)` stores `goToolkit.chat.lastAIResponse`
+- both now write to `sessionStorage`, not `localStorage`
 
 Why this matters:
 - These are not just UI preferences. They are full serialized payloads.
-- A successful XSS or malicious extension can exfiltrate previous prompts and responses without needing to intercept live traffic.
+- A successful XSS or malicious extension can still exfiltrate previous prompts and responses from the active tab without needing to intercept live traffic.
 
 Recommended fix:
-- Stop persisting full payloads in `localStorage`.
-- If debugging is required, gate it behind an explicit developer flag and prefer in-memory storage or short-lived `sessionStorage`.
+- Prefer in-memory storage over persistent browser storage when possible.
+- If session-scoped debugging remains necessary, store redacted metadata rather than full prompt/response bodies.
 - If persistence is unavoidable, store only redacted metadata such as timestamp, model, and request ID.
 
-### 2. Medium: Legacy API-key storage cleanup still exists in frontend config
+### 2. Low: Legacy API-key methods remain exposed in the frontend config surface
 
 Risk:
-- The frontend config layer still contains code paths dedicated to browser-stored API keys.
-- Even when used only for cleanup, retaining those paths normalizes secret handling in `localStorage` and makes accidental reintroduction easier.
+- The frontend config layer still exposes legacy API-key methods even though browser-stored API keys are no longer supported.
+- These methods are now no-ops, so the direct storage risk is removed, but the surface area still creates ambiguity for future maintenance.
 
 Evidence:
 - [public/js/ia-config.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/js/ia-config.js#L62)
@@ -54,15 +55,16 @@ Evidence:
 Code:
 - `ia-config.js` still exposes legacy `setApiKey(...)` and `setOpenRouterApiKey(...)` methods
 - Those methods are part of the browser config surface even though API keys are no longer supported
+- The methods are currently explicit no-ops and do not write to browser storage
 
 Why this matters:
 - Legacy key-handling interfaces in frontend code create ambiguity about whether browser-stored secrets are supported.
-- Secret storage patterns should be removed, not kept around as compatibility behavior.
+- This is primarily a maintainability and clarity issue now, not an active secret leak.
 
 Recommended fix:
-- Convert legacy API-key methods into explicit no-ops or remove them entirely.
+- Remove the legacy API-key methods entirely if no caller still requires them.
 - Keep secret material server-side only.
-- If a local developer override is still needed, use an explicit dev-only build flag and `sessionStorage` at most.
+- If compatibility must remain, keep them as no-ops and document that they are deprecated.
 
 ### 3. Medium: Turnstile verification accepts `success` only and does not validate returned hostname or action
 
@@ -139,14 +141,14 @@ Recommended fix:
 
 ## Priority Order
 
-1. Remove persistent storage of AI request/response bodies from `localStorage`.
-2. Remove the remaining browser-side API key storage fallback.
-3. Harden worker-side Turnstile verification by checking returned metadata.
-4. Eliminate dynamic `innerHTML` sinks in UI rendering paths.
-5. Strengthen CSP by moving to headers and reducing inline allowances.
+1. Remove or redact full AI request/response payload storage in the browser.
+2. Harden worker-side Turnstile verification by checking returned metadata.
+3. Eliminate dynamic `innerHTML` sinks in UI rendering paths.
+4. Strengthen CSP by moving to headers and reducing inline allowances.
+5. Remove or formally deprecate remaining legacy API-key methods.
 
 ## Notes
 
 - This is a static audit, not a penetration test.
 - Absence from this file does not imply a code path is secure; it only means it was not identified as a confirmed issue in the inspected scope.
-- Some issues above become materially worse if an XSS bug already exists, which is why frontend storage and `innerHTML` usage rank highly.
+- Some issues above become materially worse if an XSS bug already exists, which is why frontend storage and `innerHTML` usage still rank highly even after the `sessionStorage` migration.
