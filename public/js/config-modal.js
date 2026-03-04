@@ -1580,9 +1580,11 @@
         }
         return new Promise((resolve, reject) => {
             let closedTimer = null;
+            let settled = false;
             const onMessage = event => {
                 if (event.origin !== api) return;
                 if (event.data?.source !== "gotoolkit-microsoft-oauth") return;
+                settled = true;
                 console.log("[SSO Debug] Microsoft OAuth popup message received", {
                     origin: event.origin,
                     ok: Boolean(event.data?.ok),
@@ -1601,10 +1603,22 @@
                 try { popup.close(); } catch (err) { /* noop */ }
             }
             global.addEventListener("message", onMessage);
-            closedTimer = setInterval(() => {
+            closedTimer = setInterval(async () => {
                 if (!popup || popup.closed) {
                     console.log("[SSO Debug] Microsoft OAuth popup closed before success message");
                     cleanup();
+                    if (settled) return;
+                    settled = true;
+                    try {
+                        const statusAfterClose = await microsoftGetAuthStatus();
+                        if (statusAfterClose?.connected) {
+                            console.log("[SSO Debug] Microsoft OAuth popup closed but session is connected; accepting status fallback");
+                            resolve({ ok: true, source: "status-after-close" });
+                            return;
+                        }
+                    } catch (err) {
+                        console.warn("[SSO Debug] Microsoft OAuth status fallback failed after popup close", err);
+                    }
                     reject(new Error("Connexion Outlook annulee"));
                 }
             }, 300);
@@ -1628,16 +1642,24 @@
         try {
             const status = await microsoftGetAuthStatus();
             console.log("[SSO Debug] Microsoft auth status", {
-                connected: Boolean(status?.connected)
+                connected: Boolean(status?.connected),
+                accountEmail: String(status?.accountEmail || "").trim().toLowerCase()
             });
             if (status?.connected) {
                 try {
-                    return await microsoftGetIdentity();
+                    const identityFromStatus = await microsoftGetIdentity();
+                    const statusEmail = String(identityFromStatus?.accountEmail || "").trim().toLowerCase();
+                    if (statusEmail) {
+                        console.log("[SSO Debug] Microsoft identity available from existing session", {
+                            accountEmail: statusEmail
+                        });
+                        return identityFromStatus;
+                    }
+                    console.warn("[SSO Debug] Microsoft existing session has empty identity email; forcing OAuth popup");
                 } catch (err) {
                     console.log("[SSO Debug] Microsoft auth identity fallback after status", {
                         error: err?.message || String(err)
                     });
-                    return true;
                 }
             }
         } catch (err) {
@@ -1655,6 +1677,10 @@
         }
         const accountEmail = String(identity?.accountEmail || "").trim().toLowerCase();
         const accountName = String(identity?.accountName || "").trim();
+        if (!accountEmail) {
+            console.error("[SSO Debug] Microsoft OAuth completed without usable identity email");
+            throw new Error("Connexion Outlook incomplète: email du compte indisponible");
+        }
         console.log("[SSO Debug] Microsoft OAuth succeeded", {
             provider: "Microsoft",
             accountEmail,
@@ -1675,7 +1701,7 @@
         } catch (err) {
             // noop
         }
-        return identity || true;
+        return identity;
     }
 
     global.GoToolkitMicrosoftPublish = {

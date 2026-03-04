@@ -110,59 +110,76 @@ test.describe("Microsoft OAuth proxy flow", () => {
     await page.goto("http://127.0.0.1:5000/index.html", { waitUntil: "commit", timeout: 20_000 });
     await page.waitForFunction(() => Boolean((window as any).GoToolkitMicrosoftPublish?.getAuthStatus), null, { timeout: 120_000 });
 
-    const alreadyConnected = await page.evaluate(async () => {
-      const status = await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
-      return Boolean(status?.connected);
+    page.on("console", msg => {
+      const text = msg.text();
+      if (text.includes("[SSO Debug]")) {
+        // eslint-disable-next-line no-console
+        console.log(`[BROWSER:${msg.type()}] ${text}`);
+      }
     });
 
-    if (!alreadyConnected) {
-      const popupPromise = context.waitForEvent("page", { timeout: 60_000 });
-      await page.locator("#memoConnectionBtn").click();
-      const popup = await popupPromise;
-      await popup.waitForLoadState("domcontentloaded", { timeout: 60_000 }).catch(() => null);
-
-      const useAnotherAccount = popup.getByRole("button", { name: /use another account/i }).first();
-      if (await useAnotherAccount.isVisible({ timeout: 2_500 }).catch(() => false)) {
-        await useAnotherAccount.click();
+    await page.evaluate(async () => {
+      const publisher = (window as any).GoToolkitMicrosoftPublish;
+      const status = await publisher?.getAuthStatus?.().catch(() => null);
+      if (status?.connected && publisher?.disconnect) {
+        await publisher.disconnect();
       }
+    });
 
-      const emailInput = popup.locator('input[type="email"], input[name="loginfmt"]').first();
-      if (await emailInput.isVisible({ timeout: 25_000 }).catch(() => false)) {
-        await emailInput.fill(loginEmail);
-        await popup.locator('input[type="submit"], button[type="submit"], #idSIButton9').first().click();
-      }
+    const popupPromise = context.waitForEvent("page", { timeout: 60_000 });
+    await page.locator("#memoConnectionBtn").click();
+    const popup = await popupPromise;
+    await popup.waitForLoadState("domcontentloaded", { timeout: 60_000 }).catch(() => null);
 
-      const passwordInput = popup.locator('input[type="password"], input[name="passwd"]').first();
-      await passwordInput.waitFor({ state: "visible", timeout: 30_000 });
-      await passwordInput.fill(loginPassword);
-      await popup.locator('input[type="submit"], button[type="submit"], #idSIButton9').first().click();
-
-      const staySignedInNo = popup.locator("#idBtn_Back").first();
-      if (await staySignedInNo.isVisible({ timeout: 10_000 }).catch(() => false)) {
-        await staySignedInNo.click();
-      }
-
-      await popup.waitForEvent("close", { timeout: 90_000 }).catch(() => null);
+    const useAnotherAccount = popup.getByRole("button", { name: /use another account/i }).first();
+    if (await useAnotherAccount.isVisible({ timeout: 2_500 }).catch(() => false)) {
+      await useAnotherAccount.click();
     }
+
+    const emailInput = popup.locator('input[type="email"], input[name="loginfmt"]').first();
+    if (await emailInput.isVisible({ timeout: 25_000 }).catch(() => false)) {
+      await emailInput.fill(loginEmail);
+      await popup.locator('input[type="submit"], button[type="submit"], #idSIButton9').first().click();
+    }
+
+    const passwordInput = popup.locator('input[type="password"], input[name="passwd"]').first();
+    await passwordInput.waitFor({ state: "visible", timeout: 30_000 });
+    await passwordInput.fill(loginPassword);
+    await popup.locator('input[type="submit"], button[type="submit"], #idSIButton9').first().click();
+
+    const staySignedInNo = popup.locator("#idBtn_Back").first();
+    if (await staySignedInNo.isVisible({ timeout: 10_000 }).catch(() => false)) {
+      await staySignedInNo.click();
+    }
+
+    await popup.waitForEvent("close", { timeout: 90_000 }).catch(() => null);
 
     await page.waitForFunction(async () => {
       const status = await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
       return Boolean(status?.connected);
     }, null, { timeout: 120_000 });
 
-    await page.waitForFunction(() => {
-      const spaces = (window as any).GoToolkitSpaces?.readSpaces?.() || [];
-      const ids = new Set(spaces.map((space: any) => String(space?.id || "").trim().toLowerCase()));
-      return ids.has("golive") && ids.has("safran");
-    }, null, { timeout: 120_000 });
-
-    const result = await page.evaluate(() => {
+    await page.waitForTimeout(2_000);
+    const diagnostics = await page.evaluate(async () => {
+      const status = await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch((err: any) => ({ error: String(err?.message || err) }));
+      const identity = await (window as any).GoToolkitMicrosoftPublish?.getIdentity?.().catch((err: any) => ({ error: String(err?.message || err) }));
       const spaces = (window as any).GoToolkitSpaces?.readSpaces?.() || [];
       const managed = spaces.filter((space: any) => Boolean(space?.accessManaged) && String(space?.accessMode || "").trim().toLowerCase() === "oauth");
-      return managed.map((space: any) => String(space?.id || "").trim().toLowerCase());
+      return {
+        status,
+        identity,
+        managedIds: managed.map((space: any) => String(space?.id || "").trim().toLowerCase()),
+        allSpaces: spaces.map((space: any) => ({
+          id: String(space?.id || "").trim().toLowerCase(),
+          accessManaged: Boolean(space?.accessManaged),
+          accessMode: String(space?.accessMode || "").trim().toLowerCase()
+        }))
+      };
     });
-    expect(result).toContain("golive");
-    expect(result).toContain("safran");
+    // eslint-disable-next-line no-console
+    console.log("MS OAuth diagnostics:", JSON.stringify(diagnostics));
+    expect(diagnostics.managedIds, JSON.stringify(diagnostics)).toContain("golive");
+    expect(diagnostics.managedIds, JSON.stringify(diagnostics)).toContain("safran");
 
     const cloudTree = await page.evaluate(async () => {
       const worker = (window as any).goToolkitShareWorker;

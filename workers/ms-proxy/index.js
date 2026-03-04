@@ -13,6 +13,16 @@ const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const DEFAULT_SCOPE = "openid profile email offline_access";
 const IDENTITY_TOKEN_TTL_MS = 5 * 60 * 1000;
 
+function extractEmailFromClaims(claims) {
+  return String(
+    claims?.email
+    || claims?.preferred_username
+    || claims?.upn
+    || claims?.unique_name
+    || ""
+  ).trim();
+}
+
 function normalizeOrigin(origin) {
   return (origin || "").trim();
 }
@@ -356,8 +366,7 @@ async function getValidAccessToken(request, env, sessionId) {
   };
   const refreshedClaims = decodeJwtPayload(refreshed.id_token || "");
   next.user_email = String(
-    refreshedClaims.email
-    || refreshedClaims.preferred_username
+    extractEmailFromClaims(refreshedClaims)
     || stored.user_email
     || ""
   ).trim();
@@ -394,6 +403,13 @@ function renderOAuthCallbackPage(ok, message, targetOrigin) {
 async function handleOAuthStart(request, env) {
   const url = new URL(request.url);
   const origin = (url.searchParams.get("origin") || "").trim();
+  console.log("microsoft oauth start request", {
+    origin,
+    normalizedOrigin: normalizeTargetOrigin(origin),
+    hasDbBinding: Boolean(env?.OAUTH_DB),
+    hasClientId: Boolean(String(env?.MICROSOFT_CLIENT_ID || "").trim()),
+    hasClientSecret: Boolean(String(env?.MICROSOFT_CLIENT_SECRET || "").trim())
+  });
   if (!env?.OAUTH_DB) {
     console.warn("microsoft oauth start failed: missing OAUTH_DB binding");
     return new Response("OAuth state storage unavailable: missing OAUTH_DB binding", { status: 500 });
@@ -441,8 +457,25 @@ async function handleOAuthCallback(request, env) {
   const sessionMismatch = cookieSessionId && storedSessionId && cookieSessionId !== storedSessionId;
   const sessionId = cookieSessionId || storedSessionId;
   const targetOrigin = normalizeTargetOrigin(storedState?.targetOrigin || "");
+  console.log("microsoft oauth callback received", {
+    hasCode: Boolean(code),
+    hasOauthError: Boolean(oauthError),
+    oauthError,
+    hasState: Boolean(nonce),
+    hasStoredState: Boolean(storedState),
+    stateExpired,
+    sessionMismatch,
+    hasCookieSessionId: Boolean(cookieSessionId),
+    hasStoredSessionId: Boolean(storedSessionId),
+    targetOrigin
+  });
 
   if (!storedState || stateExpired || sessionMismatch) {
+    console.warn("microsoft oauth callback rejected: invalid state", {
+      hasStoredState: Boolean(storedState),
+      stateExpired,
+      sessionMismatch
+    });
     return new Response(renderOAuthCallbackPage(false, "State OAuth invalide ou expiré", targetOrigin), {
       status: 400,
       headers: { "Content-Type": "text/html; charset=utf-8" }
@@ -450,12 +483,19 @@ async function handleOAuthCallback(request, env) {
   }
 
   if (oauthError) {
+    console.warn("microsoft oauth callback provider error", {
+      oauthError
+    });
     return new Response(renderOAuthCallbackPage(false, oauthError, targetOrigin), {
       status: 400,
       headers: { "Content-Type": "text/html; charset=utf-8" }
     });
   }
   if (!code || !sessionId) {
+    console.warn("microsoft oauth callback missing code/session", {
+      hasCode: Boolean(code),
+      hasSessionId: Boolean(sessionId)
+    });
     return new Response(renderOAuthCallbackPage(false, "Code OAuth manquant", targetOrigin), {
       status: 400,
       headers: { "Content-Type": "text/html; charset=utf-8" }
@@ -475,13 +515,19 @@ async function handleOAuthCallback(request, env) {
       token_type: String(tokenPayload.token_type || "Bearer").trim() || "Bearer",
       scope: String(tokenPayload.scope || DEFAULT_SCOPE).trim() || DEFAULT_SCOPE,
       expires_at: Date.now() + (Number(tokenPayload.expires_in || 3600) * 1000),
-      user_email: String(claims.email || claims.preferred_username || "").trim(),
+      user_email: extractEmailFromClaims(claims),
       user_name: String(claims.name || "").trim()
     };
     const previous = normalizeStoredToken(await readToken(env, sessionId));
     if (!nextToken.refresh_token && previous.refresh_token) {
       nextToken.refresh_token = previous.refresh_token;
     }
+    console.log("microsoft oauth callback token stored", {
+      hasAccessToken: Boolean(nextToken.access_token),
+      hasRefreshToken: Boolean(nextToken.refresh_token),
+      accountEmail: String(nextToken.user_email || "").trim().toLowerCase(),
+      accountName: String(nextToken.user_name || "").trim()
+    });
     await writeToken(env, sessionId, nextToken);
     return new Response(renderOAuthCallbackPage(true, "OK", targetOrigin), {
       status: 200,
@@ -491,6 +537,9 @@ async function handleOAuthCallback(request, env) {
       }
     });
   } catch (err) {
+    console.warn("microsoft oauth callback failed", {
+      error: err?.message || String(err)
+    });
     return new Response(renderOAuthCallbackPage(false, err?.message || "OAuth echoue", targetOrigin), {
       status: 500,
       headers: { "Content-Type": "text/html; charset=utf-8" }
@@ -565,11 +614,19 @@ export default {
     if (request.method === "POST" && path === "/auth/status") {
       await request.json().catch(() => ({}));
       const sessionId = resolveSessionId(request);
-      if (!sessionId) return jsonResponse(cors.headers, { connected: false, accountEmail: "", accountName: "" });
-      const token = await getValidAccessToken(request, env, sessionId).catch(() => null);
-      if (!token?.access_token) {
+      if (!sessionId) {
+        console.log("microsoft auth status", { connected: false, reason: "missing-session" });
         return jsonResponse(cors.headers, { connected: false, accountEmail: "", accountName: "" });
       }
+      const token = await getValidAccessToken(request, env, sessionId).catch(() => null);
+      if (!token?.access_token) {
+        console.log("microsoft auth status", { connected: false, reason: "missing-token" });
+        return jsonResponse(cors.headers, { connected: false, accountEmail: "", accountName: "" });
+      }
+      console.log("microsoft auth status", {
+        connected: true,
+        accountEmail: String(token.user_email || "").trim().toLowerCase()
+      });
       return jsonResponse(cors.headers, {
         connected: true,
         accountEmail: token.user_email || "",
@@ -580,12 +637,22 @@ export default {
     if (request.method === "POST" && path === "/auth/identity") {
       await request.json().catch(() => ({}));
       const sessionId = resolveSessionId(request);
-      if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
+      if (!sessionId) {
+        console.warn("microsoft auth identity rejected: missing-session");
+        return errorResponse(cors.headers, 401, "session requise");
+      }
       const token = await getValidAccessToken(request, env, sessionId).catch(() => null);
       const accountEmail = String(token?.user_email || "").trim().toLowerCase();
       if (!token?.access_token || !accountEmail) {
+        console.warn("microsoft auth identity rejected: missing-token-or-email", {
+          hasAccessToken: Boolean(token?.access_token),
+          accountEmail
+        });
         return errorResponse(cors.headers, 401, "Connexion Outlook requise");
       }
+      console.log("microsoft auth identity issued", {
+        accountEmail
+      });
       const now = Date.now();
       const expiresAt = now + IDENTITY_TOKEN_TTL_MS;
       const identityToken = await createIdentityToken(env, {
