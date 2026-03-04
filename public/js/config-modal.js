@@ -1568,8 +1568,14 @@
         const origin = global.location.origin;
         const api = getMicrosoftApiBaseUrl();
         const url = `${api}/oauth/start?origin=${encodeURIComponent(origin)}`;
+        console.log("[SSO Debug] Microsoft OAuth popup opening", {
+            origin,
+            api,
+            url
+        });
         const popup = global.open(url, "gotoolkit-microsoft-oauth", "width=560,height=700");
         if (!popup) {
+            console.log("[SSO Debug] Microsoft OAuth popup blocked");
             return Promise.reject(new Error("Popup OAuth bloquee"));
         }
         return new Promise((resolve, reject) => {
@@ -1577,6 +1583,11 @@
             const onMessage = event => {
                 if (event.origin !== api) return;
                 if (event.data?.source !== "gotoolkit-microsoft-oauth") return;
+                console.log("[SSO Debug] Microsoft OAuth popup message received", {
+                    origin: event.origin,
+                    ok: Boolean(event.data?.ok),
+                    hasError: Boolean(String(event.data?.error || "").trim())
+                });
                 cleanup();
                 if (event.data?.ok) {
                     resolve(event.data);
@@ -1592,6 +1603,7 @@
             global.addEventListener("message", onMessage);
             closedTimer = setInterval(() => {
                 if (!popup || popup.closed) {
+                    console.log("[SSO Debug] Microsoft OAuth popup closed before success message");
                     cleanup();
                     reject(new Error("Connexion Outlook annulee"));
                 }
@@ -1612,12 +1624,19 @@
     }
 
     async function microsoftEnsureConnected() {
+        console.log("[SSO Debug] Microsoft ensureConnected start");
         try {
             const status = await microsoftGetAuthStatus();
+            console.log("[SSO Debug] Microsoft auth status", {
+                connected: Boolean(status?.connected)
+            });
             if (status?.connected) {
                 try {
                     return await microsoftGetIdentity();
                 } catch (err) {
+                    console.log("[SSO Debug] Microsoft auth identity fallback after status", {
+                        error: err?.message || String(err)
+                    });
                     return true;
                 }
             }
@@ -1627,6 +1646,7 @@
             });
         }
         await openMicrosoftOAuthPopup();
+        console.log("[SSO Debug] Microsoft OAuth popup completed, fetching identity");
         let identity = null;
         try {
             identity = await microsoftGetIdentity();

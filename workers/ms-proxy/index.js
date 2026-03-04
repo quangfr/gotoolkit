@@ -1,4 +1,5 @@
 const ALLOWED_ORIGINS = [
+  "https://www.gotoolkit.fr",
   "https://gotoolkit.fr",
   "https://gotoolkit.web.app"
 ];
