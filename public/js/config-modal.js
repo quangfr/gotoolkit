@@ -1580,6 +1580,8 @@
         }
         return new Promise((resolve, reject) => {
             let closedTimer = null;
+            let statusPollTimer = null;
+            let postCloseDeadlineMs = 0;
             let settled = false;
             const onMessage = event => {
                 if (event.origin !== api) return;
@@ -1600,25 +1602,55 @@
             function cleanup() {
                 global.removeEventListener("message", onMessage);
                 if (closedTimer) clearInterval(closedTimer);
-                try { popup.close(); } catch (err) { /* noop */ }
+                if (statusPollTimer) clearInterval(statusPollTimer);
+                try {
+                    if (popup && !popup.closed) {
+                        const popupOrigin = String(popup.location?.origin || "").trim();
+                        if (popupOrigin === global.location.origin) {
+                            popup.close();
+                        }
+                    }
+                } catch (err) {
+                    // Cross-origin popup access may be blocked by COOP; ignore.
+                }
             }
             global.addEventListener("message", onMessage);
+            statusPollTimer = setInterval(async () => {
+                if (settled) return;
+                try {
+                    const status = await microsoftGetAuthStatus();
+                    if (status?.connected) {
+                        settled = true;
+                        console.log("[SSO Debug] Microsoft OAuth status polling detected connected session");
+                        cleanup();
+                        resolve({ ok: true, source: "status-polling" });
+                    }
+                } catch (err) {
+                    // noop
+                }
+            }, 1000);
             closedTimer = setInterval(async () => {
                 if (!popup || popup.closed) {
-                    console.log("[SSO Debug] Microsoft OAuth popup closed before success message");
-                    cleanup();
                     if (settled) return;
-                    settled = true;
+                    if (!postCloseDeadlineMs) {
+                        postCloseDeadlineMs = Date.now() + 8000;
+                        console.log("[SSO Debug] Microsoft OAuth popup closed before success message");
+                    }
                     try {
                         const statusAfterClose = await microsoftGetAuthStatus();
                         if (statusAfterClose?.connected) {
+                            settled = true;
                             console.log("[SSO Debug] Microsoft OAuth popup closed but session is connected; accepting status fallback");
+                            cleanup();
                             resolve({ ok: true, source: "status-after-close" });
                             return;
                         }
                     } catch (err) {
                         console.warn("[SSO Debug] Microsoft OAuth status fallback failed after popup close", err);
                     }
+                    if (Date.now() < postCloseDeadlineMs) return;
+                    settled = true;
+                    cleanup();
                     reject(new Error("Connexion Outlook annulee"));
                 }
             }, 300);

@@ -4,6 +4,7 @@ import path from "node:path";
 
 const persistProfile = process.env.PW_PERSIST_PROFILE === "1";
 const storageStatePath = path.resolve(".tmp/playwright-storage-state.json");
+const msAuthStatePath = path.resolve("playwright/.auth/ms.json");
 const envLocalPath = path.resolve(".env.local");
 
 function readEnvLocalValue(key: string): string {
@@ -51,7 +52,9 @@ export default defineConfig({
     viewport: { width: 1280, height: 720 },
     actionTimeout: 30 * 1000,
     navigationTimeout: 30 * 1000,
-    storageState: fs.existsSync(storageStatePath) ? storageStatePath : undefined
+    storageState: fs.existsSync(msAuthStatePath)
+      ? msAuthStatePath
+      : (fs.existsSync(storageStatePath) ? storageStatePath : undefined)
   },
   webServer: {
     command: "npm run start:test",

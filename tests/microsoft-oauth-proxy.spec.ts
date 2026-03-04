@@ -1,4 +1,59 @@
 import { expect, test } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
+
+const MS_AUTH_STATE_PATH = path.resolve("playwright/.auth/ms.json");
+
+async function runMicrosoftPopupLogin(page: any, context: any, loginEmail: string, loginPassword: string, options: { debugArtifacts?: boolean } = {}) {
+  const artifactsDir = path.resolve("test-results/ms-oauth-debug");
+  const writeDebug = (name: string, details: Record<string, unknown> = {}) => {
+    if (!options.debugArtifacts) return;
+    fs.mkdirSync(artifactsDir, { recursive: true });
+    fs.appendFileSync(path.join(artifactsDir, "timeline.log"), `${new Date().toISOString()} ${name} ${JSON.stringify(details)}\n`);
+  };
+
+  const popupPromise = context.waitForEvent("page", { timeout: 60_000 });
+  await page.locator("#memoConnectionBtn").click();
+  const popup = await popupPromise;
+  writeDebug("popup_opened", { url: popup.url() });
+
+  await popup.waitForLoadState("domcontentloaded", { timeout: 60_000 }).catch(() => null);
+  if (options.debugArtifacts) {
+    await popup.screenshot({ path: path.join(artifactsDir, "01-popup-open.png"), fullPage: true }).catch(() => null);
+  }
+  writeDebug("popup_domcontentloaded", { url: popup.url() });
+
+  const useAnotherAccount = popup.getByRole("button", { name: /use another account/i }).first();
+  if (await useAnotherAccount.isVisible({ timeout: 2_500 }).catch(() => false)) {
+    await useAnotherAccount.click();
+    writeDebug("clicked_use_another_account", { url: popup.url() });
+  }
+
+  const emailInput = popup.locator('input[type="email"], input[name="loginfmt"]').first();
+  if (await emailInput.isVisible({ timeout: 25_000 }).catch(() => false)) {
+    await emailInput.fill(loginEmail);
+    await popup.locator('input[type="submit"], button[type="submit"], #idSIButton9').first().click();
+    writeDebug("submitted_email", { url: popup.url() });
+  }
+
+  const passwordInput = popup.locator('input[type="password"], input[name="passwd"]').first();
+  await passwordInput.waitFor({ state: "visible", timeout: 30_000 });
+  await passwordInput.fill(loginPassword);
+  if (options.debugArtifacts) {
+    await popup.screenshot({ path: path.join(artifactsDir, "02-password-screen.png"), fullPage: true }).catch(() => null);
+  }
+  await popup.locator('input[type="submit"], button[type="submit"], #idSIButton9').first().click();
+  writeDebug("submitted_password", { url: popup.url() });
+
+  const staySignedInNo = popup.locator("#idBtn_Back").first();
+  if (await staySignedInNo.isVisible({ timeout: 10_000 }).catch(() => false)) {
+    await staySignedInNo.click();
+    writeDebug("clicked_stay_signed_in_no", { url: popup.url() });
+  }
+
+  await popup.waitForEvent("close", { timeout: 90_000 }).catch(() => null);
+  writeDebug("popup_closed");
+}
 
 test.describe("Microsoft OAuth proxy flow", () => {
   test("completes OAuth popup handshake through ms-proxy contract", async ({ page }) => {
@@ -118,41 +173,13 @@ test.describe("Microsoft OAuth proxy flow", () => {
       }
     });
 
-    await page.evaluate(async () => {
-      const publisher = (window as any).GoToolkitMicrosoftPublish;
-      const status = await publisher?.getAuthStatus?.().catch(() => null);
-      if (status?.connected && publisher?.disconnect) {
-        await publisher.disconnect();
-      }
+    const preStatus = await page.evaluate(async () => {
+      return await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
     });
 
-    const popupPromise = context.waitForEvent("page", { timeout: 60_000 });
-    await page.locator("#memoConnectionBtn").click();
-    const popup = await popupPromise;
-    await popup.waitForLoadState("domcontentloaded", { timeout: 60_000 }).catch(() => null);
-
-    const useAnotherAccount = popup.getByRole("button", { name: /use another account/i }).first();
-    if (await useAnotherAccount.isVisible({ timeout: 2_500 }).catch(() => false)) {
-      await useAnotherAccount.click();
+    if (!preStatus?.connected) {
+      await runMicrosoftPopupLogin(page, context, loginEmail, loginPassword);
     }
-
-    const emailInput = popup.locator('input[type="email"], input[name="loginfmt"]').first();
-    if (await emailInput.isVisible({ timeout: 25_000 }).catch(() => false)) {
-      await emailInput.fill(loginEmail);
-      await popup.locator('input[type="submit"], button[type="submit"], #idSIButton9').first().click();
-    }
-
-    const passwordInput = popup.locator('input[type="password"], input[name="passwd"]').first();
-    await passwordInput.waitFor({ state: "visible", timeout: 30_000 });
-    await passwordInput.fill(loginPassword);
-    await popup.locator('input[type="submit"], button[type="submit"], #idSIButton9').first().click();
-
-    const staySignedInNo = popup.locator("#idBtn_Back").first();
-    if (await staySignedInNo.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      await staySignedInNo.click();
-    }
-
-    await popup.waitForEvent("close", { timeout: 90_000 }).catch(() => null);
 
     await page.waitForFunction(async () => {
       const status = await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
@@ -199,5 +226,47 @@ test.describe("Microsoft OAuth proxy flow", () => {
     });
     expect(cloudTree.golive).toBeGreaterThanOrEqual(0);
     expect(cloudTree.safran).toBeGreaterThanOrEqual(0);
+  });
+
+  test("captures Microsoft auth state for reuse", async ({ page, context }) => {
+    test.setTimeout(300_000);
+    test.skip(process.env.PW_BOOTSTRAP_MS_AUTH !== "1", "Set PW_BOOTSTRAP_MS_AUTH=1 to run auth-state capture");
+
+    const loginEmail = String(process.env.PW_MICROSOFT_LOGIN_EMAIL || "").trim();
+    const loginPassword = String(process.env.PW_MICROSOFT_LOGIN_PASSWORD || "").trim();
+    test.skip(!loginEmail || !loginPassword, "PW_MICROSOFT_LOGIN_EMAIL/PW_MICROSOFT_LOGIN_PASSWORD are required");
+
+    await page.goto("http://127.0.0.1:5000/index.html", { waitUntil: "commit", timeout: 20_000 });
+    await page.waitForFunction(() => Boolean((window as any).GoToolkitMicrosoftPublish?.getAuthStatus), null, { timeout: 120_000 });
+
+    const preStatus = await page.evaluate(async () => {
+      return await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
+    });
+
+    if (!preStatus?.connected) {
+      await runMicrosoftPopupLogin(page, context, loginEmail, loginPassword, { debugArtifacts: true });
+    }
+
+    await page.waitForFunction(async () => {
+      const status = await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
+      return Boolean(status?.connected);
+    }, null, { timeout: 120_000 });
+
+    fs.mkdirSync(path.dirname(MS_AUTH_STATE_PATH), { recursive: true });
+    await context.storageState({ path: MS_AUTH_STATE_PATH });
+    expect(fs.existsSync(MS_AUTH_STATE_PATH)).toBeTruthy();
+  });
+
+  test("debugs Microsoft OAuth popup step-by-step (headed)", async ({ page, context }) => {
+    test.setTimeout(300_000);
+    test.skip(process.env.PW_MS_OAUTH_DEBUG !== "1", "Set PW_MS_OAUTH_DEBUG=1 to run headed popup debug");
+
+    const loginEmail = String(process.env.PW_MICROSOFT_LOGIN_EMAIL || "").trim();
+    const loginPassword = String(process.env.PW_MICROSOFT_LOGIN_PASSWORD || "").trim();
+    test.skip(!loginEmail || !loginPassword, "PW_MICROSOFT_LOGIN_EMAIL/PW_MICROSOFT_LOGIN_PASSWORD are required");
+
+    await page.goto("http://127.0.0.1:5000/index.html", { waitUntil: "commit", timeout: 20_000 });
+    await page.waitForFunction(() => Boolean((window as any).GoToolkitMicrosoftPublish?.getAuthStatus), null, { timeout: 120_000 });
+    await runMicrosoftPopupLogin(page, context, loginEmail, loginPassword, { debugArtifacts: true });
   });
 });
