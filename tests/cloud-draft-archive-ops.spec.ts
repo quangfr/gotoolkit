@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Cloud draft terminal ops", () => {
-  test("preserves archive and delete drafts when later non-terminal updates arrive", async ({ page }) => {
+test.describe("Cloud draft archive ops", () => {
+  test("preserves archive/delete drafts when later non-terminal updates arrive", async ({ page }) => {
     test.setTimeout(120_000);
     const baseUrl = "http://127.0.0.1:5000";
 

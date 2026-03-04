@@ -296,8 +296,7 @@ Private -> Cloud:
 Cloud -> Private:
 
 - a local private copy is created
-- cloud record is removed from local shared list
-- archive/delete-style operation is queued for remote sync
+- cloud record is preserved in shared storage/list
 
 Asset handling follows the same sync pipeline after the structural move.
 

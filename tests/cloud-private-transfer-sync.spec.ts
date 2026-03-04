@@ -3,8 +3,15 @@ import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space
 import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
 
 test.describe("Cloud/private transfer sync", () => {
-  test("archives cloud doc to private and promotes private doc to cloud with sync persist", async ({ page }) => {
+  test("copies cloud doc to private and promotes private doc to cloud with sync persist", async ({ page }) => {
     test.setTimeout(240_000);
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem("go-toolkit-docs-tour-seen.v1", "1");
+      } catch {
+        // ignore
+      }
+    });
     const baseUrl = "http://127.0.0.1:5000";
     const ts = Date.now();
     const cloudToken = `pw-transfer-cloud-${ts}`;
@@ -49,8 +56,32 @@ test.describe("Cloud/private transfer sync", () => {
       );
     };
 
+    const dismissUiBlockers = async () => {
+      await page.evaluate(() => {
+        try {
+          localStorage.setItem("go-toolkit-docs-tour-seen.v1", "1");
+        } catch {
+          // ignore
+        }
+        try {
+          const cleanup = (window as any).__goToolkitDocsTourCleanup;
+          if (typeof cleanup === "function") cleanup();
+        } catch {
+          // ignore
+        }
+        document.querySelectorAll(".docs-tour-overlay, .docs-tour-highlight, .docs-tour-card").forEach(el => {
+          try { (el as HTMLElement).remove(); } catch { /* ignore */ }
+        });
+        document.querySelectorAll("[data-tour-forced-visible='1']").forEach(el => {
+          const node = el as HTMLElement;
+          node.style.pointerEvents = "none";
+        });
+      });
+    };
+
     try {
       await ensureCloudConnectedWithSpaceCode(page, baseUrl);
+      await dismissUiBlockers();
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitCloudDrafts?.set), null, { timeout: 45_000 });
@@ -106,8 +137,41 @@ test.describe("Cloud/private transfer sync", () => {
     const privateSectionHeader = page.locator('.document-explorer__section-header[data-section="private"]').first();
     await expect(cloudRow).toBeVisible({ timeout: 30_000 });
     await expect(privateSectionHeader).toBeVisible({ timeout: 30_000 });
+    await dismissUiBlockers();
     await cloudRow.dragTo(privateSectionHeader);
-    await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(0, { timeout: 20_000 });
+    await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(1, { timeout: 20_000 });
+
+    const privateCopyState = await page.evaluate(async ({ cloudMarker }) => {
+      const docApi = (window as any).goToolkitDocumentApi;
+      const all = await docApi?.getAllRecords?.();
+      const rows = Array.isArray(all) ? all : [];
+      const copied = rows.find((row: any) => {
+        if (String(row?.app || "") !== "memo") return false;
+        if (String(row?.id || "").startsWith("share:")) return false;
+        const tabContent = String(row?.payload?.tabs?.[0]?.content || "");
+        return tabContent.includes(String(cloudMarker || ""));
+      });
+      const tabContent = String(copied?.payload?.tabs?.[0]?.content || "");
+      const hasContentToken = (() => {
+        const walk = (node: any): boolean => {
+          if (!node || typeof node !== "object") return false;
+          if (Array.isArray(node)) return node.some(walk);
+          if (Object.prototype.hasOwnProperty.call(node, "contentToken")) return true;
+          return Object.values(node).some(walk);
+        };
+        return walk(copied?.payload);
+      })();
+      return {
+        found: Boolean(copied),
+        hasCloudMarker: tabContent.includes(String(cloudMarker || "")),
+        hasCloudOriginToken: Boolean(String(copied?.cloudOriginToken || "").trim()),
+        hasContentToken,
+      };
+    }, { cloudMarker });
+    expect(privateCopyState.found).toBe(true);
+    expect(privateCopyState.hasCloudMarker).toBe(true);
+    expect(privateCopyState.hasCloudOriginToken).toBe(false);
+    expect(privateCopyState.hasContentToken).toBe(false);
 
       await page.evaluate(async ({ privateId, promotedToken, spaceId }) => {
       const docApi = (window as any).goToolkitDocumentApi;
@@ -150,26 +214,39 @@ test.describe("Cloud/private transfer sync", () => {
 
       await syncGolive();
 
-      const promoteState = await page.evaluate(async ({ promotedToken, privateMarker }) => {
+      const promoteState = await page.evaluate(async ({ promotedToken, privateMarker, privateId }) => {
       const history = (window as any).goToolkitShareHistory;
+      const docApi = (window as any).goToolkitDocumentApi;
+      const worker = (window as any).goToolkitShareWorker;
       const rows = await history.getRecordsByApp("memo");
       const promoted = (rows || []).find((row: any) => String(row?.token || "") === String(promotedToken || ""));
       const content = String(promoted?.payload?.tabs?.[0]?.content || "");
+      const privateDoc = await docApi?.getRecord?.(privateId);
+      const privateContent = String(privateDoc?.payload?.tabs?.[0]?.content || "");
+      const remote = await worker?.fetchSharePayload?.("pages", promotedToken);
+      const remoteContent = String(remote?.payload?.tabs?.[0]?.content || "");
       return {
         exists: Boolean(promoted),
-        hasMarker: content.includes(privateMarker)
+        hasMarker: content.includes(privateMarker),
+        privateStillExists: Boolean(privateDoc),
+        privateHasMarker: privateContent.includes(privateMarker),
+        remoteHasMarker: remoteContent.includes(privateMarker)
       };
-      }, { promotedToken, privateMarker });
+      }, { promotedToken, privateMarker, privateId: seeded.privateId });
       expect(promoteState.exists).toBe(true);
       expect(promoteState.hasMarker).toBe(true);
+      expect(promoteState.privateStillExists).toBe(true);
+      expect(promoteState.privateHasMarker).toBe(true);
+      expect(promoteState.remoteHasMarker).toBe(true);
 
       await page.reload({ waitUntil: "commit", timeout: 20_000 });
+      await dismissUiBlockers();
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.evaluate(async () => {
         await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
       });
 
-      await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(0, { timeout: 20_000 });
+      await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(1, { timeout: 20_000 });
 
       await clickDoc(`share:${promotedToken}`);
       await expect
