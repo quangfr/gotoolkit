@@ -19,6 +19,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react';
+import { sanitizeUrl } from './sanitize';
 
 const SUPPORTED_IMAGE_MIME = new Set([
   'image/png',
@@ -1499,6 +1500,14 @@ export const CustomImage = Image.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      src: {
+        default: null,
+        parseHTML: element => sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data', 'blob']) || null,
+        renderHTML: attributes => {
+          const src = sanitizeUrl(attributes.src, ['http', 'https', 'data', 'blob']);
+          return src ? { src } : {};
+        },
+      },
       width: {
         default: null,
         parseHTML: element => sanitizeSize(element.getAttribute('width') || element.style.width),

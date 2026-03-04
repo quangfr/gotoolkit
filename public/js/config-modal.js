@@ -733,8 +733,6 @@
         const openrouterEmbeddingsModelInput = doc.getElementById("openrouterEmbeddingsModelInput");
         const openrouterEffortSelect = doc.getElementById("openrouterEffortSelect");
 
-        const googleTtsApiKey = (googleTtsApiKeyInput?.value || "").trim();
-        const openRouterKey = (openrouterApiKeyInput?.value || "").trim();
         const openRouterData = (openrouterDataCollectionSelect?.value || cfg?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny").trim();
         const openRouterModel = (openrouterModelInput?.value || "").trim() || (cfg?.DEFAULTS?.OPENROUTER_MODEL || "");
         const openRouterOcrModel = (openrouterOcrModelInput?.value || "").trim() || (cfg?.DEFAULTS?.OPENROUTER_OCR_MODEL || "");
@@ -743,8 +741,6 @@
 
         try {
             if (cfg?.setBackend) cfg.setBackend("openrouter");
-            if (cfg?.setGoogleTtsApiKey) cfg.setGoogleTtsApiKey(googleTtsApiKey);
-            if (cfg?.setOpenRouterApiKey) cfg.setOpenRouterApiKey(openRouterKey);
             if (cfg?.setOpenRouterDataCollection) cfg.setOpenRouterDataCollection(openRouterData);
             if (cfg?.setOpenRouterModel) cfg.setOpenRouterModel(openRouterModel);
             if (cfg?.setOpenRouterOcrModel) cfg.setOpenRouterOcrModel(openRouterOcrModel);

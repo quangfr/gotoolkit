@@ -2,6 +2,7 @@ import React from 'react';
 import { mergeAttributes, Node } from '@tiptap/core';
 import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
 import { Copy, Play, Trash2 } from 'lucide-react';
+import { sanitizeUrl } from './sanitize';
 
 const parseSizePx = (value: unknown) => {
   if (value == null) return null;
@@ -53,7 +54,7 @@ const copyVideoHtml = async (attrs: Record<string, any>) => {
 };
 
 const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
-  const src = String(node?.attrs?.src || '');
+  const src = sanitizeUrl(node?.attrs?.src, ['http', 'https', 'data']) || '';
   const canEdit = Boolean(editor?.isEditable);
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const frameRef = React.useRef<HTMLDivElement | null>(null);
@@ -234,7 +235,7 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
 
 const EmbedNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
   const canEdit = Boolean(editor?.isEditable);
-  const src = String(node?.attrs?.src || '');
+  const src = sanitizeUrl(node?.attrs?.src, ['http', 'https']) || '';
   const title = String(node?.attrs?.title || '');
   const provider = String(node?.attrs?.provider || '').trim().toLowerCase();
   const providerLabel = provider === 'youtube' ? 'Youtube' : provider === 'loom' ? 'Loom' : 'Video';
@@ -379,7 +380,14 @@ export const VideoEmbed = Node.create({
 
   addAttributes() {
     return {
-      src: { default: null },
+      src: {
+        default: null,
+        parseHTML: element => sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data']) || null,
+        renderHTML: attributes => {
+          const src = sanitizeUrl(attributes.src, ['http', 'https', 'data']);
+          return src ? { src } : {};
+        },
+      },
       title: { default: null },
       fileName: { default: null },
       mimeType: { default: null },
@@ -422,7 +430,14 @@ export const ExternalVideoEmbed = Node.create({
 
   addAttributes() {
     return {
-      src: { default: null },
+      src: {
+        default: null,
+        parseHTML: element => sanitizeUrl(element.getAttribute('src'), ['http', 'https']) || null,
+        renderHTML: attributes => {
+          const src = sanitizeUrl(attributes.src, ['http', 'https']);
+          return src ? { src } : {};
+        },
+      },
       title: { default: null },
       provider: { default: null },
       width: { default: null },

@@ -30,6 +30,7 @@ import CodeBlock from '@tiptap/extension-code-block';
 import { TableNode, TableRow, TableHeader, CustomTableCell } from './table-node';
 import { columnResizingWithMaxPluginKey } from './table-resize';
 import { TaskListNode, TaskItemNode } from './task-node';
+import { sanitizeHtml, sanitizeUrl } from './sanitize';
 
 
 const CustomCode = Code.extend({
@@ -642,6 +643,11 @@ const LinkSearchModal = ({
     if (item.type === 'url' && !url.startsWith('http') && !url.startsWith('#') && !url.startsWith('memo://')) {
       url = 'https://' + url;
     }
+    const safeUrl = sanitizeUrl(
+      url,
+      item.type === 'document' ? ['memo'] : ['http', 'https', 'memo'],
+      { allowRelative: item.type !== 'document' }
+    );
 
     const from = Math.max(1, Math.min(selectionRange?.from ?? editor.state.selection.from, editor.state.doc.content.size));
     const to = Math.max(from, Math.min(selectionRange?.to ?? editor.state.selection.to, editor.state.doc.content.size));
@@ -671,14 +677,18 @@ const LinkSearchModal = ({
         onClose();
         return;
       }
+      if (!safeUrl) {
+        onClose();
+        return;
+      }
       if (from !== to) {
-        editor.chain().focus().setLink({ href: url }).setColor('var(--color-primary)').run();
+        editor.chain().focus().setLink({ href: safeUrl }).setColor('var(--color-primary)').run();
       } else {
         editor.chain().focus().insertContent([
           {
             type: 'text',
             text: item.title,
-            marks: [{ type: 'link', attrs: { href: url } }, { type: 'textStyle', attrs: { color: 'var(--color-primary)' } }]
+            marks: [{ type: 'link', attrs: { href: safeUrl } }, { type: 'textStyle', attrs: { color: 'var(--color-primary)' } }]
           },
           { type: 'text', text: ' ' }
         ]).run();
@@ -4285,20 +4295,21 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (!editor) return;
     const insertVideoFromSrc = (src: string, providedName?: string, providedMimeType?: string) => {
       const normalized = String(src || '').trim();
-      if (!normalized) return;
-      if (!/^https?:\/\//i.test(normalized) && !/^data:video\//i.test(normalized)) return;
-      if (!/(\.webm([?#].*)?$)|(\.mp4([?#].*)?$)|(^data:video\/(webm|mp4);)/i.test(normalized)) return;
+      const safeSrc = sanitizeUrl(normalized, ['http', 'https', 'data']);
+      if (!safeSrc) return;
+      if (!/^https?:\/\//i.test(safeSrc) && !/^data:video\//i.test(safeSrc)) return;
+      if (!/(\.webm([?#].*)?$)|(\.mp4([?#].*)?$)|(^data:video\/(webm|mp4);)/i.test(safeSrc)) return;
 
       const label = (() => {
         if (providedName) return providedName;
-        if (/^data:video\//i.test(normalized)) return 'video';
-        const withoutQuery = normalized.split('#')[0].split('?')[0];
+        if (/^data:video\//i.test(safeSrc)) return 'video';
+        const withoutQuery = safeSrc.split('#')[0].split('?')[0];
         const file = withoutQuery.split('/').pop() || '';
         return file || 'video';
       })();
 
       const mimeType = providedMimeType
-        || (/\.mp4([?#].*)?$/i.test(normalized) ? 'video/mp4' : 'video/webm');
+        || (/\.mp4([?#].*)?$/i.test(safeSrc) ? 'video/mp4' : 'video/webm');
 
       editor
         .chain()
@@ -4306,7 +4317,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         .insertContent({
           type: 'videoEmbed',
           attrs: {
-            src: normalized,
+            src: safeSrc,
             title: label,
             fileName: label,
             mimeType,
@@ -6274,25 +6285,25 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 }
                 if (!hasBlock) {
                   const p = doc.createElement('p');
-                  p.innerHTML = cell.innerHTML;
+                  p.innerHTML = sanitizeHtml(cell.innerHTML);
                   cell.innerHTML = '';
                   cell.appendChild(p);
                 }
               });
             });
-            return doc.body.innerHTML.replace(/<>/g, '');
+            return sanitizeHtml(doc.body.innerHTML.replace(/<>/g, ''));
           }
         } catch (err) {
           // noop
         }
 
-        return finalHtml.replace(/<>/g, '');
+        return sanitizeHtml(finalHtml.replace(/<>/g, ''));
       };
 
       const setEditorMarkdown = (markdown: string) => {
         if (typeof markdown !== 'string') return;
         try {
-          const finalHtml = convertEditorMarkdownToHtml(markdown);
+          const finalHtml = sanitizeHtml(convertEditorMarkdownToHtml(markdown));
 
           if ((editor as any)?.commands?.clearContent) {
             (editor as any).commands.clearContent();
@@ -7376,7 +7387,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             height: dragGhost.height
           }}
         >
-          <div className="drag-ghost-content" dangerouslySetInnerHTML={{ __html: dragGhost.html }} />
+          <div className="drag-ghost-content" dangerouslySetInnerHTML={{ __html: sanitizeHtml(dragGhost.html) }} />
         </div>
       )}
 

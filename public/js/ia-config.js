@@ -55,13 +55,6 @@
     }
 
     var GoToolkitIAConfig = {
-        getApiKey: function () {
-            // OpenAI keys are no longer supported.
-            return "";
-        },
-        setApiKey: function (value) {
-            // API keys are not stored in browser storage.
-        },
         getOpenAiModel: function () {
             // OpenAI model selection is no longer supported.
             return "";
@@ -81,12 +74,6 @@
                 normalized = DEFAULTS.CONTEXT_WINDOW;
             }
             safeStorageWrite(STORAGE_KEYS.CONTEXT_WINDOW, normalized);
-        },
-        getOpenRouterApiKey: function () {
-            return "";
-        },
-        setOpenRouterApiKey: function (value) {
-            // API keys are not stored in browser storage.
         },
         getOpenRouterModel: function () {
             var model = safeStorageRead(STORAGE_KEYS_OPENROUTER.MODEL);
@@ -147,14 +134,8 @@
             }
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.REASONING_EFFORT, normalized);
         },
-        getGoogleTtsApiKey: function () {
-            return "";
-        },
-        setGoogleTtsApiKey: function (value) {
-            safeStorageWrite("go-toolkit-googletts-key", "");
-        },
         isOpenRouterAvailable: function () {
-            return Boolean(GoToolkitIAConfig.getOpenRouterApiKey() || OPENROUTER_PROXY_ENDPOINT);
+            return Boolean(OPENROUTER_PROXY_ENDPOINT);
         },
         getBackend: function () {
             return "openrouter";
@@ -174,14 +155,11 @@
     var GoToolkitAIBackend = (function () {
         async function getBackend(endpointType, options) {
             options = options || {};
-            var forceOpenRouterProxy = options.forceOpenRouterProxy === true || Boolean(global?.GoToolkitForceOpenRouterProxy);
-            var openrouterKey = GoToolkitIAConfig.getOpenRouterApiKey();
             var openrouterModel = GoToolkitIAConfig.getOpenRouterModel();
-            var useProxy = forceOpenRouterProxy || !openrouterKey;
-            var targetEndpoint = useProxy ? OPENROUTER_PROXY_ENDPOINT : OPENROUTER_ENDPOINT;
-            var backendType = useProxy ? "openrouter-proxy" : "openrouter";
-            var apiKeyValue = useProxy ? "" : openrouterKey;
-            var openrouterHasKey = !useProxy;
+            var targetEndpoint = OPENROUTER_PROXY_ENDPOINT;
+            var backendType = "openrouter-proxy";
+            var apiKeyValue = "";
+            var openrouterHasKey = false;
             return {
                 type: backendType,
                 endpoint: targetEndpoint,
