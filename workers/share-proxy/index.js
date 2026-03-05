@@ -689,9 +689,14 @@ function resolveAllowedSpacesForEmail(emailRaw) {
   const email = String(emailRaw || "").trim().toLowerCase();
   const allowed = new Set();
   if (!email) return [];
-  if (email === "quang.tran@savane-group.com") {
+  if (
+    email === "quang.tran@savane-group.com"
+    || email === "tranxq@gmail.com"
+    || email === "oliver.tholance@savane-group.com"
+  ) {
     allowed.add("golive");
     allowed.add("safran");
+    allowed.add("epiconcept");
     return Array.from(allowed);
   }
   if (email === "maximepispisa@gmail.com") {
@@ -706,6 +711,9 @@ function resolveAllowedSpacesForEmail(emailRaw) {
     allowed.add("golive");
     allowed.add("safran");
   }
+  if (domain === "epiconcept.fr") {
+    allowed.add("epiconcept");
+  }
   const resolved = Array.from(allowed);
   console.log("share oauth email authorization", {
     email,
@@ -719,6 +727,7 @@ function readManagedSpaceCode(env, spaceId) {
   const normalizedSpaceId = normalizeSpaceId(spaceId);
   if (normalizedSpaceId === "golive") return String(env?.GOLIVE_SPACE_CODE || "").trim();
   if (normalizedSpaceId === "safran") return String(env?.SAFRAN_SPACE_CODE || "").trim();
+  if (normalizedSpaceId === "epiconcept") return String(env?.EPICONCEPT_SPACE_CODE || "").trim();
   return "";
 }
 
