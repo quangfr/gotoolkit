@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/aide",
+      "destination": "/aide.html"
+    },
+    {
       "source": "**",
       "destination": "/index.html"
     }

@@ -3,7 +3,8 @@
 (() => {
     const buildQuestionToc = () => {
         const toc = document.getElementById("helpQuestionToc");
-        if (!(toc instanceof HTMLUListElement || toc instanceof HTMLOListElement)) return;
+        if (!(toc instanceof Element)) return;
+        if (toc.tagName !== "UL" && toc.tagName !== "OL") return;
         toc.textContent = "";
         const questions = Array.from(document.querySelectorAll(".help-list > div > strong"));
         questions.forEach((strongEl, index) => {

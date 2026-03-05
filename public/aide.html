@@ -7,11 +7,11 @@
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>Aide | GoToolkit</title>
-    <script src="js/bootstrap-theme.js?v=2026.03.03.3"></script>
+    <script src="js/bootstrap-theme.js?v=2026.03.05.26"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
-    <script src="js/help.js?v=2026.03.05.21" defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.03.03.3">
+    <script src="js/help.js?v=2026.03.05.26" defer></script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.03.05.26">
     <style>
         .legal-page {
             max-width: 920px;
@@ -648,16 +648,14 @@
                 </div>
                 <div>
                     <strong>27. Quelles informations sont partagées avec l’IA et les services externes ?</strong>
-                    <p>D’abord, plusieurs fonctionnalités restent locales et n’envoient rien en ligne :</p>
-                    <ul class="help-bulleted-list">
-                        <li>enregistrement audio ou vidéo tant que vous ne lancez pas la transcription ;</li>
-                        <li>édition de texte et mise en forme ;</li>
-                        <li>diagrammes, tableaux et autres blocs de texte spécial ;</li>
-                        <li>organisation des documents dans l’espace privé ;</li>
-                        <li>import des documents (hors images) et exports.</li>
-                    </ul>
-                    <p>Un envoi peut avoir lieu uniquement lorsque vous activez explicitement une fonction distante
-                        (IA, transcription/voix, OCR image, partage/publication). Dans ce cas, l’application transmet
+                    <p><span class="help-icon"><i data-lucide="lock"></i> Local par défaut</span> : plusieurs actions
+                        restent sur votre appareil, notamment l’enregistrement audio/vidéo tant que vous ne lancez pas
+                        la transcription, l’édition et la mise en forme du texte, les diagrammes/tableaux/blocs
+                        spéciaux, l’organisation des documents dans l’espace privé, ainsi que l’import des documents
+                        (hors images) et les exports.</p>
+                    <p><span class="help-icon"><i data-lucide="send"></i> Envoi sur action explicite</span> : un
+                        partage externe a lieu uniquement quand vous activez une fonction distante (IA,
+                        transcription/voix, OCR image, partage/publication). Dans ce cas, l’application envoie
                         seulement les données nécessaires à l’action demandée, par exemple le contenu utile du document
                         et des extraits ciblés de la base de connaissance plutôt qu’un historique complet. Pour le
                         détail complet du traitement des données, consultez
