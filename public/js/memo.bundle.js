@@ -50066,7 +50066,7 @@ img.ProseMirror-separator {
     const root2 = ((_a = editor == null ? void 0 : editor.view) == null ? void 0 : _a.dom) || null;
     const mermaidSvgs = [];
     if (root2) {
-      const diagrams = root2.querySelectorAll("mermaid-diagram");
+      const diagrams = root2.querySelectorAll(".node-mermaidDiagram, mermaid-diagram");
       diagrams.forEach((diagram) => {
         const svg2 = diagram.querySelector(".mermaid-svg-container svg, svg");
         if (svg2 && svg2 instanceof SVGSVGElement) {
@@ -50080,13 +50080,42 @@ img.ProseMirror-separator {
     };
   }
   async function svgToPng(svgElement) {
-    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const parseSvgNumber = (value) => {
+      const text2 = String(value || "").trim();
+      if (!text2) return null;
+      const match = text2.match(/^(\d+(\.\d+)?)/);
+      if (!match) return null;
+      const parsed = Number.parseFloat(match[1]);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    };
+    const svgClone = svgElement.cloneNode(true);
+    if (!svgClone.getAttribute("xmlns")) {
+      svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    }
+    const rect = svgElement.getBoundingClientRect();
+    const attrWidth = parseSvgNumber(svgClone.getAttribute("width"));
+    const attrHeight = parseSvgNumber(svgClone.getAttribute("height"));
+    const viewBox = String(svgClone.getAttribute("viewBox") || "").trim().split(/\s+/).map(Number);
+    const viewBoxWidth = viewBox.length === 4 && Number.isFinite(viewBox[2]) && viewBox[2] > 0 ? viewBox[2] : null;
+    const viewBoxHeight = viewBox.length === 4 && Number.isFinite(viewBox[3]) && viewBox[3] > 0 ? viewBox[3] : null;
+    const width = Math.max(
+      64,
+      Math.round(rect.width || 0) || 0,
+      Math.round(attrWidth || 0) || 0,
+      Math.round(viewBoxWidth || 0) || 0
+    );
+    const height = Math.max(
+      64,
+      Math.round(rect.height || 0) || 0,
+      Math.round(attrHeight || 0) || 0,
+      Math.round(viewBoxHeight || 0) || 0
+    );
+    svgClone.setAttribute("width", String(width));
+    svgClone.setAttribute("height", String(height));
+    const svgData = new XMLSerializer().serializeToString(svgClone);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     const img = new Image();
-    const svgSize = svgElement.getBoundingClientRect();
-    const width = svgSize.width;
-    const height = svgSize.height;
     canvas.width = width * 2;
     canvas.height = height * 2;
     return new Promise((resolve, reject) => {
@@ -50102,7 +50131,7 @@ img.ProseMirror-separator {
         resolve({ array, width, height });
       };
       img.onerror = reject;
-      img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgData);
     });
   }
   function parseNodePixels(value) {
@@ -51038,7 +51067,7 @@ img.ProseMirror-separator {
     return html3;
   }
   var unescapeTest = /&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/ig;
-  function unescape2(html3) {
+  function unescape(html3) {
     return html3.replace(unescapeTest, (_, n) => {
       n = n.toLowerCase();
       if (n === "colon")
@@ -52481,7 +52510,7 @@ ${content}</tr>
           }
           case "heading": {
             const headingToken = token;
-            out += this.renderer.heading(this.parseInline(headingToken.tokens), headingToken.depth, unescape2(this.parseInline(headingToken.tokens, this.textRenderer)));
+            out += this.renderer.heading(this.parseInline(headingToken.tokens), headingToken.depth, unescape(this.parseInline(headingToken.tokens, this.textRenderer)));
             continue;
           }
           case "code": {
@@ -60800,7 +60829,7 @@ ${innerMarkdown}
                 const root2 = ((_a2 = editor == null ? void 0 : editor.view) == null ? void 0 : _a2.dom) || null;
                 if (!root2) return [];
                 const result = [];
-                root2.querySelectorAll("mermaid-diagram").forEach((diagram) => {
+                root2.querySelectorAll(".node-mermaidDiagram, mermaid-diagram").forEach((diagram) => {
                   const svg2 = diagram.querySelector(".mermaid-svg-container svg, svg");
                   if (svg2 instanceof SVGSVGElement) result.push(svg2.outerHTML);
                 });
@@ -63046,3 +63075,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
+//# sourceMappingURL=memo.bundle.js.map

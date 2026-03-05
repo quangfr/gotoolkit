@@ -60,6 +60,8 @@ Notes:
 
 - Keep `script-src` hash lists identical across app CSP mirrors to avoid environment-specific breakage.
 - Do not add `'unsafe-inline'`; prefer explicit hashes for each inline script block.
+- CSP hash alignment alone is not sufficient: script-scope/runtime errors (for example `ReferenceError` from cross-block helper visibility) can still break security-sensitive and user-critical flows like export, auth UX, and share actions.
+- After CSP-affecting inline script changes, run a post-change runtime smoke check and verify the browser console is free of new script errors.
 
 ## 2.2 Frontend DOM injection posture
 

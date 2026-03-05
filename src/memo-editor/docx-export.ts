@@ -567,7 +567,8 @@ function createDocxExportContext(editor: any) {
   const root: HTMLElement | null = editor?.view?.dom || null;
   const mermaidSvgs: SVGSVGElement[] = [];
   if (root) {
-    const diagrams = root.querySelectorAll('mermaid-diagram');
+    // Mermaid NodeViews render as .node-mermaidDiagram in the live editor DOM.
+    const diagrams = root.querySelectorAll('.node-mermaidDiagram, mermaid-diagram');
     diagrams.forEach((diagram) => {
       const svg = diagram.querySelector('.mermaid-svg-container svg, svg');
       if (svg && svg instanceof SVGSVGElement) {
@@ -582,14 +583,48 @@ function createDocxExportContext(editor: any) {
 }
 
 async function svgToPng(svgElement: SVGSVGElement): Promise<{ array: Uint8Array, width: number, height: number }> {
-  const svgData = new XMLSerializer().serializeToString(svgElement);
+  const parseSvgNumber = (value: string | null | undefined): number | null => {
+    const text = String(value || '').trim();
+    if (!text) return null;
+    const match = text.match(/^(\d+(\.\d+)?)/);
+    if (!match) return null;
+    const parsed = Number.parseFloat(match[1]);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
+
+  const svgClone = svgElement.cloneNode(true) as SVGSVGElement;
+  if (!svgClone.getAttribute('xmlns')) {
+    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  }
+
+  const rect = svgElement.getBoundingClientRect();
+  const attrWidth = parseSvgNumber(svgClone.getAttribute('width'));
+  const attrHeight = parseSvgNumber(svgClone.getAttribute('height'));
+  const viewBox = String(svgClone.getAttribute('viewBox') || '').trim().split(/\s+/).map(Number);
+  const viewBoxWidth = viewBox.length === 4 && Number.isFinite(viewBox[2]) && viewBox[2] > 0 ? viewBox[2] : null;
+  const viewBoxHeight = viewBox.length === 4 && Number.isFinite(viewBox[3]) && viewBox[3] > 0 ? viewBox[3] : null;
+
+  const width = Math.max(
+    64,
+    Math.round(rect.width || 0) || 0,
+    Math.round(attrWidth || 0) || 0,
+    Math.round(viewBoxWidth || 0) || 0
+  );
+  const height = Math.max(
+    64,
+    Math.round(rect.height || 0) || 0,
+    Math.round(attrHeight || 0) || 0,
+    Math.round(viewBoxHeight || 0) || 0
+  );
+
+  svgClone.setAttribute('width', String(width));
+  svgClone.setAttribute('height', String(height));
+
+  const svgData = new XMLSerializer().serializeToString(svgClone);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   const img = new Image();
-  
-  const svgSize = svgElement.getBoundingClientRect();
-  const width = svgSize.width;
-  const height = svgSize.height;
+
   canvas.width = width * 2; // Better quality
   canvas.height = height * 2;
 
@@ -606,7 +641,7 @@ async function svgToPng(svgElement: SVGSVGElement): Promise<{ array: Uint8Array,
       resolve({ array, width, height });
     };
     img.onerror = reject;
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgData);
   });
 }
 

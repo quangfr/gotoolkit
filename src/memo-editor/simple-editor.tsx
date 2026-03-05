@@ -5744,7 +5744,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               const root: HTMLElement | null = editor?.view?.dom || null;
               if (!root) return [];
               const result: string[] = [];
-              root.querySelectorAll('mermaid-diagram').forEach((diagram) => {
+              // Mermaid NodeViews are rendered as .node-mermaidDiagram in the live editor DOM.
+              root.querySelectorAll('.node-mermaidDiagram, mermaid-diagram').forEach((diagram) => {
                 const svg = diagram.querySelector('.mermaid-svg-container svg, svg');
                 if (svg instanceof SVGSVGElement) result.push(svg.outerHTML);
               });

@@ -54,6 +54,8 @@ This file is the short operational guide. Use the docs below as the canonical re
 - Treat `scripts/csp-common.js` as canonical; keep CSP in HTML meta tags and `firebase.json` in sync with it.
 - Apply the same hash list to all app CSP mirrors (`public/index.html`, `public/grid.html`, `public/mobile.html`, and both Hosting CSP headers in `firebase.json`).
 - Validate with `npm run check:csp` before merge.
+- After inline script edits in `public/index.html`, run a quick runtime smoke check and confirm there are no console `ReferenceError` failures before push.
+- If an inline block uses helpers defined in another script block, either expose the helper on `window` intentionally or provide a local fallback in the dependent block.
 
 ## Testing defaults
 - Prefer the local Playwright binary: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`.
