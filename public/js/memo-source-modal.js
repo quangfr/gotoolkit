@@ -90,7 +90,18 @@
 
         if (format === "html") {
             preview.style.display = "block";
-            preview.innerHTML = rawValue || "";
+            const rawHtml = String(rawValue || "");
+            const sanitizedHtml = window.DOMPurify && typeof window.DOMPurify.sanitize === "function"
+                ? window.DOMPurify.sanitize(rawHtml)
+                : rawHtml
+                    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
+                    .replace(/<iframe\b[\s\S]*?<\/iframe>/gi, "")
+                    .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, "");
+            const parsed = new DOMParser().parseFromString(sanitizedHtml, "text/html");
+            preview.textContent = "";
+            Array.from(parsed?.body?.childNodes || []).forEach(node => {
+                preview.appendChild(node.cloneNode(true));
+            });
             if (window.lucide && typeof window.lucide.createIcons === "function") {
                 window.lucide.createIcons({ attrs: { "stroke-width": 2 } });
             }
@@ -131,7 +142,7 @@
         const format = currentFormat;
         let text = "";
         if (format === "html") {
-            text = preview.innerHTML;
+            text = String(getSource("html") || "");
         } else if (format === "ai_in" || format === "ai_out" || format === "json") {
             text = safeStringify(getSource(format));
         } else {
@@ -165,7 +176,7 @@
         const format = currentFormat;
         let text = "";
         if (format === "html") {
-            text = preview.innerHTML;
+            text = String(getSource("html") || "");
         } else if (format === "ai_in" || format === "ai_out" || format === "json") {
             text = safeStringify(getSource(format));
         } else {

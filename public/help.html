@@ -44,20 +44,19 @@
             align-items: center;
             gap: 4px;
             font-weight: 600;
-            vertical-align: text-top;
+            vertical-align: middle;
+            line-height: 1.25;
         }
 
         .help-icon i,
         .help-icon svg.lucide {
-            width: 14px;
-            height: 14px;
-            flex: 0 0 14px;
+            width: 15px;
+            height: 15px;
+            flex: 0 0 15px;
         }
 
         .help-icon svg.lucide {
-            display: block;
-            position: relative;
-            top: -1px;
+            display: inline-block;
         }
 
         .help-list {
@@ -266,17 +265,16 @@
                 </div>
                 <div>
                     <strong>13. À quoi sert l’enregistrement vocal avec partage d’écran et transcription ?</strong>
-                    <p>Le module voix permet d’enregistrer la voix, l’écran ou la caméra pour documenter une démo, une
-                        réunion, un retour utilisateur ou une explication métier. Vous pouvez lancer la capture avec
-                        <span class="help-icon"><i data-lucide="mic"></i></span>, activer le partage d’écran, suivre
-                        la transcription en direct, puis réutiliser ce contenu dans vos notes. C’est utile pour
-                        produire un compte rendu, une preuve visuelle, un support de relecture ou une capsule à
-                        exporter ensuite en média. Les options de téléchargement permettent de récupérer la vidéo ou
-                        l’audio selon le support disponible. Pendant la lecture, vous pouvez ajuster la vitesse,
-                        cliquer dans la vidéo pour obtenir un retour interactif sur la navigation, et profiter des
-                        sous-titres intégrés au format VTT pour relire, suivre ou réexploiter précisément la
-                        transcription.
-                    </p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="mic"></i> Enregistrer</span> : lance la capture
+                            voix/écran/caméra pour documenter une démo, une réunion ou un retour utilisateur.</li>
+                        <li><span class="help-icon"><i data-lucide="captions"></i> Transcrire</span> : affiche la
+                            transcription en direct pour suivre et réutiliser le contenu plus vite.</li>
+                        <li><span class="help-icon"><i data-lucide="download"></i> Télécharger</span> : exporte le
+                            média en audio ou vidéo selon les options disponibles.</li>
+                        <li><span class="help-icon"><i data-lucide="scan-text"></i> Relecture ciblée</span> :
+                            exploite les sous-titres VTT pour retrouver précisément un passage.</li>
+                    </ul>
                 </div>
                 <div>
                     <strong>14. Comment éditer rapidement avec les blocs disponibles ?</strong>
@@ -296,19 +294,18 @@
                 </div>
                 <div>
                     <strong>16. Comment insérer un diagramme ?</strong>
-                    <p>Choisissez le bloc <span class="help-icon"><i data-lucide="shapes"></i> Diagramme</span>.
-                        Il permet d’insérer des schémas de type Mermaid pour visualiser des flux, structures ou
-                        séquences dans le document. Vous pouvez d’abord passer par le chat IA dédié pour générer une
-                        première version du diagramme, puis affiner le résultat dans l’éditeur de code Mermaid pour
-                        modifier directement la syntaxe. Si vous avez besoin d’un ajustement visuel plus poussé,
-                        l’éditeur de dessin permet de retoucher les flèches et les lignes, d’ajouter des formes et de
-                        faire des modifications plus avancées. Les types <strong>Échange</strong>,
-                        <strong>Processus</strong> et <strong>Structure</strong> couvrent respectivement les flux entre
-                        acteurs, les séquences d’étapes métier ou opérationnelles (y compris en orientation paysage /
-                        page horizontale pour des parcours plus larges), et les représentations d’organisation ou
-                        d’arborescence. Important : les personnalisations manuelles faites dans le dessin sont perdues
-                        si vous régénérez le diagramme via l’IA ou via une régénération du code Mermaid.
-                    </p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="shapes"></i> Diagramme</span> : insère un schéma
+                            Mermaid (flux, structure, séquence) dans le document.</li>
+                        <li><span class="help-icon"><i data-lucide="sparkles"></i> Générer</span> : crée une première
+                            version via l’IA dédiée.</li>
+                        <li><span class="help-icon"><i data-lucide="file-text"></i> Éditer le code</span> : ajuste la
+                            syntaxe Mermaid directement pour affiner le rendu.</li>
+                        <li><span class="help-icon"><i data-lucide="shapes"></i> Retouche visuelle</span> :
+                            modifie flèches, lignes et formes dans l’éditeur de dessin.</li>
+                        <li><span class="help-icon"><i data-lucide="alert-triangle"></i> Attention</span> : une
+                            régénération du diagramme peut écraser les retouches manuelles.</li>
+                    </ul>
                 </div>
                 <div>
                     <strong>17. Comment insérer une image, une vidéo ou une vidéo embarquée ?</strong>
@@ -330,30 +327,37 @@
                 </div>
                 <div>
                     <strong>19. Comment utiliser un tableau ?</strong>
-                    <p>Le bloc <span class="help-icon"><i data-lucide="table"></i> Tableau</span> permet de structurer
-                        des données en lignes et colonnes, de réorganiser l’information et de produire des contenus
-                        lisibles pour des comparatifs, listes ou suivis. Avec les poignées et actions
-                        <span class="help-icon"><i data-lucide="arrow-down-a-z"></i></span>,
-                        <span class="help-icon"><i data-lucide="arrow-up-a-z"></i></span>,
-                        <span class="help-icon"><i data-lucide="plus"></i></span>,
-                        <span class="help-icon"><i data-lucide="arrow-up-right"></i></span> et
-                        <span class="help-icon"><i data-lucide="trash-2"></i></span>, vous pouvez trier les colonnes,
-                        ajouter, déplacer et supprimer des lignes ou des colonnes. Vous pouvez aussi sélectionner
-                        plusieurs cellules pour changer la mise en forme ou vider le contenu en une seule action.
-                    </p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="table"></i> Tableau</span> : structure les données
+                            en lignes et colonnes pour comparatifs, listes et suivi.</li>
+                        <li><span class="help-icon"><i data-lucide="arrow-down-a-z"></i> Tri A-Z</span> :
+                            trie une colonne en ordre croissant.</li>
+                        <li><span class="help-icon"><i data-lucide="arrow-up-a-z"></i> Tri Z-A</span> :
+                            trie une colonne en ordre décroissant.</li>
+                        <li><span class="help-icon"><i data-lucide="plus"></i> Ajouter</span> : ajoute rapidement
+                            ligne ou colonne.</li>
+                        <li><span class="help-icon"><i data-lucide="arrow-up-right"></i> Déplacer</span> :
+                            réorganise lignes/colonnes selon le besoin.</li>
+                        <li><span class="help-icon"><i data-lucide="trash-2"></i> Supprimer</span> : retire une
+                            ligne, une colonne ou une sélection.</li>
+                    </ul>
                 </div>
                 <div>
                     <strong>20. Quels types de citation existent ?</strong>
-                    <p>Le bloc <span class="help-icon"><i data-lucide="quote"></i> Citation</span> couvre la citation
-                        simple ainsi que plusieurs variantes visuelles pour mettre en avant une information, un
-                        conseil, un point clé, une alerte ou une action dangereuse / interdite. Raccourcis d’accès :
-                        <code>/citation</code> dans le menu slash, ou le menu contextuel de bloc avec
-                        <span class="help-icon"><i data-lucide="quote"></i></span>. Vous pouvez aussi taper
-                        <code>&gt;</code> pour une citation simple, <code>&gt;info</code> pour un bloc d’information,
-                        <code>&gt;tip</code> pour un bloc de conseil, <code>&gt;important</code> pour un point clé ou
-                        un résumé, <code>&gt;alerte</code> pour un bloc d’avertissement, et
-                        <code>&gt;danger</code> pour une action dangereuse ou interdite.
-                    </p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="quote"></i> Citation simple</span> :
+                            <code>&gt;</code> ou <code>/citation</code>.</li>
+                        <li><span class="help-icon"><i data-lucide="info"></i> Information</span> :
+                            <code>&gt;info</code>.</li>
+                        <li><span class="help-icon"><i data-lucide="lightbulb"></i> Conseil</span> :
+                            <code>&gt;tip</code>.</li>
+                        <li><span class="help-icon"><i data-lucide="square-check"></i> Point clé</span> :
+                            <code>&gt;important</code>.</li>
+                        <li><span class="help-icon"><i data-lucide="alert-triangle"></i> Alerte</span> :
+                            <code>&gt;alerte</code>.</li>
+                        <li><span class="help-icon"><i data-lucide="alert-circle"></i> Danger / interdit</span> :
+                            <code>&gt;danger</code>.</li>
+                    </ul>
                 </div>
                 <div>
                     <strong>21. À quoi sert le libellé ?</strong>
@@ -399,13 +403,14 @@
                 </div>
                 <div>
                     <strong>24. Les réponses de l’IA remplacent-elles automatiquement mon texte ?</strong>
-                    <p>Par défaut, quand il y a une sélection de texte, seul le texte sélectionné est remplacé.
-                        Quand il n’y a aucune sélection de texte, notamment en mode manuel
-                        (<span class="help-icon"><i data-lucide="mouse-pointer-click"></i></span> désactivé), tout le
-                        texte peut être remplacé selon l’action lancée. En mode sélection automatique
-                        (<span class="help-icon"><i data-lucide="mouse-pointer-click"></i></span> activé), le texte
-                        est sélectionné automatiquement par rapport au curseur, ce qui permet d’ajouter du texte sans
-                        modifier le contenu existant lorsque le contexte ciblé est bien identifié.</p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="text-select"></i> Avec sélection</span> :
+                            seule la zone sélectionnée est remplacée.</li>
+                        <li><span class="help-icon"><i data-lucide="mouse-pointer-click"></i> Mode manuel</span> :
+                            sans sélection, une action peut toucher une zone plus large du texte.</li>
+                        <li><span class="help-icon"><i data-lucide="mouse-pointer-click"></i> Mode auto</span> :
+                            la sélection est déduite autour du curseur pour limiter les remplacements non voulus.</li>
+                    </ul>
                 </div>
                 <div>
                     <strong>25. Puis-je envoyer du contexte sans modifier le document ?</strong>
@@ -421,29 +426,44 @@
                 </div>
                 <div>
                     <strong>27. Quelles informations sont partagées avec l’IA et les services externes ?</strong>
-                    <p>Pour produire une réponse, l’IA peut recevoir le contenu utile de votre document courant ainsi
-                        que les extraits les plus pertinents issus de la base de connaissance locale (RAG), c’est-à-dire
-                        des passages sélectionnés plutôt qu’un envoi systématique de tout votre historique. D’autres
-                        services externes reçoivent uniquement les données nécessaires à l’action demandée :
-                        transcription vocale, OCR / reconnaissance de document ou d’image, synthèse vocale
-                        (text-to-speech), publication, partage, ou intégrations tierces selon la fonction utilisée.
-                        Pour plus de détails sur les usages de données, consultez
-                        <a href="legal.html#privacy">la politique de confidentialité</a>.
-                    </p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="sparkles"></i> IA</span> : reçoit le contenu utile
+                            de la page courante et les extraits pertinents de la base locale (RAG).</li>
+                        <li><span class="help-icon"><i data-lucide="brain"></i> Base de connaissance</span> :
+                            envoie des passages ciblés plutôt qu’un historique complet.</li>
+                        <li><span class="help-icon"><i data-lucide="audio-lines"></i> Transcription / voix</span> :
+                            envoie uniquement les données audio/vidéo nécessaires au traitement demandé.</li>
+                        <li><span class="help-icon"><i data-lucide="scan-text"></i> OCR</span> :
+                            envoie seulement les fichiers/images utiles à la reconnaissance de texte.</li>
+                        <li><span class="help-icon"><i data-lucide="send"></i> Partage / publication</span> :
+                            transmet les données strictement nécessaires à l’action choisie.</li>
+                        <li><span class="help-icon"><i data-lucide="file-text"></i> Référence</span> :
+                            détails complets dans <a href="legal.html#privacy">la politique de confidentialité</a>.
+                        </li>
+                    </ul>
                 </div>
                 <div>
                     <strong>28. Quels sont les autres services tiers proposés et à quoi servent-ils ?</strong>
-                    <p>En plus de l’assistant IA, GoToolkit peut s’appuyer sur plusieurs services tiers selon l’action
-                        lancée : <strong>AssemblyAI</strong> pour la transcription vocale, <strong>Google Cloud
-                            Text-to-Speech</strong> pour la synthèse vocale, <strong>OpenRouter / Nebius Token
-                            Factory</strong> pour l’IA, l’OCR et certains traitements de fichiers, <strong>Microsoft
-                            SSO</strong> pour certains accès partagés, <strong>Google Gmail API</strong> pour
-                        créer des brouillons Gmail, <strong>Google YouTube API</strong> pour publier des vidéos, et
-                        <strong>Notion API</strong> pour publier dans Notion. Cela permet d’éviter des manipulations
-                        manuelles et de réutiliser plus vite vos contenus dans le bon format. Pour plus de détails sur
-                        la confidentialité et les données échangées avec ces services, consultez
-                        <a href="legal.html#privacy">la politique de confidentialité</a>.
-                    </p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="audio-lines"></i> AssemblyAI</span> :
+                            transcription vocale.</li>
+                        <li><span class="help-icon"><i data-lucide="audio-lines"></i> Google Cloud Text-to-Speech</span> :
+                            synthèse vocale (text-to-speech).</li>
+                        <li><span class="help-icon"><i data-lucide="sparkles"></i> OpenRouter / Nebius Token Factory</span> :
+                            IA, OCR et certains traitements de fichiers.</li>
+                        <li><span class="help-icon"><i data-lucide="lock-open"></i> Microsoft SSO</span> :
+                            accès partagés via authentification professionnelle.</li>
+                        <li><span class="help-icon"><i data-lucide="mail"></i> Google Gmail API</span> :
+                            création de brouillons Gmail.</li>
+                        <li><span class="help-icon"><i data-lucide="youtube"></i> Google YouTube API</span> :
+                            publication de vidéos.</li>
+                        <li><span class="help-icon"><i data-lucide="file-text"></i> Notion API</span> :
+                            publication de contenu dans Notion.</li>
+                        <li><span class="help-icon"><i data-lucide="send"></i> Bénéfice</span> :
+                            moins de manipulations manuelles et réutilisation plus rapide des contenus.</li>
+                        <li><span class="help-icon"><i data-lucide="file-text"></i> Référence</span> :
+                            détails de confidentialité dans <a href="legal.html#privacy">la politique de confidentialité</a>.</li>
+                    </ul>
                 </div>
                 <div>
                     <strong>29. À quoi servent les raccourcis de prompt ?</strong>

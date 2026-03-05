@@ -294,7 +294,8 @@
         deleteBtn.type = "button";
         deleteBtn.className = "share-card-action share-card-delete";
         deleteBtn.title = "Supprimer ce document";
-        deleteBtn.innerHTML = `<i data-lucide="x" style="width:14px;height:14px;"></i>`;
+        deleteBtn.textContent = "";
+        deleteBtn.appendChild(createLucideIconElement("x", "width:14px;height:14px;"));
         deleteBtn.addEventListener("click", async event => {
             event.preventDefault();
             event.stopPropagation();
@@ -420,7 +421,8 @@
         deleteBtn.type = "button";
         deleteBtn.className = "share-card-action share-card-delete";
         deleteBtn.title = "Supprimer ce document";
-        deleteBtn.innerHTML = `<i data-lucide="x" style="width:14px;height:14px;"></i>`;
+        deleteBtn.textContent = "";
+        deleteBtn.appendChild(createLucideIconElement("x", "width:14px;height:14px;"));
         deleteBtn.addEventListener("click", async event => {
             event.preventDefault();
             event.stopPropagation();
@@ -521,6 +523,19 @@
         const blob = new Blob([text], { type: "text/plain" });
         blob.name = name;
         return blob;
+    }
+
+    function normalizeLucideIconName(value, fallback = "circle") {
+        const icon = String(value || "").trim().toLowerCase();
+        if (!icon) return fallback;
+        return /^[a-z0-9-]+$/.test(icon) ? icon : fallback;
+    }
+
+    function createLucideIconElement(iconName, style = "") {
+        const icon = document.createElement("i");
+        icon.setAttribute("data-lucide", normalizeLucideIconName(iconName));
+        if (style) icon.style.cssText = String(style);
+        return icon;
     }
 
     function initGalleryNav(wrapper, listEl) {
@@ -685,22 +700,37 @@
         section.className = "space-section";
         const navId = `spaceGalleryNav_${space.id}`;
         const galleryId = `spaceGallery_${space.id}`;
-        section.innerHTML = `
-                    <div class="section-title-row">
-                        <p class="section-label nexus-label label-link">
-                            <i data-lucide="${space.icon || "cloud-upload"}" style="width:14px;height:14px;margin-right:4px;"></i>${space.name || "Espace"}
-                        </p>
-                    </div>
-                    <div class="gallery-nav" id="${navId}">
-                        <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Précédent">
-                            <i data-lucide="chevron-left"></i>
-                        </button>
-                        <div id="${galleryId}" class="share-gallery space-gallery" aria-live="polite"></div>
-                        <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Suivant">
-                            <i data-lucide="chevron-right"></i>
-                        </button>
-                    </div>
-                `;
+        const titleRow = document.createElement("div");
+        titleRow.className = "section-title-row";
+        const label = document.createElement("p");
+        label.className = "section-label nexus-label label-link";
+        label.appendChild(createLucideIconElement(space.icon || "cloud-upload", "width:14px;height:14px;margin-right:4px;"));
+        label.appendChild(document.createTextNode(String(space.name || "Espace")));
+        titleRow.appendChild(label);
+
+        const nav = document.createElement("div");
+        nav.className = "gallery-nav";
+        nav.id = navId;
+        const prevBtn = document.createElement("button");
+        prevBtn.className = "gallery-nav__btn gallery-nav__prev";
+        prevBtn.type = "button";
+        prevBtn.setAttribute("aria-label", "Précédent");
+        prevBtn.appendChild(createLucideIconElement("chevron-left"));
+        const gallery = document.createElement("div");
+        gallery.id = galleryId;
+        gallery.className = "share-gallery space-gallery";
+        gallery.setAttribute("aria-live", "polite");
+        const nextBtn = document.createElement("button");
+        nextBtn.className = "gallery-nav__btn gallery-nav__next";
+        nextBtn.type = "button";
+        nextBtn.setAttribute("aria-label", "Suivant");
+        nextBtn.appendChild(createLucideIconElement("chevron-right"));
+        nav.appendChild(prevBtn);
+        nav.appendChild(gallery);
+        nav.appendChild(nextBtn);
+
+        section.appendChild(titleRow);
+        section.appendChild(nav);
         return { section, navId, galleryId };
     }
 

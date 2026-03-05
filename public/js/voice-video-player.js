@@ -41,6 +41,26 @@
         return 1.2;
     }
 
+    function normalizeLucideIconName(value, fallback = "circle") {
+        const icon = String(value || "").trim().toLowerCase();
+        if (!icon) return fallback;
+        return /^[a-z0-9-]+$/.test(icon) ? icon : fallback;
+    }
+
+    function createLucideIconElement(iconName, options = {}) {
+        const icon = document.createElement("i");
+        icon.setAttribute("data-lucide", normalizeLucideIconName(iconName, options.fallback || "circle"));
+        if (options.className) icon.className = String(options.className);
+        if (options.style) icon.style.cssText = String(options.style);
+        return icon;
+    }
+
+    function setElementIconOnly(target, iconName, options = {}) {
+        if (!target) return;
+        target.textContent = "";
+        target.appendChild(createLucideIconElement(iconName, options));
+    }
+
     function ensureStyles() {
         if (document.getElementById(STYLE_ID)) return;
         const style = document.createElement("style");
@@ -679,7 +699,7 @@
             if (this._gifDownloading) {
                 this.downloadButton.disabled = true;
                 this.downloadButton.setAttribute("aria-busy", "true");
-                this.downloadButton.innerHTML = '<i data-lucide="loader-2" class="lucide-spin"></i>';
+                setElementIconOnly(this.downloadButton, "loader-2", { className: "lucide-spin" });
                 this.downloadVideoWebmOption && (this.downloadVideoWebmOption.disabled = true);
                 this.downloadVideoMp4Option && (this.downloadVideoMp4Option.disabled = true);
                 this.downloadGifOption && (this.downloadGifOption.disabled = true);
@@ -687,7 +707,12 @@
             } else {
                 this.downloadButton.disabled = false;
                 this.downloadButton.removeAttribute("aria-busy");
-                this.downloadButton.innerHTML = this._downloadButtonBaseHtml;
+                this.downloadButton.textContent = "";
+                if (this._downloadButtonBaseHtml) {
+                    this.downloadButton.insertAdjacentHTML("beforeend", this._downloadButtonBaseHtml);
+                } else {
+                    this.downloadButton.appendChild(createLucideIconElement("download"));
+                }
                 this.downloadVideoWebmOption && (this.downloadVideoWebmOption.disabled = false);
                 this.downloadVideoMp4Option && (this.downloadVideoMp4Option.disabled = false);
                 this.downloadGifOption && (this.downloadGifOption.disabled = false);
@@ -1206,7 +1231,15 @@
             const badgeClass = safeStatus === "running"
                 ? "chat-header-badge chat-header-badge--pending"
                 : (safeStatus === "idle" ? "chat-header-badge chat-header-badge--idle" : "chat-header-badge");
-            option.innerHTML = `<span class="${badgeClass}" aria-hidden="true"></span><span class="voice-video-player-download-option__label">${label}</span>`;
+            option.textContent = "";
+            const badge = document.createElement("span");
+            badge.className = badgeClass;
+            badge.setAttribute("aria-hidden", "true");
+            const labelEl = document.createElement("span");
+            labelEl.className = "voice-video-player-download-option__label";
+            labelEl.textContent = String(label || "");
+            option.appendChild(badge);
+            option.appendChild(labelEl);
         }
 
         _updateConversionBadges() {
@@ -2044,7 +2077,9 @@
             if (typeof this.onPublish !== "function" || !this.videoBlobOriginal) return;
             if (!this.publishButton) return;
             this.publishButton.disabled = true;
-            this.publishButton.innerHTML = `<i data-lucide="loader-2" class="lucide-spin"></i> Publication...`;
+            this.publishButton.textContent = "";
+            this.publishButton.appendChild(createLucideIconElement("loader-2", { className: "lucide-spin" }));
+            this.publishButton.appendChild(document.createTextNode(" Publication..."));
             if (window.lucide) lucide.createIcons();
             try {
                 const snapshot = this._getVisibleSentences({ relativeToCut: true }).map(sentence => ({
@@ -2062,7 +2097,13 @@
                 });
             } finally {
                 this.publishButton.disabled = false;
-                this.publishButton.innerHTML = this._defaultPublishLabel;
+                this.publishButton.textContent = "";
+                if (this._defaultPublishLabel) {
+                    this.publishButton.insertAdjacentHTML("beforeend", this._defaultPublishLabel);
+                } else {
+                    this.publishButton.appendChild(createLucideIconElement("youtube"));
+                    this.publishButton.appendChild(document.createTextNode(" Youtube"));
+                }
                 if (window.lucide) lucide.createIcons();
             }
         }

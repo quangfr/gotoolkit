@@ -700,10 +700,47 @@
         return trimmed || null;
     }
 
+    function normalizeLucideIconName(value, fallback = "circle") {
+        const icon = String(value || "").trim().toLowerCase();
+        if (!icon) return fallback;
+        return /^[a-z0-9-]+$/.test(icon) ? icon : fallback;
+    }
+
+    function createLucideIconElement(iconName, style = "") {
+        const icon = doc.createElement("i");
+        icon.setAttribute("data-lucide", normalizeLucideIconName(iconName));
+        if (style) icon.style.cssText = String(style);
+        return icon;
+    }
+
+    function setElementIconAndText(target, iconName, text, style = "") {
+        if (!target) return;
+        target.textContent = "";
+        if (iconName) {
+            target.appendChild(createLucideIconElement(iconName, style));
+        }
+        if (text) {
+            target.appendChild(doc.createTextNode(String(text)));
+        }
+    }
+
+    function setElementIconOnly(target, iconName, style = "") {
+        if (!target) return;
+        target.textContent = "";
+        target.appendChild(createLucideIconElement(iconName, style));
+    }
+
     function setStatus(el, { state = null, label = "" } = {}) {
         if (!el) return;
         if (state === "verifying") {
-            el.innerHTML = '<i data-lucide="loader-circle" class="lucide-spin" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>' + (label || "Vérification...");
+            setElementIconAndText(
+                el,
+                "loader-circle",
+                label || "Vérification...",
+                "width:14px;height:14px;vertical-align:middle;margin-right:4px;"
+            );
+            const spinner = el.querySelector("i[data-lucide='loader-circle']");
+            if (spinner) spinner.classList.add("lucide-spin");
             el.classList.remove("ia-status--error");
             global.lucide?.createIcons?.();
             return;
@@ -714,7 +751,12 @@
             error: "circle-alert"
         };
         const icon = iconByState[state] || null;
-        el.innerHTML = (icon ? `<i data-lucide="${icon}" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>` : "") + (label || "");
+        setElementIconAndText(
+            el,
+            icon,
+            label || "",
+            "width:14px;height:14px;vertical-align:middle;margin-right:4px;"
+        );
         if (state === "error") {
             el.classList.add("ia-status--error");
         } else {
@@ -1074,7 +1116,7 @@
             btn.type = "button";
             btn.className = "document-explorer-icon-choice" + (categoryTabIconTarget?.item?.icon === icon ? " active" : "");
             btn.title = icon;
-            btn.innerHTML = `<i data-lucide="${icon}"></i>`;
+            setElementIconOnly(btn, icon);
             btn.addEventListener("click", () => {
                 const target = categoryTabIconTarget;
                 if (!target?.item) return;
@@ -1173,7 +1215,7 @@
             iconBtn.type = "button";
             iconBtn.className = "btn btn-secondary";
             iconBtn.style.padding = "3px 6px";
-            iconBtn.innerHTML = `<i data-lucide="${item.icon || "tag"}" style="width:14px;height:14px;"></i>`;
+            setElementIconOnly(iconBtn, item.icon || "tag", "width:14px;height:14px;");
             iconBtn.title = "Choisir une icône";
             iconBtn.addEventListener("click", () => {
                 categoryTabIconTarget = { item };

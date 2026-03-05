@@ -1,6 +1,6 @@
 # GoToolkit Security Architecture
 
-Date: 2026-03-01
+Date: 2026-03-05
 Purpose: short technical map of how security works in the current codebase
 Scope: `public/`, `workers/`, `firebase.json`
 
@@ -9,7 +9,7 @@ Scope: `public/`, `workers/`, `firebase.json`
 GoToolkit security is split across four layers:
 
 - static HTML entry points and CSP in `public/*.html` and `firebase.json`
-- browser storage in `localStorage` and IndexedDB
+- browser storage in `localStorage`, `sessionStorage`, and IndexedDB
 - Cloudflare Workers that hold secrets, OAuth state, and upstream API credentials
 - cloud persistence used by sharing: Firestore, R2, KV, and D1
 
@@ -43,6 +43,21 @@ When changing network targets, script loading, iframes, or workers, check both:
 - page-level CSP in the HTML file
 - hosting CSP in `firebase.json`
 
+## 2.1 Frontend DOM injection posture
+
+Current coding direction in `public/` is:
+
+- avoid dynamic `innerHTML` for runtime labels/icons/content
+- prefer `textContent`, `createElement`, and attribute setters
+- keep `innerHTML` mostly for:
+  - static modal skeleton templates
+  - container resets (`innerHTML = ""`)
+  - explicitly sanitized rich HTML rendering
+
+Operational rule:
+
+- treat `innerHTML` as unsafe by default; any rich HTML path must sanitize before insertion.
+
 ## 3. Browser storage
 
 ### `localStorage`
@@ -68,14 +83,14 @@ Examples of current keys:
 
 ### `sessionStorage`
 
-The AI client records the last full AI request and response in `sessionStorage`.
+The AI client records the last AI request/response debug metadata in `sessionStorage`.
 
 Behavior:
 
 - scoped to the current tab/session
 - exposed through `window.GoToolkitIA.getLastAIRequest()` and `window.GoToolkitIA.getLastAIResponse()`
 
-This reduces persistence compared with `localStorage`, but those payloads can still contain sensitive content while the tab remains open. Avoid using shared or untrusted browsers when working with sensitive data.
+This reduces persistence compared with `localStorage`, and no longer stores full prompt/response bodies. The metadata is still readable by scripts in the active tab, so shared/untrusted browsers remain a bad fit for sensitive workflows.
 
 ### IndexedDB
 
@@ -110,16 +125,17 @@ Main storage:
 
 - Firestore: shared page content and metadata
 - R2: shared media/assets
-- D1: `space_code_hashes`
-- KV: content keys and sync/replay support
+- D1: `space_code_hashes` and `space_content_keys`
+- KV: sync/replay support (and auth fallback when D1 bindings are unavailable)
 
 Main collections and records:
 
 - `pages`
 - `pages-meta`
-- `memos`
 - `grids`
 - `template-memos`
+- `handoffs`
+- `codes_map`
 
 ### Space auth
 
@@ -148,8 +164,10 @@ Current worker behavior in `workers/share-proxy/index.js`:
 
 - `spaceCode` (or verified managed-space OAuth identity) is only used to obtain an auth token
 - the worker signs an auth payload with HMAC-SHA256
-- the token payload includes at least:
+- the token payload includes:
+  - `typ` (`space-auth`)
   - `spaceId`
+  - `iat`
   - `exp`
 - the worker verifies:
   - token format
@@ -364,8 +382,12 @@ Current server-side Turnstile behavior:
 - workers verify the token against Cloudflare `siteverify`
 - `remoteip` is forwarded from `CF-Connecting-IP` / `X-Forwarded-For`
 - verification requests use an `idempotency_key`
-- if `TURNSTILE_SECRET_KEY` is unset, enforcement is skipped
-- for some workers, localhost requests are exempted from Turnstile
+- workers validate returned `hostname` against allowed hostnames
+- workers validate returned `action` against expected route action
+- localhost requests are exempted on some workers
+- missing Turnstile secret does not silently pass production traffic:
+  - `openrouter-proxy` returns `500 MISSING_ENV`
+  - `googletts-proxy` / `assemblyai-proxy` allow localhost but fail non-local traffic with `500 MISSING_ENV`
 
 Current client-side Turnstile behavior:
 
@@ -373,7 +395,7 @@ Current client-side Turnstile behavior:
 - the helper first tries a background/off-screen execution
 - if that times out, it can escalate to a visible interactive challenge
 - the client records diagnostics and last-attempt summaries for debugging
-- full AI request/response payload capture is dev-only and stored in `sessionStorage` behind `?mode=dev`
+- AI debug capture stores request/response metadata (not full bodies) in `sessionStorage`
 
 This means Turnstile failures can occur in two distinct places:
 

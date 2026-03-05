@@ -121,6 +121,34 @@
         return 20;
     }
 
+    function normalizeLucideIconName(iconName) {
+        return String(iconName || "circle").trim().toLowerCase().replace(/[^a-z0-9-]/g, "") || "circle";
+    }
+
+    function createLucideIconElement(iconName, options = {}) {
+        const icon = document.createElement("i");
+        icon.setAttribute("data-lucide", normalizeLucideIconName(iconName));
+        if (options.className) {
+            icon.className = options.className;
+        }
+        if (options.size) {
+            const size = Number(options.size);
+            if (Number.isFinite(size) && size > 0) {
+                icon.style.width = `${size}px`;
+                icon.style.height = `${size}px`;
+            }
+        }
+        return icon;
+    }
+
+    function setElementIconOnly(target, iconName, options = {}) {
+        if (!target) return null;
+        target.textContent = "";
+        const icon = createLucideIconElement(iconName, options);
+        target.appendChild(icon);
+        return icon;
+    }
+
     function isCameraAllowed() {
         return !voiceConfigState.disableCamera;
     }
@@ -983,36 +1011,57 @@
         return Boolean(state.isRecording && !isRecordingCurrentMemo() && !state.currentMemoRecordingId);
     }
 
-    function buildButtonLabel() {
+    function updateVoiceButtonContent() {
+        if (!state.voiceButton) return;
         // Badge is tied to the active tab recording only (never to background conversions).
         const hasRecordingForCurrentMemo = Boolean(state.currentMemoRecordingId);
-        const badge = hasRecordingForCurrentMemo ? '<span class="chat-header-badge"></span>' : "";
+        state.voiceButton.textContent = "";
+        const appendBadge = () => {
+            if (!hasRecordingForCurrentMemo) return;
+            const badge = document.createElement("span");
+            badge.className = "chat-header-badge";
+            state.voiceButton.appendChild(badge);
+        };
         if (state.isTranscribing) {
-            return `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;"></i>${badge}`;
+            setElementIconOnly(state.voiceButton, "loader-2", { className: "lucide-spin", size: 14 });
+            appendBadge();
+            return;
         }
         if (state.isRecording) {
             const duration = Math.floor((Date.now() - state.recordingStartTime) / 1000);
             const timeLabel = formatDuration(duration);
+            setElementIconOnly(state.voiceButton, "square");
             if (isRecordingCurrentMemo()) {
-                return `<i data-lucide="square"></i><span>${timeLabel}</span>${badge}`;
+                const label = document.createElement("span");
+                label.textContent = timeLabel;
+                state.voiceButton.appendChild(label);
+                appendBadge();
+                return;
             }
             const activeMemoName = String(state.recordingMemoName || "Autre onglet").trim() || "Autre onglet";
             const truncatedMemoName = activeMemoName.length > 10
                 ? `${activeMemoName.slice(0, 10)}...`
                 : activeMemoName;
             const label = `${truncatedMemoName} (${timeLabel})`;
-            return `<i data-lucide="square"></i><span>${label}</span>${badge}`;
+            const labelEl = document.createElement("span");
+            labelEl.textContent = label;
+            state.voiceButton.appendChild(labelEl);
+            appendBadge();
+            return;
         }
         if (state.currentMemoRecordingId) {
             const recordingIcon = state.currentMemoRecordingHasVideo ? "video" : "cassette-tape";
-            return `<i data-lucide="${recordingIcon}"></i>${badge}`;
+            setElementIconOnly(state.voiceButton, recordingIcon);
+            appendBadge();
+            return;
         }
-        return `<i data-lucide="video"></i>${badge}`;
+        setElementIconOnly(state.voiceButton, "video");
+        appendBadge();
     }
 
     function updateButton() {
         if (!state.voiceButton) return;
-        state.voiceButton.innerHTML = buildButtonLabel();
+        updateVoiceButtonContent();
         state.voiceButton.classList.toggle(
             "is-recording",
             isRecordingCurrentMemo() || isRecordingAnotherMemoWithoutCurrentRecording()
@@ -2551,7 +2600,10 @@
         btn.className = "feedback-app-button btn btn-secondary app-header-btn chat-header-btn go-toolkit-voice-button";
         btn.title = "Enregistrer une conversation";
         btn.dataset.app = "voice";
-        btn.innerHTML = '<i data-lucide="disc-3"></i><span>Enregistrer une conversation</span>';
+        const btnIcon = createLucideIconElement("disc-3");
+        const btnLabel = document.createElement("span");
+        btnLabel.textContent = "Enregistrer une conversation";
+        btn.append(btnIcon, btnLabel);
         bindVoiceButton(btn);
         const handoffBtn = document.getElementById("handoffFocusBtn");
         const themeMenuTrigger = document.getElementById("themeMenuTrigger");

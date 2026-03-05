@@ -860,6 +860,87 @@
             .replace(/'/g, "&#39;");
     }
 
+    function normalizeLucideIconName(value, fallback) {
+        var icon = String(value || "").trim().toLowerCase();
+        if (!icon) return String(fallback || "circle");
+        return /^[a-z0-9-]+$/.test(icon) ? icon : String(fallback || "circle");
+    }
+
+    function createLucideIconElement(iconName, style) {
+        var icon = document.createElement("i");
+        icon.setAttribute("data-lucide", normalizeLucideIconName(iconName, "circle"));
+        if (style) {
+            icon.style.cssText = String(style);
+        }
+        return icon;
+    }
+
+    function setElementIconOnly(target, iconName, style) {
+        if (!target) return;
+        target.textContent = "";
+        target.appendChild(createLucideIconElement(iconName, style));
+    }
+
+    function setElementTextWithBreaks(target, text) {
+        if (!target) return;
+        var value = String(text || "");
+        target.textContent = "";
+        var lines = value.split("\n");
+        for (var i = 0; i < lines.length; i += 1) {
+            if (i > 0) target.appendChild(document.createElement("br"));
+            target.appendChild(document.createTextNode(lines[i]));
+        }
+    }
+
+    function setPromptButtonContent(button, iconName, label) {
+        if (!button) return;
+        button.textContent = "";
+        var content = document.createElement("span");
+        content.className = "chat-prompt-btn__content";
+        var icon = createLucideIconElement(iconName || "terminal");
+        icon.className = "chat-prompt-btn__icon";
+        content.appendChild(icon);
+        var labelEl = document.createElement("span");
+        labelEl.className = "chat-prompt-btn__label";
+        labelEl.textContent = String(label || "");
+        content.appendChild(labelEl);
+        var chevron = createLucideIconElement("chevron-down");
+        chevron.className = "chat-prompt-btn__chevron";
+        content.appendChild(chevron);
+        button.appendChild(content);
+    }
+
+    function setPromptMenuItemContent(item, iconName, label) {
+        if (!item) return;
+        item.textContent = "";
+        var icon = createLucideIconElement(iconName || "terminal");
+        icon.className = "chat-prompt-menu-item__icon";
+        item.appendChild(icon);
+        var labelEl = document.createElement("span");
+        labelEl.className = "chat-prompt-menu-item__label";
+        labelEl.textContent = String(label || "");
+        item.appendChild(labelEl);
+    }
+
+    function setPreviewStatusHtml(target, text) {
+        if (!target) return;
+        target.textContent = "";
+        var status = document.createElement("div");
+        status.className = "chat-doc-preview__loading";
+        status.textContent = String(text || "Chargement…");
+        target.appendChild(status);
+    }
+
+    function setPreviewUnavailableHtml(target) {
+        if (!target) return;
+        target.textContent = "";
+        var el = document.createElement("div");
+        el.style.color = "var(--muted)";
+        el.style.fontStyle = "italic";
+        el.textContent = "(extrait indisponible)";
+        target.appendChild(el);
+    }
+
     function escapeRegex(value) {
         return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
@@ -930,7 +1011,7 @@
             btn.className = "chat-pre-copy-btn";
             btn.setAttribute("aria-label", "Copier");
             btn.setAttribute("title", "Copier");
-            btn.innerHTML = '<i data-lucide="copy" style="width:12px;height:12px;"></i>';
+            setElementIconOnly(btn, "copy", "width:12px;height:12px;");
             btn.addEventListener("click", function (event) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -1673,7 +1754,7 @@
         this.mediaTranscriptionActive = false;
         this.deferSendButtonRestoreUntilAI = false;
         this.sendButtonSpinnerTimer = null;
-        this.sendButtonBaseLabel = `<i data-lucide="send" style="width:16px;height:16px;"></i>`;
+        this.sendButtonBaseLabel = "send";
         this.mediaUploadCount = 0;
         this.mediaTranscribedCount = 0;
         this.mediaTotalCount = 0;
@@ -1958,9 +2039,15 @@
         var isInputBlocked = isSendBusy && !isStreaming;
 
         if (this.sendButton) {
-            this.sendButton.innerHTML = shouldShowBusyIcon
-                ? `<i data-lucide="loader-2" class="lucide-spin" style="width:16px;height:16px;"></i>`
-                : (this.sendButtonBaseLabel || `<i data-lucide="send" style="width:16px;height:16px;"></i>`);
+            setElementIconOnly(
+                this.sendButton,
+                shouldShowBusyIcon ? "loader-2" : (this.sendButtonBaseLabel || "send"),
+                "width:16px;height:16px;"
+            );
+            if (shouldShowBusyIcon) {
+                var spinnerIcon = this.sendButton.querySelector("i[data-lucide='loader-2']");
+                if (spinnerIcon) spinnerIcon.classList.add("lucide-spin");
+            }
             this.sendButton.disabled = isInputBlocked || !hasText;
         }
         if (this.textarea) {
@@ -2438,7 +2525,7 @@
     AssistSidebar.prototype.updateUserMessage = function (message) {
         var entry = this.messageNodes[message.id];
         if (!entry || !entry.contentEl) return;
-        entry.contentEl.innerHTML = escapeHtml(message.content || "").replace(/\n/g, "<br>");
+        setElementTextWithBreaks(entry.contentEl, message.content || "");
         this.scrollToBottom();
     };
 
@@ -2466,7 +2553,9 @@
         if (message.role === "user" && (options.selectionExcerpt || message.selectionExcerpt)) {
             var prepend = document.createElement("div");
             prepend.className = "chat-prepend";
-            prepend.innerHTML = `<i data-lucide="corner-down-right" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;"></i>` + escapeHtml(options.selectionExcerpt || message.selectionExcerpt);
+            prepend.textContent = "";
+            prepend.appendChild(createLucideIconElement("corner-down-right", "width:12px;height:12px;vertical-align:middle;margin-right:4px;"));
+            prepend.appendChild(document.createTextNode(String(options.selectionExcerpt || message.selectionExcerpt || "")));
             contentWrapper.appendChild(prepend);
             if (window.lucide) window.lucide.createIcons({ props: { size: 12 } });
         }
@@ -2481,7 +2570,7 @@
                     redoBtn.type = "button";
                     redoBtn.className = "chat-restore-redo-btn";
                     redoBtn.style.cursor = "pointer";
-                    redoBtn.innerHTML = '<i data-lucide="redo"></i>';
+                    setElementIconOnly(redoBtn, "redo");
                     redoBtn.setAttribute("title", "Rétablir");
                     redoBtn.addEventListener("click", function (event) {
                         event.stopPropagation();
@@ -2494,7 +2583,7 @@
                 editBtn.type = "button";
                 editBtn.className = "chat-edit-btn";
                 editBtn.style.cursor = "pointer";
-                editBtn.innerHTML = '<i data-lucide="pen"></i>';
+                setElementIconOnly(editBtn, "pen");
                 editBtn.setAttribute("title", "Modifier");
                 editBtn.addEventListener("click", function (event) {
                     event.stopPropagation();
@@ -2506,7 +2595,7 @@
                 undoBtn.type = "button";
                 undoBtn.className = "chat-undo-btn";
                 undoBtn.style.cursor = "pointer";
-                undoBtn.innerHTML = '<i data-lucide="undo"></i>';
+                setElementIconOnly(undoBtn, "undo");
                 undoBtn.setAttribute("title", "Annuler");
                 undoBtn.addEventListener("click", function (event) {
                     event.stopPropagation();
@@ -2530,7 +2619,7 @@
             content.innerHTML = this.renderBotContent(message);
             addCopyButtonsToChatContent(content);
         } else {
-            content.innerHTML = escapeHtml(message.content || "").replace(/\n/g, "<br>");
+            setElementTextWithBreaks(content, message.content || "");
         }
         this.applyTechnicalHover({ contentEl: content }, message);
 
@@ -2574,7 +2663,9 @@
                 var keepAllBtn = document.createElement("button");
                 keepAllBtn.type = "button";
                 keepAllBtn.className = "chat-bubble-action-btn chat-bubble-action-keep";
-                keepAllBtn.innerHTML = `<i data-lucide="check" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> Garder tout`;
+                keepAllBtn.textContent = "";
+                keepAllBtn.appendChild(createLucideIconElement("check", "width:14px;height:14px;vertical-align:middle;margin-right:4px;"));
+                keepAllBtn.appendChild(document.createTextNode(" Garder tout"));
                 keepAllBtn.addEventListener("click", function () {
                     if (typeof window.setEditorMarkdown === 'function') {
                         window.setEditorMarkdown(message.data.output);
@@ -2585,7 +2676,9 @@
                 var rejectAllBtn = document.createElement("button");
                 rejectAllBtn.type = "button";
                 rejectAllBtn.className = "chat-bubble-action-btn chat-bubble-action-reject";
-                rejectAllBtn.innerHTML = `<i data-lucide="x" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> Refuser tout`;
+                rejectAllBtn.textContent = "";
+                rejectAllBtn.appendChild(createLucideIconElement("x", "width:14px;height:14px;vertical-align:middle;margin-right:4px;"));
+                rejectAllBtn.appendChild(document.createTextNode(" Refuser tout"));
                 rejectAllBtn.addEventListener("click", function () {
                     actionsEl.remove();
                 });
@@ -2801,7 +2894,7 @@
         var cancelBtn = document.createElement("button");
         cancelBtn.type = "button";
         cancelBtn.className = "btn-secondary chat-edit-cancel-btn";
-        cancelBtn.innerHTML = '<i data-lucide="x"></i>';
+        setElementIconOnly(cancelBtn, "x");
         cancelBtn.setAttribute("title", "Annuler");
         leftActions.appendChild(cancelBtn);
         var inlinePromptDropdown = this.buildInlinePromptDropdown();
@@ -2810,7 +2903,7 @@
         var promptShortcutsBtn = document.createElement("button");
         promptShortcutsBtn.type = "button";
         promptShortcutsBtn.className = "btn-secondary chat-prompt-shortcuts-btn";
-        promptShortcutsBtn.innerHTML = '<i data-lucide="sparkles"></i>';
+        setElementIconOnly(promptShortcutsBtn, "sparkles");
         promptShortcutsBtn.addEventListener("click", function () {
             this.openPromptShortcutsModal(textarea);
         }.bind(this));
@@ -2819,7 +2912,7 @@
         var attachFilesBtn = document.createElement("button");
         attachFilesBtn.type = "button";
         attachFilesBtn.className = "btn-secondary chat-attach-files-btn chat-scroll-btn";
-        attachFilesBtn.innerHTML = '<i data-lucide="paperclip"></i>';
+        setElementIconOnly(attachFilesBtn, "paperclip");
         attachFilesBtn.addEventListener("click", this.openDocumentSelector.bind(this));
         leftActions.appendChild(attachFilesBtn);
         actions.appendChild(leftActions);
@@ -2827,7 +2920,7 @@
         var sendBtn = document.createElement("button");
         sendBtn.type = "button";
         sendBtn.className = "btn-primary chat-send-btn";
-        sendBtn.innerHTML = '<i data-lucide="send"></i>';
+        setElementIconOnly(sendBtn, "send");
         actions.appendChild(sendBtn);
         composer.appendChild(actions);
 
@@ -2888,7 +2981,7 @@
             }
             edit.message.content = trimmed;
             if (entry?.contentEl) {
-                entry.contentEl.innerHTML = escapeHtml(edit.message.content || "").replace(/\n/g, "<br>");
+                setElementTextWithBreaks(entry.contentEl, edit.message.content || "");
             }
             this.persist();
             this.handleSend({ value: trimmed, editMessage: edit.message, fromInline: true });
@@ -5039,12 +5132,7 @@
             var activePreset = presets && presets[this.promptPresetId];
             var iconName = activePreset?.icon || "terminal";
             var label = activePreset?.label || ("/" + this.promptPresetId);
-            this.promptDropdownButton.innerHTML =
-                '<span class="chat-prompt-btn__content">' +
-                '<i data-lucide="' + escapeHtml(iconName) + '" class="chat-prompt-btn__icon"></i>' +
-                '<span class="chat-prompt-btn__label">' + escapeHtml(label) + '</span>' +
-                '<i data-lucide="chevron-down" class="chat-prompt-btn__chevron"></i>' +
-                "</span>";
+            setPromptButtonContent(this.promptDropdownButton, iconName, label);
             this.promptDropdownButton.title = "Mode: " + label;
             if (global.lucide) global.lucide.createIcons();
         }
@@ -5062,12 +5150,7 @@
             var activePreset = presets && presets[this.promptPresetId];
             var iconName = activePreset?.icon || "terminal";
             var label = activePreset?.label || ("/" + this.promptPresetId);
-            this.inlinePromptDropdownButton.innerHTML =
-                '<span class="chat-prompt-btn__content">' +
-                '<i data-lucide="' + escapeHtml(iconName) + '" class="chat-prompt-btn__icon"></i>' +
-                '<span class="chat-prompt-btn__label">' + escapeHtml(label) + '</span>' +
-                '<i data-lucide="chevron-down" class="chat-prompt-btn__chevron"></i>' +
-                "</span>";
+            setPromptButtonContent(this.inlinePromptDropdownButton, iconName, label);
             this.inlinePromptDropdownButton.title = "Mode: " + label;
             if (global.lucide) global.lucide.createIcons();
         }
@@ -5103,7 +5186,7 @@
         var button = document.createElement("button");
         button.type = "button";
         button.className = "btn-secondary chat-prompt-btn";
-        // innerHTML is set by updatePromptDropdownLabel()
+        // Prompt button content is set by updatePromptDropdownLabel().
         button.addEventListener("click", function (event) {
             event.stopPropagation();
             this.togglePromptDropdown();
@@ -5127,9 +5210,7 @@
 
             var label = preset.label || ("/" + preset.id);
             var iconName = preset.icon || "terminal";
-            item.innerHTML =
-                '<i data-lucide="' + escapeHtml(iconName) + '" class="chat-prompt-menu-item__icon"></i>' +
-                '<span class="chat-prompt-menu-item__label">' + escapeHtml(label) + "</span>";
+            setPromptMenuItemContent(item, iconName, label);
 
             item.addEventListener("click", function (event) {
                 event.stopPropagation();
@@ -5195,9 +5276,7 @@
 
             var label = preset.label || ("/" + preset.id);
             var iconName = preset.icon || "terminal";
-            item.innerHTML =
-                '<i data-lucide="' + escapeHtml(iconName) + '" class="chat-prompt-menu-item__icon"></i>' +
-                '<span class="chat-prompt-menu-item__label">' + escapeHtml(label) + "</span>";
+            setPromptMenuItemContent(item, iconName, label);
 
             item.addEventListener("click", function (event) {
                 event.stopPropagation();
@@ -5314,7 +5393,9 @@
         var header = document.createElement("div");
         header.className = "modal-header chat-prompt-shortcuts__header";
         var title = document.createElement("h3");
-        title.innerHTML = '<i data-lucide="sparkles"></i> Raccourcis Prompt';
+        title.textContent = "";
+        title.appendChild(createLucideIconElement("sparkles"));
+        title.appendChild(document.createTextNode(" Raccourcis Prompt"));
         var closeBtn = document.createElement("button");
         closeBtn.type = "button";
         closeBtn.className = "modal-close";
@@ -5347,7 +5428,7 @@
         var prevBtn = document.createElement("button");
         prevBtn.type = "button";
         prevBtn.className = "chat-prompt-shortcuts__pager-btn";
-        prevBtn.innerHTML = '<i data-lucide="chevron-left"></i>';
+        setElementIconOnly(prevBtn, "chevron-left");
         prevBtn.setAttribute("title", "Précédent");
         prevBtn.addEventListener("click", function () {
             this.changePromptShortcutsPage(-1);
@@ -5357,7 +5438,7 @@
         var nextBtn = document.createElement("button");
         nextBtn.type = "button";
         nextBtn.className = "chat-prompt-shortcuts__pager-btn";
-        nextBtn.innerHTML = '<i data-lucide="chevron-right"></i>';
+        setElementIconOnly(nextBtn, "chevron-right");
         nextBtn.setAttribute("title", "Suivant");
         nextBtn.addEventListener("click", function () {
             this.changePromptShortcutsPage(1);
@@ -5419,7 +5500,13 @@
             btn.type = "button";
             btn.className = "chat-prompt-shortcuts__filter";
             var icon = iconOverride || categoriesMeta?.[value.toLowerCase()]?.icon;
-            btn.innerHTML = (icon ? '<i data-lucide="' + icon + '"></i>' : "") + '<span>' + label + "</span>";
+            btn.textContent = "";
+            if (icon) {
+                btn.appendChild(createLucideIconElement(icon));
+            }
+            var labelEl = document.createElement("span");
+            labelEl.textContent = String(label || "");
+            btn.appendChild(labelEl);
             btn.dataset.category = value;
             if (value === active) {
                 btn.classList.add("active");
@@ -5494,7 +5581,13 @@
             var icon = metaInfo.icon;
             var meta = document.createElement("div");
             meta.className = "prompt-card__meta";
-            meta.innerHTML = (icon ? '<i data-lucide="' + icon + '"></i>' : "") + "<span>" + (category || "PROMPT") + "</span>";
+            meta.textContent = "";
+            if (icon) {
+                meta.appendChild(createLucideIconElement(icon));
+            }
+            var metaLabel = document.createElement("span");
+            metaLabel.textContent = String(category || "PROMPT");
+            meta.appendChild(metaLabel);
             var title = document.createElement("div");
             title.className = "prompt-card__title";
             title.textContent = (prompt.title || "").toString();
@@ -5617,13 +5710,19 @@
         header.className = "chat-header";
         var title = document.createElement("span");
         title.className = "chat-header-title";
-        title.innerHTML = ''
-            + '<button type="button" class="chat-header-title-icon chat-header-close-btn" title="Fermer" aria-label="Fermer l’assistant">'
-            + '<i data-lucide="chevron-left"></i>'
-            + '</button>'
-            + '<span class="chat-header-title-brand">Assistant</span>';
+        var titleCloseBtn = document.createElement("button");
+        titleCloseBtn.type = "button";
+        titleCloseBtn.className = "chat-header-title-icon chat-header-close-btn";
+        titleCloseBtn.setAttribute("title", "Fermer");
+        titleCloseBtn.setAttribute("aria-label", "Fermer l’assistant");
+        titleCloseBtn.appendChild(createLucideIconElement("chevron-left"));
+        var titleBrand = document.createElement("span");
+        titleBrand.className = "chat-header-title-brand";
+        titleBrand.textContent = "Assistant";
+        title.appendChild(titleCloseBtn);
+        title.appendChild(titleBrand);
         header.appendChild(title);
-        var headerCloseBtn = title.querySelector(".chat-header-close-btn");
+        var headerCloseBtn = titleCloseBtn;
         if (headerCloseBtn) {
             headerCloseBtn.addEventListener("click", this.close.bind(this));
         }
@@ -5638,7 +5737,7 @@
         this.headerDocCountEl.id = "chatMemoryBtn";
         this.headerDocCountEl.type = "button";
         this.headerDocCountEl.className = "btn-secondary chat-header-btn";
-        this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i>';
+        setElementIconOnly(this.headerDocCountEl, "brain");
         this.headerDocCountEl.setAttribute("title", "Base de connaissance");
         this.headerDocCountEl.addEventListener("click", this.handleHeaderDocCountClick.bind(this));
         this.headerDocCountEl.addEventListener("keydown", function (event) {
@@ -5658,7 +5757,7 @@
         this.clearButton.id = "chatClearBtn";
         this.clearButton.type = "button";
         this.clearButton.className = "btn-secondary chat-header-btn";
-        this.clearButton.innerHTML = '<i data-lucide="circle-x"></i>';
+        setElementIconOnly(this.clearButton, "circle-x");
         this.clearButton.setAttribute("title", "Effacer");
         this.clearButton.addEventListener("click", this.clearConversation.bind(this));
         headerActions.appendChild(this.clearButton);
@@ -5900,7 +5999,7 @@
         this.promptShortcutsButton = document.createElement("button");
         this.promptShortcutsButton.type = "button";
         this.promptShortcutsButton.className = "btn-secondary chat-prompt-shortcuts-btn";
-        this.promptShortcutsButton.innerHTML = '<i data-lucide="sparkles"></i>';
+        setElementIconOnly(this.promptShortcutsButton, "sparkles");
         this.promptShortcutsButton.addEventListener("click", function () {
             this.openPromptShortcutsModal(this.textarea);
         }.bind(this));
@@ -5910,7 +6009,7 @@
         this.scrollButton.type = "button";
         this.scrollButton.id = "chatAttachFilesBtn";
         this.scrollButton.className = "chat-attach-files-btn chat-composer-attachment chat-composer-attachments__trigger";
-        this.scrollButton.innerHTML = '<i data-lucide="paperclip"></i>';
+        setElementIconOnly(this.scrollButton, "paperclip");
         this.scrollButton.setAttribute("title", "Fichiers");
         this.scrollButton.addEventListener("click", this.openDocumentSelector.bind(this));
         if (CHAT_APP_ID === "memo") {
@@ -5947,7 +6046,7 @@
         this.sendButton = document.createElement("button");
         this.sendButton.type = "button";
         this.sendButton.className = "btn-primary chat-send-btn";
-        this.sendButton.innerHTML = '<i data-lucide="send"></i>';
+        setElementIconOnly(this.sendButton, "send");
         this.sendButton.setAttribute("title", "Envoyer");
         this.sendButton.addEventListener("click", this.handleSend.bind(this));
         composerActions.appendChild(this.sendButton);
@@ -5957,7 +6056,7 @@
         this.speechButton = document.createElement("button");
         this.speechButton.type = "button";
         this.speechButton.className = "btn-secondary chat-speech-btn";
-        this.speechButton.innerHTML = '<i data-lucide="mic"></i>';
+        setElementIconOnly(this.speechButton, "mic");
         this.speechButton.setAttribute("title", "Dictée");
         this.speechButton.addEventListener("mousedown", function () {
             this.memoSelectionIgnoreBlur = true;
@@ -5968,7 +6067,7 @@
         this.memoSelectionFollowButton = document.createElement("button");
         this.memoSelectionFollowButton.type = "button";
         this.memoSelectionFollowButton.className = "btn-secondary chat-selection-follow-btn active";
-        this.memoSelectionFollowButton.innerHTML = '<i data-lucide="mouse-pointer-click"></i>';
+        setElementIconOnly(this.memoSelectionFollowButton, "mouse-pointer-click");
         this.memoSelectionFollowButton.setAttribute("title", "Sélection auto");
         this.memoSelectionFollowButton.setAttribute("aria-pressed", "true");
         this.memoSelectionFollowButton.addEventListener("click", function () {
@@ -7136,7 +7235,7 @@
             removeBtn.type = "button";
             removeBtn.className = "chat-composer-attachment__remove";
             removeBtn.setAttribute("aria-label", "Supprimer la pièce jointe");
-            removeBtn.innerHTML = '<i data-lucide="x" style="width:12px;height:12px;"></i>';
+            setElementIconOnly(removeBtn, "x", "width:12px;height:12px;");
             removeBtn.addEventListener("click", function (event) {
                 event.stopPropagation();
                 this.handleRemovePendingAttachment(name);
@@ -7202,7 +7301,7 @@
             removeBtn.type = "button";
             removeBtn.className = "chat-composer-queue__remove";
             removeBtn.setAttribute("aria-label", "Supprimer de la file d'attente");
-            removeBtn.innerHTML = '<i data-lucide="trash-2" style="width:12px;height:12px;"></i>';
+            setElementIconOnly(removeBtn, "trash-2", "width:12px;height:12px;");
             removeBtn.addEventListener("click", function (event) {
                 event.stopPropagation();
                 this.removeQueuedMessage(entry.id, scopeId);
@@ -7351,7 +7450,7 @@
             var removeBtn = document.createElement("button");
             removeBtn.type = "button";
             removeBtn.className = "chat-composer-attachment__remove";
-            removeBtn.innerHTML = '<i data-lucide="x" style="width:12px;height:12px;"></i>';
+            setElementIconOnly(removeBtn, "x", "width:12px;height:12px;");
             removeBtn.setAttribute("aria-label", "Supprimer l'embedding");
             removeBtn.addEventListener("click", function (event) {
                 event.stopPropagation();
@@ -7404,7 +7503,7 @@
             var removeBtn = document.createElement("button");
             removeBtn.type = "button";
             removeBtn.className = "chat-composer-attachment__remove";
-            removeBtn.innerHTML = '<i data-lucide="x" style="width:12px;height:12px;"></i>';
+            setElementIconOnly(removeBtn, "x", "width:12px;height:12px;");
             removeBtn.setAttribute("aria-label", "Supprimer la pièce jointe");
             removeBtn.addEventListener("click", function (event) {
                 event.stopPropagation();
@@ -8218,20 +8317,31 @@
         this.readSelectedKnowledgePageRootsBySpace(this.knowledgeManifestEntries);
         var rootsBySpace = this.getKnowledgeRootsBySpace(this.knowledgeManifestEntries);
         var counters = this.getKnowledgeSpaceCounters(this.knowledgeManifestEntries);
-        var html = [];
+        this.memorySpacesMenuEl.textContent = "";
         if (!spaces.length) {
-            html.push('<div class="chat-prompt-menu-item" style="cursor:default;opacity:.7;">Aucun espace</div>');
+            var emptyState = document.createElement("div");
+            emptyState.className = "chat-prompt-menu-item";
+            emptyState.style.cursor = "default";
+            emptyState.style.opacity = ".7";
+            emptyState.textContent = "Aucun espace";
+            this.memorySpacesMenuEl.appendChild(emptyState);
         } else {
             spaces.forEach(function (space) {
                 var checked = this.selectedKnowledgeSpaceIds.has(space.id);
                 var count = counters.get(space.id) || { ingested: 0, total: 0 };
-                var label = space.name + " (" + count.ingested + "/" + count.total + ")";
-                html.push(
-                    '<label class="chat-prompt-menu-item chat-memory-spaces-menu__item">' +
-                    '<input type="checkbox" class="chat-memory-space-checkbox" data-space-id="' + escapeHtml(space.id) + '" ' + (checked ? "checked" : "") + '>' +
-                    '<span>' + escapeHtml(label) + '</span>' +
-                    "</label>"
-                );
+                var label = document.createElement("label");
+                label.className = "chat-prompt-menu-item chat-memory-spaces-menu__item";
+                var input = document.createElement("input");
+                input.type = "checkbox";
+                input.className = "chat-memory-space-checkbox";
+                input.dataset.spaceId = String(space.id || "");
+                input.checked = checked;
+                var span = document.createElement("span");
+                span.textContent = space.name + " (" + count.ingested + "/" + count.total + ")";
+                label.appendChild(input);
+                label.appendChild(span);
+                this.memorySpacesMenuEl.appendChild(label);
+
                 var roots = rootsBySpace.get(space.id) || [];
                 var rootSelection = this.selectedKnowledgePageRootsBySpace.get(space.id);
                 roots.forEach(function (root) {
@@ -8240,18 +8350,31 @@
                     var rootChecked = rootSelection instanceof Set
                         ? rootSelection.has(rootId)
                         : true;
-                    html.push(
-                        '<label class="chat-prompt-menu-item chat-memory-spaces-menu__item chat-memory-spaces-menu__item--page">' +
-                        '<input type="checkbox" class="chat-memory-page-checkbox" data-space-id="' + escapeHtml(space.id) + '" data-root-id="' + escapeHtml(rootId) + '" ' + (rootChecked ? "checked" : "") + '>' +
-                        '<span>' + escapeHtml(this.truncateKnowledgeName(root?.name || "Nouvelle page")) + '</span>' +
-                        "</label>"
-                    );
+                    var rootLabel = document.createElement("label");
+                    rootLabel.className = "chat-prompt-menu-item chat-memory-spaces-menu__item chat-memory-spaces-menu__item--page";
+                    var rootInput = document.createElement("input");
+                    rootInput.type = "checkbox";
+                    rootInput.className = "chat-memory-page-checkbox";
+                    rootInput.dataset.spaceId = String(space.id || "");
+                    rootInput.dataset.rootId = String(rootId || "");
+                    rootInput.checked = rootChecked;
+                    var rootSpan = document.createElement("span");
+                    rootSpan.textContent = this.truncateKnowledgeName(root?.name || "Nouvelle page");
+                    rootLabel.appendChild(rootInput);
+                    rootLabel.appendChild(rootSpan);
+                    this.memorySpacesMenuEl.appendChild(rootLabel);
                 }.bind(this));
             }.bind(this));
         }
         var lastIndexedAgo = formatKnowledgeLastIndexedAgo(this.lastKnowledgeSpaceSyncAt);
-        html.push('<div class="chat-prompt-menu-item" data-memory-sync-hint style="cursor:default;opacity:.7;font-size:11px;">Indexé il y a ' + escapeHtml(lastIndexedAgo) + "</div>");
-        this.memorySpacesMenuEl.innerHTML = html.join("");
+        var hint = document.createElement("div");
+        hint.className = "chat-prompt-menu-item";
+        hint.dataset.memorySyncHint = "1";
+        hint.style.cursor = "default";
+        hint.style.opacity = ".7";
+        hint.style.fontSize = "11px";
+        hint.textContent = "Indexé il y a " + lastIndexedAgo;
+        this.memorySpacesMenuEl.appendChild(hint);
         this.memorySpacesSyncHintEl = this.memorySpacesMenuEl.querySelector("[data-memory-sync-hint]");
         var boxes = this.memorySpacesMenuEl.querySelectorAll(".chat-memory-space-checkbox");
         boxes.forEach(function (box) {
@@ -8363,7 +8486,7 @@
         var count = this.getMemoireDocumentCount();
         var ingestionState = this.getMemoryButtonIngestionState();
         this.headerDocCountEl.dataset.count = count;
-        this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i>';
+        setElementIconOnly(this.headerDocCountEl, "brain");
         this.headerDocCountEl.classList.toggle("chat-memory-btn--active", ingestionState === "full");
         this.headerDocCountEl.classList.toggle("chat-memory-btn--indexing", ingestionState === "partial");
         if (window.lucide) window.lucide.createIcons();
@@ -8555,9 +8678,8 @@
             .replace(/<iframe\b[^>]*\/?>/gi, " ")
             .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
             .replace(/<style\b[\s\S]*?<\/style>/gi, " ");
-        var container = document.createElement("div");
-        container.innerHTML = sanitized;
-        var text = container.textContent || "";
+        var parsed = new DOMParser().parseFromString(sanitized, "text/html");
+        var text = parsed?.body?.textContent || "";
         return text.replace(/\r\n/g, "\n");
     };
 
@@ -10680,7 +10802,7 @@
         this.previewTitleEl && (this.previewTitleEl.textContent = name);
         this.clearPreviewIframe();
         if (this.previewBodyEl) {
-            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
+            setPreviewStatusHtml(this.previewBodyEl, "Chargement…");
         }
         var snippet = "";
         try {
@@ -10809,7 +10931,7 @@
         this.clearPreviewIframe();
         this.currentPreviewDoc = null;
         if (this.previewBodyEl) {
-            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
+            setPreviewStatusHtml(this.previewBodyEl, "Chargement…");
         }
         try {
             var doc = await this.findKnowledgeDocumentForPreview(entry);
@@ -10821,7 +10943,11 @@
                 var markdown = convertHtmlToMarkdownForPreview(memoHtml);
                 var markdownHtml = renderDocumentMarkdown(markdown);
                 if (this.previewBodyEl) {
-                    this.previewBodyEl.innerHTML = markdownHtml || "<div style='color: var(--muted); font-style: italic;'>(extrait indisponible)</div>";
+                    if (markdownHtml) {
+                        this.previewBodyEl.innerHTML = markdownHtml;
+                    } else {
+                        setPreviewUnavailableHtml(this.previewBodyEl);
+                    }
                 }
                 return;
             }
@@ -10836,7 +10962,7 @@
                 if (fetchedType.includes("pdf")) {
                     try {
                         if (this.previewBodyEl) {
-                            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Extraction PDF…</div>";
+                            setPreviewStatusHtml(this.previewBodyEl, "Extraction PDF…");
                         }
                         await this.docManager.waitReady?.();
                         var useCloudOnly = getConfig("memo.ocr.disableOffline", false);
@@ -10858,7 +10984,7 @@
                                 this.previewBodyEl.innerHTML = this.formatPreviewText(accumulated);
                             }.bind(this));
                             if (!accumulated) {
-                                this.previewBodyEl.innerHTML = "<div style='color: var(--muted); font-style: italic;'>(extrait indisponible)</div>";
+                                setPreviewUnavailableHtml(this.previewBodyEl);
                             }
                             return;
                         }
@@ -10879,7 +11005,11 @@
                 var rawText = await fetched.text();
                 if (fetchedType.includes("markdown") || this.detectFileTypeFromPath(entry.path) === "markdown") {
                     var html = renderDocumentMarkdown(rawText);
-                    this.previewBodyEl.innerHTML = html || "<div style='color: var(--muted); font-style: italic;'>(extrait indisponible)</div>";
+                    if (html) {
+                        this.previewBodyEl.innerHTML = html;
+                    } else {
+                        setPreviewUnavailableHtml(this.previewBodyEl);
+                    }
                     return;
                 }
                 if (fetchedType.includes("html")) {
@@ -10894,7 +11024,7 @@
             console.warn("Knowledge preview failed", err);
         }
         if (this.previewBodyEl) {
-            this.previewBodyEl.innerHTML = "(extrait indisponible)";
+            this.previewBodyEl.textContent = "(extrait indisponible)";
         }
     };
 
@@ -10906,7 +11036,7 @@
         this.previewPanel.setAttribute("aria-hidden", "false");
         this.clearPreviewIframe();
         if (this.previewBodyEl) {
-            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
+            setPreviewStatusHtml(this.previewBodyEl, "Chargement…");
         }
         var snippet = await this.resolvePreviewSnippet(message, reference);
         try {
@@ -11192,10 +11322,14 @@
                 markdownSource = snippet;
             }
             var markdownHtml = renderDocumentMarkdown(markdownSource);
-            this.previewBodyEl.innerHTML = markdownHtml || "<div style='color: var(--muted); font-style: italic;'>(extrait indisponible)</div>";
+            if (markdownHtml) {
+                this.previewBodyEl.innerHTML = markdownHtml;
+            } else {
+                setPreviewUnavailableHtml(this.previewBodyEl);
+            }
 
             // Highlight AI snippets in markdown content
-            if (aiSnippets.length > 0 && this.previewBodyEl.innerHTML) {
+            if (aiSnippets.length > 0 && this.previewBodyEl?.childNodes?.length) {
                 this.highlightSnippetsInMarkdown(aiSnippets);
             }
             return;
@@ -11231,7 +11365,7 @@
             if (snippet) {
                 this.previewBodyEl.innerHTML = this.formatPreviewText(snippet, highlightLine, opts);
             } else {
-                this.previewBodyEl.innerHTML = "<div style='color: var(--muted); font-style: italic;'>(extrait indisponible)</div>";
+                setPreviewUnavailableHtml(this.previewBodyEl);
             }
             return;
         }
@@ -12121,7 +12255,7 @@
             if (botMessage) {
                 botMessage.content = '⚠️ Une erreur s\'est produite.';
                 if (assistInstance.messageNodes[botMessage.id]?.contentEl) {
-                    assistInstance.messageNodes[botMessage.id].contentEl.innerHTML = '⚠️ Une erreur s\'est produite.';
+                    assistInstance.messageNodes[botMessage.id].contentEl.textContent = "⚠️ Une erreur s'est produite.";
                 }
             }
         } finally {

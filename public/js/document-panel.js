@@ -211,17 +211,26 @@
             const spTitleStr = String(sp.title).toLowerCase();
             const isChecked = normalizedSelectedIds.some(sid => sid === spIdStr || sid === spTitleStr);
 
-            label.innerHTML = `
-                <input type="radio" name="document-superpower" value="${sp.id}" ${isChecked ? 'checked' : ''} style="display:none;">
-                <span class="superpower-pill ${isChecked ? 'active' : ''}">
-                    <i data-lucide="${sp.icon}" style="width:12px;height:12px;"></i>
-                    ${sp.title}
-                    <i data-lucide="check" class="pill-check-icon" style="width:12px;height:12px;display:${isChecked ? 'inline-block' : 'none'};"></i>
-                </span>
-            `;
-            const input = label.querySelector('input');
-            const pill = label.querySelector('.superpower-pill');
-            const checkIcon = pill.querySelector('.pill-check-icon');
+            const input = document.createElement("input");
+            input.type = "radio";
+            input.name = "document-superpower";
+            input.value = String(sp.id || "");
+            input.checked = isChecked;
+            input.style.display = "none";
+            const pill = document.createElement("span");
+            pill.className = `superpower-pill ${isChecked ? "active" : ""}`.trim();
+            pill.appendChild(createLucideIconElement(sp.icon, {
+                fallback: "zap",
+                style: "width:12px;height:12px;"
+            }));
+            pill.appendChild(document.createTextNode(String(sp.title || "")));
+            const checkIcon = createLucideIconElement("check", {
+                className: "pill-check-icon",
+                style: `width:12px;height:12px;display:${isChecked ? "inline-block" : "none"};`
+            });
+            pill.appendChild(checkIcon);
+            label.appendChild(input);
+            label.appendChild(pill);
 
             input.addEventListener('change', () => {
                 const allInputs = container.querySelectorAll('input[name="document-superpower"]');
@@ -306,6 +315,30 @@
     function isAutoFileIcon(value) {
         const icon = String(value || "").trim();
         return !icon || icon === "file" || icon === "file-text" || icon === "file-symlink";
+    }
+
+    function normalizeLucideIconName(value, fallback = "file") {
+        const icon = String(value || "").trim().toLowerCase();
+        if (!icon) return fallback;
+        return /^[a-z0-9-]+$/.test(icon) ? icon : fallback;
+    }
+
+    function createLucideIconElement(iconName, options = {}) {
+        const node = document.createElement("i");
+        node.setAttribute("data-lucide", normalizeLucideIconName(iconName, options.fallback || "file"));
+        if (options.className) {
+            node.className = String(options.className).trim();
+        }
+        if (options.style) {
+            node.style.cssText = String(options.style);
+        }
+        return node;
+    }
+
+    function setElementIconOnly(target, iconName, options = {}) {
+        if (!target) return;
+        target.textContent = "";
+        target.appendChild(createLucideIconElement(iconName, options));
     }
 
     function formatRelativeShort(value) {
@@ -619,13 +652,13 @@
                 const btn = document.createElement("button");
                 btn.type = "button";
                 btn.className = "document-explorer-icon-choice" + (modalIcon === icon ? " active" : "");
-                btn.innerHTML = `<i data-lucide="${icon}"></i>`;
+                setElementIconOnly(btn, icon, { fallback: "file" });
                 btn.title = icon;
                 btn.addEventListener("click", () => {
                     modalIcon = icon;
                     modalIconGrid.querySelectorAll(".document-explorer-icon-choice").forEach(node => node.classList.remove("active"));
                     btn.classList.add("active");
-                    if (modalIconBtn) modalIconBtn.innerHTML = `<i data-lucide="${icon}"></i>`;
+                    if (modalIconBtn) setElementIconOnly(modalIconBtn, icon, { fallback: "file" });
                     modalIconGrid.classList.remove("open");
                     if (window.lucide) window.lucide.createIcons();
                 });
@@ -673,7 +706,7 @@
             modalInput.value = defaultValue || "";
             modalIcon = (options && typeof options.icon === "string" && options.icon.trim()) ? options.icon.trim() : "file";
             modalIconSearch = "";
-            if (modalIconBtn) modalIconBtn.innerHTML = `<i data-lucide="${modalIcon}"></i>`;
+            if (modalIconBtn) setElementIconOnly(modalIconBtn, modalIcon, { fallback: "file" });
             renderIconGrid();
             if (modalDescInput) modalDescInput.value = defaultDescription || "";
             const shouldFetchFromStore = Boolean(options?.documentId);
@@ -868,7 +901,11 @@
             const headings = (window.MemoHeadings || []).filter(h => h.level >= 1 && h.level <= 4);
 
             if (!headings.length) {
-                tocEl.innerHTML = '<div class="document-explorer__empty">Aucun titre</div>';
+                tocEl.textContent = "";
+                const empty = document.createElement("div");
+                empty.className = "document-explorer__empty";
+                empty.textContent = "Aucun titre";
+                tocEl.appendChild(empty);
                 return;
             }
 
@@ -1423,14 +1460,22 @@
                 })();
                 const renderLeadIcon = (hoverChevron = false) => {
                     if (!hasChildren) {
-                        lead.innerHTML = defaultIconName ? `<i data-lucide="${defaultIconName}"></i>` : "";
+                        if (defaultIconName) {
+                            setElementIconOnly(lead, defaultIconName, { fallback: "file" });
+                        } else {
+                            lead.textContent = "";
+                        }
                         return;
                     }
                     if (hoverChevron) {
-                        lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
+                        setElementIconOnly(lead, isExpanded ? "chevron-down" : "chevron-right", { fallback: "chevron-right" });
                         return;
                     }
-                    lead.innerHTML = defaultIconName ? `<i data-lucide="${defaultIconName}"></i>` : "";
+                    if (defaultIconName) {
+                        setElementIconOnly(lead, defaultIconName, { fallback: "file" });
+                    } else {
+                        lead.textContent = "";
+                    }
                 };
                 renderLeadIcon(false);
                 const showRowChevron = () => {
@@ -1475,7 +1520,7 @@
                 const plusBtn = document.createElement("button");
                 plusBtn.type = "button";
                 plusBtn.className = "document-explorer__item-action";
-                plusBtn.innerHTML = '<i data-lucide="plus"></i>';
+                setElementIconOnly(plusBtn, "plus", { fallback: "plus" });
                 plusBtn.title = "Créer une sous-page";
                 plusBtn.addEventListener("click", event => {
                     event.stopPropagation();
@@ -1486,7 +1531,7 @@
                 const deleteBtn = document.createElement("button");
                 deleteBtn.type = "button";
                 deleteBtn.className = "document-explorer__item-action document-explorer__delete";
-                deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>';
+                setElementIconOnly(deleteBtn, "trash-2", { fallback: "trash-2" });
                 deleteBtn.title = "Supprimer";
                 deleteBtn.addEventListener("click", event => {
                     event.stopPropagation();
@@ -1526,7 +1571,7 @@
                     input.className = "document-explorer__item-inline-input";
                     input.value = initialValue;
                     input.setAttribute("aria-label", "Renommer le document");
-                    label.innerHTML = "";
+                    label.textContent = "";
                     label.appendChild(input);
                     activeInlineRenameInput = input;
                     input.focus();
@@ -1753,7 +1798,11 @@
                     ? "history"
                     : (sectionName === "common" ? "component" : (sectionName === "private" ? "user" : "lock-keyhole-open")));
                 const isSectionExpanded = sectionExpanded[sectionName] !== false;
-                sectionHeader.innerHTML = `<i data-lucide="${sectionIcon}"></i><strong>${title}</strong>`;
+                sectionHeader.textContent = "";
+                sectionHeader.appendChild(createLucideIconElement(sectionIcon, { fallback: "folder" }));
+                const sectionTitleEl = document.createElement("strong");
+                sectionTitleEl.textContent = String(title || "");
+                sectionHeader.appendChild(sectionTitleEl);
                 const collapseIcon = document.createElement("i");
                 collapseIcon.setAttribute("data-lucide", isSectionExpanded ? "chevron-down" : "chevron-right");
                 sectionHeader.appendChild(collapseIcon);
@@ -1785,7 +1834,7 @@
                         addBtn.classList.add("document-explorer__item-action--hover-only");
                     }
                     addBtn.title = sectionName === "private" ? "Créer une page racine" : "Ajouter une page";
-                    addBtn.innerHTML = '<i data-lucide="plus"></i>';
+                    setElementIconOnly(addBtn, "plus", { fallback: "plus" });
                     addBtn.addEventListener("click", (event) => {
                         event.preventDefault();
                         event.stopPropagation();
@@ -1800,9 +1849,11 @@
                         refreshBtn.type = "button";
                         refreshBtn.className = "document-explorer__item-action";
                         refreshBtn.title = "Rafraîchir et nettoyer l'espace privé";
-                        refreshBtn.innerHTML = sectionSyncedWithinHour
-                            ? '<i data-lucide="circle-check"></i>'
-                            : '<i data-lucide="refresh-ccw"></i>';
+                        setElementIconOnly(
+                            refreshBtn,
+                            sectionSyncedWithinHour ? "circle-check" : "refresh-ccw",
+                            { fallback: "refresh-ccw" }
+                        );
                         refreshBtn.addEventListener("click", (event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -1841,11 +1892,13 @@
                             } else {
                                 refreshBtn.title = syncSinceLabel;
                             }
-                            refreshBtn.innerHTML = hasSharedSpaceSyncError
-                                ? '<i data-lucide="triangle-alert"></i>'
-                                : (shouldShowCleanIcon
-                                    ? '<i data-lucide="circle-check"></i>'
-                                    : '<i data-lucide="refresh-ccw"></i>');
+                            setElementIconOnly(
+                                refreshBtn,
+                                hasSharedSpaceSyncError
+                                    ? "triangle-alert"
+                                    : (shouldShowCleanIcon ? "circle-check" : "refresh-ccw"),
+                                { fallback: "refresh-ccw" }
+                            );
                             if (isSharedSpaceSyncing && !hasSharedSpaceSyncError) {
                                 const icon = refreshBtn.querySelector('svg.lucide-refresh-ccw, i[data-lucide="refresh-ccw"], svg, i');
                                 if (icon) icon.classList.add("lucide-spin");
@@ -1971,7 +2024,7 @@
                     }
                     const lead = document.createElement("span");
                     lead.className = "document-explorer__item-leading";
-                    lead.innerHTML = `<i data-lucide="${item.icon || "file"}"></i>`;
+                    setElementIconOnly(lead, item.icon || "file", { fallback: "file" });
                     button.appendChild(lead);
                     const label = document.createElement("span");
                     label.className = "document-explorer__item-title";
@@ -2031,7 +2084,15 @@
                 const sectionHeader = document.createElement("button");
                 sectionHeader.type = "button";
                 sectionHeader.className = "document-explorer__section-header";
-                sectionHeader.innerHTML = `<i data-lucide="tag"></i><strong>Catégorie</strong><i data-lucide="${sectionExpanded.superpowers ? "chevron-down" : "chevron-right"}"></i>`;
+                sectionHeader.textContent = "";
+                sectionHeader.appendChild(createLucideIconElement("tag", { fallback: "tag" }));
+                const sectionLabelEl = document.createElement("strong");
+                sectionLabelEl.textContent = "Catégorie";
+                sectionHeader.appendChild(sectionLabelEl);
+                sectionHeader.appendChild(createLucideIconElement(
+                    sectionExpanded.superpowers ? "chevron-down" : "chevron-right",
+                    { fallback: "chevron-right" }
+                ));
                 const sectionActions = document.createElement("span");
                 sectionActions.className = "document-explorer__section-actions";
                 const settingsBtn = document.createElement("button");
@@ -2040,7 +2101,7 @@
                 settingsBtn.style.marginLeft = "auto";
                 settingsBtn.title = "Configurer les catégories";
                 settingsBtn.setAttribute("aria-label", "Configurer les catégories");
-                settingsBtn.innerHTML = '<i data-lucide="settings"></i>';
+                setElementIconOnly(settingsBtn, "settings", { fallback: "settings" });
                 settingsBtn.addEventListener("click", event => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -2121,7 +2182,7 @@
                     const isExpanded = expandedIds.has(groupKey);
                     const lead = document.createElement("span");
                     lead.className = "document-explorer__item-leading";
-                    lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
+                    setElementIconOnly(lead, isExpanded ? "chevron-down" : "chevron-right", { fallback: "chevron-right" });
                     lead.addEventListener("click", event => {
                         event.stopPropagation();
                         if (expandedIds.has(groupKey)) expandedIds.delete(groupKey);
@@ -2132,7 +2193,12 @@
                     button.appendChild(lead);
                     const label = document.createElement("span");
                     label.className = "document-explorer__item-title";
-                    label.innerHTML = `<i data-lucide="${group.icon || "zap"}" style="width:14px;height:14px;margin-right:6px;"></i>${group.title}`;
+                    label.textContent = "";
+                    label.appendChild(createLucideIconElement(group.icon || "zap", {
+                        fallback: "zap",
+                        style: "width:14px;height:14px;margin-right:6px;"
+                    }));
+                    label.appendChild(document.createTextNode(String(group.title || "")));
                     button.appendChild(label);
                     button.addEventListener("dragover", event => {
                         if (!draggingId) return;
@@ -2163,7 +2229,7 @@
                             if (selectedHighlightEnabled && selectedIds.has(doc.id)) childBtn.classList.add("document-explorer__item--selected");
                             const childLead = document.createElement("span");
                             childLead.className = "document-explorer__item-leading";
-                            childLead.innerHTML = `<i data-lucide="file"></i>`;
+                            setElementIconOnly(childLead, "file", { fallback: "file" });
                             childBtn.appendChild(childLead);
                             const childLabel = document.createElement("span");
                             childLabel.className = "document-explorer__item-title";
@@ -2559,11 +2625,21 @@
         if (listEl && listEl.parentElement && !listEl.parentElement.querySelector(".document-explorer__search")) {
             searchWrap = document.createElement("div");
             searchWrap.className = "document-explorer__search";
-            searchWrap.innerHTML = `
-                <i data-lucide="search" class="document-explorer__search-icon"></i>
-                <input type="text" class="document-explorer__search-input" placeholder="Rechercher un document" aria-label="Rechercher un document" />
-                <button type="button" class="document-explorer__search-clear" aria-label="Effacer la recherche" title="Effacer"><i data-lucide="x"></i></button>
-            `;
+            const searchIcon = createLucideIconElement("search", { className: "document-explorer__search-icon" });
+            const searchInputNode = document.createElement("input");
+            searchInputNode.type = "text";
+            searchInputNode.className = "document-explorer__search-input";
+            searchInputNode.placeholder = "Rechercher un document";
+            searchInputNode.setAttribute("aria-label", "Rechercher un document");
+            const clearButton = document.createElement("button");
+            clearButton.type = "button";
+            clearButton.className = "document-explorer__search-clear";
+            clearButton.setAttribute("aria-label", "Effacer la recherche");
+            clearButton.title = "Effacer";
+            clearButton.appendChild(createLucideIconElement("x"));
+            searchWrap.appendChild(searchIcon);
+            searchWrap.appendChild(searchInputNode);
+            searchWrap.appendChild(clearButton);
             listEl.parentElement.insertBefore(searchWrap, listEl);
             searchInput = searchWrap.querySelector(".document-explorer__search-input");
             searchClearBtn = searchWrap.querySelector(".document-explorer__search-clear");

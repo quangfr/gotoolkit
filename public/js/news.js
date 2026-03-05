@@ -352,7 +352,11 @@
         } catch (err) {
             console.error(err);
             const targetClass = key === "releaseNotesContent" ? "release-note-text" : "release-roadmap-text";
-            section.list.innerHTML = `<p class="${targetClass}">Impossible de charger le contenu.</p>`;
+            section.list.textContent = "";
+            const p = document.createElement("p");
+            p.className = targetClass;
+            p.textContent = "Impossible de charger le contenu.";
+            section.list.appendChild(p);
         }
     }
 

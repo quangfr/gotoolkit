@@ -471,7 +471,7 @@
       closeCaptureAudioMenu();
       if (captureReadAloudBtn) {
         captureReadAloudBtn.title = "Options audio";
-        captureReadAloudBtn.innerHTML = '<i data-lucide="audio-lines" style="width: 20px; height: 20px;"></i>';
+        setElementIconOnly(captureReadAloudBtn, "audio-lines", "width:20px;height:20px;");
         if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
           lucide.createIcons();
         }
@@ -486,11 +486,30 @@
     startRecordedAudioMp3Preparation();
     if (captureReadAloudBtn) {
       captureReadAloudBtn.title = "Options de l'enregistrement";
-      captureReadAloudBtn.innerHTML = '<i data-lucide="cassette-tape" style="width: 20px; height: 20px;"></i>';
+      setElementIconOnly(captureReadAloudBtn, "cassette-tape", "width:20px;height:20px;");
       if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
         lucide.createIcons();
       }
     }
+  }
+
+  function normalizeLucideIconName(value, fallback = "circle") {
+    const icon = String(value || "").trim().toLowerCase();
+    if (!icon) return fallback;
+    return /^[a-z0-9-]+$/.test(icon) ? icon : fallback;
+  }
+
+  function createLucideIconElement(iconName, style = "") {
+    const icon = document.createElement("i");
+    icon.setAttribute("data-lucide", normalizeLucideIconName(iconName));
+    if (style) icon.style.cssText = String(style);
+    return icon;
+  }
+
+  function setElementIconOnly(target, iconName, style = "") {
+    if (!target) return;
+    target.textContent = "";
+    target.appendChild(createLucideIconElement(iconName, style));
   }
 
   async function downloadTextToSpeechAudio() {
@@ -897,9 +916,7 @@
     if (!mobileChatSendBtn) return;
     mobileChatSendBtn.disabled = mobileEditLoading;
     mobileChatSendBtn.classList.toggle("is-loading", mobileEditLoading);
-    mobileChatSendBtn.innerHTML = mobileEditLoading
-      ? "<i data-lucide=\"loader-circle\" style=\"width:16px;height:16px;\"></i>"
-      : "<i data-lucide=\"send\" style=\"width:16px;height:16px;\"></i>";
+    setElementIconOnly(mobileChatSendBtn, mobileEditLoading ? "loader-circle" : "send", "width:16px;height:16px;");
     if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
       lucide.createIcons();
     }
@@ -1104,14 +1121,14 @@
       openBtn.type = "button";
       openBtn.className = "btn btn-secondary";
       if (doc.hasContent) {
-        openBtn.innerHTML = "<i data-lucide=\"pen\"></i>";
+        setElementIconOnly(openBtn, "pen");
       } else {
-        openBtn.innerHTML = "<i data-lucide=\"text-select\"></i>";
+        setElementIconOnly(openBtn, "text-select");
       }
       const removeBtn = document.createElement("button");
       removeBtn.type = "button";
       removeBtn.className = "btn btn-secondary";
-      removeBtn.innerHTML = "<i data-lucide=\"trash-2\"></i>";
+      setElementIconOnly(removeBtn, "trash-2");
       removeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         removeDocument(doc.id);
@@ -1482,9 +1499,17 @@
     if (!captureLoader) return;
     if (active) {
       if (mode === "audio") {
-        captureLoader.innerHTML = "<i data-lucide=\"cassette-tape\"></i><span>Transcription en cours...</span>";
+        captureLoader.textContent = "";
+        captureLoader.appendChild(createLucideIconElement("cassette-tape"));
+        const label = document.createElement("span");
+        label.textContent = "Transcription en cours...";
+        captureLoader.appendChild(label);
       } else {
-        captureLoader.innerHTML = "<i data-lucide=\"image-up\"></i><span>OCR en cours...</span>";
+        captureLoader.textContent = "";
+        captureLoader.appendChild(createLucideIconElement("image-up"));
+        const label = document.createElement("span");
+        label.textContent = "OCR en cours...";
+        captureLoader.appendChild(label);
       }
       captureLoader.classList.add("active");
       if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {

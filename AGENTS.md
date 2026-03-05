@@ -22,6 +22,23 @@ This file is the short operational guide. Use the docs below as the canonical re
 - Only `public/js` should attach application globals to `window`.
 - Do not edit `public/content/index_releases.md` or `public/content/index_roadmap.md` unless explicitly asked.
 
+## Frontend security (DOM rendering)
+- Treat `innerHTML` as unsafe by default.
+- Prefer:
+  - `textContent` for user/content text
+  - `document.createElement(...)` + `appendChild(...)` for UI structure
+  - explicit `setAttribute(...)` for attributes (including icon names)
+- For icon-only buttons, prefer helper functions that create `<i data-lucide="...">` nodes from normalized icon names (allow `[a-z0-9-]` only, fallback otherwise).
+- If line breaks are needed for plain text, build `<br>` nodes instead of `innerHTML = escapedText.replace(...)`.
+- Only allow HTML injection when all of the following are true:
+  - rich HTML rendering is required (markdown/preview/editor use case)
+  - content is sanitized by a trusted sanitizer first
+  - the reason is documented in code comments near the sink
+- Safe resets like `el.innerHTML = ""` are acceptable for clearing containers.
+- Before merging frontend changes, run:
+  - `rg -n "\\binnerHTML\\b" public -S -g '!**/*.map'`
+  - `node --check <touched-js-file>`
+
 ## Build and runtime
 - Dev server: `npm start` on port `5000`.
 - Preferred Playwright server: `npm run start:test`.
