@@ -1,12 +1,13 @@
 {
   "name": "gotoolkit",
-  "version": "2026.03.05.14",
+  "version": "2026.03.05.15",
   "description": "Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides** (pour créer des planches claires et structurées) et **Go-Timeline** (pour visualiser et ajuster un planning). Chaque outil s’utilise en ouvrant directement son fichier dans un navigateur, avec des assistants IA, des exports réactifs et des modèles prêts à l’emploi.",
   "main": "index.js",
   "scripts": {
     "start": "serve ./public -l 5000 --config serve.json",
     "start:test": "serve ./public -l 5000 --config serve-test.json",
     "check:csp": "node scripts/check-csp-consistency.js",
+    "csp:inline:sync": "node scripts/update-csp-inline-hashes.js",
     "check:csp-hosts": "node scripts/check-csp-hosts.js",
     "playwright:auth:bootstrap": "node scripts/playwright-auth-bootstrap.mjs",
     "playwright:ms:auth:save": "PW_BOOTSTRAP_MS_AUTH=1 ./node_modules/.bin/playwright test tests/microsoft-oauth-proxy.spec.ts -g \"captures Microsoft auth state for reuse\" --workers=1 --headed --reporter=line",

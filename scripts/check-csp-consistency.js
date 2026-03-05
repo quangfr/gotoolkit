@@ -2,6 +2,11 @@ const fs = require("fs");
 const path = require("path");
 
 const { APP_CSP, NOT_FOUND_CSP, normalize } = require("./csp-common");
+const {
+  INLINE_HASH_FILES,
+  collectUnionInlineHashes,
+  getScriptSrcHashesFromPolicy,
+} = require("./csp-inline-hashes");
 
 const repoRoot = path.resolve(__dirname, "..");
 
@@ -105,7 +110,18 @@ function main() {
   assertEqual(htmlHeader.value, APP_CSP, "firebase.json **/*.html CSP");
   assertEqual(rootHeader.value, APP_CSP, "firebase.json / CSP");
 
-  console.log("CSP definitions are aligned.");
+  const requiredInlineHashes = collectUnionInlineHashes(readFile, INLINE_HASH_FILES);
+  const policyHashes = new Set(getScriptSrcHashesFromPolicy(APP_CSP));
+  const missing = requiredInlineHashes.filter(hash => !policyHashes.has(hash));
+  if (missing.length) {
+    throw new Error(
+      `APP_CSP is missing ${missing.length} inline script hash(es):\n`
+      + missing.join("\n")
+      + "\nRun: npm run csp:inline:sync"
+    );
+  }
+
+  console.log(`CSP definitions are aligned. Inline hashes verified (${requiredInlineHashes.length}).`);
 }
 
 main();

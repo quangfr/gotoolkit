@@ -47,19 +47,20 @@ When changing network targets, script loading, iframes, or workers, check both:
 
 When a browser console reports `Executing inline script violates ...` for an app page:
 
-1. Compute the exact `sha256-...` for the blocked inline script body reported by the browser.
-2. Add that hash to `script-src` in the canonical CSP in `scripts/csp-common.js`.
-3. Propagate the same hash list to:
+1. Recompute and apply inline hashes with:
+   - `npm run csp:inline:sync`
+2. This updates `script-src` hashes in the canonical CSP (`scripts/csp-common.js`) and propagates them to:
    - `public/index.html`
    - `public/grid.html`
    - `public/mobile.html`
    - `firebase.json` Hosting CSP headers (`**/*.html` and `/`)
-4. Run `npm run check:csp` and only merge when it passes.
+3. Run `npm run check:csp` and only merge when it passes.
 
 Notes:
 
 - Keep `script-src` hash lists identical across app CSP mirrors to avoid environment-specific breakage.
 - Do not add `'unsafe-inline'`; prefer explicit hashes for each inline script block.
+- `npm run check:csp` verifies both mirror alignment and that every inline script hash currently present in app entrypoints is covered by `APP_CSP`.
 - CSP hash alignment alone is not sufficient: script-scope/runtime errors (for example `ReferenceError` from cross-block helper visibility) can still break security-sensitive and user-critical flows like export, auth UX, and share actions.
 - After CSP-affecting inline script changes, run a post-change runtime smoke check and verify the browser console is free of new script errors.
 
