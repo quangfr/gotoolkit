@@ -7,7 +7,8 @@
         toc.textContent = "";
         const questions = Array.from(document.querySelectorAll(".help-list > div > strong"));
         questions.forEach((strongEl, index) => {
-            const text = (strongEl.textContent || "").trim();
+            const rawText = (strongEl.textContent || "").trim();
+            const text = rawText.replace(/^\d+\.\s*/, "");
             if (!text) return;
             const container = strongEl.parentElement;
             if (!container) return;
