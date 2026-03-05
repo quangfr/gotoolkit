@@ -49567,9 +49567,10 @@ img.ProseMirror-separator {
   async function exportEditorToDocx(editor, _title = "Memo") {
     const json = editor.getJSON();
     const content = json.content || [];
+    const context = createDocxExportContext(editor);
     const children = [];
     for (const node of content) {
-      const docxNodes = await transformNode(node, editor);
+      const docxNodes = await transformNode(node, editor, context);
       if (docxNodes) {
         if (Array.isArray(docxNodes)) {
           children.push(...docxNodes);
@@ -49679,8 +49680,8 @@ img.ProseMirror-separator {
     const blob = await Packer.toBlob(doc3);
     return blob;
   }
-  async function transformNode(node, editor) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n;
+  async function transformNode(node, editor, context) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
     switch (node.type) {
       case "heading": {
         const level = ((_a = node.attrs) == null ? void 0 : _a.level) || 1;
@@ -49714,7 +49715,7 @@ img.ProseMirror-separator {
         if (node.content) {
           for (let i = 0; i < node.content.length; i++) {
             const child = node.content[i];
-            const transformed = await transformNode(child, editor);
+            const transformed = await transformNode(child, editor, context);
             if (transformed) {
               if (i === 0 && emoji2 && transformed instanceof Paragraph2) {
                 const children = transformed.root && transformed.root[1] ? transformed.root[1] : [];
@@ -49753,7 +49754,7 @@ img.ProseMirror-separator {
         const listItems = [];
         if (node.content) {
           for (const [index, item] of node.content.entries()) {
-            const transformed = await transformListItem(item, node.type, index + 1, editor);
+            const transformed = await transformListItem(item, node.type, index + 1, editor, context);
             listItems.push(...transformed);
           }
         }
@@ -49774,7 +49775,7 @@ img.ProseMirror-separator {
             const cellChildren = [];
             if (cellNode.content) {
               for (const child of cellNode.content) {
-                const transformed = await transformNode(child, editor);
+                const transformed = await transformNode(child, editor, context);
                 if (transformed) {
                   if (Array.isArray(transformed)) cellChildren.push(...transformed);
                   else cellChildren.push(transformed);
@@ -49817,12 +49818,7 @@ img.ProseMirror-separator {
         });
       }
       case "mermaidDiagram": {
-        const svgElements = document.querySelectorAll(".mermaid-svg-container svg");
-        let targetSvg = null;
-        for (const svg2 of Array.from(svgElements)) {
-          targetSvg = svg2;
-          break;
-        }
+        const targetSvg = ((_e = context == null ? void 0 : context.mermaidSvgs) == null ? void 0 : _e[context.mermaidIndex++]) || null;
         if (targetSvg) {
           try {
             const { array, width, height } = await svgToPng(targetSvg);
@@ -49850,7 +49846,7 @@ img.ProseMirror-separator {
         return new Paragraph2({ text: "[Diagramme Mermaid]" });
       }
       case "image": {
-        const src = String(((_e = node == null ? void 0 : node.attrs) == null ? void 0 : _e.src) || "").trim();
+        const src = String(((_f = node == null ? void 0 : node.attrs) == null ? void 0 : _f.src) || "").trim();
         if (!src) return null;
         try {
           const data = await imageSourceToUint8Array(src);
@@ -49860,8 +49856,8 @@ img.ProseMirror-separator {
           const natural = await getImageNaturalSize(src);
           const fallbackWidth = natural.width || 640;
           const fallbackHeight = natural.height || 360;
-          const desiredWidth = parseNodePixels((_f = node == null ? void 0 : node.attrs) == null ? void 0 : _f.width) || fallbackWidth;
-          const desiredHeight = parseNodePixels((_g = node == null ? void 0 : node.attrs) == null ? void 0 : _g.height) || Math.round(fallbackHeight / Math.max(1, fallbackWidth) * desiredWidth);
+          const desiredWidth = parseNodePixels((_g = node == null ? void 0 : node.attrs) == null ? void 0 : _g.width) || fallbackWidth;
+          const desiredHeight = parseNodePixels((_h = node == null ? void 0 : node.attrs) == null ? void 0 : _h.height) || Math.round(fallbackHeight / Math.max(1, fallbackWidth) * desiredWidth);
           const maxWidth = 520;
           const scale = desiredWidth > maxWidth ? maxWidth / desiredWidth : 1;
           const finalWidth = Math.max(80, Math.round(desiredWidth * scale));
@@ -49884,10 +49880,10 @@ img.ProseMirror-separator {
         }
       }
       case "videoEmbed": {
-        const src = String(((_h = node == null ? void 0 : node.attrs) == null ? void 0 : _h.src) || "").trim();
+        const src = String(((_i = node == null ? void 0 : node.attrs) == null ? void 0 : _i.src) || "").trim();
         if (!src) return null;
-        const title = String(((_i = node == null ? void 0 : node.attrs) == null ? void 0 : _i.title) || ((_j = node == null ? void 0 : node.attrs) == null ? void 0 : _j.fileName) || "").trim() || "Vid\xE9o";
-        const mimeType = String(((_k = node == null ? void 0 : node.attrs) == null ? void 0 : _k.mimeType) || "").toLowerCase();
+        const title = String(((_j = node == null ? void 0 : node.attrs) == null ? void 0 : _j.title) || ((_k = node == null ? void 0 : node.attrs) == null ? void 0 : _k.fileName) || "").trim() || "Vid\xE9o";
+        const mimeType = String(((_l = node == null ? void 0 : node.attrs) == null ? void 0 : _l.mimeType) || "").toLowerCase();
         const isMp4 = mimeType.includes("mp4") || /\.mp4([?#].*)?$/i.test(src);
         const isWebm = mimeType.includes("webm") || /\.webm([?#].*)?$/i.test(src);
         const labelSuffix = isMp4 ? "MP4" : isWebm ? "WebM" : "Vid\xE9o";
@@ -49932,10 +49928,10 @@ img.ProseMirror-separator {
         });
       }
       case "externalVideoEmbed": {
-        const src = String(((_l = node == null ? void 0 : node.attrs) == null ? void 0 : _l.src) || "").trim();
+        const src = String(((_m = node == null ? void 0 : node.attrs) == null ? void 0 : _m.src) || "").trim();
         if (!src) return null;
-        const provider = String(((_m = node == null ? void 0 : node.attrs) == null ? void 0 : _m.provider) || "").trim().toLowerCase();
-        const title = String(((_n = node == null ? void 0 : node.attrs) == null ? void 0 : _n.title) || "").trim() || "Vid\xE9o int\xE9gr\xE9e";
+        const provider = String(((_n = node == null ? void 0 : node.attrs) == null ? void 0 : _n.provider) || "").trim().toLowerCase();
+        const title = String(((_o = node == null ? void 0 : node.attrs) == null ? void 0 : _o.title) || "").trim() || "Vid\xE9o int\xE9gr\xE9e";
         const providerLabel = provider ? provider.toUpperCase() : "VIDEO";
         const label = `${title} (${providerLabel})`;
         return new Paragraph2({
@@ -49961,7 +49957,7 @@ img.ProseMirror-separator {
         return null;
     }
   }
-  async function transformListItem(node, listType, _index, editor) {
+  async function transformListItem(node, listType, _index, editor, context) {
     var _a;
     const children = [];
     const isTask = listType === "taskList";
@@ -49980,7 +49976,7 @@ img.ProseMirror-separator {
             spacing: { line: DEFAULT_LINE_SPACING }
           }));
         } else {
-          const transformed = await transformNode(child, editor);
+          const transformed = await transformNode(child, editor, context);
           if (transformed) {
             if (Array.isArray(transformed)) children.push(...transformed);
             else children.push(transformed);
@@ -50064,6 +50060,24 @@ img.ProseMirror-separator {
       default:
         return { border: "#e2e8f0", bg: "#f8fafc" };
     }
+  }
+  function createDocxExportContext(editor) {
+    var _a;
+    const root2 = ((_a = editor == null ? void 0 : editor.view) == null ? void 0 : _a.dom) || null;
+    const mermaidSvgs = [];
+    if (root2) {
+      const diagrams = root2.querySelectorAll("mermaid-diagram");
+      diagrams.forEach((diagram) => {
+        const svg2 = diagram.querySelector(".mermaid-svg-container svg, svg");
+        if (svg2 && svg2 instanceof SVGSVGElement) {
+          mermaidSvgs.push(svg2);
+        }
+      });
+    }
+    return {
+      mermaidSvgs,
+      mermaidIndex: 0
+    };
   }
   async function svgToPng(svgElement) {
     const svgData = new XMLSerializer().serializeToString(svgElement);
@@ -60755,27 +60769,59 @@ ${innerMarkdown}
               const doc3 = parser2.parseFromString(editorHtml, "text/html");
               if (!doc3 || !doc3.body) return editorHtml;
               const FONT_SANS = "Arial, Helvetica, sans-serif";
+              const getSanitizedSvgNode = (svgMarkup) => {
+                const raw = String(svgMarkup || "").trim();
+                if (!raw) return null;
+                try {
+                  const svgDoc = new DOMParser().parseFromString(raw, "image/svg+xml");
+                  const svg2 = svgDoc.documentElement;
+                  if (!svg2 || svg2.nodeName.toLowerCase() !== "svg") return null;
+                  svgDoc.querySelectorAll("script,foreignObject,iframe,object,embed,link").forEach((node) => node.remove());
+                  svgDoc.querySelectorAll("*").forEach((el) => {
+                    Array.from(el.attributes).forEach((attr) => {
+                      const name = attr.name.toLowerCase();
+                      const value = String(attr.value || "").trim();
+                      if (name.startsWith("on")) {
+                        el.removeAttribute(attr.name);
+                        return;
+                      }
+                      if ((name === "href" || name === "xlink:href") && /^\s*javascript:/i.test(value)) {
+                        el.removeAttribute(attr.name);
+                      }
+                    });
+                  });
+                  return svg2;
+                } catch (e) {
+                  return null;
+                }
+              };
+              const liveMermaidSvgs = (() => {
+                var _a2;
+                const root2 = ((_a2 = editor == null ? void 0 : editor.view) == null ? void 0 : _a2.dom) || null;
+                if (!root2) return [];
+                const result = [];
+                root2.querySelectorAll("mermaid-diagram").forEach((diagram) => {
+                  const svg2 = diagram.querySelector(".mermaid-svg-container svg, svg");
+                  if (svg2 instanceof SVGSVGElement) result.push(svg2.outerHTML);
+                });
+                return result;
+              })();
               try {
                 const diagrams = doc3.querySelectorAll("mermaid-diagram, .mermaid-diagram");
-                diagrams.forEach((diag) => {
+                diagrams.forEach((diag, diagramIndex) => {
                   const code = (diag.getAttribute("code") || diag.getAttribute("data-code") || "").trim();
-                  const realContainers = document.querySelectorAll("mermaid-diagram, .mermaid-diagram");
-                  let foundSvg = null;
-                  for (const container2 of Array.from(realContainers)) {
-                    const cCode = (container2.getAttribute("code") || container2.getAttribute("data-code") || "").trim();
-                    if (cCode === code) {
-                      const svgEl = container2.querySelector(".mermaid-svg-container svg") || container2.querySelector("svg");
-                      if (svgEl) {
-                        foundSvg = svgEl.outerHTML;
-                        break;
-                      }
-                    }
-                  }
-                  if (foundSvg && format === "pdf") {
+                  const svgMarkup = liveMermaidSvgs[diagramIndex] || "";
+                  const svgNode = getSanitizedSvgNode(svgMarkup);
+                  if (svgNode) {
                     const container2 = doc3.createElement("div");
                     container2.style.margin = "20px 0";
                     container2.style.textAlign = "center";
-                    container2.innerHTML = foundSvg;
+                    const importedSvg = doc3.importNode(svgNode, true);
+                    importedSvg.setAttribute("width", importedSvg.getAttribute("width") || "100%");
+                    importedSvg.style.maxWidth = "100%";
+                    importedSvg.style.height = "auto";
+                    importedSvg.style.display = "inline-block";
+                    container2.appendChild(importedSvg);
                     diag.replaceWith(container2);
                   } else {
                     const pre = doc3.createElement("pre");
@@ -63000,4 +63046,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map

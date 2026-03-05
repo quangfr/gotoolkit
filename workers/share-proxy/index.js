@@ -694,6 +694,10 @@ function resolveAllowedSpacesForEmail(emailRaw) {
     allowed.add("safran");
     return Array.from(allowed);
   }
+  if (email === "maximepispisa@gmail.com") {
+    allowed.add("golive");
+    return Array.from(allowed);
+  }
   const domain = email.split("@")[1] || "";
   if (domain === "savane-group.com") {
     allowed.add("golive");

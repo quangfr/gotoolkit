@@ -323,7 +323,7 @@ Frontend definitions in `public/index.html`:
 
 - `golive`
   - domains: `savane-group.com`, `safrangroup.com`
-  - explicit email allowlist includes `quang.tran@savane-group.com`
+  - explicit email allowlist includes `quang.tran@savane-group.com`, `maximepispisa@gmail.com`
 - `safran`
   - domains: `safrangroup.com`
   - explicit email allowlist includes `quang.tran@savane-group.com`
