@@ -1326,6 +1326,7 @@
 
             const safeItems = normalizeList(items);
             const needle = String(searchQuery || "").trim().toLowerCase();
+            const isSearching = Boolean(needle);
             const filteredItems = needle
                 ? safeItems.filter(item => String(item?.title || "").toLowerCase().includes(needle))
                 : safeItems;
@@ -1390,6 +1391,7 @@
             if (selectionAnchorId && !selectedIds.has(selectionAnchorId)) {
                 selectionAnchorId = "";
             }
+            const hideCreateButtonsForSelection = selectedHighlightEnabled && selectedIds.size > 0;
             const sectionItems = {
                 private: filteredItems.filter(item => getItemSection(item) === "private"),
                 archives: filteredItems.filter(item => getItemSection(item) === "archives"),
@@ -1414,10 +1416,6 @@
             sharedSectionNames.forEach(sectionName => {
                 trees[sectionName] = buildTree(sharedSections[sectionName] || []);
             });
-            const recentItems = filteredItems
-                .slice()
-                .sort((a, b) => String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || "")))
-                .slice(0, 10);
             const renderNode = async (item, level, sectionName, containerEl) => {
                 if (isStale()) return;
                 const tree = trees[sectionName] || trees.private;
@@ -1429,7 +1427,7 @@
                     expandedIds.delete(item.id);
                     persistExpandedState();
                 }
-                const isExpanded = hasChildren && expandedIds.has(item.id);
+                const isExpanded = hasChildren && (isSearching || expandedIds.has(item.id));
                 const row = document.createElement("div");
                 row.className = "document-explorer__tree-row";
                 row.style.marginLeft = `${Math.max(0, level - 1) * 12}px`;
@@ -1518,16 +1516,18 @@
 
                 const actions = document.createElement("span");
                 actions.className = "document-explorer__item-actions";
-                const plusBtn = document.createElement("button");
-                plusBtn.type = "button";
-                plusBtn.className = "document-explorer__item-action";
-                setElementIconOnly(plusBtn, "plus", { fallback: "plus" });
-                plusBtn.title = "Créer une sous-page";
-                plusBtn.addEventListener("click", event => {
-                    event.stopPropagation();
-                    onCreateChild?.(item);
-                });
-                actions.appendChild(plusBtn);
+                if (!hideCreateButtonsForSelection) {
+                    const plusBtn = document.createElement("button");
+                    plusBtn.type = "button";
+                    plusBtn.className = "document-explorer__item-action";
+                    setElementIconOnly(plusBtn, "plus", { fallback: "plus" });
+                    plusBtn.title = "Créer une sous-page";
+                    plusBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        onCreateChild?.(item);
+                    });
+                    actions.appendChild(plusBtn);
+                }
 
                 const deleteBtn = document.createElement("button");
                 deleteBtn.type = "button";
@@ -1798,7 +1798,7 @@
                 const sectionIcon = iconOverride || sectionMeta?.icon || (sectionName === "recent"
                     ? "history"
                     : (sectionName === "common" ? "component" : (sectionName === "private" ? "user" : "lock-keyhole-open")));
-                const isSectionExpanded = sectionExpanded[sectionName] !== false;
+                const isSectionExpanded = isSearching || sectionExpanded[sectionName] !== false;
                 sectionHeader.textContent = "";
                 sectionHeader.appendChild(createLucideIconElement(sectionIcon, { fallback: "folder" }));
                 const sectionTitleEl = document.createElement("strong");
@@ -1842,7 +1842,7 @@
                         onSectionAdd?.(sectionName);
                     });
                     const canCreateInSection = sectionName === "private" || Boolean(sectionMeta?.canCreatePage !== false);
-                    if (canCreateInSection) {
+                    if (canCreateInSection && !hideCreateButtonsForSelection) {
                         actions.appendChild(addBtn);
                     }
                     if (sectionName === "private") {
@@ -2003,68 +2003,6 @@
                 listEl.appendChild(sectionRoot);
                 return sectionBody;
             };
-            const renderRecentSection = async () => {
-                const sectionBody = await renderSection("recent", "Récent");
-                if (!sectionBody || !sectionExpanded.recent) return;
-                for (const item of recentItems) {
-                    if (isStale()) return;
-                    const row = document.createElement("div");
-                    row.className = "document-explorer__tree-row";
-                    const button = document.createElement("button");
-                    button.type = "button";
-                    button.className = "document-explorer__item";
-                    button.draggable = true;
-                    if (item.id) {
-                        button.dataset.documentId = item.id;
-                        if (activeId && activeId === item.id) {
-                            button.classList.add("document-explorer__item--active");
-                        }
-                        if (selectedHighlightEnabled && selectedIds.has(item.id)) {
-                            button.classList.add("document-explorer__item--selected");
-                        }
-                    }
-                    const lead = document.createElement("span");
-                    lead.className = "document-explorer__item-leading";
-                    setElementIconOnly(lead, item.icon || "file", { fallback: "file" });
-                    button.appendChild(lead);
-                    const label = document.createElement("span");
-                    label.className = "document-explorer__item-title";
-                    label.textContent = item.title || "Document";
-                    button.appendChild(label);
-                    button.addEventListener("click", event => {
-                        const clickMeta = {
-                            shiftKey: Boolean(event.shiftKey),
-                            ctrlKey: Boolean(event.ctrlKey),
-                            metaKey: Boolean(event.metaKey)
-                        };
-                        const selected = applySelectionFromClick(item.id, clickMeta);
-                        if (clickMeta.shiftKey || clickMeta.ctrlKey || clickMeta.metaKey) return;
-                        const liveActiveId = String(getActiveId?.() || activeId || "").trim();
-                        if (liveActiveId === String(item.id || "").trim()) return;
-                        onSelect?.(item, { selectedIds: selected, trigger: "recent-click" });
-                    });
-                    button.addEventListener("dragstart", event => {
-                        draggingId = item.id;
-                        draggingSection = getItemSection(item);
-                        button.classList.add("is-dragging");
-                        setDocumentDragPayload(event.dataTransfer, item);
-                    });
-                    button.addEventListener("dragend", () => {
-                        draggingId = "";
-                        draggingSection = "";
-                        button.classList.remove("is-dragging");
-                        try {
-                            window.__goToolkitDraggingMemoDocument = null;
-                        } catch (err) {
-                            // ignore
-                        }
-                    });
-                    row.appendChild(button);
-                    sectionBody.appendChild(row);
-                }
-            };
-            await renderRecentSection();
-            if (isStale()) return;
             await renderSection("private", "Privé");
             if (isStale()) return;
             for (const sectionName of sharedSectionNames) {

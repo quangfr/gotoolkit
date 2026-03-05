@@ -54,7 +54,7 @@ import {
   CheckSquare,
   Pencil, Copy, Image as ImageIcon, Clapperboard,
   Square, RectangleHorizontal, Tag,
-  ArrowDownAZ, ArrowUpAZ, ArrowUpRight, Link2, ListTree, FolderTree
+  ArrowDownAZ, ArrowUpAZ, ArrowUpRight, Link2, ListTree, FolderTree, ListOrdered
   , ArrowUp
 } from 'lucide-react';
 
@@ -261,35 +261,14 @@ const readEditorSpellcheckMode = () => {
   return 'auto';
 };
 
-const detectEditorSpellcheckLanguage = (text: string) => {
-  const sample = String(text || '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 1500);
-  if (!sample) {
-    const browserLang = String(window.navigator?.language || '').toLowerCase();
-    return browserLang.startsWith('fr') ? 'fr' : 'en';
-  }
-  let frenchScore = 0;
-  let englishScore = 0;
-  if (/[àâçéèêëîïôûùüÿœæ]/.test(sample)) frenchScore += 3;
-  if (/\b(le|la|les|des|une|un|et|est|dans|pour|avec|sur|pas|que|qui|nous|vous)\b/.test(sample)) frenchScore += 2;
-  if (/\b(the|and|is|are|with|for|this|that|you|your|not|from|have)\b/.test(sample)) englishScore += 2;
-  if (/\b(j'|l'|d'|qu'|c'|n'|s')/.test(sample)) frenchScore += 2;
-  if (/\b(i|i'm|we|they|don't|can't|it's)\b/.test(sample)) englishScore += 2;
-  return frenchScore >= englishScore ? 'fr' : 'en';
-};
-
 const applyEditorSpellcheckPreferences = (editor: Editor | null) => {
   const dom = editor?.view?.dom as HTMLElement | undefined;
   if (!dom) return;
   const mode = readEditorSpellcheckMode();
   const enabled = mode !== 'off';
-  const text = typeof editor?.getText === 'function' ? editor.getText() : '';
   const lang = !enabled
     ? ''
-    : (mode === 'fr' ? 'fr' : detectEditorSpellcheckLanguage(text));
+    : (mode === 'fr' ? 'fr' : '');
   dom.spellcheck = enabled;
   dom.setAttribute('spellcheck', enabled ? 'true' : 'false');
   dom.setAttribute('autocorrect', enabled ? 'on' : 'off');
@@ -2264,6 +2243,7 @@ const BlockTypeDropdown = ({ editor, onOpenChange, onLink }: { editor: Editor, o
     { label: 'Titre 2', value: 'h2', icon: Heading2, active: editor.isActive('heading', { level: 2 }) },
     { label: 'Titre 3', value: 'h3', icon: Heading3, active: editor.isActive('heading', { level: 3 }) },
     { label: 'Liste à puces', value: 'bulletList', icon: List, active: editor.isActive('bulletList') },
+    { label: 'Liste numérotée', value: 'orderedList', icon: ListOrdered, active: editor.isActive('orderedList') },
     { label: 'Tâche', value: 'taskList', icon: CheckSquare, active: editor.isActive('taskList') },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
     { label: 'Lien', value: 'link', icon: Link, active: editor.isActive('link') },
@@ -2361,6 +2341,7 @@ const TiptapActionsDropdown = ({
     { label: 'Titre 2', value: 'h2', icon: Heading2, active: editor.isActive('heading', { level: 2 }) },
     { label: 'Titre 3', value: 'h3', icon: Heading3, active: editor.isActive('heading', { level: 3 }) },
     { label: 'Liste à puces', value: 'bulletList', icon: List, active: editor.isActive('bulletList') },
+    { label: 'Liste numérotée', value: 'orderedList', icon: ListOrdered, active: editor.isActive('orderedList') },
     { label: 'Tâche', value: 'taskList', icon: CheckSquare, active: editor.isActive('taskList') },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
     { label: 'Lien', value: 'link', icon: Link, active: editor.isActive('link') },
@@ -2448,6 +2429,7 @@ const BubbleActionsDropdown = ({
     { label: 'Titre 2', value: 'h2', icon: Heading2, active: editor.isActive('heading', { level: 2 }) },
     { label: 'Titre 3', value: 'h3', icon: Heading3, active: editor.isActive('heading', { level: 3 }) },
     { label: 'Liste à puces', value: 'bulletList', icon: List, active: editor.isActive('bulletList') },
+    { label: 'Liste numérotée', value: 'orderedList', icon: ListOrdered, active: editor.isActive('orderedList') },
     { label: 'Tâche', value: 'taskList', icon: CheckSquare, active: editor.isActive('taskList') },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
     { label: 'Lien', value: 'link', icon: Link, active: editor.isActive('link') },
@@ -2684,6 +2666,7 @@ const runEditorDropdownAction = (
   else if (value === 'h2') chain.toggleHeading({ level: 2 }).run();
   else if (value === 'h3') chain.toggleHeading({ level: 3 }).run();
   else if (value === 'bulletList') chain.toggleBulletList().run();
+  else if (value === 'orderedList') chain.toggleOrderedList().run();
   else if (value === 'taskList') chain.toggleTaskList().run();
   else if (value === 'codeBlock') chain.toggleCodeBlock().run();
   else if (value === 'link') callbacks.onLink?.();
@@ -6880,6 +6863,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     { label: 'Titre 2', value: 'h2', icon: Heading2, markdownShortcut: '##', aliases: ['titre', 'heading'] },
     { label: 'Titre 3', value: 'h3', icon: Heading3, markdownShortcut: '###', aliases: ['titre', 'heading'] },
     { label: 'Liste à puces', value: 'bulletList', icon: List, markdownShortcut: '-', aliases: ['liste', 'puce', 'list'] },
+    { label: 'Liste numérotée', value: 'orderedList', icon: ListOrdered, markdownShortcut: '1.', aliases: ['liste numérotée', 'ordered', 'numbered'] },
     { label: 'Tâche', value: 'taskList', icon: CheckSquare, markdownShortcut: '[]', aliases: ['todo', 'task', 'checklist'] },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, markdownShortcut: '```', aliases: ['code', 'snippet'] },
     { label: 'Lien', value: 'link', icon: Link, markdownShortcut: '[texte](url)', aliases: ['url', 'hyperlink'] },

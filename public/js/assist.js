@@ -3445,6 +3445,12 @@
 
     AssistSidebar.prototype.refreshMemoSelectionFromEditorSelection = function (editor) {
         if (!editor || !editor.view || !editor.state) return;
+        if (!this.memoSelectionFollowActive) {
+            if (this.memoSelectionOverlay) {
+                this.memoSelectionOverlay.style.display = "none";
+            }
+            return;
+        }
         try {
             var selection = editor.state.selection;
             if (!selection || selection.empty) {
@@ -5967,7 +5973,7 @@
                     // ignore
                 }
             }
-            if (this.memoSelection && this.memoSelectionOverlay) {
+            if (this.memoSelectionFollowActive && this.memoSelection && this.memoSelectionOverlay) {
                 if (!this.memoSelectionBlockCoords && window.memoEditor) {
                     try {
                         var view = window.memoEditor.view;
@@ -5992,7 +5998,7 @@
         this.textarea.addEventListener("blur", function () {
             if (this.memoSelectionIgnoreBlur) {
                 this.memoSelectionIgnoreBlur = false;
-                if (this.memoSelectionOverlay) {
+                if (this.memoSelectionFollowActive && this.memoSelectionOverlay) {
                     this.memoSelectionOverlay.style.display = "block";
                 }
                 return;
@@ -6097,8 +6103,20 @@
                 "title",
                 this.memoSelectionFollowActive ? "Sélection auto" : "Sélection manuelle"
             );
-            if (this.memoSelectionFollowActive && document.activeElement === this.textarea) {
-                this.textarea.dispatchEvent(new Event("focus"));
+            if (this.memoSelectionFollowActive) {
+                this.memoSelectionBlockCoords = null;
+                if (window.memoEditor) {
+                    this.refreshMemoSelectionFromEditorSelection(window.memoEditor);
+                }
+                if (document.activeElement === this.textarea) {
+                    this.textarea.dispatchEvent(new Event("focus"));
+                }
+                if (this.memoSelection && this.memoSelectionOverlay) {
+                    this.updateMemoSelectionOverlayPosition();
+                    this.memoSelectionOverlay.style.display = "block";
+                }
+            } else if (this.memoSelectionOverlay) {
+                this.memoSelectionOverlay.style.display = "none";
             }
         }.bind(this));
         composerLeftActions.appendChild(this.memoSelectionFollowButton);
