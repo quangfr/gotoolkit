@@ -422,7 +422,45 @@
             const token = await new Promise(function (resolve, reject) {
                 let interactiveTimeoutId = 0;
                 let interactiveStarted = false;
+                let settled = false;
+                function finalizeResolve(nextToken) {
+                    if (settled) return;
+                    settled = true;
+                    global.clearTimeout(timeoutId);
+                    if (interactiveTimeoutId) {
+                        global.clearTimeout(interactiveTimeoutId);
+                        interactiveTimeoutId = 0;
+                    }
+                    hideInteractiveOverlay();
+                    setLastAttemptSummary({
+                        stage: "token",
+                        host: normalizedHost,
+                        action: actionName,
+                        widgetId: String(rendered.widgetId),
+                        hasToken: Boolean(String(nextToken || "").trim())
+                    });
+                    resolve(nextToken);
+                }
+                function finalizeReject(error) {
+                    if (settled) return;
+                    settled = true;
+                    global.clearTimeout(timeoutId);
+                    if (interactiveTimeoutId) {
+                        global.clearTimeout(interactiveTimeoutId);
+                        interactiveTimeoutId = 0;
+                    }
+                    hideInteractiveOverlay();
+                    setLastAttemptSummary({
+                        stage: "reject",
+                        host: normalizedHost,
+                        action: actionName,
+                        widgetId: String(rendered.widgetId),
+                        error: String(error?.message || error || "")
+                    });
+                    reject(error);
+                }
                 const timeoutId = global.setTimeout(function () {
+                    if (settled) return;
                     if (interactiveStarted) return;
                     interactiveStarted = true;
                     setLastAttemptSummary({
@@ -438,6 +476,7 @@
                         widgetId: String(rendered.widgetId)
                     });
                     interactiveTimeoutId = global.setTimeout(function () {
+                        if (settled) return;
                         setLastAttemptSummary({
                             stage: "timeout",
                             host: normalizedHost,
@@ -449,6 +488,7 @@
                         settleTokenResolver(new Error("TURNSTILE_EXECUTE_TIMEOUT"));
                     }, INTERACTIVE_TIMEOUT_MS);
                     void ensureInteractiveWidget().catch(function (error) {
+                        if (settled) return;
                         setLastAttemptSummary({
                             stage: "interactive-failed",
                             host: normalizedHost,
@@ -464,37 +504,8 @@
                         settleTokenResolver(error);
                     });
                 }, INTERACTIVE_TRIGGER_DELAY_MS);
-                widgetTokenResolver = function (nextToken) {
-                    global.clearTimeout(timeoutId);
-                    if (interactiveTimeoutId) {
-                        global.clearTimeout(interactiveTimeoutId);
-                        interactiveTimeoutId = 0;
-                    }
-                    setLastAttemptSummary({
-                        stage: "token",
-                        host: normalizedHost,
-                        action: actionName,
-                        widgetId: String(rendered.widgetId),
-                        hasToken: Boolean(String(nextToken || "").trim())
-                    });
-                    resolve(nextToken);
-                };
-                widgetTokenRejecter = function (error) {
-                    global.clearTimeout(timeoutId);
-                    if (interactiveTimeoutId) {
-                        global.clearTimeout(interactiveTimeoutId);
-                        interactiveTimeoutId = 0;
-                    }
-                    hideInteractiveOverlay();
-                    setLastAttemptSummary({
-                        stage: "reject",
-                        host: normalizedHost,
-                        action: actionName,
-                        widgetId: String(rendered.widgetId),
-                        error: String(error?.message || error || "")
-                    });
-                    reject(error);
-                };
+                widgetTokenResolver = finalizeResolve;
+                widgetTokenRejecter = finalizeReject;
                 try {
                     rendered.turnstile.execute(rendered.widgetId, {
                         action: actionName
