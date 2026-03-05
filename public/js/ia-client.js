@@ -3,6 +3,8 @@
         typeof ReadableStream !== "undefined" && typeof TextDecoder !== "undefined";
     const LAST_AI_REQUEST_KEY = "goToolkit.chat.lastAIRequest";
     const LAST_AI_RESPONSE_KEY = "goToolkit.chat.lastAIResponse";
+    const OPENROUTER_MODEL_CACHE_TTL_MS = 5 * 60 * 1000;
+    let openRouterFallbackModelCache = { model: "", expiresAt: 0, endpoint: "" };
 
     function stringifyContent(content) {
         if (typeof content === "string") {
@@ -453,7 +455,7 @@
             delete requestPayload.stream;
         }
         const requestHeaders = buildHeaders(apiKey, headers);
-        const turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(endpoint, "openrouter");
+        const turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(endpoint, resolveTurnstileAction(endpoint));
         if (turnstileHeaders && typeof turnstileHeaders === "object") {
             Object.assign(requestHeaders, turnstileHeaders);
         }
@@ -558,7 +560,12 @@
         const requestedModel = String(source?.model || "").trim();
         if (!isDirect) {
             const configuredModel = String(backend?.model || "").trim();
-            const proxyModel = requestedModel || configuredModel || "@preset/gotoolkit";
+            const endpoint = String(backend?.endpoint || "").toLowerCase();
+            const isEmbeddingsEndpoint = endpoint.includes("/embeddings");
+            const defaultProxyModel = isEmbeddingsEndpoint ? (configuredModel || requestedModel || "@preset/gotoolkit") : "@preset/gotoolkit";
+            const proxyModel = /^@preset\//i.test(requestedModel)
+                ? requestedModel
+                : (/^@preset\//i.test(configuredModel) ? configuredModel : defaultProxyModel);
             const proxyPayload = {
                 model: proxyModel,
                 messages: buildOpenRouterMessages(source)
@@ -638,7 +645,7 @@
         const requestHeaders = buildHeaders(backend.apiKey);
         let turnstileHeaders = null;
         try {
-            turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(backend.endpoint, "openrouter");
+            turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(backend.endpoint, resolveTurnstileAction(backend.endpoint));
         } catch (error) {
             const detail = global.GoToolkitTurnstile?.getFailureSummary?.() || "";
             const wrapped = new Error(
@@ -655,12 +662,31 @@
         if (wantsStream) {
             requestHeaders.Accept = "text/event-stream";
         }
-        const response = await fetch(backend.endpoint, {
+        let response = await fetch(backend.endpoint, {
             method: "POST",
             headers: requestHeaders,
             body: JSON.stringify(requestPayload),
             signal
         });
+        if (
+            !response.ok
+            && response.status === 404
+            && String(requestPayload?.model || "").trim().toLowerCase().startsWith("@preset/")
+        ) {
+            const fallbackModel = await resolveOpenRouterFallbackModel(backend.endpoint, signal);
+            if (fallbackModel && fallbackModel !== requestPayload.model) {
+                const retryPayload = {
+                    ...requestPayload,
+                    model: fallbackModel
+                };
+                response = await fetch(backend.endpoint, {
+                    method: "POST",
+                    headers: requestHeaders,
+                    body: JSON.stringify(retryPayload),
+                    signal
+                });
+            }
+        }
         if (!response.ok) {
             throw await buildRequestError(response, "OpenRouter indisponible");
         }
@@ -670,6 +696,51 @@
             return consumeStream(response, stopCondition, signal, onChunk);
         }
         return parseJsonResponse(response);
+    }
+
+    function toOriginPath(input) {
+        try {
+            const parsed = new URL(String(input || ""));
+            return parsed.origin + "/";
+        } catch (err) {
+            return "";
+        }
+    }
+
+    async function resolveOpenRouterFallbackModel(endpoint, signal) {
+        const now = Date.now();
+        if (
+            openRouterFallbackModelCache.model
+            && openRouterFallbackModelCache.expiresAt > now
+            && openRouterFallbackModelCache.endpoint === String(endpoint || "")
+        ) {
+            return openRouterFallbackModelCache.model;
+        }
+        const modelsUrl = toOriginPath(endpoint);
+        if (!modelsUrl) return "";
+        try {
+            const response = await fetch(modelsUrl, {
+                method: "GET",
+                headers: {
+                    Accept: "application/json"
+                },
+                signal
+            });
+            if (!response.ok) return "";
+            const payload = await response.json();
+            const rows = Array.isArray(payload?.data) ? payload.data : [];
+            const first = rows.find(row => typeof row?.id === "string" && row.id.trim());
+            const model = String(first?.id || "").trim();
+            if (!model) return "";
+            openRouterFallbackModelCache = {
+                model,
+                expiresAt: now + OPENROUTER_MODEL_CACHE_TTL_MS,
+                endpoint: String(endpoint || "")
+            };
+            return model;
+        } catch (err) {
+            return "";
+        }
     }
 
     function makeAbortError() {
@@ -690,6 +761,41 @@
         }
     }
 
+    function resolveTurnstileAction(endpoint) {
+        const value = String(endpoint || "").toLowerCase();
+        if (value.includes("/embeddings")) {
+            return "embeddings";
+        }
+        return "chat";
+    }
+
+    function buildRequestDebugMetadata(payload) {
+        const source = payload && typeof payload === "object" ? payload : {};
+        const messages = Array.isArray(source.messages) ? source.messages : [];
+        return {
+            kind: "request-meta",
+            model: source.model || "",
+            stream: Boolean(source.stream),
+            messageCount: messages.length,
+            roles: messages
+                .map(msg => String(msg?.role || "").trim().toLowerCase())
+                .filter(Boolean)
+                .slice(0, 12)
+        };
+    }
+
+    function buildResponseDebugMetadata(result) {
+        const source = result && typeof result === "object" ? result : {};
+        const usage = source.usage && typeof source.usage === "object" ? source.usage : {};
+        return {
+            kind: "response-meta",
+            hasText: typeof source.text === "string" && source.text.trim().length > 0,
+            promptTokens: Number(usage.prompt_tokens || usage.input_tokens || 0) || 0,
+            completionTokens: Number(usage.completion_tokens || usage.output_tokens || 0) || 0,
+            totalTokens: Number(usage.total_tokens || 0) || 0
+        };
+    }
+
     function recordAIRequest(payload) {
         const storage = getAIDebugStorage();
         if (!storage) {
@@ -698,7 +804,7 @@
         try {
             storage.setItem(LAST_AI_REQUEST_KEY, JSON.stringify({
                 timestamp: new Date().toISOString(),
-                payload: payload
+                meta: buildRequestDebugMetadata(payload)
             }));
         } catch (err) {
             // noop
@@ -713,7 +819,7 @@
         try {
             storage.setItem(LAST_AI_RESPONSE_KEY, JSON.stringify({
                 timestamp: new Date().toISOString(),
-                payload: result
+                meta: buildResponseDebugMetadata(result)
             }));
         } catch (err) {
             // noop

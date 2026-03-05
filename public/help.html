@@ -10,6 +10,7 @@
     <script src="js/bootstrap-theme.js?v=2026.03.03.3"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
+    <script src="js/help.js?v=2026.03.05.1" defer></script>
     <link rel="stylesheet" href="styles/style.css?v=2026.03.03.3">
     <style>
         .legal-page {
@@ -67,6 +68,17 @@
         .help-list p {
             margin: 6px 0 0;
         }
+
+        .help-list ul {
+            margin: 6px 0 0 18px;
+            padding: 0;
+            display: grid;
+            gap: 6px;
+        }
+
+        .help-list li {
+            margin: 0;
+        }
     </style>
 </head>
 
@@ -106,38 +118,56 @@
                     </p>
                 </div>
                 <div>
-                    <strong>3. Comment ouvrir l’aide générale de l’application ?</strong>
-                    <p>Cliquez sur <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> dans la barre
-                        du haut, puis sur <span class="help-icon"><i data-lucide="file-question"></i> Aide</span> dans
-                        le panneau d’information.</p>
+                    <strong>3. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire ?</strong>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="help-circle"></i> Connexion</span> : vérifiez que vous
+                            êtes bien connecté à Internet.</li>
+                        <li><span class="help-icon"><i data-lucide="rotate-cw"></i> Mise à jour</span> : rechargez
+                            avec <a href="./?v=2026.03.04">la dernière version</a>.</li>
+                        <li><span class="help-icon"><i data-lucide="trash-2"></i> Données locales</span> : videz
+                            le stockage local et les cookies du site (ex. Chrome).</li>
+                        <li><span class="help-icon"><i data-lucide="download"></i> Sauvegarde avant reset</span>
+                            : exportez vos fichiers ou synchronisez-les vers le cloud.</li>
+                        <li><span class="help-icon"><i data-lucide="octagon-x"></i> Réinitialiser</span> :
+                            ouvrez <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> puis lancez
+                            la remise à zéro depuis le panneau d’information.</li>
+                        <li><span class="help-icon"><i data-lucide="mail"></i> Support</span> :
+                            contactez <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a> avec une capture
+                            ou créez une page dans <strong>Go Live / Feedback</strong>.</li>
+                    </ul>
                 </div>
                 <div>
-                    <strong>4. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire ?</strong>
-                    <p>Vérifiez d’abord que vous êtes bien connecté à Internet, puis mettez l’application à jour avec
-                        <a href="./?v=2026.03.04">la dernière version</a>. Videz ensuite le stockage local et les
-                        cookies du site dans votre navigateur (par exemple les données du site sur l’appareil dans
-                        Chrome). Avant toute remise à zéro, sauvegardez vos fichiers locaux vers le cloud ou exportez-
-                        les sur votre appareil, puis ouvrez
-                        <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> et cliquez sur
-                        <span class="help-icon"><i data-lucide="octagon-x"></i> Réinitialiser</span> dans le panneau
-                        d’information. Si le problème persiste, envoyez un mail à
-                        <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a> avec une capture ou créez une
-                        page dans le dossier <strong>Go Live / Feedback</strong>.
-                    </p>
-                </div>
-                <div>
-                    <strong>5. À quoi sert le bouton <span class="help-icon"><i data-lucide="settings"></i>
+                    <strong>4. À quoi sert le bouton <span class="help-icon"><i data-lucide="settings"></i>
                             Paramètres</span> ?</strong>
-                    <p>Il permet d’ajuster les préférences, les intégrations et certains réglages avancés. Utilisez-le
-                        pour changer la configuration avant de modifier vos flux de travail.</p>
+                    <p>Il centralise les options de configuration de l’app.</p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="settings"></i> Préférences</span> :
+                            comportement général, ergonomie et options d’usage.</li>
+                        <li><span class="help-icon"><i data-lucide="lock-open"></i> Intégrations</span> : connexions
+                            aux services externes selon vos besoins.</li>
+                        <li><span class="help-icon"><i data-lucide="file-text"></i> Instructions IA</span> :
+                            consignes personnalisées envoyées à l’assistant.</li>
+                        <li><span class="help-icon"><i data-lucide="check"></i> Contrôle</span> : ajustez la
+                            configuration avant de lancer des actions de transformation ou de partage.</li>
+                    </ul>
                 </div>
                 <div>
-                    <strong>6. Puis-je utiliser GoToolkit sur mobile ?</strong>
-                    <p>Oui. L’application peut rediriger directement vers <code>mobile.html</code>. Sur mobile, vous
-                        pouvez écrire des notes, transcrire un enregistrement vocal, transformer une note manuscrite
-                        ou un document scanné en texte, réutiliser les mêmes raccourcis IA pour transformer ce texte,
-                        télécharger une version audio lue du contenu, et envoyer des notes vers une page via QR code
-                        grâce au mode de capture.</p>
+                    <strong>5. Puis-je utiliser GoToolkit sur mobile ?</strong>
+                    <p>Oui. L’application peut rediriger directement vers <code>mobile.html</code>.</p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="file-text"></i> Notes</span> : écriture et
+                            édition rapide depuis mobile.</li>
+                        <li><span class="help-icon"><i data-lucide="mic"></i> Voix</span> : transcription
+                            d’enregistrements en texte.</li>
+                        <li><span class="help-icon"><i data-lucide="scan-text"></i> Capture</span> : conversion de
+                            notes manuscrites ou documents scannés.</li>
+                        <li><span class="help-icon"><i data-lucide="sparkles"></i> IA</span> : mêmes raccourcis de
+                            transformation que sur desktop.</li>
+                        <li><span class="help-icon"><i data-lucide="audio-lines"></i> Audio</span> : génération et
+                            téléchargement d’une lecture vocale.</li>
+                        <li><span class="help-icon"><i data-lucide="qr-code"></i> Envoi</span> : transfert vers une
+                            page via QR code et mode capture.</li>
+                    </ul>
                 </div>
             </div>
         </section>
@@ -146,7 +176,7 @@
             <h2>Documents</h2>
             <div class="help-list">
                 <div>
-                    <strong>7. Comment créer ou organiser des pages ?</strong>
+                    <strong>6. Comment créer ou organiser des pages ?</strong>
                     <p>Ouvrez le panneau de documents avec <span class="help-icon"><i
                                 data-lucide="panel-left"></i></span>,
                         puis utilisez <span class="help-icon"><i data-lucide="plus"></i></span> pour créer une page ou
@@ -157,14 +187,14 @@
                     </p>
                 </div>
                 <div>
-                    <strong>8. Comment renommer une page ?</strong>
+                    <strong>7. Comment renommer une page ?</strong>
                     <p>Vous pouvez soit modifier directement le champ de titre en haut du document, soit renommer
                         depuis le panneau de documents en double-cliquant sur le nom de la page. Le nouveau titre est
                         enregistré avec la page active. Vous pouvez aussi changer l’icône de la page pour mieux la
                         repérer visuellement dans l’arborescence.</p>
                 </div>
                 <div>
-                    <strong>9. Comment importer un fichier dans une page ?</strong>
+                    <strong>8. Comment importer un fichier dans une page ?</strong>
                     <p>Ouvrez <span class="help-icon"><i data-lucide="file-text"></i> Document</span>, puis cliquez
                         sur <span class="help-icon"><i data-lucide="file-down"></i> Importer</span>. L’import lit le
                         contenu du fichier et l’insère dans votre document pour le transformer en note éditable.
@@ -172,19 +202,24 @@
                         RTF et fichiers de log.</p>
                 </div>
                 <div>
-                    <strong>10. Comment exporter ou envoyer un document ?</strong>
+                    <strong>9. Comment exporter ou envoyer un document ?</strong>
                     <p>Dans le même menu <span class="help-icon"><i data-lucide="file-text"></i> Document</span>,
-                        utilisez <span class="help-icon"><i data-lucide="download"></i> Télécharger</span> ou
-                        <span class="help-icon"><i data-lucide="send"></i> Envoyer</span>. Les exports proposés
-                        incluent Word, PDF, HTML, Markdown, Texte et Audio selon le type de contenu. Vous pouvez
-                        aussi utiliser <span class="help-icon"><i data-lucide="copy"></i> Copier</span> pour récupérer
-                        rapidement le contenu dans un format réutilisable et le coller dans d’autres applications :
-                        messagerie, suite Office, outil de documentation comme Notion, Jira, Confluence, ou tout autre
-                        espace de travail compatible avec du texte, du Markdown ou du HTML.
-                    </p>
+                        choisissez l’option adaptée à votre besoin :</p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="download"></i> Télécharger</span> : export local
+                            du document.</li>
+                        <li><span class="help-icon"><i data-lucide="send"></i> Envoyer</span> : partage ou envoi vers
+                            une destination externe compatible.</li>
+                        <li><span class="help-icon"><i data-lucide="copy"></i> Copier</span> : récupération rapide du
+                            contenu pour collage immédiat.</li>
+                        <li><span class="help-icon"><i data-lucide="file-text"></i> Formats</span> : Word, PDF, HTML,
+                            Markdown, Texte et Audio selon le contenu.</li>
+                        <li><span class="help-icon"><i data-lucide="briefcase"></i> Usages</span> : messagerie, suite
+                            Office, Notion, Jira, Confluence et autres outils compatibles.</li>
+                    </ul>
                 </div>
                 <div>
-                    <strong>11. Comment supprimer une page ?</strong>
+                    <strong>10. Comment supprimer une page ?</strong>
                     <p>Ouvrez le menu document, puis choisissez <span class="help-icon"><i data-lucide="trash-2"></i>
                             Supprimer</span>.
                         Vérifiez bien la page active avant de confirmer. Si vous ne voulez pas supprimer la page
@@ -198,33 +233,39 @@
             <h2>Éditer un document</h2>
             <div class="help-list">
                 <div>
-                    <strong>12. Comment ouvrir l’assistant IA et l’édition inline ?</strong>
-                    <p>Cliquez sur <span class="help-icon"><i data-lucide="panel-right"></i> Assist</span> pour ouvrir
-                        le panneau latéral. Vous pouvez aussi déclencher l’édition inline depuis une sélection dans le
-                        document pour travailler directement au plus près du texte. En mode <strong>Sélection
-                            auto</strong>,
-                        GoToolkit reprend automatiquement la sélection en cours ou le bloc actif. En mode
-                        <strong>Sélection manuelle</strong>, vous choisissez explicitement la zone de texte à cibler
-                        avant d’envoyer la demande.
-                    </p>
+                    <strong>11. Comment ouvrir l’assistant IA et l’édition inline ?</strong>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="panel-right"></i> Assist</span> : ouvre le panneau
+                            latéral IA.</li>
+                        <li><span class="help-icon"><i data-lucide="file-text"></i> Inline</span> : lance une
+                            action directement depuis une sélection dans le document.</li>
+                        <li><span class="help-icon"><i data-lucide="mouse-pointer-click"></i> Sélection auto</span> :
+                            la sélection courante ou le bloc actif est repris automatiquement.</li>
+                        <li><span class="help-icon"><i data-lucide="mouse-pointer-click"></i> Sélection manuelle</span> :
+                            vous ciblez explicitement la zone de texte avant l’envoi.</li>
+                    </ul>
                 </div>
                 <div>
-                    <strong>13. Quelle est la différence entre Éditer, Explorer et Suggérer ?</strong>
-                    <p><strong>Éditer</strong> modifie, reformule ou enrichit le contenu à votre demande.
-                        <strong>Explorer</strong> sert à poser des questions, analyser et naviguer dans vos contenus,
-                        sans modifier le fichier. <strong>Suggérer</strong> propose des pistes, formulations ou plans
-                        d’amélioration, que vous restez libre d’appliquer ou non. En mode suggestion, vous pouvez
-                        utiliser le surlignage avec <code>==texte==</code> pour signaler un contenu à ajouter ou à
-                        renforcer, et le barré avec <code>~~texte~~</code> pour signaler un contenu à retirer. Sur une
-                        sélection de texte, les actions du bubble menu permettent ensuite de valider avec
-                        <span class="help-icon"><i data-lucide="check"></i> Approve</span>, de refuser avec
-                        <span class="help-icon"><i data-lucide="x"></i> Reject</span>, ou d’appliquer en masse via
-                        <span class="help-icon"><i data-lucide="check-check"></i> Approve All</span> dans le menu
-                        Tiptap.
-                    </p>
+                    <strong>12. Quelle est la différence entre Éditer, Explorer et Suggérer ?</strong>
+                    <p>Les trois options répondent à des usages différents :</p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="file-text"></i> Éditer</span> : modifie,
+                            reformule ou enrichit le texte directement.</li>
+                        <li><span class="help-icon"><i data-lucide="panel-right"></i> Explorer</span> : questionne
+                            et analyse sans modifier le document.</li>
+                        <li><span class="help-icon"><i data-lucide="sparkles"></i> Suggérer</span> : propose des
+                            modifications que vous acceptez ou refusez.</li>
+                        <li><span class="help-icon"><i data-lucide="quote"></i> Marquage</span> :
+                            <code>==texte==</code> pour proposer un ajout, <code>~~texte~~</code> pour proposer un
+                            retrait.</li>
+                        <li><span class="help-icon"><i data-lucide="check"></i> Approve</span>,
+                            <span class="help-icon"><i data-lucide="x"></i> Reject</span>,
+                            <span class="help-icon"><i data-lucide="check-check"></i> Approve All</span> :
+                            actions rapides depuis le bubble menu / menu Tiptap.</li>
+                    </ul>
                 </div>
                 <div>
-                    <strong>14. À quoi sert l’enregistrement vocal avec partage d’écran et transcription ?</strong>
+                    <strong>13. À quoi sert l’enregistrement vocal avec partage d’écran et transcription ?</strong>
                     <p>Le module voix permet d’enregistrer la voix, l’écran ou la caméra pour documenter une démo, une
                         réunion, un retour utilisateur ou une explication métier. Vous pouvez lancer la capture avec
                         <span class="help-icon"><i data-lucide="mic"></i></span>, activer le partage d’écran, suivre
@@ -238,13 +279,13 @@
                     </p>
                 </div>
                 <div>
-                    <strong>15. Comment éditer rapidement avec les blocs disponibles ?</strong>
+                    <strong>14. Comment éditer rapidement avec les blocs disponibles ?</strong>
                     <p>Utilisez le menu slash <code>/</code> ou les menus contextuels pour insérer des blocs :
                         texte, titres, listes, tâches, liens, libellés, citations, tableaux, diagrammes, images,
                         vidéos, navigation et sommaire.</p>
                 </div>
                 <div>
-                    <strong>16. Comment fonctionnent la sauvegarde locale, Annuler et Rétablir ?</strong>
+                    <strong>15. Comment fonctionnent la sauvegarde locale, Annuler et Rétablir ?</strong>
                     <p>GoToolkit sauvegarde automatiquement vos modifications en local au fil de la saisie, sans action
                         manuelle de votre part. Si vous faites une erreur, vous pouvez revenir en arrière avec
                         <span class="help-icon"><i data-lucide="undo-2"></i></span> <strong>Annuler</strong>, puis
@@ -254,7 +295,7 @@
                     </p>
                 </div>
                 <div>
-                    <strong>17. Comment insérer un diagramme ?</strong>
+                    <strong>16. Comment insérer un diagramme ?</strong>
                     <p>Choisissez le bloc <span class="help-icon"><i data-lucide="shapes"></i> Diagramme</span>.
                         Il permet d’insérer des schémas de type Mermaid pour visualiser des flux, structures ou
                         séquences dans le document. Vous pouvez d’abord passer par le chat IA dédié pour générer une
@@ -270,7 +311,7 @@
                     </p>
                 </div>
                 <div>
-                    <strong>18. Comment insérer une image, une vidéo ou une vidéo embarquée ?</strong>
+                    <strong>17. Comment insérer une image, une vidéo ou une vidéo embarquée ?</strong>
                     <p>Utilisez <span class="help-icon"><i data-lucide="image"></i> Image</span> pour un média local,
                         <span class="help-icon"><i data-lucide="clapperboard"></i> Vidéo</span> pour une vidéo dans le
                         document, et les liens de vidéo embarquée pour des contenus externes affichés comme blocs
@@ -278,7 +319,7 @@
                     </p>
                 </div>
                 <div>
-                    <strong>19. À quoi servent les blocs Lien, Sommaire et Navigation ?</strong>
+                    <strong>18. À quoi servent les blocs Lien, Sommaire et Navigation ?</strong>
                     <p><span class="help-icon"><i data-lucide="link"></i> Lien</span> crée un accès cliquable vers une
                         URL. <span class="help-icon"><i data-lucide="list-tree"></i> Sommaire</span> génère la liste
                         des titres de la page courante. <span class="help-icon"><i data-lucide="folder-tree"></i>
@@ -288,7 +329,7 @@
                         ou les titres changent.</p>
                 </div>
                 <div>
-                    <strong>20. Comment utiliser un tableau ?</strong>
+                    <strong>19. Comment utiliser un tableau ?</strong>
                     <p>Le bloc <span class="help-icon"><i data-lucide="table"></i> Tableau</span> permet de structurer
                         des données en lignes et colonnes, de réorganiser l’information et de produire des contenus
                         lisibles pour des comparatifs, listes ou suivis. Avec les poignées et actions
@@ -302,7 +343,7 @@
                     </p>
                 </div>
                 <div>
-                    <strong>21. Quels types de citation existent ?</strong>
+                    <strong>20. Quels types de citation existent ?</strong>
                     <p>Le bloc <span class="help-icon"><i data-lucide="quote"></i> Citation</span> couvre la citation
                         simple ainsi que plusieurs variantes visuelles pour mettre en avant une information, un
                         conseil, un point clé, une alerte ou une action dangereuse / interdite. Raccourcis d’accès :
@@ -315,7 +356,7 @@
                     </p>
                 </div>
                 <div>
-                    <strong>22. À quoi sert le libellé ?</strong>
+                    <strong>21. À quoi sert le libellé ?</strong>
                     <p>Le bloc <span class="help-icon"><i data-lucide="tag"></i> Libellé</span> sert à créer un tag
                         inline dans le texte pour marquer un thème, un mot-clé ou un repère métier. L’autocomplétion
                         propose les libellés déjà utilisés afin d’harmoniser votre vocabulaire dans la page.</p>
@@ -330,29 +371,34 @@
             <h2>IA et services tiers</h2>
             <div class="help-list">
                 <div>
-                    <strong>23. Comment ajouter un fichier à la base de connaissance et à quoi ça sert ?</strong>
+                    <strong>22. Comment ajouter un fichier à la base de connaissance et à quoi ça sert ?</strong>
                     <p>Dans l’assistant, cliquez sur <span class="help-icon"><i data-lucide="brain"></i></span> pour
-                        sélectionner les espaces ou sources à inclure dans le contexte de l’IA. Astuce : vous pouvez
-                        aussi importer des fichiers pour les transformer en pages, puis les intégrer ensuite à cette
-                        base de connaissance afin que l'Assistant puisse les exploiter comme sources durables.</p>
+                        sélectionner les sources utilisées par l’IA.</p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="brain"></i> Base de connaissance</span> : sert de
+                            contexte réutilisable sur la durée.</li>
+                        <li><span class="help-icon"><i data-lucide="file-down"></i> Source durable</span> : importez un
+                            fichier en page puis ajoutez cette page à la base.</li>
+                    </ul>
                 </div>
                 <div>
-                    <strong>24. Quelle est la différence entre joindre un fichier à l’IA en contexte et importer un
+                    <strong>23. Quelle est la différence entre joindre un fichier à l’IA en contexte et importer un
                         fichier dans le
                         document en base de connaissance ?</strong>
-                    <p><span class="help-icon"><i data-lucide="paperclip"></i></span> <strong>Joindre</strong> envoie
-                        le fichier comme contexte temporaire à l’assistant pour analyser, résumer ou répondre, sans en
-                        faire automatiquement une page. <span class="help-icon"><i data-lucide="file-down"></i></span>
-                        <strong>Importer</strong> lit le fichier, l’insère dans le document et le transforme en contenu
-                        éditable et durable. Si vous voulez enrichir votre base de connaissance sur la durée,
-                        l’import est le bon choix. En revanche, pour le moment, les fichiers de données volumineux ou
-                        très structurés (par exemple JSON, tableurs ou autres fichiers de données) sont surtout pris en
-                        charge via les pièces jointes ; ils ne sont pas toujours adaptés à un import direct comme
-                        document éditable.
-                    </p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="paperclip"></i> Joindre</span> : envoi temporaire
+                            en contexte IA (analyse, résumé, questions), sans créer de page.</li>
+                        <li><span class="help-icon"><i data-lucide="file-down"></i> Importer</span> : transforme le
+                            fichier en contenu éditable durable dans le document.</li>
+                        <li><span class="help-icon"><i data-lucide="brain"></i> Base de connaissance</span> :
+                            privilégiez l’import pour enrichir vos sources à long terme.</li>
+                        <li><span class="help-icon"><i data-lucide="table"></i> Données volumineuses</span> :
+                            JSON / tableurs et autres fichiers très structurés sont souvent mieux gérés en pièce jointe.
+                        </li>
+                    </ul>
                 </div>
                 <div>
-                    <strong>25. Les réponses de l’IA remplacent-elles automatiquement mon texte ?</strong>
+                    <strong>24. Les réponses de l’IA remplacent-elles automatiquement mon texte ?</strong>
                     <p>Par défaut, quand il y a une sélection de texte, seul le texte sélectionné est remplacé.
                         Quand il n’y a aucune sélection de texte, notamment en mode manuel
                         (<span class="help-icon"><i data-lucide="mouse-pointer-click"></i></span> désactivé), tout le
@@ -362,21 +408,19 @@
                         modifier le contenu existant lorsque le contexte ciblé est bien identifié.</p>
                 </div>
                 <div>
-                    <strong>26. Puis-je envoyer du contexte sans modifier le document ?</strong>
+                    <strong>25. Puis-je envoyer du contexte sans modifier le document ?</strong>
                     <p>Oui. Vous pouvez joindre des fichiers, choisir des sources mémoire et utiliser
-                        <strong>Explorer</strong> pour travailler en lecture et en analyse, sans altérer la page.
-                        C’est le mode adapté pour comparer, questionner, résumer ou préparer une action avant
-                        d’appliquer une modification réelle.
+                        <strong>Explorer</strong> pour travailler en lecture seule.
                     </p>
                 </div>
                 <div>
-                    <strong>27. Puis-je personnaliser les instructions envoyées à l’IA ?</strong>
+                    <strong>26. Puis-je personnaliser les instructions envoyées à l’IA ?</strong>
                     <p>Oui. Ouvrez le panneau <span class="help-icon"><i data-lucide="settings"></i> Paramètres</span>,
                         puis allez dans l’onglet <strong>Instructions</strong> pour modifier les consignes envoyées à
                         l’IA selon votre usage.</p>
                 </div>
                 <div>
-                    <strong>28. Quelles informations sont partagées avec l’IA et les services externes ?</strong>
+                    <strong>27. Quelles informations sont partagées avec l’IA et les services externes ?</strong>
                     <p>Pour produire une réponse, l’IA peut recevoir le contenu utile de votre document courant ainsi
                         que les extraits les plus pertinents issus de la base de connaissance locale (RAG), c’est-à-dire
                         des passages sélectionnés plutôt qu’un envoi systématique de tout votre historique. D’autres
@@ -388,12 +432,12 @@
                     </p>
                 </div>
                 <div>
-                    <strong>29. Quels sont les autres services tiers proposés et à quoi servent-ils ?</strong>
+                    <strong>28. Quels sont les autres services tiers proposés et à quoi servent-ils ?</strong>
                     <p>En plus de l’assistant IA, GoToolkit peut s’appuyer sur plusieurs services tiers selon l’action
                         lancée : <strong>AssemblyAI</strong> pour la transcription vocale, <strong>Google Cloud
                             Text-to-Speech</strong> pour la synthèse vocale, <strong>OpenRouter / Nebius Token
                             Factory</strong> pour l’IA, l’OCR et certains traitements de fichiers, <strong>Microsoft
-                            OpenID Connect</strong> pour certains accès SSO, <strong>Google Gmail API</strong> pour
+                            SSO</strong> pour certains accès partagés, <strong>Google Gmail API</strong> pour
                         créer des brouillons Gmail, <strong>Google YouTube API</strong> pour publier des vidéos, et
                         <strong>Notion API</strong> pour publier dans Notion. Cela permet d’éviter des manipulations
                         manuelles et de réutiliser plus vite vos contenus dans le bon format. Pour plus de détails sur
@@ -402,18 +446,19 @@
                     </p>
                 </div>
                 <div>
-                    <strong>30. À quoi servent les raccourcis de prompt ?</strong>
-                    <p>Les raccourcis de prompt servent à lancer rapidement des consignes déjà prêtes, classées par
-                        catégories selon le besoin. Les catégories couvrent par exemple la
-                        <strong>rédaction / reformulation</strong>, l’<strong>analyse / exploration</strong>, et la
-                        <strong>structuration / transformation</strong> du contenu.
-                    </p>
-                    <p>Exemples : <strong>Résumer</strong> pour condenser un texte, <strong>Reformuler</strong> pour
-                        changer le ton ou clarifier, <strong>Extraire les actions</strong> pour identifier les tâches,
-                        ou <strong>Faire un plan</strong> pour transformer un contenu en structure exploitable.</p>
+                    <strong>29. À quoi servent les raccourcis de prompt ?</strong>
+                    <p>Les raccourcis permettent de lancer des consignes prêtes à l’emploi.</p>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="sparkles"></i> Rédaction / reformulation</span> :
+                            ex. reformuler, condenser, adapter le ton.</li>
+                        <li><span class="help-icon"><i data-lucide="file-question"></i> Analyse / exploration</span> :
+                            ex. poser des questions, comparer, identifier les points clés.</li>
+                        <li><span class="help-icon"><i data-lucide="list-tree"></i> Structuration /
+                                transformation</span> : ex. extraire actions, faire un plan, convertir en checklist.</li>
+                    </ul>
                 </div>
                 <div>
-                    <strong>31. Y a-t-il des limites de requêtes pour l’IA et les autres services externes ?</strong>
+                    <strong>30. Y a-t-il des limites de requêtes pour l’IA et les autres services externes ?</strong>
                     <p>Oui. Les proxys utilisés pour l’IA, la transcription, la synthèse vocale et certains autres
                         services appliquent des limites de requêtes pour éviter les abus, protéger les secrets côté
                         serveur et maintenir une bonne disponibilité. En pratique, si vous enchaînez beaucoup de
@@ -423,7 +468,7 @@
                         session active, ou utilisation cloud).</p>
                 </div>
                 <div>
-                    <strong>32. Puis-je lancer des commandes à la voix ?</strong>
+                    <strong>31. Puis-je lancer des commandes à la voix ?</strong>
                     <p>Oui. Il est possible de discuter avec l’Assistant
                         <span class="help-icon"><i data-lucide="bot"></i></span> en cliquant sur
                         <span class="help-icon"><i data-lucide="mic"></i></span>. Toutes les paroles prononcées sont
@@ -441,28 +486,36 @@
             <h2>Partage et cloud</h2>
             <div class="help-list">
                 <div>
-                    <strong>33. Comment publier une page ou partager un lien ?</strong>
-                    <p>Pour publier une page, copiez-la vers un espace partagé en la glissant-déposant, ou cliquez sur
-                        <strong>File Menu</strong> puis <strong>Publish</strong>. Cliquez ensuite sur
-                        <span class="help-icon"><i data-lucide="rotate-cw"></i> Sync</span> pour l’envoyer en ligne.
-                        Vous pouvez enfin envoyer l’URL de la page ou partager le chemin du stockage partagé avec
-                        l’autre personne. Seuls les utilisateurs qui ont déjà accès à l’espace partagé peuvent voir la
-                        page.</p>
+                    <strong>32. Comment publier une page ou partager un lien ?</strong>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="panel-left"></i> Déplacer</span> : glissez la
+                            page vers l’espace partagé ciblé.</li>
+                        <li><span class="help-icon"><i data-lucide="send"></i> Publish</span> : utilisez aussi
+                            <strong>File Menu</strong> puis <strong>Publish</strong>.</li>
+                        <li><span class="help-icon"><i data-lucide="rotate-cw"></i> Sync</span> : envoie la page dans
+                            le cloud.</li>
+                        <li><span class="help-icon"><i data-lucide="link"></i> Partage</span> : transmettez l’URL de
+                            la page ou le chemin de stockage partagé.</li>
+                        <li><span class="help-icon"><i data-lucide="lock-open"></i> Accès</span> : seuls les
+                            utilisateurs autorisés sur l’espace peuvent consulter la page.</li>
+                    </ul>
+                    <p>Pour les règles d’accès des espaces GO LIVE et SAFRAN, voir la question suivante.</p>
                 </div>
                 <div>
-                    <strong>34. Comment accéder aux espaces partagés GO LIVE et SAFRAN ?</strong>
-                    <p>Utilisez le bouton <span class="help-icon"><i data-lucide="lock-open"></i></span> pour
-                        l’authentification SSO Microsoft. L’accès aux espaces partagés dépend du domaine de votre
-                        adresse e-mail professionnelle authentifiée. Pour le moment, les deux espaces partagés
-                        disponibles sont réservés aux domaines <strong>savane-group.com</strong> et
-                        <strong>safran-group.com</strong>. Si votre domaine ne correspond pas à un domaine autorisé,
-                        l’espace ne s’ouvre pas, même avec une authentification réussie. Si vous souhaitez ouvrir
-                        votre propre espace professionnel, envoyez un mail à
-                        <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a>.
-                    </p>
+                    <strong>33. Comment accéder aux espaces partagés GO LIVE et SAFRAN ?</strong>
+                    <ul>
+                        <li><span class="help-icon"><i data-lucide="lock-open"></i> Microsoft SSO</span> : connectez
+                            votre compte professionnel.</li>
+                        <li><span class="help-icon"><i data-lucide="briefcase"></i> Domaine autorisé</span> :
+                            l’accès dépend du domaine de l’email authentifié.</li>
+                        <li><span class="help-icon"><i data-lucide="folder-tree"></i> Espaces actuels</span> :
+                            <strong>savane-group.com</strong> et <strong>safran-group.com</strong>.</li>
+                        <li><span class="help-icon"><i data-lucide="mail"></i> Nouvel espace</span> :
+                            demande à <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a>.</li>
+                    </ul>
                 </div>
                 <div>
-                    <strong>35. Les données cloud sont-elles chiffrées ?</strong>
+                    <strong>34. Les données cloud sont-elles chiffrées ?</strong>
                     <p>Oui. Les données partagées en ligne utilisent un chiffrement côté application afin de limiter
                         l’exposition des contenus synchronisés. En pratique, cela réduit le risque d’accès non autorisé
                         au contenu brut. L’authentification, les droits d’accès à l’espace, et le partage restreint
@@ -472,7 +525,7 @@
                         d’accès et disposer d’une authentification valide pour voir ou modifier une page.</p>
                 </div>
                 <div>
-                    <strong>36. Comment fonctionne la stratégie de synchronisation cloud ?</strong>
+                    <strong>35. Comment fonctionne la stratégie de synchronisation cloud ?</strong>
                     <p>Lorsqu’une page doit être synchronisée, GoToolkit conserve d’abord les opérations en attente en
                         local (pending operations), puis les pousse vers le cloud dès que la synchronisation peut se
                         faire. En cas de divergence, la résolution de conflit suit une logique
@@ -481,13 +534,13 @@
                     </p>
                 </div>
                 <div>
-                    <strong>37. Peut-on déplacer des pages par glisser-déposer entre privé et cloud ?</strong>
+                    <strong>36. Peut-on déplacer des pages par glisser-déposer entre privé et cloud ?</strong>
                     <p>Oui. Vous pouvez réorganiser des pages dans vos pages privées, dans un espace cloud, et selon le
                         contexte déplacer par glisser-déposer entre privé et cloud. À l’intérieur des pages cloud,
                         le glisser-déposer permet aussi de changer la hiérarchie entre pages et sous-pages.</p>
                 </div>
                 <div>
-                    <strong>38. Que faire si la synchronisation semble bloquée ?</strong>
+                    <strong>37. Que faire si la synchronisation semble bloquée ?</strong>
                     <p>Commencez par vérifier votre connexion et l’espace ciblé. Ensuite, rafraîchissez l’interface ou
                         relancez l’action de publication. Évitez de dupliquer les clics tant qu’une opération est en
                         cours.</p>
@@ -496,25 +549,6 @@
         </section>
 
     </main>
-    <script>
-        const renderHelpIcons = () => {
-            window.lucide?.createIcons?.({
-                attrs: {
-                    width: "14",
-                    height: "14",
-                    "stroke-width": "2"
-                }
-            });
-        };
-
-        if (document.readyState !== "loading") {
-            renderHelpIcons();
-        } else {
-            window.addEventListener("DOMContentLoaded", renderHelpIcons, { once: true });
-        }
-
-        window.addEventListener("load", renderHelpIcons, { once: true });
-    </script>
 </body>
 
 </html>

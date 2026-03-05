@@ -2415,14 +2415,8 @@
     AssistSidebar.prototype.applyMessagePayloadHover = function (entry, message) {
         if (!entry || !entry.bubbleEl || !message) return;
         var title = "";
-        if (message.role === "user" && message.aiInPayloadTooltip) {
-            title = "AI IN\n" + message.aiInPayloadTooltip;
-        } else if (message.role === "bot") {
-            if (message.aiInPayloadTooltip) {
-                title = "AI IN\n" + message.aiInPayloadTooltip;
-            } else {
-                title = this.buildTechnicalHover(message);
-            }
+        if (message.role === "bot") {
+            title = this.buildTechnicalHover(message);
         }
         if (title) {
             entry.bubbleEl.title = title;

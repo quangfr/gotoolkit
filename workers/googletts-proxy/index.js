@@ -57,6 +57,27 @@ function normalizeOrigin(origin) {
   return String(origin || "").trim();
 }
 
+function getHostnameFromOrigin(origin) {
+  const candidate = String(origin || "").trim();
+  if (!candidate) return "";
+  try {
+    return String(new URL(candidate).hostname || "").trim().toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function parseTurnstileAllowedHostnames(env) {
+  const fromEnv = String(env?.TURNSTILE_ALLOWED_HOSTNAMES || "")
+    .split(",")
+    .map(host => String(host || "").trim().toLowerCase())
+    .filter(Boolean);
+  const fromOrigins = ALLOWED_ORIGINS
+    .map(origin => getHostnameFromOrigin(origin))
+    .filter(Boolean);
+  return new Set([...fromOrigins, ...fromEnv]);
+}
+
 function isLocalOrigin(origin) {
   if (!origin) return false;
   return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?$/i.test(origin);
@@ -115,7 +136,10 @@ function getTurnstileToken(request, payload) {
 
 async function enforceTurnstile(request, corsMeta, env, payload, action) {
   const secret = getTurnstileSecret(env);
-  if (!secret) return null;
+  if (!secret) {
+    if (corsMeta.allowLocal) return null;
+    return jsonError(corsMeta.headers, 500, "MISSING_ENV", "Turnstile secret missing.");
+  }
   const token = getTurnstileToken(request, payload);
   if (!token) {
     return jsonError(corsMeta.headers, 403, "TURNSTILE_REQUIRED", "Turnstile token required.");
@@ -143,6 +167,25 @@ async function enforceTurnstile(request, corsMeta, env, payload, action) {
       action,
       status: response.status,
       errors: result?.["error-codes"] || []
+    });
+    return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
+  }
+  const allowedHostnames = parseTurnstileAllowedHostnames(env);
+  const verifiedHostname = String(result?.hostname || "").trim().toLowerCase();
+  if (allowedHostnames.size > 0 && (!verifiedHostname || !allowedHostnames.has(verifiedHostname))) {
+    console.warn("[googletts-proxy] turnstile hostname mismatch", {
+      action,
+      verifiedHostname,
+      allowedHostnames: Array.from(allowedHostnames)
+    });
+    return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
+  }
+  const expectedAction = String(action || "").trim().toLowerCase();
+  const verifiedAction = String(result?.action || "").trim().toLowerCase();
+  if (expectedAction && verifiedAction !== expectedAction) {
+    console.warn("[googletts-proxy] turnstile action mismatch", {
+      expectedAction,
+      verifiedAction: verifiedAction || null
     });
     return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
   }

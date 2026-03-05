@@ -15,6 +15,16 @@ function normalizeOriginValue(value) {
   }
 }
 
+function getHostnameFromOrigin(origin) {
+  const candidate = String(origin || "").trim();
+  if (!candidate) return "";
+  try {
+    return String(new URL(candidate).hostname || "").trim().toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
 function parseAllowedOrigins(env) {
   const fromEnv = String(env?.SHARE_ALLOWED_ORIGINS || "")
     .split(",")
@@ -25,6 +35,29 @@ function parseAllowedOrigins(env) {
     ...fromEnv
   ]);
   return Array.from(merged);
+}
+
+function parseTurnstileAllowedHostnames(env, allowedOrigins = []) {
+  const fromEnv = String(env?.TURNSTILE_ALLOWED_HOSTNAMES || "")
+    .split(",")
+    .map(host => String(host || "").trim().toLowerCase())
+    .filter(Boolean);
+  const fromOrigins = Array.isArray(allowedOrigins)
+    ? allowedOrigins
+      .map(origin => getHostnameFromOrigin(origin))
+      .filter(Boolean)
+    : [];
+  return new Set([...fromOrigins, ...fromEnv]);
+}
+
+function isCompatibleTurnstileAction(expectedAction, verifiedAction) {
+  const expected = String(expectedAction || "").trim().toLowerCase();
+  const verified = String(verifiedAction || "").trim().toLowerCase();
+  if (!expected) return true;
+  if (verified === expected) return true;
+  // Backward compatibility: old clients used "openrouter" for chat completions.
+  if (expected === "chat" && verified === "openrouter") return true;
+  return false;
 }
 
 function isLocalAllowedOrigin(origin) {
@@ -64,7 +97,9 @@ function getTurnstileToken(request) {
 
 async function enforceTurnstile(request, env, corsOrigin, action) {
   const secret = getTurnstileSecret(env);
-  if (!secret) return null;
+  if (!secret) {
+    return jsonError(corsOrigin, 500, "MISSING_ENV", "Turnstile secret missing.");
+  }
   const token = getTurnstileToken(request);
   if (!token) {
     return jsonError(corsOrigin, 403, "TURNSTILE_REQUIRED", "Turnstile token required.");
@@ -93,6 +128,25 @@ async function enforceTurnstile(request, env, corsOrigin, action) {
       action,
       status: response.status,
       errors: result?.["error-codes"] || []
+    });
+    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
+  }
+  const allowedHostnames = parseTurnstileAllowedHostnames(env, parseAllowedOrigins(env));
+  const verifiedHostname = String(result?.hostname || "").trim().toLowerCase();
+  if (allowedHostnames.size > 0 && (!verifiedHostname || !allowedHostnames.has(verifiedHostname))) {
+    console.warn("Turnstile hostname mismatch", {
+      action,
+      verifiedHostname,
+      allowedHostnames: Array.from(allowedHostnames)
+    });
+    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
+  }
+  const expectedAction = String(action || "").trim().toLowerCase();
+  const verifiedAction = String(result?.action || "").trim().toLowerCase();
+  if (!isCompatibleTurnstileAction(expectedAction, verifiedAction)) {
+    console.warn("Turnstile action mismatch", {
+      expectedAction,
+      verifiedAction: verifiedAction || null
     });
     return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
   }
