@@ -193,6 +193,48 @@ const summarizeMermaidElements = (elements: any[], maxSamples: number = 3) => {
         linearSamples
     };
 };
+const toFiniteNumber = (value: unknown, fallback = 0): number => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+};
+const hasFinitePoint = (point: unknown): point is [number, number] => {
+    if (!Array.isArray(point) || point.length < 2) return false;
+    return Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]));
+};
+const sanitizeSceneElements = (elements: any[]): ExcalidrawElement[] => {
+    const list = Array.isArray(elements) ? elements : [];
+    const sanitized: ExcalidrawElement[] = [];
+    for (const raw of list) {
+        if (!raw || typeof raw !== "object") continue;
+        const x = toFiniteNumber((raw as any).x, NaN);
+        const y = toFiniteNumber((raw as any).y, NaN);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+
+        const normalized: any = {
+            ...raw,
+            x,
+            y
+        };
+        if ("width" in normalized) {
+            normalized.width = Math.max(0, toFiniteNumber(normalized.width, 0));
+        }
+        if ("height" in normalized) {
+            normalized.height = Math.max(0, toFiniteNumber(normalized.height, 0));
+        }
+        if (normalized.type === "line" || normalized.type === "arrow") {
+            const points = Array.isArray(normalized.points)
+                ? normalized.points.filter(hasFinitePoint).map((point: [number, number]) => [
+                      Number(point[0]),
+                      Number(point[1])
+                  ])
+                : [];
+            if (points.length < 2) continue;
+            normalized.points = points;
+        }
+        sanitized.push(normalized as ExcalidrawElement);
+    }
+    return sanitized;
+};
 
 export type MermaidConvertOptions = {
     fontSize?: number;
@@ -1018,8 +1060,12 @@ class ExcalidrawBridge {
             : normalizedElements;
         const normalizedFiles = parsed?.files || null;
         const sharpElements = applyMermaidDefaults(arrowNormalizedElements as readonly ExcalidrawElement[], options);
+        const safeElements = sanitizeSceneElements(sharpElements as any[]);
+        if (!safeElements.length) {
+            return null;
+        }
         return {
-            elements: sharpElements as readonly ExcalidrawElement[],
+            elements: safeElements as readonly ExcalidrawElement[],
             files: normalizedFiles || undefined
         };
     }
@@ -1027,9 +1073,22 @@ class ExcalidrawBridge {
     applyScene(scene: SceneData, shouldCenter: boolean = true): void {
         const api = this.ensureApi();
         const appState = api.getAppState();
+        const safeElements = sanitizeSceneElements(scene?.elements as any[]);
+        if (!safeElements.length) {
+            api.updateScene({
+                elements: [],
+                appState: {
+                    ...appState,
+                    viewModeEnabled: false,
+                    activeTool: { type: "selection" },
+                    isLoading: false
+                }
+            } as any);
+            return;
+        }
         
         const payload: any = {
-            elements: scene.elements.map(el => ({ ...el, locked: false })),
+            elements: safeElements.map(el => ({ ...el, locked: false })),
             appState: {
                 ...appState,
                 viewModeEnabled: false,
@@ -1057,10 +1116,10 @@ class ExcalidrawBridge {
         }
 
         // Center the content automatically for Mermaid diagrams
-        if (shouldCenter && scene.elements.length > 0) {
+        if (shouldCenter && safeElements.length > 0) {
             // Use setTimeout to ensure the scene has been updated before scrolling
             setTimeout(() => {
-                api.scrollToContent(scene.elements, { 
+                api.scrollToContent(safeElements, { 
                     fitToViewport: true
                 });
             }, 50);
@@ -1142,7 +1201,8 @@ window.GoToolkitExcalidraw = {
     },
     exportToSvg: (elements, appState, files) => {
         const { exportToSvg } = getExcalidrawExports();
-        return exportToSvg({ elements, appState, files });
+        const safeElements = sanitizeSceneElements(elements);
+        return exportToSvg({ elements: safeElements, appState, files });
     },
     exportToSvgWithZoom: (elements, appState, files, zoom) => 
         (() => {
@@ -1150,8 +1210,9 @@ window.GoToolkitExcalidraw = {
             const safeZoom = Number.isFinite(Number(zoom)) && Number(zoom) > 0
                 ? Number(zoom)
                 : (Number(appState?.zoom?.value) > 0 ? Number(appState.zoom.value) : 1);
+            const safeElements = sanitizeSceneElements(elements);
             return exportToSvg({ 
-                elements, 
+                elements: safeElements, 
                 appState: { ...appState, zoom: { value: safeZoom } }, 
                 files 
             });

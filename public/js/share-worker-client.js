@@ -459,6 +459,41 @@
     }
   }
 
+  function sanitizeRichHtmlDocument(doc) {
+    if (!doc?.body) return;
+    // SECURITY: Harden rich HTML parse/serialize paths before writing back.
+    const blockedTags = "script,iframe,object,embed,link,meta,base,form,input,button,textarea,select,template";
+    doc.body.querySelectorAll(blockedTags).forEach(node => node.remove());
+    doc.body.querySelectorAll("*").forEach(el => {
+      const tag = String(el.tagName || "").toLowerCase();
+      Array.from(el.attributes || []).forEach(attr => {
+        const name = String(attr.name || "").toLowerCase();
+        const value = String(attr.value || "").trim();
+        if (!name) return;
+        if (name.startsWith("on") || name === "srcdoc") {
+          el.removeAttribute(attr.name);
+          return;
+        }
+        if (name === "href" || name === "src" || name === "xlink:href" || name === "poster") {
+          const lower = value.toLowerCase();
+          const isImgSrc = tag === "img" && name === "src";
+          const isMediaSrc = (tag === "audio" || tag === "video" || tag === "source") && name === "src";
+          const allowedPattern = isImgSrc
+            ? /^(https?:|blob:|data:image\/|\/|#)/i
+            : isMediaSrc
+              ? /^(https?:|blob:|\/|#)/i
+              : /^(https?:|mailto:|tel:|\/|#)/i;
+          if (!allowedPattern.test(lower) || lower.startsWith("javascript:")) {
+            el.removeAttribute(attr.name);
+          }
+        }
+      });
+      if (tag === "a") {
+        el.setAttribute("rel", "noopener noreferrer");
+      }
+    });
+  }
+
   async function resolveAssetBlobUrl(base, assetUrl, spaceId) {
     const assetId = extractAssetIdFromUrl(base, assetUrl);
     if (!assetId) return assetUrl;
@@ -520,6 +555,7 @@
     const parser = new DOMParser();
     const doc = parser.parseFromString(String(html), "text/html");
     if (!doc?.body) return html;
+    sanitizeRichHtmlDocument(doc);
     const spaceId = String(options?.spaceId || "").trim().toLowerCase();
     const srcNodes = Array.from(doc.querySelectorAll("img[src],video[src],audio[src],source[src]"));
     for (const node of srcNodes) {
@@ -928,6 +964,7 @@
     const parser = new DOMParser();
     const doc = parser.parseFromString(String(html), "text/html");
     if (!doc || !doc.body) return html;
+    sanitizeRichHtmlDocument(doc);
 
     const scope = String(options.assetScope || options.scope || "shared").trim() || "shared";
     const imgNodes = Array.from(doc.querySelectorAll("img[src^='data:image/']"));

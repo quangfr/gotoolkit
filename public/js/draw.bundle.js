@@ -4493,6 +4493,45 @@
       linearSamples
     };
   };
+  var toFiniteNumber = (value, fallback = 0) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  };
+  var hasFinitePoint = (point) => {
+    if (!Array.isArray(point) || point.length < 2) return false;
+    return Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]));
+  };
+  var sanitizeSceneElements = (elements) => {
+    const list = Array.isArray(elements) ? elements : [];
+    const sanitized = [];
+    for (const raw of list) {
+      if (!raw || typeof raw !== "object") continue;
+      const x = toFiniteNumber(raw.x, NaN);
+      const y = toFiniteNumber(raw.y, NaN);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      const normalized = {
+        ...raw,
+        x,
+        y
+      };
+      if ("width" in normalized) {
+        normalized.width = Math.max(0, toFiniteNumber(normalized.width, 0));
+      }
+      if ("height" in normalized) {
+        normalized.height = Math.max(0, toFiniteNumber(normalized.height, 0));
+      }
+      if (normalized.type === "line" || normalized.type === "arrow") {
+        const points = Array.isArray(normalized.points) ? normalized.points.filter(hasFinitePoint).map((point) => [
+          Number(point[0]),
+          Number(point[1])
+        ]) : [];
+        if (points.length < 2) continue;
+        normalized.points = points;
+      }
+      sanitized.push(normalized);
+    }
+    return sanitized;
+  };
   var EDGE_HOST_CLASS = "go-excalidraw-edge";
   var EDGE_STYLE_ID = "go-excalidraw-edge-style";
   var EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
@@ -5255,8 +5294,12 @@
       }) : normalizedElements;
       const normalizedFiles = (parsed == null ? void 0 : parsed.files) || null;
       const sharpElements = applyMermaidDefaults(arrowNormalizedElements, options);
+      const safeElements = sanitizeSceneElements(sharpElements);
+      if (!safeElements.length) {
+        return null;
+      }
       return {
-        elements: sharpElements,
+        elements: safeElements,
         files: normalizedFiles || void 0
       };
     }
@@ -5264,8 +5307,21 @@
       var _a, _b, _c, _d;
       const api = this.ensureApi();
       const appState = api.getAppState();
+      const safeElements = sanitizeSceneElements(scene == null ? void 0 : scene.elements);
+      if (!safeElements.length) {
+        api.updateScene({
+          elements: [],
+          appState: {
+            ...appState,
+            viewModeEnabled: false,
+            activeTool: { type: "selection" },
+            isLoading: false
+          }
+        });
+        return;
+      }
       const payload = {
-        elements: scene.elements.map((el) => ({ ...el, locked: false })),
+        elements: safeElements.map((el) => ({ ...el, locked: false })),
         appState: {
           ...appState,
           viewModeEnabled: false,
@@ -5287,9 +5343,9 @@
         (_c = api.refresh) == null ? void 0 : _c.call(api);
       } catch (e) {
       }
-      if (shouldCenter && scene.elements.length > 0) {
+      if (shouldCenter && safeElements.length > 0) {
         setTimeout(() => {
-          api.scrollToContent(scene.elements, {
+          api.scrollToContent(safeElements, {
             fitToViewport: true
           });
         }, 50);
@@ -5349,14 +5405,16 @@
     },
     exportToSvg: (elements, appState, files) => {
       const { exportToSvg } = getExcalidrawExports();
-      return exportToSvg({ elements, appState, files });
+      const safeElements = sanitizeSceneElements(elements);
+      return exportToSvg({ elements: safeElements, appState, files });
     },
     exportToSvgWithZoom: (elements, appState, files, zoom) => (() => {
       var _a;
       const { exportToSvg } = getExcalidrawExports();
       const safeZoom = Number.isFinite(Number(zoom)) && Number(zoom) > 0 ? Number(zoom) : Number((_a = appState == null ? void 0 : appState.zoom) == null ? void 0 : _a.value) > 0 ? Number(appState.zoom.value) : 1;
+      const safeElements = sanitizeSceneElements(elements);
       return exportToSvg({
-        elements,
+        elements: safeElements,
         appState: { ...appState, zoom: { value: safeZoom } },
         files
       });

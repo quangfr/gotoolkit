@@ -693,6 +693,7 @@ function resolveAllowedSpacesForEmail(emailRaw) {
     email === "quang.tran@savane-group.com"
     || email === "tranxq@gmail.com"
     || email === "oliver.tholance@savane-group.com"
+    || email === "otholance@gmail.com"
   ) {
     allowed.add("golive");
     allowed.add("safran");

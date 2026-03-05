@@ -34,6 +34,13 @@ This file is the short operational guide. Use the docs below as the canonical re
   - rich HTML rendering is required (markdown/preview/editor use case)
   - content is sanitized by a trusted sanitizer first
   - the reason is documented in code comments near the sink
+- For rich HTML parse/transform/serialize paths (for example `DOMParser` -> modify nodes -> `doc.body.innerHTML`):
+  - run a dedicated sanitizer pass on the parsed document before serialization
+  - remove active/unsafe nodes (`script`, `iframe`, `object`, `embed`, `template`, form controls)
+  - strip unsafe attributes (`on*`, `srcdoc`) and block `javascript:` URLs
+  - enforce protocol allowlists per attribute context (`href`, `src`, `xlink:href`, `poster`)
+  - add `rel="noopener noreferrer"` on `<a>` nodes
+  - centralize this in one helper per module instead of duplicating ad hoc filtering
 - Safe resets like `el.innerHTML = ""` are acceptable for clearing containers.
 - Before merging frontend changes, run:
   - `rg -n "\\binnerHTML\\b" public -S -g '!**/*.map'`
