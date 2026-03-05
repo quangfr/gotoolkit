@@ -15,7 +15,10 @@ This file is the short operational guide. Use the docs below as the canonical re
 
 ## High-value rules
 - Bump the version only when the user asks for a `bump`, `commit`, or `push`.
-- When asked to `commit` or `push`, run `npm run bump` first.
+- For any request involving `bump`, `commit`, or `push`, run the CSP hash workflow first:
+  - `npm run csp:inline:sync`
+  - `npm run check:csp`
+- Only after CSP hash workflow passes, run `npm run bump`.
 - Commit title format: `vYYYY.MM.DD.N : <summary>` with a summary under 15 words.
 - Keep the IndexedDB repair version in `public/js/assist.js` aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - Reuse existing colors/classes from `public/styles/style.css` before adding new CSS.
@@ -55,9 +58,9 @@ This file is the short operational guide. Use the docs below as the canonical re
   - run draw/connect builds only for draw-side `src/` changes
 - After modifying a worker, deploy that worker with Wrangler through `scripts/with-env-local.sh`.
 - Release flow:
-  - for any request involving `bump`, `commit`, or `push`, run `npm run bump` first
+  - for any request involving `bump`, `commit`, or `push`, run CSP hash workflow first (`npm run csp:inline:sync` then `npm run check:csp`)
+  - then run `npm run bump`
   - then commit and push (do not deploy Firebase Hosting directly from this workflow)
-- When editing CSP in HTML or `firebase.json`, follow the CSP workflow below, then run `npm run check:csp`.
 
 ## CSP hash workflow (inline scripts)
 - Scope: inline `<script>` changes in `public/index.html`, `public/grid.html`, or `public/mobile.html`.
