@@ -30,11 +30,12 @@ const DEFAULT_LINE_SPACING = 360; // 1.5 line height (240 * 1.5)
 export async function exportEditorToDocx(editor: any, _title: string = "Memo") {
   const json = editor.getJSON();
   const content = json.content || [];
+  const context = createDocxExportContext(editor);
 
   const children: any[] = [];
 
   for (const node of content) {
-    const docxNodes = await transformNode(node, editor);
+    const docxNodes = await transformNode(node, editor, context);
     if (docxNodes) {
       if (Array.isArray(docxNodes)) {
         children.push(...docxNodes);
@@ -143,7 +144,7 @@ export async function exportEditorToDocx(editor: any, _title: string = "Memo") {
   return blob;
 }
 
-async function transformNode(node: any, editor: any): Promise<any> {
+async function transformNode(node: any, editor: any, context: any): Promise<any> {
   switch (node.type) {
     case 'heading': {
       const level = node.attrs?.level || 1;
@@ -187,7 +188,7 @@ async function transformNode(node: any, editor: any): Promise<any> {
       if (node.content) {
         for (let i = 0; i < node.content.length; i++) {
           const child = node.content[i];
-          const transformed = await transformNode(child, editor);
+          const transformed = await transformNode(child, editor, context);
           if (transformed) {
             // Prepend emoji to the first paragraph of content
             if (i === 0 && emoji && (transformed instanceof Paragraph)) {
@@ -230,7 +231,7 @@ async function transformNode(node: any, editor: any): Promise<any> {
        const listItems: any[] = [];
        if (node.content) {
          for (const [index, item] of node.content.entries()) {
-           const transformed = await transformListItem(item, node.type, index + 1, editor);
+           const transformed = await transformListItem(item, node.type, index + 1, editor, context);
            listItems.push(...transformed);
          }
        }
@@ -255,7 +256,7 @@ async function transformNode(node: any, editor: any): Promise<any> {
           const cellChildren: any[] = [];
           if (cellNode.content) {
             for (const child of cellNode.content) {
-              const transformed = await transformNode(child, editor);
+              const transformed = await transformNode(child, editor, context);
               if (transformed) {
                 if (Array.isArray(transformed)) cellChildren.push(...transformed);
                 else cellChildren.push(transformed);
@@ -303,19 +304,7 @@ async function transformNode(node: any, editor: any): Promise<any> {
     }
 
     case 'mermaidDiagram': {
-      // Find the SVG in the DOM
-      const svgElements = document.querySelectorAll(".mermaid-svg-container svg");
-      let targetSvg: SVGSVGElement | null = null;
-      
-      // Heuristic: try to find the one matching the code if possible, or just use the current order
-      // (Better way would be to pass the SVG data in attrs, which we might want to do)
-      // For now, let's try to find it by looking at the parent's data-code or similar
-      for (const svg of Array.from(svgElements)) {
-         // This is tricky without a direct link.
-         // Let's assume we can find it.
-         targetSvg = svg as SVGSVGElement;
-         break; // Just take the first for now for testing
-      }
+      const targetSvg = context?.mermaidSvgs?.[context.mermaidIndex++] || null;
 
       if (targetSvg) {
         try {
@@ -473,7 +462,7 @@ async function transformNode(node: any, editor: any): Promise<any> {
   }
 }
 
-async function transformListItem(node: any, listType: string, _index: number, editor: any): Promise<any[]> {
+async function transformListItem(node: any, listType: string, _index: number, editor: any, context: any): Promise<any[]> {
   const children: any[] = [];
   const isTask = listType === 'taskList';
   const checked = node.attrs?.checked;
@@ -492,7 +481,7 @@ async function transformListItem(node: any, listType: string, _index: number, ed
           spacing: { line: DEFAULT_LINE_SPACING }
         }));
       } else {
-        const transformed = await transformNode(child, editor);
+        const transformed = await transformNode(child, editor, context);
         if (transformed) {
             if (Array.isArray(transformed)) children.push(...transformed);
             else children.push(transformed);
@@ -572,6 +561,24 @@ function getAlertColors(type: string): { border: string, bg: string } {
     case 'CAUTION': return { border: '#ef4444', bg: '#fef2f2' };
     default: return { border: '#e2e8f0', bg: '#f8fafc' };
   }
+}
+
+function createDocxExportContext(editor: any) {
+  const root: HTMLElement | null = editor?.view?.dom || null;
+  const mermaidSvgs: SVGSVGElement[] = [];
+  if (root) {
+    const diagrams = root.querySelectorAll('mermaid-diagram');
+    diagrams.forEach((diagram) => {
+      const svg = diagram.querySelector('.mermaid-svg-container svg, svg');
+      if (svg && svg instanceof SVGSVGElement) {
+        mermaidSvgs.push(svg);
+      }
+    });
+  }
+  return {
+    mermaidSvgs,
+    mermaidIndex: 0,
+  };
 }
 
 async function svgToPng(svgElement: SVGSVGElement): Promise<{ array: Uint8Array, width: number, height: number }> {

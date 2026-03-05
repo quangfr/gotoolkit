@@ -5714,34 +5714,61 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             if (!doc || !doc.body) return editorHtml;
 
             const FONT_SANS = 'Arial, Helvetica, sans-serif';
+            const getSanitizedSvgNode = (svgMarkup: string): SVGSVGElement | null => {
+              const raw = String(svgMarkup || '').trim();
+              if (!raw) return null;
+              try {
+                const svgDoc = new DOMParser().parseFromString(raw, 'image/svg+xml');
+                const svg = svgDoc.documentElement;
+                if (!svg || svg.nodeName.toLowerCase() !== 'svg') return null;
+                svgDoc.querySelectorAll('script,foreignObject,iframe,object,embed,link').forEach((node) => node.remove());
+                svgDoc.querySelectorAll('*').forEach((el) => {
+                  Array.from(el.attributes).forEach((attr) => {
+                    const name = attr.name.toLowerCase();
+                    const value = String(attr.value || '').trim();
+                    if (name.startsWith('on')) {
+                      el.removeAttribute(attr.name);
+                      return;
+                    }
+                    if ((name === 'href' || name === 'xlink:href') && /^\s*javascript:/i.test(value)) {
+                      el.removeAttribute(attr.name);
+                    }
+                  });
+                });
+                return svg;
+              } catch {
+                return null;
+              }
+            };
+            const liveMermaidSvgs = (() => {
+              const root: HTMLElement | null = editor?.view?.dom || null;
+              if (!root) return [];
+              const result: string[] = [];
+              root.querySelectorAll('mermaid-diagram').forEach((diagram) => {
+                const svg = diagram.querySelector('.mermaid-svg-container svg, svg');
+                if (svg instanceof SVGSVGElement) result.push(svg.outerHTML);
+              });
+              return result;
+            })();
 
-            // 1. Handle Mermaid diagrams (Outlook does not support SVG, PDF usually does better with text/images)
+            // 1. Handle Mermaid diagrams with rendered SVG in export order.
             try {
               const diagrams = doc.querySelectorAll('mermaid-diagram, .mermaid-diagram');
-              diagrams.forEach(diag => {
+              diagrams.forEach((diag, diagramIndex) => {
                 const code = (diag.getAttribute('code') || diag.getAttribute('data-code') || '').trim();
-                
-                // For PDF, we might want to try to keep SVG if possible, but let's stick to pre for consistency with email for now
-                // UNLESS we find the SVG in the current DOM (like we did for HTML before)
-                const realContainers = document.querySelectorAll('mermaid-diagram, .mermaid-diagram');
-                let foundSvg: string | null = null;
-                for (const container of Array.from(realContainers)) {
-                  const cCode = (container.getAttribute('code') || container.getAttribute('data-code') || '').trim();
-                  if (cCode === code) {
-                    const svgEl = container.querySelector('.mermaid-svg-container svg') || container.querySelector('svg');
-                    if (svgEl) {
-                      foundSvg = svgEl.outerHTML;
-                      break;
-                    }
-                  }
-                }
-
-                if (foundSvg && format === 'pdf') {
-                   const container = doc.createElement('div');
-                   container.style.margin = '20px 0';
-                   container.style.textAlign = 'center';
-                   container.innerHTML = foundSvg;
-                   diag.replaceWith(container);
+                const svgMarkup = liveMermaidSvgs[diagramIndex] || '';
+                const svgNode = getSanitizedSvgNode(svgMarkup);
+                if (svgNode) {
+                  const container = doc.createElement('div');
+                  container.style.margin = '20px 0';
+                  container.style.textAlign = 'center';
+                  const importedSvg = doc.importNode(svgNode, true) as SVGSVGElement;
+                  importedSvg.setAttribute('width', importedSvg.getAttribute('width') || '100%');
+                  importedSvg.style.maxWidth = '100%';
+                  importedSvg.style.height = 'auto';
+                  importedSvg.style.display = 'inline-block';
+                  container.appendChild(importedSvg);
+                  diag.replaceWith(container);
                 } else {
                   const pre = doc.createElement('pre');
                   pre.style.background = '#f4f4f4';
