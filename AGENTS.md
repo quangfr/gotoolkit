@@ -47,13 +47,18 @@ This file is the short operational guide. Use the docs below as the canonical re
   - run memo builds only for memo-side `src/` changes
   - run draw/connect builds only for draw-side `src/` changes
 - After modifying a worker, deploy that worker with Wrangler through `scripts/with-env-local.sh`.
-- When editing CSP in HTML or `firebase.json`, run `npm run check:csp`.
+- Release flow:
+  - for any request involving `bump`, `commit`, or `push`, run `npm run bump` first
+  - then commit and push (do not deploy Firebase Hosting directly from this workflow)
+- When editing CSP in HTML or `firebase.json`, follow the CSP workflow below, then run `npm run check:csp`.
 
 ## CSP hash workflow (inline scripts)
-- If you change any inline `<script>` content in `public/index.html`, `public/grid.html`, or `public/mobile.html`, run `npm run csp:inline:sync` to recompute and apply `sha256-...` hashes.
+- Scope: inline `<script>` changes in `public/index.html`, `public/grid.html`, or `public/mobile.html`.
+- Step 1: run `npm run csp:inline:sync` (recompute + apply `sha256-...` hashes).
 - Treat `scripts/csp-common.js` as canonical; keep CSP in HTML meta tags and `firebase.json` in sync with it.
 - Apply the same hash list to all app CSP mirrors (`public/index.html`, `public/grid.html`, `public/mobile.html`, and both Hosting CSP headers in `firebase.json`).
-- Validate with `npm run check:csp` before merge (it now verifies inline hash coverage in addition to mirror alignment).
+- Step 2: run `npm run check:csp` before merge/push.
+  - this now verifies both mirror alignment and inline hash coverage
 - After inline script edits in `public/index.html`, run a quick runtime smoke check and confirm there are no console `ReferenceError` failures before push.
 - If an inline block uses helpers defined in another script block, either expose the helper on `window` intentionally or provide a local fallback in the dependent block.
 

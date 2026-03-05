@@ -62,6 +62,17 @@ window.GoToolkitDrawMemo = (function () {
         });
     }
 
+    function toFiniteNumber(value, fallback = 0) {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : fallback;
+    }
+
+    function sanitizeZoom(zoom, fallback = 0.6) {
+        const parsed = toFiniteNumber(zoom, NaN);
+        if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+        return Math.min(1.5, Math.max(0.1, parsed));
+    }
+
     function resolveCacheVersion() {
         if (window.GO_TOOLKIT_VERSION) return window.GO_TOOLKIT_VERSION;
 
@@ -234,7 +245,7 @@ window.GoToolkitDrawMemo = (function () {
                     const bounds = excalidrawInstance.getSceneBounds(elements);
                     const padding = 40; // Total padding (20 top, 20 bottom)
                     const targetHeight = 600; // Match max-height in CSS (650) minus some margin
-                    const contentHeight = bounds.height;
+                    const contentHeight = toFiniteNumber(bounds?.height, 0);
 
                     if (contentHeight > 0) {
                         // Calculate zoom to fit height
@@ -247,12 +258,14 @@ window.GoToolkitDrawMemo = (function () {
                 }
             }
 
-            if (typeof finalZoom === 'number' && excalidrawInstance.exportToSvgWithZoom) {
+            const safeZoom = sanitizeZoom(finalZoom, 0.6);
+
+            if (typeof safeZoom === 'number' && excalidrawInstance.exportToSvgWithZoom) {
                 const svg = await excalidrawInstance.exportToSvgWithZoom(
                     api.getSceneElements(),
                     api.getAppState(),
                     api.getFiles(),
-                    finalZoom
+                    safeZoom
                 );
                 return svg.outerHTML;
             }

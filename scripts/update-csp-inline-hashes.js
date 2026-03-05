@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const { APP_CSP, normalize, parseCsp } = require("./csp-common");
+const { APP_CSP, APP_CSP_META, normalize, parseCsp, stripFrameAncestors } = require("./csp-common");
 const { INLINE_HASH_FILES, collectUnionInlineHashes } = require("./csp-inline-hashes");
 
 const repoRoot = path.resolve(__dirname, "..");
@@ -57,10 +57,10 @@ function updateCspCommon(nextPolicy) {
   }
 }
 
-function updateHtmlFiles(nextPolicy) {
+function updateHtmlFiles(nextMetaPolicy) {
   for (const file of APP_CSP_TARGETS) {
     const source = readFile(file);
-    const next = updateCspMetaInHtml(source, nextPolicy);
+    const next = updateCspMetaInHtml(source, nextMetaPolicy);
     writeFile(file, next);
   }
 }
@@ -85,8 +85,9 @@ function updateFirebase(nextPolicy) {
 function main() {
   const hashes = collectUnionInlineHashes(readFile, INLINE_HASH_FILES);
   const nextPolicy = normalize(setScriptSrcHashes(APP_CSP, hashes));
+  const nextMetaPolicy = normalize(stripFrameAncestors(nextPolicy));
   updateCspCommon(nextPolicy);
-  updateHtmlFiles(nextPolicy);
+  updateHtmlFiles(nextMetaPolicy || APP_CSP_META);
   updateFirebase(nextPolicy);
   console.log(`Updated inline CSP hashes (${hashes.length}) across csp-common, HTML mirrors, and firebase.json`);
 }

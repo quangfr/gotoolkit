@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const { APP_CSP, NOT_FOUND_CSP, normalize } = require("./csp-common");
+const { APP_CSP, APP_CSP_META, NOT_FOUND_CSP, normalize, stripFrameAncestors } = require("./csp-common");
 const {
   INLINE_HASH_FILES,
   collectUnionInlineHashes,
@@ -47,17 +47,6 @@ function extractMetaCsp(html, file) {
   return normalize(contentMatch[1]);
 }
 
-function stripFrameAncestors(policy) {
-  const normalized = normalize(policy || "");
-  if (!normalized) return normalized;
-  const parts = normalized
-    .split(";")
-    .map((part) => normalize(part))
-    .filter(Boolean)
-    .filter((part) => !/^frame-ancestors\b/i.test(part));
-  return normalize(parts.join("; "));
-}
-
 function getFirebasePolicies() {
   const firebaseConfig = JSON.parse(readFile("firebase.json"));
   const hostingEntries = Array.isArray(firebaseConfig.hosting) ? firebaseConfig.hosting : [firebaseConfig.hosting];
@@ -89,7 +78,7 @@ function main() {
   for (const file of APP_HTML_FILES) {
     if (!fileExists(file)) continue;
     const actual = stripFrameAncestors(extractMetaCsp(readFile(file), file));
-    const expected = stripFrameAncestors(APP_CSP);
+    const expected = APP_CSP_META;
     assertEqual(actual, expected, `${file} CSP`);
   }
 

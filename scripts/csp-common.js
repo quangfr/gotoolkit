@@ -17,9 +17,24 @@ function parseCsp(cspString) {
   return directives;
 }
 
+function stripFrameAncestors(policy) {
+  const normalized = normalize(policy || "");
+  if (!normalized) return normalized;
+  const parts = normalized
+    .split(";")
+    .map((part) => normalize(part))
+    .filter(Boolean)
+    .filter((part) => !/^frame-ancestors\b/i.test(part));
+  return normalize(parts.join("; "));
+}
+
+const APP_CSP_META = stripFrameAncestors(APP_CSP);
+
 module.exports = {
   APP_CSP,
+  APP_CSP_META,
   NOT_FOUND_CSP,
   normalize,
   parseCsp,
+  stripFrameAncestors,
 };

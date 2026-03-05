@@ -5330,17 +5330,34 @@
     getSceneBounds: (elements) => {
       const { getCommonBounds } = getExcalidrawExports();
       const [minX, minY, maxX, maxY] = getCommonBounds(elements);
-      return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+      const toFinite = (value, fallback = 0) => {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : fallback;
+      };
+      const safeMinX = toFinite(minX);
+      const safeMinY = toFinite(minY);
+      const safeMaxX = toFinite(maxX, safeMinX);
+      const safeMaxY = toFinite(maxY, safeMinY);
+      return {
+        minX: safeMinX,
+        minY: safeMinY,
+        maxX: safeMaxX,
+        maxY: safeMaxY,
+        width: Math.max(0, safeMaxX - safeMinX),
+        height: Math.max(0, safeMaxY - safeMinY)
+      };
     },
     exportToSvg: (elements, appState, files) => {
       const { exportToSvg } = getExcalidrawExports();
       return exportToSvg({ elements, appState, files });
     },
     exportToSvgWithZoom: (elements, appState, files, zoom) => (() => {
+      var _a;
       const { exportToSvg } = getExcalidrawExports();
+      const safeZoom = Number.isFinite(Number(zoom)) && Number(zoom) > 0 ? Number(zoom) : Number((_a = appState == null ? void 0 : appState.zoom) == null ? void 0 : _a.value) > 0 ? Number(appState.zoom.value) : 1;
       return exportToSvg({
         elements,
-        appState: { ...appState, zoom: { value: zoom } },
+        appState: { ...appState, zoom: { value: safeZoom } },
         files
       });
     })()
@@ -5359,4 +5376,3 @@ buffer/index.js:
    * @license  MIT
    *)
 */
-//# sourceMappingURL=draw.bundle.js.map

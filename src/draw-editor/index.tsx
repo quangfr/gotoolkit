@@ -1123,7 +1123,22 @@ window.GoToolkitExcalidraw = {
     getSceneBounds: (elements) => {
         const { getCommonBounds } = getExcalidrawExports();
         const [minX, minY, maxX, maxY] = getCommonBounds(elements);
-        return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+        const toFinite = (value: unknown, fallback = 0) => {
+            const num = Number(value);
+            return Number.isFinite(num) ? num : fallback;
+        };
+        const safeMinX = toFinite(minX);
+        const safeMinY = toFinite(minY);
+        const safeMaxX = toFinite(maxX, safeMinX);
+        const safeMaxY = toFinite(maxY, safeMinY);
+        return {
+            minX: safeMinX,
+            minY: safeMinY,
+            maxX: safeMaxX,
+            maxY: safeMaxY,
+            width: Math.max(0, safeMaxX - safeMinX),
+            height: Math.max(0, safeMaxY - safeMinY)
+        };
     },
     exportToSvg: (elements, appState, files) => {
         const { exportToSvg } = getExcalidrawExports();
@@ -1132,9 +1147,12 @@ window.GoToolkitExcalidraw = {
     exportToSvgWithZoom: (elements, appState, files, zoom) => 
         (() => {
             const { exportToSvg } = getExcalidrawExports();
+            const safeZoom = Number.isFinite(Number(zoom)) && Number(zoom) > 0
+                ? Number(zoom)
+                : (Number(appState?.zoom?.value) > 0 ? Number(appState.zoom.value) : 1);
             return exportToSvg({ 
                 elements, 
-                appState: { ...appState, zoom: { value: zoom } }, 
+                appState: { ...appState, zoom: { value: safeZoom } }, 
                 files 
             });
         })()
