@@ -49,6 +49,12 @@ This file is the short operational guide. Use the docs below as the canonical re
 - After modifying a worker, deploy that worker with Wrangler through `scripts/with-env-local.sh`.
 - When editing CSP in HTML or `firebase.json`, run `npm run check:csp`.
 
+## CSP hash workflow (inline scripts)
+- If you change any inline `<script>` content in `public/index.html`, `public/grid.html`, or `public/mobile.html`, recompute and add the new `sha256-...` to `script-src`.
+- Treat `scripts/csp-common.js` as canonical; keep CSP in HTML meta tags and `firebase.json` in sync with it.
+- Apply the same hash list to all app CSP mirrors (`public/index.html`, `public/grid.html`, `public/mobile.html`, and both Hosting CSP headers in `firebase.json`).
+- Validate with `npm run check:csp` before merge.
+
 ## Testing defaults
 - Prefer the local Playwright binary: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`.
 - On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails because Chrome is not installed here. Use the repo-local `playwright` package (`./node_modules/.bin/playwright ...`) or small ad hoc Node scripts with `require("playwright")` instead.

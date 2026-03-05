@@ -43,7 +43,25 @@ When changing network targets, script loading, iframes, or workers, check both:
 - page-level CSP in the HTML file
 - hosting CSP in `firebase.json`
 
-## 2.1 Frontend DOM injection posture
+### 2.1 CSP hash update process for inline scripts
+
+When a browser console reports `Executing inline script violates ...` for an app page:
+
+1. Compute the exact `sha256-...` for the blocked inline script body reported by the browser.
+2. Add that hash to `script-src` in the canonical CSP in `scripts/csp-common.js`.
+3. Propagate the same hash list to:
+   - `public/index.html`
+   - `public/grid.html`
+   - `public/mobile.html`
+   - `firebase.json` Hosting CSP headers (`**/*.html` and `/`)
+4. Run `npm run check:csp` and only merge when it passes.
+
+Notes:
+
+- Keep `script-src` hash lists identical across app CSP mirrors to avoid environment-specific breakage.
+- Do not add `'unsafe-inline'`; prefer explicit hashes for each inline script block.
+
+## 2.2 Frontend DOM injection posture
 
 Current coding direction in `public/` is:
 
