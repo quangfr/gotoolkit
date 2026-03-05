@@ -95,6 +95,11 @@ window.GoToolkitDrawMemo = (function () {
     }
 
     async function loadExcalidraw() {
+        try {
+            await window.GoToolkitLazyCdn?.loadExcalidraw?.();
+        } catch (err) {
+            // Fallback to existing local draw bundle loader below.
+        }
         if (window.GoToolkitExcalidraw) return true;
 
         // Check if script already exists

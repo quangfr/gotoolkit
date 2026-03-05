@@ -1611,14 +1611,8 @@
         const origin = global.location.origin;
         const api = getMicrosoftApiBaseUrl();
         const url = `${api}/oauth/start?origin=${encodeURIComponent(origin)}`;
-        console.log("[SSO Debug] Microsoft OAuth popup opening", {
-            origin,
-            api,
-            url
-        });
         const popup = global.open(url, "gotoolkit-microsoft-oauth", "width=560,height=700");
         if (!popup) {
-            console.log("[SSO Debug] Microsoft OAuth popup blocked");
             return Promise.reject(new Error("Popup OAuth bloquee"));
         }
         return new Promise((resolve, reject) => {
@@ -1630,11 +1624,6 @@
                 if (event.origin !== api) return;
                 if (event.data?.source !== "gotoolkit-microsoft-oauth") return;
                 settled = true;
-                console.log("[SSO Debug] Microsoft OAuth popup message received", {
-                    origin: event.origin,
-                    ok: Boolean(event.data?.ok),
-                    hasError: Boolean(String(event.data?.error || "").trim())
-                });
                 cleanup();
                 if (event.data?.ok) {
                     resolve(event.data);
@@ -1664,7 +1653,6 @@
                     const status = await microsoftGetAuthStatus();
                     if (status?.connected) {
                         settled = true;
-                        console.log("[SSO Debug] Microsoft OAuth status polling detected connected session");
                         cleanup();
                         resolve({ ok: true, source: "status-polling" });
                     }
@@ -1677,19 +1665,16 @@
                     if (settled) return;
                     if (!postCloseDeadlineMs) {
                         postCloseDeadlineMs = Date.now() + 8000;
-                        console.log("[SSO Debug] Microsoft OAuth popup closed before success message");
                     }
                     try {
                         const statusAfterClose = await microsoftGetAuthStatus();
                         if (statusAfterClose?.connected) {
                             settled = true;
-                            console.log("[SSO Debug] Microsoft OAuth popup closed but session is connected; accepting status fallback");
                             cleanup();
                             resolve({ ok: true, source: "status-after-close" });
                             return;
                         }
                     } catch (err) {
-                        console.warn("[SSO Debug] Microsoft OAuth status fallback failed after popup close", err);
                     }
                     if (Date.now() < postCloseDeadlineMs) return;
                     settled = true;
@@ -1713,56 +1698,31 @@
     }
 
     async function microsoftEnsureConnected() {
-        console.log("[SSO Debug] Microsoft ensureConnected start");
         try {
             const status = await microsoftGetAuthStatus();
-            console.log("[SSO Debug] Microsoft auth status", {
-                connected: Boolean(status?.connected),
-                accountEmail: String(status?.accountEmail || "").trim().toLowerCase()
-            });
             if (status?.connected) {
                 try {
                     const identityFromStatus = await microsoftGetIdentity();
                     const statusEmail = String(identityFromStatus?.accountEmail || "").trim().toLowerCase();
                     if (statusEmail) {
-                        console.log("[SSO Debug] Microsoft identity available from existing session", {
-                            accountEmail: statusEmail
-                        });
                         return identityFromStatus;
                     }
-                    console.warn("[SSO Debug] Microsoft existing session has empty identity email; forcing OAuth popup");
                 } catch (err) {
-                    console.log("[SSO Debug] Microsoft auth identity fallback after status", {
-                        error: err?.message || String(err)
-                    });
                 }
             }
         } catch (err) {
-            console.info("[SSO Debug] Microsoft auth status unavailable, opening OAuth popup", {
-                error: err?.message || String(err)
-            });
         }
         await openMicrosoftOAuthPopup();
-        console.log("[SSO Debug] Microsoft OAuth popup completed, fetching identity");
         let identity = null;
         try {
             identity = await microsoftGetIdentity();
         } catch (err) {
-            console.warn("[SSO Debug] Microsoft OAuth popup succeeded but identity lookup failed", err);
         }
         const accountEmail = String(identity?.accountEmail || "").trim().toLowerCase();
         const accountName = String(identity?.accountName || "").trim();
         if (!accountEmail) {
-            console.error("[SSO Debug] Microsoft OAuth completed without usable identity email");
             throw new Error("Connexion Outlook incomplète: email du compte indisponible");
         }
-        console.log("[SSO Debug] Microsoft OAuth succeeded", {
-            provider: "Microsoft",
-            accountEmail,
-            accountName,
-            hasIdentityToken: Boolean(String(identity?.identityToken || "").trim()),
-            expiresAt: Number(identity?.expiresAt || 0)
-        });
         try {
             global.dispatchEvent(new CustomEvent("go-toolkit:microsoft-oauth-success", {
                 detail: {
@@ -1866,9 +1826,6 @@
         try {
             identity = await gmailGetIdentity();
         } catch (err) {
-            console.info("[SSO Debug] Gmail OAuth popup succeeded but identity lookup is not ready yet", {
-                error: err?.message || String(err)
-            });
         }
         try {
             global.dispatchEvent(new CustomEvent("go-toolkit:gmail-oauth-success", {

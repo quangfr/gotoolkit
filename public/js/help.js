@@ -1,30 +1,6 @@
 "use strict";
 
 (() => {
-    const buildQuestionToc = () => {
-        const toc = document.getElementById("helpQuestionToc");
-        if (!(toc instanceof Element)) return;
-        if (toc.tagName !== "UL" && toc.tagName !== "OL") return;
-        toc.textContent = "";
-        const questions = Array.from(document.querySelectorAll(".help-list > div > strong"));
-        questions.forEach((strongEl, index) => {
-            const rawText = (strongEl.textContent || "").trim();
-            const text = rawText.replace(/^\d+\.\s*/, "");
-            if (!text) return;
-            const container = strongEl.parentElement;
-            if (!container) return;
-            if (!container.id) {
-                container.id = `q-${index + 1}`;
-            }
-            const li = document.createElement("li");
-            const a = document.createElement("a");
-            a.href = `#${container.id}`;
-            a.textContent = text;
-            li.appendChild(a);
-            toc.appendChild(li);
-        });
-    };
-
     const initBackToTopButton = () => {
         const button = document.getElementById("helpBackToTop");
         if (!(button instanceof HTMLButtonElement)) return;
@@ -54,7 +30,6 @@
     };
 
     const renderHelpIcons = () => {
-        buildQuestionToc();
         initBackToTopButton();
         updateLatestVersionLinks();
         window.lucide?.createIcons?.({

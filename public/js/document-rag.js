@@ -1695,6 +1695,9 @@
             this.env = null;
             this.pdfjs = null;
             this.jszip = null;
+            this.transformersPromise = null;
+            this.pdfjsPromise = null;
+            this.jszipPromise = null;
             this.keywordIndex = global.GoToolkitKeywordIndex || null;
             if (!this.keywordIndex) {
                 console.warn("Keyword index unavailable: GoToolkitKeywordIndex not found.");
@@ -1704,32 +1707,97 @@
 
         async initialize() {
             try {
-                const [transformers, pdfModule, jsZipModule] = await Promise.all([
-                    import(TRANSFORMERS_URL),
-                    import(PDFJS_URL),
-                    import(JSZIP_URL)
-                ]);
-                this.pipelineFactory = transformers.pipeline;
-                this.env = transformers.env;
-                if (this.env) {
-                    this.env.allowLocalModels = false;
-                    this.env.useBrowserCache = true;
-                }
-                this.pdfjs = pdfModule?.default || pdfModule;
-                if (this.pdfjs?.GlobalWorkerOptions) {
-                    this.pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
-                }
-                // Normalize JSZip module to handle different export patterns
-                this.jszip = normalizeJsZipModule(jsZipModule);
                 await this.loadSettings();
                 await this.ensureDb();
                 await this.migrateMemoEmbeddingsEnabled();
                 await this.cleanupExpiredEmbeddings();
                 this.emitSettings();
+                this.scheduleIdleHeavyModulesPrefetch();
             } catch (err) {
                 console.error("Documents manager initialisation failed", err);
                 throw err;
             }
+        }
+
+        scheduleIdleHeavyModulesPrefetch() {
+            const runPrefetch = () => {
+                Promise.allSettled([
+                    this.ensurePdfJs(),
+                    this.ensureJsZip(),
+                    this.ensureTransformers()
+                ]).catch(() => {
+                    // noop
+                });
+            };
+            const shouldPrefetch = !Boolean(global.GoToolkitDisableHeavyModulesPrefetch);
+            if (!shouldPrefetch) return;
+            if (typeof global.requestIdleCallback === "function") {
+                global.requestIdleCallback(() => runPrefetch(), { timeout: 8000 });
+                return;
+            }
+            global.setTimeout(runPrefetch, 1800);
+        }
+
+        async ensureTransformers() {
+            if (this.pipelineFactory) return this.pipelineFactory;
+            if (this.transformersPromise) return this.transformersPromise;
+            this.transformersPromise = import(TRANSFORMERS_URL)
+                .then((transformers) => {
+                    this.pipelineFactory = transformers?.pipeline || null;
+                    this.env = transformers?.env || null;
+                    if (this.env) {
+                        this.env.allowLocalModels = false;
+                        this.env.useBrowserCache = true;
+                    }
+                    if (!this.pipelineFactory) {
+                        throw new Error("Transformers pipeline indisponible");
+                    }
+                    return this.pipelineFactory;
+                })
+                .catch((err) => {
+                    this.transformersPromise = null;
+                    throw err;
+                });
+            return this.transformersPromise;
+        }
+
+        async ensurePdfJs() {
+            if (this.pdfjs) return this.pdfjs;
+            if (this.pdfjsPromise) return this.pdfjsPromise;
+            this.pdfjsPromise = import(PDFJS_URL)
+                .then((pdfModule) => {
+                    this.pdfjs = pdfModule?.default || pdfModule || null;
+                    if (this.pdfjs?.GlobalWorkerOptions) {
+                        this.pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+                    }
+                    if (!this.pdfjs) {
+                        throw new Error("pdfjs indisponible");
+                    }
+                    return this.pdfjs;
+                })
+                .catch((err) => {
+                    this.pdfjsPromise = null;
+                    throw err;
+                });
+            return this.pdfjsPromise;
+        }
+
+        async ensureJsZip() {
+            if (this.jszip) return this.jszip;
+            if (this.jszipPromise) return this.jszipPromise;
+            this.jszipPromise = import(JSZIP_URL)
+                .then((jsZipModule) => {
+                    this.jszip = normalizeJsZipModule(jsZipModule);
+                    if (!this.jszip) {
+                        throw new Error("JSZip indisponible");
+                    }
+                    return this.jszip;
+                })
+                .catch((err) => {
+                    this.jszipPromise = null;
+                    throw err;
+                });
+            return this.jszipPromise;
         }
 
         async waitReady() {
@@ -1988,6 +2056,7 @@
             const modelId = this.settings.embedModelId || DEFAULT_SETTINGS.embedModelId;
             const sharedCache = global.GoToolkitEmbedderCache || (global.GoToolkitEmbedderCache = {});
             if (this.embedder && this.embedModelId === modelId) return;
+            await this.ensureTransformers();
             if (!this.pipelineFactory) return;
             if (sharedCache.modelId === modelId && sharedCache.embedder) {
                 this.embedder = sharedCache.embedder;
@@ -3168,15 +3237,15 @@
 
         async extractText(file) {
             const ext = getExtension(file.name);
-            // Ensure jszip is loaded for format-specific operations
-            if ((ext === "docx" || ext === "pptx" || ext === "xlsx" || ext === "ods") && !this.jszip) {
-                throw new Error("Modules de traitement de fichiers non chargés - veuillez attendre et réessayer");
+            if (ext === "docx" || ext === "pptx" || ext === "xlsx" || ext === "ods" || ext === "odt" || ext === "odf") {
+                await this.ensureJsZip();
             }
             const mime = (file.type || "").toLowerCase();
             if (mime.startsWith("image/") || IMAGE_EXTENSIONS.has(ext)) {
                 return await this.extractImageWithOcr(file, file.name);
             }
             if (file.type === "application/pdf" || ext === "pdf") {
+                await this.ensurePdfJs();
                 const pdfResult = await this.extractPdf(file);
                 const pagesNeedingOcr = pdfResult?.pdfPages?.some((page) => {
                     return shouldOcrText(page?.text || "") || page?.hasImages;
@@ -3383,6 +3452,7 @@
         }
 
         async extractPdf(file) {
+            await this.ensurePdfJs();
             if (!this.pdfjs) return { text: "" };
             const buffer = await file.arrayBuffer();
             // Keep a copy for OCR; pdfjs may transfer/detach the original buffer.
@@ -3486,6 +3556,7 @@
         }
 
         async extractPdfOcrText(pdfResult, fileName = "") {
+            await this.ensurePdfJs();
             if (!this.pdfjs || !pdfResult?.pdfBuffer) return "";
             const pdf = await this.pdfjs.getDocument({ data: pdfResult.pdfBuffer }).promise;
             const offlineDisabled = isOfflineOcrDisabled();
@@ -3592,6 +3663,7 @@
         }
 
         async extractPdfCloudTextWithProgress(file, onPageText) {
+            await this.ensurePdfJs();
             if (!file || !this.pdfjs) {
                 throw new Error("PDF indisponible");
             }
@@ -3637,9 +3709,8 @@
         }
 
         async extractDocx(file) {
-            if (!this.jszip) {
-                throw new Error("JSZip n'est pas chargé - impossible d'extraire le DOCX");
-            }
+            await this.ensureJsZip();
+            if (!this.jszip) throw new Error("JSZip n'est pas chargé - impossible d'extraire le DOCX");
             const buffer = await file.arrayBuffer();
 
             let zip;
@@ -3736,9 +3807,8 @@
         }
 
         async extractPptx(file) {
-            if (!this.jszip) {
-                throw new Error("JSZip n'est pas chargé - impossible d'extraire le PPTX");
-            }
+            await this.ensureJsZip();
+            if (!this.jszip) throw new Error("JSZip n'est pas chargé - impossible d'extraire le PPTX");
             const buffer = await file.arrayBuffer();
             let zip;
             if (typeof this.jszip.loadAsync === "function") {
@@ -3836,6 +3906,8 @@
         }
 
         async extractSpreadsheet(file) {
+            await this.ensureJsZip();
+            if (!this.jszip) throw new Error("JSZip n'est pas chargé - impossible d'extraire le tableur");
             const buffer = await file.arrayBuffer();
             let zip;
             if (typeof this.jszip.loadAsync === "function") {
@@ -3867,9 +3939,8 @@
         }
 
         async extractOdf(file) {
-            if (!this.jszip) {
-                throw new Error("JSZip n'est pas chargé - impossible d'extraire le fichier ODF");
-            }
+            await this.ensureJsZip();
+            if (!this.jszip) throw new Error("JSZip n'est pas chargé - impossible d'extraire le fichier ODF");
             const buffer = await file.arrayBuffer();
             let zip;
             if (typeof this.jszip.loadAsync === "function") {

@@ -78,7 +78,7 @@
         return "";
     }
 
-    function refresh() {
+    async function refresh() {
         const jsonContainer = document.getElementById("memo-source-json");
         if (!textarea || !preview || !jsonContainer) return;
         const format = currentFormat;
@@ -113,6 +113,13 @@
                     jsonObj = JSON.parse(rawValue);
                 } catch (e) {
                     jsonObj = { error: "Invalid JSON", raw: rawValue };
+                }
+            }
+            if (typeof window.JSONViewer !== "function" && window.GoToolkitLazyCdn?.loadJsonViewer) {
+                try {
+                    await window.GoToolkitLazyCdn.loadJsonViewer();
+                } catch (err) {
+                    // fallback to textarea below
                 }
             }
             if (typeof window.JSONViewer === "function") {
@@ -222,7 +229,7 @@
         if (!overlay) return;
         overlay.style.display = "block";
         setFormat("markdown");
-        refresh();
+        void refresh();
         if (window.lucide) window.lucide.createIcons();
     }
 
@@ -240,7 +247,7 @@
     formatButtons.forEach((btn) => {
         btn.addEventListener("click", () => {
             setFormat(btn.dataset.format || "markdown");
-            refresh();
+            void refresh();
         });
     });
     copyBtn?.addEventListener("click", async () => {

@@ -382,12 +382,6 @@
     if (String(collection || "").trim().toLowerCase() !== "pages") return payload;
     if (!isEncryptedPagePayload(payload)) return payload;
     const effectiveSpaceId = String(payload.spaceId || "golive").trim().toLowerCase() || "golive";
-    console.log("[SSO Debug] decrypt page payload start", {
-      spaceId: effectiveSpaceId,
-      hasContentKey: Boolean(getCachedSpaceContentKey(effectiveSpaceId)),
-      payloadType: String(payload?.type || "").trim(),
-      isEncrypted: true
-    });
     const key = await getSpaceCryptoKey(base, effectiveSpaceId);
     if (!key) {
       throw new Error("Clé de déchiffrement indisponible");
@@ -401,11 +395,6 @@
     );
     const plainText = textDecoder.decode(plainBuffer);
     const parsed = JSON.parse(plainText);
-    console.log("[SSO Debug] decrypt page payload success", {
-      spaceId: effectiveSpaceId,
-      payloadKeys: parsed && typeof parsed === "object" ? Object.keys(parsed).slice(0, 12) : [],
-      tabCount: Array.isArray(parsed?.tabs) ? parsed.tabs.length : 0
-    });
     return parsed && typeof parsed === "object" ? parsed : payload;
   }
 
@@ -1391,11 +1380,6 @@
     const normalizedSpaceId = normalizeSpaceId(spaceId);
     const spaceCode = normalizeSpaceJoinCode(spaceCodeRaw);
     if (!normalizedSpaceId || !spaceCode) return null;
-    console.log("[SSO Debug] space auth via code", {
-      spaceId: normalizedSpaceId,
-      hasCode: Boolean(spaceCode),
-      codeLength: spaceCode.length
-    });
     const requestBody = {
       spaceId: normalizedSpaceId,
       spaceCode
@@ -1428,12 +1412,6 @@
     const normalizedSpaceId = normalizeSpaceId(spaceId);
     if (!normalizedSpaceId) return null;
     const identity = await getOauthIdentityAssertion();
-    console.log("[SSO Debug] space auth via oauth", {
-      spaceId: normalizedSpaceId,
-      provider: String(identity?.provider || "").trim(),
-      accountEmail: String(identity?.accountEmail || "").trim().toLowerCase(),
-      hasIdentityToken: Boolean(identity?.identityToken)
-    });
     if (!identity?.identityToken) return null;
     const response = await fetchWithSyncRetry(`${base}/${API_VERSION}/spaces/auth`, {
       method: "POST",
@@ -1473,13 +1451,6 @@
     const space = getSpaceById(normalizedSpaceId);
     const hasManagedOauthAccess = Boolean(space?.accessManaged) && String(space?.accessMode || "").trim().toLowerCase() === "oauth";
     const spaceCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
-    console.log("[SSO Debug] getSpaceAuthToken", {
-      spaceId: normalizedSpaceId,
-      hasManagedOauthAccess,
-      hasSpaceCode: Boolean(spaceCode),
-      accessMode: String(space?.accessMode || "").trim().toLowerCase(),
-      accessManaged: Boolean(space?.accessManaged)
-    });
     if (hasManagedOauthAccess) {
       return authenticateSpaceWithOauth(base, normalizedSpaceId);
     }
@@ -1808,11 +1779,6 @@
         spaceId: resolvedSpaceId,
         includeArchived: options?.includeArchived ? "1" : ""
       });
-      console.log("[SSO Debug] fetch share tree start", {
-        collection,
-        spaceId: resolvedSpaceId,
-        url
-      });
       let response;
       try {
         response = await fetchWithSpaceAuthRetry(base, url, {
@@ -1831,12 +1797,6 @@
         throw new Error(body || "Impossible de récupérer l'arborescence");
       }
       const data = await response.json().catch(() => ({}));
-      console.log("[SSO Debug] fetch share tree success", {
-        collection,
-        spaceId: resolvedSpaceId,
-        count: Array.isArray(data.documents) ? data.documents.length : 0,
-        watermark: String(data.watermark || "").trim()
-      });
       return {
         documents: Array.isArray(data.documents) ? data.documents : [],
         watermark: String(data.watermark || "").trim()
