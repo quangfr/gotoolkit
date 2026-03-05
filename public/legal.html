@@ -7,8 +7,8 @@
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>Mentions légales | GoToolkit</title>
-    <script src="js/bootstrap-theme.js?v=2026.03.05.20"></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.03.05.20">
+    <script src="js/bootstrap-theme.js?v=2026.03.05.21"></script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.03.05.21">
     <style>
         .legal-page {
             max-width: 920px;
@@ -203,7 +203,7 @@
                         <td>Intégrations OAuth</td>
                         <td>GoToolkit a besoin d’une autorisation ciblée pour exécuter l’action que vous lui demandez
                             sur un service tiers, par exemple créer un brouillon Gmail, publier une vidéo sur YouTube,
-                            publier un document sur Notion ou vérifier un accès via Microsoft.</td>
+                            publier un document sur Notion ou vérifier un accès via Microsoft ou Google.</td>
                         <td>Ces connexions sont limitées à des usages précis et ne sont pas destinées à donner un
                             accès général à l’ensemble du compte connecté. Les informations associées à la connexion
                             servent uniquement à sécuriser l’accès et à permettre l’action autorisée.</td>
@@ -309,6 +309,13 @@
                             Microsoft.</td>
                     </tr>
                     <tr>
+                        <td>Connexion Google SSO</td>
+                        <td>Google - OpenID Connect</td>
+                        <td>Utilisé pour vous permettre de vous identifier ou de confirmer qu’un compte peut accéder à
+                            un espace donné. GoToolkit ne demande pas d’accès général aux contenus de votre compte
+                            Google.</td>
+                    </tr>
+                    <tr>
                         <td>Gmail</td>
                         <td>Google - OAuth / Gmail API</td>
                         <td>Utilisé pour créer un brouillon en connectant à son compte de messagerie depuis GoToolkit.
@@ -324,7 +331,8 @@
                             destinée à
                             accéder librement à l’ensemble de votre compte au-delà de ce qui est nécessaire à cette
                             publication.
-                            <a href="https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps">Source</a>
+                            <a
+                                href="https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps">Source</a>
                         </td>
                     </tr>
                     <tr>
@@ -354,7 +362,7 @@
                     </tr>
                     <tr>
                         <td>IA + Reconnaissance d'image (OCR) + Ingestion fichiers volumineux</td>
-                        <td>OpenRouter / Nebius Token Factory (UE)</td>
+                        <td>OpenRouter</td>
                         <td>Utilisé uniquement lorsque vous activez des fonctions d’assistance par IA, de
                             reconnaissance d’image ou indexation de certains fichiers volumineux. Pas de rétention de
                             données.

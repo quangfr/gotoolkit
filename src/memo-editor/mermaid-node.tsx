@@ -983,7 +983,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
                           {(() => {
                             const current = diagramTypes.find(t => t.id === diagramType);
                             const Icon = current?.Icon || Workflow;
-                            const label = (draftCode || code).trim() ? current?.label : 'Éditer';
+                            const label = current?.label || 'Processus';
                             return <><Icon size={14} /> <span>{label}</span></>;
                           })()}
                           <ChevronUp size={12} style={{ transform: isTypeMenuOpen ? 'rotate(180deg)' : '' }} />

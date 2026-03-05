@@ -53933,7 +53933,7 @@ ${promptInput.trim()}`
                               (() => {
                                 const current = diagramTypes.find((t) => t.id === diagramType);
                                 const Icon2 = (current == null ? void 0 : current.Icon) || Workflow;
-                                const label = (draftCode || code).trim() ? current == null ? void 0 : current.label : "\xC9diter";
+                                const label = (current == null ? void 0 : current.label) || "Processus";
                                 return /* @__PURE__ */ jsxs(Fragment3, { children: [
                                   /* @__PURE__ */ jsx(Icon2, { size: 14 }),
                                   " ",
