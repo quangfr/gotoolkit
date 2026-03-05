@@ -20,6 +20,8 @@
     const INTERACTIVE_OVERLAY_ID = "go-toolkit-turnstile-overlay";
     const INTERACTIVE_CONTAINER_ID = "go-toolkit-turnstile-interactive";
     const DIAGNOSTIC_LIMIT = 50;
+    const INTERACTIVE_TRIGGER_DELAY_MS = 2500;
+    const INTERACTIVE_TIMEOUT_MS = 120000;
 
     function pushDiagnostic(event, details) {
         try {
@@ -445,7 +447,7 @@
                         });
                         hideInteractiveOverlay();
                         settleTokenResolver(new Error("TURNSTILE_EXECUTE_TIMEOUT"));
-                    }, 120000);
+                    }, INTERACTIVE_TIMEOUT_MS);
                     void ensureInteractiveWidget().catch(function (error) {
                         setLastAttemptSummary({
                             stage: "interactive-failed",
@@ -461,7 +463,7 @@
                         hideInteractiveOverlay();
                         settleTokenResolver(error);
                     });
-                }, 15000);
+                }, INTERACTIVE_TRIGGER_DELAY_MS);
                 widgetTokenResolver = function (nextToken) {
                     global.clearTimeout(timeoutId);
                     if (interactiveTimeoutId) {
@@ -501,13 +503,8 @@
                         action: actionName,
                         widgetId: String(rendered.widgetId)
                     });
-                    const immediateToken = typeof rendered.turnstile.getResponse === "function"
-                        ? String(rendered.turnstile.getResponse(rendered.widgetId) || "").trim()
-                        : "";
-                    if (immediateToken) {
-                        pushDiagnostic("execute-immediate-token", { hasToken: true });
-                        settleTokenResolver(null, immediateToken);
-                    }
+                    // Do not use getResponse() shortcut here: it can return a stale token
+                    // right after reset(), which then fails server verification as duplicate.
                 } catch (error) {
                     settleTokenResolver(error);
                 }

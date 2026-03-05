@@ -642,32 +642,56 @@
     async function executeOpenRouter(backend, payload, stopCondition, signal, onChunk) {
         const requestPayload = buildOpenRouterPayload(payload, backend);
         const wantsStream = Boolean(requestPayload.stream);
-        const requestHeaders = buildHeaders(backend.apiKey);
-        let turnstileHeaders = null;
-        try {
-            turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(backend.endpoint, resolveTurnstileAction(backend.endpoint));
-        } catch (error) {
-            const detail = global.GoToolkitTurnstile?.getFailureSummary?.() || "";
-            const wrapped = new Error(
-                "TURNSTILE_CLIENT_FAILED"
-                + (detail ? ": " + detail : "")
-            );
-            wrapped.code = "TURNSTILE_CLIENT_FAILED";
-            wrapped.cause = error;
-            throw wrapped;
+        let response = null;
+        let attemptedTurnstileRetry = false;
+
+        while (true) {
+            const requestHeaders = buildHeaders(backend.apiKey);
+            let turnstileHeaders = null;
+            try {
+                turnstileHeaders = await global.GoToolkitTurnstile?.getHeadersForUrl?.(backend.endpoint, resolveTurnstileAction(backend.endpoint));
+            } catch (error) {
+                const detail = global.GoToolkitTurnstile?.getFailureSummary?.() || "";
+                const wrapped = new Error(
+                    "TURNSTILE_CLIENT_FAILED"
+                    + (detail ? ": " + detail : "")
+                );
+                wrapped.code = "TURNSTILE_CLIENT_FAILED";
+                wrapped.cause = error;
+                throw wrapped;
+            }
+            if (turnstileHeaders && typeof turnstileHeaders === "object") {
+                Object.assign(requestHeaders, turnstileHeaders);
+            }
+            if (wantsStream) {
+                requestHeaders.Accept = "text/event-stream";
+            }
+            response = await fetch(backend.endpoint, {
+                method: "POST",
+                headers: requestHeaders,
+                body: JSON.stringify(requestPayload),
+                signal
+            });
+            if (response.status !== 403 || attemptedTurnstileRetry) {
+                break;
+            }
+            let bodyText = "";
+            try {
+                bodyText = await response.clone().text();
+            } catch (err) {
+                bodyText = "";
+            }
+            if (!/TURNSTILE_(FAILED|REQUIRED)/i.test(bodyText)) {
+                break;
+            }
+            attemptedTurnstileRetry = true;
+            try {
+                global.GoToolkitTurnstile?.clearDiagnostics?.();
+            } catch (err) {
+                // noop
+            }
+            // Retry once with a freshly issued token.
         }
-        if (turnstileHeaders && typeof turnstileHeaders === "object") {
-            Object.assign(requestHeaders, turnstileHeaders);
-        }
-        if (wantsStream) {
-            requestHeaders.Accept = "text/event-stream";
-        }
-        let response = await fetch(backend.endpoint, {
-            method: "POST",
-            headers: requestHeaders,
-            body: JSON.stringify(requestPayload),
-            signal
-        });
         if (
             !response.ok
             && response.status === 404
