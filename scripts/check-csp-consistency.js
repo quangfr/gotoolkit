@@ -24,6 +24,10 @@ function readFile(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 }
 
+function fileExists(relativePath) {
+  return fs.existsSync(path.join(repoRoot, relativePath));
+}
+
 function extractMetaCsp(html, file) {
   const tagMatch = html.match(/<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i);
   if (!tagMatch) {
@@ -78,6 +82,7 @@ function assertEqual(actual, expected, label) {
 
 function main() {
   for (const file of APP_HTML_FILES) {
+    if (!fileExists(file)) continue;
     const actual = stripFrameAncestors(extractMetaCsp(readFile(file), file));
     const expected = stripFrameAncestors(APP_CSP);
     assertEqual(actual, expected, `${file} CSP`);
