@@ -114,6 +114,15 @@
             gap: 10px;
         }
 
+        .question-toc-list--plain {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .question-toc-list--plain li {
+            list-style: none;
+        }
+
         .question-toc-list a {
             color: var(--text-primary);
             text-decoration: none;
@@ -174,7 +183,7 @@
 
         <nav class="question-toc" aria-label="Sommaire des questions">
             <h2>Sommaire des questions</h2>
-            <ol id="helpQuestionToc" class="question-toc-list"></ol>
+            <ul id="helpQuestionToc" class="question-toc-list question-toc-list--plain"></ul>
         </nav>
 
         <section id="demarrage" class="legal-section">
