@@ -664,7 +664,7 @@
   function renderMobileBotCategoryOptions() {
     if (!mobileBotCategorySelect) return;
     const categories = getPromptCategoryEntries();
-    mobileBotCategorySelect.innerHTML = "";
+    mobileBotCategorySelect.textContent = "";
     categories.forEach(entry => {
       const option = document.createElement("option");
       option.value = entry.key;
@@ -871,7 +871,7 @@
       if (mobileBotActiveCategory === "all") return true;
       return String(item.category || "").trim() === mobileBotActiveCategory;
     });
-    mobileBotSuggestions.innerHTML = "";
+    mobileBotSuggestions.textContent = "";
 
     if (!entries.length) {
       const empty = document.createElement("div");
@@ -1094,7 +1094,7 @@
 
   function renderGrid() {
     if (!handoffGrid) return;
-    handoffGrid.innerHTML = "";
+    handoffGrid.textContent = "";
     if (!handoffDocs.length) {
       const empty = document.createElement("div");
       empty.className = "handoff-empty";
@@ -1914,7 +1914,7 @@
       const voiceRecordingSpeedSelect = document.getElementById("voiceRecordingSpeedSelect");
       if (voiceRecordingSpeedSelect) {
         if (voiceRecordingSpeedSelect.dataset.mobileReady !== "1") {
-          voiceRecordingSpeedSelect.innerHTML = "";
+          voiceRecordingSpeedSelect.textContent = "";
           for (let speed = 0.4; speed <= 4.001; speed += 0.2) {
             const normalized = normalizeVoicePlaybackSpeed(speed).toFixed(1);
             const option = document.createElement("option");
@@ -1929,7 +1929,7 @@
 
       const memoPromptPresetSelectEl = document.getElementById("memoPromptPresetSelect");
       if (memoPromptPresetSelectEl) {
-        memoPromptPresetSelectEl.innerHTML = "";
+        memoPromptPresetSelectEl.textContent = "";
         memoPromptPresetSelectEl.hidden = true;
         memoPromptPresetSelectEl.style.display = "none";
       }

@@ -600,7 +600,7 @@
             if (!savedGallery) {
                 return;
             }
-            savedGallery.innerHTML = "";
+            savedGallery.textContent = "";
             if (!documentApi || typeof documentApi.getAllRecords !== "function") {
                 savedGallery.appendChild(buildCreateCard());
                 if (savedEmpty) savedEmpty.hidden = false;
@@ -748,8 +748,8 @@
                 return;
             }
             setState({ loading: true, error: "", hasPinned: false });
-            if (sharedSpacesRoot) sharedSpacesRoot.innerHTML = "";
-            if (pinnedGallery) pinnedGallery.innerHTML = "";
+            if (sharedSpacesRoot) sharedSpacesRoot.textContent = "";
+            if (pinnedGallery) pinnedGallery.textContent = "";
             const entries = await getStoredRecords();
             const spaces = getSpaces();
             if (!entries.length) {

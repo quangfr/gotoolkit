@@ -582,7 +582,7 @@
             this.overlay = document.createElement("div");
             this.overlay.className = "voice-video-player-modal";
             this.overlay.setAttribute("aria-hidden", "true");
-            this.overlay.innerHTML = `
+            const overlayMarkup = `
                 <div class="voice-video-player-backdrop"></div>
                 <div class="voice-video-player-dialog" role="dialog" aria-modal="true" aria-label="Lecteur vidéo">
                     <button type="button" class="voice-video-player-close" aria-label="Fermer">×</button>
@@ -631,6 +631,7 @@
                     </div>
                 </div>
             `;
+            this.overlay.replaceChildren(document.createRange().createContextualFragment(overlayMarkup));
             (document.body || document.documentElement).appendChild(this.overlay);
             this.dialog = this.overlay.querySelector(".voice-video-player-dialog");
             this.closeButton = this.overlay.querySelector(".voice-video-player-close");
@@ -641,11 +642,11 @@
             this.publishButton = this.overlay.querySelector(".voice-video-player-publish");
             this.youtubeLinkButton = this.overlay.querySelector(".voice-video-player-link");
             this.deleteButton = this.overlay.querySelector(".voice-video-player-delete");
-            this._defaultPublishLabel = this.publishButton?.innerHTML || "Youtube";
+            this._defaultPublishLabel = this.publishButton?.textContent?.trim() || "Youtube";
             this.youtubeUrl = "";
             this.videoEl = this.overlay.querySelector("video");
             this.downloadButton = this.overlay.querySelector(".voice-video-player-download");
-            this._downloadButtonBaseHtml = this.downloadButton?.innerHTML || '<i data-lucide="download"></i>';
+            this._downloadButtonBaseHtml = this.downloadButton?.textContent?.trim() || "Télécharger";
             this.downloadMenuWrap = this.overlay.querySelector(".voice-video-player-download-wrap");
             this.downloadDropdown = this.overlay.querySelector(".voice-video-player-download-dropdown");
             this.downloadVideoWebmOption = this.overlay.querySelector('[data-download-format="video-webm"]');
@@ -708,11 +709,11 @@
                 this.downloadButton.disabled = false;
                 this.downloadButton.removeAttribute("aria-busy");
                 this.downloadButton.textContent = "";
-                if (this._downloadButtonBaseHtml) {
-                    this.downloadButton.insertAdjacentHTML("beforeend", this._downloadButtonBaseHtml);
-                } else {
-                    this.downloadButton.appendChild(createLucideIconElement("download"));
-                }
+                this.downloadButton.appendChild(createLucideIconElement("download"));
+                const badge = document.createElement("span");
+                badge.className = "chat-header-badge";
+                badge.setAttribute("aria-hidden", "true");
+                this.downloadButton.appendChild(badge);
                 this.downloadVideoWebmOption && (this.downloadVideoWebmOption.disabled = false);
                 this.downloadVideoMp4Option && (this.downloadVideoMp4Option.disabled = false);
                 this.downloadGifOption && (this.downloadGifOption.disabled = false);
@@ -2098,12 +2099,8 @@
             } finally {
                 this.publishButton.disabled = false;
                 this.publishButton.textContent = "";
-                if (this._defaultPublishLabel) {
-                    this.publishButton.insertAdjacentHTML("beforeend", this._defaultPublishLabel);
-                } else {
-                    this.publishButton.appendChild(createLucideIconElement("youtube"));
-                    this.publishButton.appendChild(document.createTextNode(" Youtube"));
-                }
+                this.publishButton.appendChild(createLucideIconElement("youtube"));
+                this.publishButton.appendChild(document.createTextNode(` ${this._defaultPublishLabel || "Youtube"}`));
                 if (window.lucide) lucide.createIcons();
             }
         }
@@ -2155,7 +2152,7 @@
 
         _populateSpeedOptions() {
             if (!this.speedSelect) return;
-            this.speedSelect.innerHTML = "";
+            this.speedSelect.textContent = "";
             for (let speed = 0.4; speed <= 4.001; speed += 0.2) {
                 const normalized = Math.round(speed * 10) / 10;
                 const option = document.createElement("option");
@@ -2226,7 +2223,7 @@
 
         _renderSentences() {
             if (!this.transcriptList) return;
-            this.transcriptList.innerHTML = "";
+            this.transcriptList.textContent = "";
             this.sentenceEntries = [];
             const hasCut = this._hasCutRange();
             const cutOffset = hasCut ? (this.cutStart || 0) : 0;

@@ -1088,7 +1088,7 @@
     function renderCategoryIconPicker(modal) {
         const picker = modal?.querySelector("#categoryIconPicker");
         if (!picker) return;
-        picker.innerHTML = "";
+        picker.textContent = "";
         if (!categoryTabIconTarget) {
             picker.style.display = "none";
             return;
@@ -1153,7 +1153,7 @@
             });
             select.dataset.initialized = "1";
         }
-        select.innerHTML = "";
+        select.textContent = "";
         templates.forEach(template => {
             const option = doc.createElement("option");
             option.value = template.id;
@@ -1163,7 +1163,7 @@
         select.value = templates.some(template => template.id === currentTemplateId)
             ? currentTemplateId
             : (templates[0]?.id || "");
-        list.innerHTML = "";
+        list.textContent = "";
         const currentTemplate = findActiveCategoryTemplate(categoryTabDraft);
         const categories = Array.isArray(currentTemplate?.categories) ? currentTemplate.categories : [];
         const markTemplateAsCustomized = () => {
@@ -1174,7 +1174,7 @@
                 active.id = "custom";
                 categoryTabDraft.selectedTemplateId = "custom";
             }
-            select.innerHTML = "";
+            select.textContent = "";
             templates.forEach(template => {
                 const option = doc.createElement("option");
                 option.value = template.id;
@@ -1407,7 +1407,8 @@
         const modal = doc.getElementById("settingsModal");
         if (!modal) return;
         if (!modal.querySelector(".settings-modal")) {
-            modal.innerHTML = SHARED_SETTINGS_MODAL_HTML;
+            const fragment = doc.createRange().createContextualFragment(SHARED_SETTINGS_MODAL_HTML);
+            modal.replaceChildren(fragment);
         }
         bindSettingsTabs(modal);
         bindCategoryResetButton(modal);

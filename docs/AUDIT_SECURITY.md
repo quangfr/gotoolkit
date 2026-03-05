@@ -17,33 +17,33 @@ The strongest controls are now in place for worker-side access control and anti-
 
 The main remaining risks are frontend hardening gaps:
 - CSP still permits inline script/style
-- a reduced set of `innerHTML` paths remain (mostly static modal templates and container clears)
+- rich HTML rendering still exists through controlled parsing helpers (`createContextualFragment`) and must remain trusted/sanitized
 - AI debug traces are now metadata-only (improved), but still persist in `sessionStorage` for the active tab
 
 ## Findings
 
-### 1. Low: Residual `innerHTML` sinks remain and should stay constrained
+### 1. Low: Rich HTML rendering paths remain and should stay constrained
 
 Risk:
-- `innerHTML` is a direct DOM XSS sink when data becomes attacker-controlled.
-- Most dynamic icon/label rendering has been migrated to `textContent` + DOM builders, reducing exposure.
-- Remaining uses are mainly static templates and reset operations; risk rises if future changes add untrusted interpolation.
+- HTML parsing remains a potential XSS vector when fed with attacker-controlled content.
+- Dynamic icon/label rendering has been migrated to `textContent` + DOM builders, reducing direct sink exposure.
+- Risk now mainly comes from trusted-rich-render helpers if future changes pass untrusted strings.
 
 Evidence:
+- [public/js/assist.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/js/assist.js#L1049)
 - [public/js/voice.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/js/voice.js#L1252)
 - [public/js/voice-audio-player.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/js/voice-audio-player.js#L364)
 - [public/js/voice-video-player.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/js/voice-video-player.js#L585)
 
 Code:
-- Current dynamic UI paths in core modules (`assist`, `document-panel`, `config-modal`, `scan`, `index-gallery`, `grid`, `voice`) are now mostly DOM-based.
-- Remaining `innerHTML` paths are primarily:
-  - static modal shell templates
-  - container clears (`el.innerHTML = ""`)
-  - a few intentionally rich-content renderers that must stay sanitized
+- Current dynamic UI paths in core modules (`assist`, `document-panel`, `config-modal`, `scan`, `index-gallery`, `grid`, `voice`) are DOM-based.
+- No direct `innerHTML = ...` assignment remains in `public/` source files (excluding bundled artifacts).
+- Rich rendering now relies on controlled fragment parsing (`createContextualFragment`) and DOMParser-based parsing.
 
 Recommended fix:
 - Keep `textContent`, explicit `createElement`, and attribute setters as default.
-- Allow `innerHTML` only for static literals or pre-sanitized content, with a local comment when intentional.
+- Keep centralized wrappers (like `setTrustedHtml`) as single choke points for rich HTML insertion.
+- Keep strict rules: only trusted/sanitized HTML can reach fragment parsing helpers.
 
 ### 2. Medium: CSP still allows inline execution paths (`'unsafe-inline'`)
 
@@ -54,7 +54,7 @@ Risk:
 Evidence:
 - [public/index.html](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/index.html#L7)
 - [public/mobile.html](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/mobile.html#L43)
-- [firebase.json](/mnt/c/Users/tranx/Documents/Github/gotoolkit/firebase.json#L21)
+- [firebase.json](/mnt/c/Users/tranx/Documents/Github/gotoolkit/firebase.json#L22)
 
 Code:
 - `script-src` and `style-src` include `'unsafe-inline'`.
@@ -71,7 +71,7 @@ Risk:
 - Any XSS in-session can read these traces.
 
 Evidence:
-- [public/js/ia-client.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/js/ia-client.js#L780)
+- [public/js/ia-client.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/js/ia-client.js#L782)
 - [public/js/ia-client.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/js/ia-client.js#L823)
 - [public/js/ia-client.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/js/ia-client.js#L838)
 
@@ -83,36 +83,10 @@ Recommended fix:
 - Keep metadata minimal and bounded.
 - Consider in-memory only when debugging is not needed across page refresh.
 
-## Closed Since Previous Audit
-
-### A. Turnstile validation now checks returned context
-
-Status: resolved
-
-Evidence:
-- [workers/openrouter-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/openrouter-proxy/index.js#L135)
-- [workers/googletts-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/googletts-proxy/index.js#L173)
-- [workers/assemblyai-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/assemblyai-proxy/index.js#L117)
-
-What changed:
-- Workers reject token success when `hostname` is outside allowlist.
-- Workers reject action mismatches (`chat`/`embeddings`/route-specific action).
-
-### B. Legacy frontend API-key methods are no longer exposed
-
-Status: resolved
-
-Evidence:
-- [public/js/ia-config.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/js/ia-config.js#L57)
-
-What changed:
-- `ia-config.js` no longer exposes `setApiKey(...)` / `setOpenRouterApiKey(...)`.
-- Backend selection remains forced to proxy-backed OpenRouter flow.
-
 ## Priority Order
 
 1. Tighten CSP by removing inline allowances over time.
-2. Keep reducing remaining `innerHTML` exceptions and protect rich HTML paths with sanitization.
+2. Keep rich HTML helper inputs trusted/sanitized and audited.
 3. Minimize session-scoped AI debug metadata persistence.
 
 ## Notes

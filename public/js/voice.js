@@ -1249,7 +1249,7 @@
         if (state.overlay) return;
         state.overlay = document.createElement("div");
         state.overlay.className = "voice-overlay voice-overlay--prep";
-        state.overlay.innerHTML = `
+        const overlayMarkup = `
             <button class="voice-overlay__close" type="button" aria-label="Fermer">×</button>
             <div class="voice-overlay__caption">Demander l'autorisation à vos interlocuteurs pour enregistrer la conversation.</div>
             <div class="voice-overlay__ready">Prêt</div>
@@ -1287,6 +1287,7 @@
                 </div>
             </div>
         `;
+        state.overlay.replaceChildren(document.createRange().createContextualFragment(overlayMarkup));
         document.body.appendChild(state.overlay);
         state.overlayTiles = Array.from(state.overlay.querySelectorAll(".voice-overlay__tile"));
         state.overlayReady = state.overlay.querySelector(".voice-overlay__ready");

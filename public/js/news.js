@@ -24,7 +24,7 @@
         modal.setAttribute("role", "dialog");
         modal.setAttribute("aria-modal", "true");
         modal.setAttribute("aria-labelledby", "releaseNotesTitle");
-        modal.innerHTML = `
+        const modalMarkup = `
             <div class="release-notes-modal__dialog">
                 <div class="release-notes-header">
                     <div>
@@ -44,6 +44,7 @@
                 </div>
             </div>
         `;
+        modal.replaceChildren(document.createRange().createContextualFragment(modalMarkup));
         document.body.appendChild(modal);
         return modal;
     }
@@ -208,7 +209,7 @@
         const section = state.sections.releaseNotesContent;
         if (!section?.list) return;
         const list = section.list;
-        list.innerHTML = "";
+        list.textContent = "";
 
         if (!entries.length) {
             const placeholder = document.createElement("div");
@@ -270,7 +271,7 @@
         const section = state.sections.roadmapContent;
         if (!section?.list) return;
         const list = section.list;
-        list.innerHTML = "";
+        list.textContent = "";
 
         if (!entries.length) {
             const message = document.createElement("p");

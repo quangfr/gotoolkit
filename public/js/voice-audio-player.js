@@ -361,7 +361,7 @@
             this.overlay = document.createElement("div");
             this.overlay.className = "voice-audio-player-modal";
             this.overlay.setAttribute("aria-hidden", "true");
-            this.overlay.innerHTML = `
+            const overlayMarkup = `
                 <div class="voice-audio-player-backdrop"></div>
                 <div class="voice-audio-player-dialog" role="dialog" aria-modal="true" aria-label="Lecteur audio">
                     <button type="button" class="voice-audio-player-close" aria-label="Fermer">×</button>
@@ -384,6 +384,7 @@
                     <audio preload="metadata"></audio>
                 </div>
             `;
+            this.overlay.replaceChildren(document.createRange().createContextualFragment(overlayMarkup));
             (document.body || document.documentElement).appendChild(this.overlay);
             this.dialog = this.overlay.querySelector(".voice-audio-player-dialog");
             this.closeButton = this.overlay.querySelector(".voice-audio-player-close");
@@ -398,7 +399,7 @@
             this.downloadButton = this.overlay.querySelector(".voice-audio-player-download");
             this.downloadFormatSelect = this.overlay.querySelector(".voice-audio-player-download-format");
             if (this.speedSelect) {
-                this.speedSelect.innerHTML = "";
+                this.speedSelect.textContent = "";
                 for (let speed = 0.4; speed <= 4.001; speed += 0.2) {
                     const rate = Math.round(speed * 10) / 10;
                     const option = document.createElement("option");
@@ -561,7 +562,7 @@
             const webmSize = this.audioBlob ? formatBytes(this.audioBlob.size) : "0.0 MB";
             const mp3Size = this.audioMp3Blob ? formatBytes(this.audioMp3Blob.size) : webmSize;
             const current = String(this.downloadFormatSelect.value || "webm").toLowerCase();
-            this.downloadFormatSelect.innerHTML = "";
+            this.downloadFormatSelect.textContent = "";
             const webmOption = document.createElement("option");
             webmOption.value = "webm";
             webmOption.textContent = `WebM (${webmSize})`;

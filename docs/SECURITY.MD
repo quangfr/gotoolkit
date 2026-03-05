@@ -58,6 +58,11 @@ Operational rule:
 
 - treat `innerHTML` as unsafe by default; any rich HTML path must sanitize before insertion.
 
+Current implementation note:
+
+- `public/js/assist.js` centralizes rich HTML writes via `setTrustedHtml(...)` as a choke point for guarded rendering paths.
+- Dynamic icon/label UI in main surfaces has largely moved to DOM assembly (`createElement`/`textContent`) instead of template-string injection.
+
 ## 3. Browser storage
 
 ### `localStorage`

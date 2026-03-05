@@ -1046,6 +1046,24 @@
         return escapeHtml(text).replace(/\n/g, "<br>");
     }
 
+    function setTrustedHtml(target, html, context) {
+        if (!target) return;
+        // SECURITY: This is the only helper allowed to write rich HTML in assist.js.
+        // Callers must pass HTML produced by internal renderers/sanitizers only.
+        // Never pass raw user input or network payload directly.
+        const fragment = document.createRange().createContextualFragment(String(html || ""));
+        target.replaceChildren(fragment);
+        if (context) {
+            target.dataset.htmlSource = context;
+        }
+    }
+
+    function clearElementContent(target) {
+        if (!target) return;
+        // SECURITY: clearing content is safe; this helper keeps reset operations explicit.
+        target.textContent = "";
+    }
+
     function renderDocumentMarkdown(text) {
         if (global.GoToolkitMarkdown && typeof global.GoToolkitMarkdown.renderDocument === "function") {
             return global.GoToolkitMarkdown.renderDocument(text);
@@ -1807,7 +1825,7 @@
         this.clearAttachmentProgress();
 
         if (this.messagesEl) {
-            this.messagesEl.innerHTML = "";
+            clearElementContent(this.messagesEl);
             this.renderInitialMessages();
         }
         this.updatePromptDropdownLabel();
@@ -2021,7 +2039,7 @@
         this.queuedMessagesByScope.set(this.currentConversationScopeId, []);
         this.setPendingDocumentAttachments([]);
         if (this.messagesEl) {
-            this.messagesEl.innerHTML = "";
+            clearElementContent(this.messagesEl);
         }
         this.renderQueuedMessages();
         this.persist();
@@ -2313,7 +2331,7 @@
         if (message?._isStreaming) {
             entry.contentEl.textContent = message.content || "";
         } else {
-            entry.contentEl.innerHTML = this.renderBotContent(message);
+            setTrustedHtml(entry.contentEl, this.renderBotContent(message), "bot-message");
             addCopyButtonsToChatContent(entry.contentEl);
         }
         this.applyTechnicalHover(entry, message);
@@ -2616,7 +2634,7 @@
         bubble.appendChild(content);
 
         if (message.role === "bot") {
-            content.innerHTML = this.renderBotContent(message);
+            setTrustedHtml(content, this.renderBotContent(message), "bot-message");
             addCopyButtonsToChatContent(content);
         } else {
             setElementTextWithBreaks(content, message.content || "");
@@ -2776,7 +2794,7 @@
         this.latestRestoreMessageId = null;
         this.undoState = null;
         if (this.messagesEl) {
-            this.messagesEl.innerHTML = "";
+            clearElementContent(this.messagesEl);
         }
         this.messageNodes = {};
         this.renderInitialMessages();
@@ -3016,6 +3034,7 @@
     };
 
     AssistSidebar.prototype.renderBotContent = function (message) {
+        // SECURITY: bot markdown rendering must always go through internal markdown renderer.
         return renderBotMarkdown(message.content || "");
     };
 
@@ -3087,7 +3106,7 @@
         var suggestions = Array.isArray(message.suggestions) ? message.suggestions : [];
 
         if (entry.refsEl) {
-            entry.refsEl.innerHTML = "";
+            clearElementContent(entry.refsEl);
             if (references.length) {
                 entry.refsEl.style.display = "";
                 var list = document.createElement("ul");
@@ -3126,7 +3145,7 @@
         }
 
         if (entry.suggestionsEl) {
-            entry.suggestionsEl.innerHTML = "";
+            clearElementContent(entry.suggestionsEl);
             if (suggestions.length) {
                 entry.suggestionsEl.style.display = "";
                 var suggestionTooltip = this.extractSpacePagesTooltip(message);
@@ -4843,7 +4862,7 @@
                 self.updateBotMessage(botMessage);
                 var liveEntry = self.messageNodes[botMessage.id];
                 if (liveEntry && liveEntry.contentEl) {
-                    liveEntry.contentEl.innerHTML = renderBotMarkdown(botMessage.content || "");
+                    setTrustedHtml(liveEntry.contentEl, renderBotMarkdown(botMessage.content || ""), "bot-stream");
                     addCopyButtonsToChatContent(liveEntry.contentEl);
                 }
             }
@@ -5481,7 +5500,7 @@
         if (!this.promptShortcutsFilterEl) return;
         var categoriesMeta = this.getPromptShortcutCategories();
         var filterBar = this.promptShortcutsFilterEl;
-        filterBar.innerHTML = "";
+        clearElementContent(filterBar);
         var recentList = this.getPromptShortcutsRecentList(prompts || []);
         var hasRecent = recentList.length > 0;
         var categories = new Set();
@@ -5537,7 +5556,7 @@
         if (!this.promptShortcutsGridEl) return;
         var categoriesMeta = this.getPromptShortcutCategories();
         var grid = this.promptShortcutsGridEl;
-        grid.innerHTML = "";
+        clearElementContent(grid);
         var recentList = this.getPromptShortcutsRecentList(prompts || []);
         var hasRecent = recentList.length > 0;
         var active = (this.promptShortcutsActiveCategory || (hasRecent ? "RECENT" : "ALL")).toUpperCase();
@@ -7195,10 +7214,10 @@
         this.pendingAttachmentRow.style.display = "flex";
         this.pendingAttachmentList.style.display = showList ? "flex" : "none";
         if (!showList) {
-            this.pendingAttachmentList.innerHTML = "";
+            clearElementContent(this.pendingAttachmentList);
             return;
         }
-        this.pendingAttachmentList.innerHTML = "";
+        clearElementContent(this.pendingAttachmentList);
         names.forEach(function (name) {
             var isEnabled = !this.pendingExcludedAttachments?.has?.(name);
             var item = document.createElement("span");
@@ -7283,11 +7302,11 @@
         var queue = this.getQueuedMessages(scopeId);
         if (!queue.length) {
             this.queuedMessageRow.style.display = "none";
-            this.queuedMessageList.innerHTML = "";
+            clearElementContent(this.queuedMessageList);
             return;
         }
         this.queuedMessageRow.style.display = "flex";
-        this.queuedMessageList.innerHTML = "";
+        clearElementContent(this.queuedMessageList);
         queue.forEach(function (entry) {
             if (!entry?.text) return;
             var item = document.createElement("span");
@@ -7413,11 +7432,11 @@
             : [];
         if (CHAT_APP_ID !== "memo") {
             this.memoContextAttachmentRow.style.display = "none";
-            this.memoContextAttachmentList.innerHTML = "";
+            clearElementContent(this.memoContextAttachmentList);
             return;
         }
         this.memoContextAttachmentRow.style.display = "flex";
-        this.memoContextAttachmentList.innerHTML = "";
+        clearElementContent(this.memoContextAttachmentList);
         entries.forEach(function (entry) {
             var fileName = String(entry?.fileName || "").trim();
             var isExcluded = fileName ? this.pendingExcludedAttachments?.has?.(fileName) : false;
@@ -7530,7 +7549,7 @@
             this.memoContextAttachments = entries || [];
             if (this.memoPendingAttachmentMemos.has(memoId) && !this.memoConfirmedAttachmentMemos.has(memoId)) {
                 this.memoContextAttachmentRow.style.display = "none";
-                this.memoContextAttachmentList.innerHTML = "";
+                clearElementContent(this.memoContextAttachmentList);
                 return;
             }
             if (this.memoContextAttachments.length && !this.memoConfirmedAttachmentMemos.has(memoId)) {
@@ -10622,7 +10641,7 @@
             // Mettre à jour l'affichage du message
             var messageEntry = self.messageNodes[botMessage.id];
             if (messageEntry && messageEntry.contentEl) {
-                messageEntry.contentEl.innerHTML = self.renderBotContent(botMessage);
+                setTrustedHtml(messageEntry.contentEl, self.renderBotContent(botMessage), "bot-message");
                 addCopyButtonsToChatContent(messageEntry.contentEl);
                 self.syncBotExtras?.(messageEntry, botMessage);
             }
@@ -10659,7 +10678,7 @@
 
             var messageEntry = self.messageNodes[botMessage.id];
             if (messageEntry && messageEntry.contentEl) {
-                messageEntry.contentEl.innerHTML = self.renderBotContent(botMessage);
+                setTrustedHtml(messageEntry.contentEl, self.renderBotContent(botMessage), "bot-message");
                 addCopyButtonsToChatContent(messageEntry.contentEl);
                 self.syncBotExtras?.(messageEntry, botMessage);
             }
@@ -10826,7 +10845,7 @@
         }
         if (this.previewBodyEl) {
             var content = snippet || "(extrait indisponible)";
-            this.previewBodyEl.innerHTML = this.formatPreviewText(content);
+            setTrustedHtml(this.previewBodyEl, this.formatPreviewText(content), "doc-preview");
         }
     };
 
@@ -10944,7 +10963,7 @@
                 var markdownHtml = renderDocumentMarkdown(markdown);
                 if (this.previewBodyEl) {
                     if (markdownHtml) {
-                        this.previewBodyEl.innerHTML = markdownHtml;
+                        setTrustedHtml(this.previewBodyEl, markdownHtml, "doc-preview-markdown");
                     } else {
                         setPreviewUnavailableHtml(this.previewBodyEl);
                     }
@@ -10981,7 +11000,7 @@
                                 if (!text) return;
                                 accumulated = accumulated ? (accumulated + "\n\n" + text) : text;
                                 virtualDocCloud.rawText = accumulated;
-                                this.previewBodyEl.innerHTML = this.formatPreviewText(accumulated);
+                                setTrustedHtml(this.previewBodyEl, this.formatPreviewText(accumulated), "doc-preview");
                             }.bind(this));
                             if (!accumulated) {
                                 setPreviewUnavailableHtml(this.previewBodyEl);
@@ -11006,7 +11025,7 @@
                 if (fetchedType.includes("markdown") || this.detectFileTypeFromPath(entry.path) === "markdown") {
                     var html = renderDocumentMarkdown(rawText);
                     if (html) {
-                        this.previewBodyEl.innerHTML = html;
+                        setTrustedHtml(this.previewBodyEl, html, "doc-preview-markdown");
                     } else {
                         setPreviewUnavailableHtml(this.previewBodyEl);
                     }
@@ -11017,7 +11036,7 @@
                         return;
                     }
                 }
-                this.previewBodyEl.innerHTML = this.formatPreviewText(rawText);
+                setTrustedHtml(this.previewBodyEl, this.formatPreviewText(rawText), "doc-preview");
                 return;
             }
         } catch (err) {
@@ -11140,7 +11159,7 @@
         }
         if (this.previewBodyEl) {
             var content = snippet || "(extrait indisponible)";
-            this.previewBodyEl.innerHTML = this.formatPreviewText(content, reference.line);
+            setTrustedHtml(this.previewBodyEl, this.formatPreviewText(content, reference.line), "doc-preview");
             if (typeof reference.line === "number") {
                 this.scrollPreviewToLine(reference.line);
             }
@@ -11278,7 +11297,7 @@
             });
 
             var span = document.createElement("span");
-            span.innerHTML = html;
+            setTrustedHtml(span, html, "snippet-highlight");
             textNode.parentNode.replaceChild(span, textNode);
         });
     };
@@ -11323,7 +11342,7 @@
             }
             var markdownHtml = renderDocumentMarkdown(markdownSource);
             if (markdownHtml) {
-                this.previewBodyEl.innerHTML = markdownHtml;
+                setTrustedHtml(this.previewBodyEl, markdownHtml, "doc-preview-markdown");
             } else {
                 setPreviewUnavailableHtml(this.previewBodyEl);
             }
@@ -11358,12 +11377,12 @@
                     }
                 });
                 if (rawContent.length) {
-                    this.previewBodyEl.innerHTML = this.formatPreviewText(rawContent.join("\n\n"), highlightLine, opts);
+                    setTrustedHtml(this.previewBodyEl, this.formatPreviewText(rawContent.join("\n\n"), highlightLine, opts), "doc-preview");
                     return;
                 }
             }
             if (snippet) {
-                this.previewBodyEl.innerHTML = this.formatPreviewText(snippet, highlightLine, opts);
+                setTrustedHtml(this.previewBodyEl, this.formatPreviewText(snippet, highlightLine, opts), "doc-preview");
             } else {
                 setPreviewUnavailableHtml(this.previewBodyEl);
             }
@@ -11455,7 +11474,7 @@
             );
         }
 
-        this.previewBodyEl.innerHTML = html.join("");
+        setTrustedHtml(this.previewBodyEl, html.join(""), "doc-preview");
     };
 
     AssistSidebar.prototype.renderDocumentTextProgressive = function (chunks, options) {
@@ -11468,7 +11487,7 @@
         }
         var batchSize = 10;
         var index = 0;
-        this.previewBodyEl.innerHTML = "";
+        clearElementContent(this.previewBodyEl);
         var appendBatch = function () {
             var slice = items.slice(index, index + batchSize);
             index += batchSize;
@@ -11478,7 +11497,7 @@
                 opts
             );
             var container = document.createElement("div");
-            container.innerHTML = html;
+            setTrustedHtml(container, html, "doc-preview");
             while (container.firstChild) {
                 this.previewBodyEl.appendChild(container.firstChild);
             }
@@ -12158,7 +12177,7 @@
 
             const contentEl = messageEntry.contentEl || messageEntry.querySelector?.('.chat-message-content');
             if (contentEl) {
-                contentEl.innerHTML = assistInstance.renderBotContent(botMessage);
+                setTrustedHtml(contentEl, assistInstance.renderBotContent(botMessage), "bot-message");
                 addCopyButtonsToChatContent(contentEl);
                 assistInstance.syncBotExtras?.(messageEntry, botMessage);
                 assistInstance.scrollToBottom?.();

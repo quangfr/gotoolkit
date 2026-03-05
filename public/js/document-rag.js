@@ -281,7 +281,16 @@
         const toast = ensureAiRequestToaster(toasterId);
         if (!toast) return;
         if (isVisible) {
-            toast.innerHTML = `<i data-lucide="${iconName}" class="lucide-pulse" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00`;
+            toast.textContent = "";
+            const icon = document.createElement("i");
+            icon.setAttribute("data-lucide", String(iconName || "loader-2"));
+            icon.className = "lucide-pulse";
+            icon.style.width = "14px";
+            icon.style.height = "14px";
+            icon.style.verticalAlign = "middle";
+            icon.style.marginRight = "4px";
+            toast.appendChild(icon);
+            toast.appendChild(document.createTextNode(" 00:00"));
             toast.style.display = "block";
             toast.classList.add("visible");
             if (window.lucide) window.lucide.createIcons();
@@ -289,7 +298,7 @@
         }
         toast.classList.remove("visible");
         toast.style.display = "none";
-        toast.innerHTML = "";
+        toast.textContent = "";
     }
 
     function emitDocumentsImportMessage(message, isError) {

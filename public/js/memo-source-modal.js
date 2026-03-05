@@ -86,7 +86,7 @@
         textarea.style.display = "none";
         preview.style.display = "none";
         jsonContainer.style.display = "none";
-        jsonContainer.innerHTML = "";
+        jsonContainer.textContent = "";
 
         if (format === "html") {
             preview.style.display = "block";

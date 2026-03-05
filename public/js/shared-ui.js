@@ -29,7 +29,8 @@
         if (!slotElement || slotElement.dataset.shareMenuRendered === "true") {
             return document.getElementById("shareMenu");
         }
-        slotElement.innerHTML = SHARE_MENU_TEMPLATE.trim();
+        const fragment = document.createRange().createContextualFragment(SHARE_MENU_TEMPLATE.trim());
+        slotElement.replaceChildren(fragment);
         slotElement.dataset.shareMenuRendered = "true";
         return slotElement.querySelector("#shareMenu");
     }

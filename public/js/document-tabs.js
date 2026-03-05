@@ -24,7 +24,7 @@
         var getRenderToken = typeof d.getRenderToken === "function" ? d.getRenderToken : function () { return 0; };
         var renderToken = nextRenderToken();
 
-        documentBreadcrumbEl.innerHTML = "";
+        documentBreadcrumbEl.textContent = "";
 
         var activeDocumentId = d.activeDocumentId;
         if (!activeDocumentId) {

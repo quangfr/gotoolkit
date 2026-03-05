@@ -198,7 +198,7 @@
         currentModalSelectedIds = normalizedSelectedIds;
         const container = document.getElementById("document-explorer-superpowers-container");
         if (!container) return;
-        container.innerHTML = '';
+        container.textContent = '';
         if (!catalog.length) {
             return;
         }
@@ -561,7 +561,7 @@
         modalOverlay.setAttribute("role", "dialog");
         modalOverlay.setAttribute("aria-modal", "true");
         modalOverlay.style.display = "none";
-        modalOverlay.innerHTML = `
+        const modalMarkup = `
             <div class="modal document-edit-modal">
                 <div class="modal-header">
                     <h3>Document</h3>
@@ -590,6 +590,7 @@
                 </div>
             </div>
         `;
+        modalOverlay.replaceChildren(document.createRange().createContextualFragment(modalMarkup));
         document.body.appendChild(modalOverlay);
         const modalCloseBtn = modalOverlay.querySelector(".modal-close");
         const modalSaveBtn = modalOverlay.querySelector("[data-save]");
@@ -630,7 +631,7 @@
         }
         function renderIconGrid() {
             if (!modalIconGrid) return;
-            modalIconGrid.innerHTML = "";
+            modalIconGrid.textContent = "";
             const searchWrap = document.createElement("div");
             searchWrap.className = "document-explorer-icon-search-wrap";
             const searchInput = document.createElement("input");
@@ -909,7 +910,7 @@
                 return;
             }
 
-            tocEl.innerHTML = "";
+            tocEl.textContent = "";
             headings.forEach(heading => {
                 const item = document.createElement("div");
                 item.className = `toc-item toc-item--h${heading.level}`;
@@ -1035,7 +1036,7 @@
 
         function renderEmpty() {
             if (!listEl) return;
-            listEl.innerHTML = "";
+            listEl.textContent = "";
             const empty = document.createElement("div");
             empty.className = "document-explorer__empty";
             empty.textContent = "Aucun document";
@@ -1328,7 +1329,7 @@
             const filteredItems = needle
                 ? safeItems.filter(item => String(item?.title || "").toLowerCase().includes(needle))
                 : safeItems;
-            listEl.innerHTML = "";
+            listEl.textContent = "";
             let dropHintTarget = null;
             let dropHintMode = "";
             let rootDropBody = null;
