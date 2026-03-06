@@ -194,14 +194,14 @@
         card.style.fontFamily = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
         const title = document.createElement("div");
-        title.textContent = "Vérification anti-bot requise";
+        title.textContent = "Vérification humaine";
         title.style.fontSize = "16px";
         title.style.fontWeight = "700";
         title.style.marginBottom = "8px";
         card.appendChild(title);
 
         const text = document.createElement("div");
-        text.textContent = "Cloudflare demande une vérification visible avant d'utiliser le proxy OpenRouter.";
+        text.textContent = "Pour continuer, confirmez rapidement que vous n'êtes pas un robot.";
         text.style.fontSize = "13px";
         text.style.lineHeight = "1.45";
         text.style.marginBottom = "12px";
@@ -301,28 +301,31 @@
     }
 
     async function ensureInteractiveWidget() {
+        const turnstile = await ensureTurnstileLoaded();
+        const parts = showInteractiveOverlay();
+        const container = parts?.container;
+        if (!container) {
+            throw new Error("TURNSTILE_INTERACTIVE_CONTAINER_MISSING");
+        }
+
+        if (interactiveWidgetId !== null && interactiveWidgetId !== undefined) {
+            try {
+                if (typeof turnstile.reset === "function") {
+                    turnstile.reset(interactiveWidgetId);
+                    pushDiagnostic("interactive-reset", { widgetId: String(interactiveWidgetId) });
+                }
+            } catch (error) {
+                pushDiagnostic("interactive-reset-error", { error: String(error?.message || error || "") });
+            }
+            pushDiagnostic("interactive-widget-reused", { widgetId: String(interactiveWidgetId) });
+            return { turnstile, widgetId: interactiveWidgetId };
+        }
+
         if (interactiveWidgetPromise) {
-            showInteractiveOverlay();
             return interactiveWidgetPromise;
         }
-        interactiveWidgetPromise = ensureTurnstileLoaded().then(function (turnstile) {
-            const parts = showInteractiveOverlay();
-            const container = parts?.container;
-            if (!container) {
-                throw new Error("TURNSTILE_INTERACTIVE_CONTAINER_MISSING");
-            }
-            if (interactiveWidgetId !== null && interactiveWidgetId !== undefined) {
-                try {
-                    if (typeof turnstile.reset === "function") {
-                        turnstile.reset(interactiveWidgetId);
-                        pushDiagnostic("interactive-reset", { widgetId: String(interactiveWidgetId) });
-                    }
-                } catch (error) {
-                    pushDiagnostic("interactive-reset-error", { error: String(error?.message || error || "") });
-                }
-                pushDiagnostic("interactive-widget-reused", { widgetId: String(interactiveWidgetId) });
-                return { turnstile, widgetId: interactiveWidgetId };
-            }
+
+        interactiveWidgetPromise = Promise.resolve().then(function () {
             const renderedId = turnstile.render(container, {
                 sitekey: getSiteKey(),
                 appearance: "always",
@@ -374,12 +377,14 @@
             });
             return { turnstile, widgetId: renderedId };
         }).catch(function (error) {
-            interactiveWidgetPromise = null;
             interactiveWidgetId = null;
             hideInteractiveOverlay();
             pushDiagnostic("interactive-widget-error-final", { error: String(error?.message || error || "") });
             throw error;
+        }).finally(function () {
+            interactiveWidgetPromise = null;
         });
+
         return interactiveWidgetPromise;
     }
 
