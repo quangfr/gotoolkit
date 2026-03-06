@@ -625,6 +625,13 @@
       && String(entry?.spaceId || "").trim().toLowerCase() === spaceId
     );
     if (match?.id && memoMediaStore.createRef) {
+      const ownerDocumentId = String(options?.ownerDocumentId || "").trim();
+      if (ownerDocumentId && memoMediaStore?.saveRecord) {
+        await memoMediaStore.saveRecord({
+          ...match,
+          ownerDocumentId
+        }).catch(() => null);
+      }
       return memoMediaStore.createRef(match.id) || assetUrl;
     }
     let response;
@@ -654,6 +661,7 @@
       fileName,
       mimeType: blob.type || String(response.headers.get("content-type") || "").trim() || "application/octet-stream",
       spaceId,
+      ownerDocumentId: String(options?.ownerDocumentId || "").trim(),
       sourceAssetId: assetId,
       sourceUrl: buildAssetUrl(base, assetId)
     }).catch(() => null);
@@ -732,6 +740,13 @@
       });
       const assetId = String(uploadResult?.asset?.id || "").trim();
       if (!assetId) continue;
+      if (localId && memoMediaStore?.saveRecord) {
+        await memoMediaStore.saveRecord({
+          ...record,
+          sourceAssetId: assetId,
+          sourceUrl: buildAssetUrl(base, assetId)
+        }).catch(() => null);
+      }
       node.setAttribute("src", buildAssetUrl(base, assetId));
       node.setAttribute("data-gt-asset-id", assetId);
     }
@@ -766,6 +781,13 @@
               collection: "assets"
             });
             const assetId = String(uploadResult?.asset?.id || "").trim();
+            if (assetId && localId && memoMediaStore?.saveRecord) {
+              await memoMediaStore.saveRecord({
+                ...record,
+                sourceAssetId: assetId,
+                sourceUrl: buildAssetUrl(base, assetId)
+              }).catch(() => null);
+            }
             next[key] = assetId ? buildAssetUrl(base, assetId) : entry;
             continue;
           }

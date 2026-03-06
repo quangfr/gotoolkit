@@ -3528,21 +3528,31 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     }
   }, [activeDocumentId]);
 
+  const resolveActiveMemoDocumentId = React.useCallback(() => {
+    const globalScope = window as any;
+    return typeof globalScope.GoToolkitMemoGetActiveDocumentId === 'function'
+      ? String(globalScope.GoToolkitMemoGetActiveDocumentId() || '').trim()
+      : String(activeDocumentId || '').trim();
+  }, [activeDocumentId]);
+
   const uploadEditorAssetFile = React.useCallback(async (file: File) => {
     const mimeType = String(file?.type || '').trim() || 'application/octet-stream';
     const fileName = String(file?.name || 'asset').trim() || 'asset';
     const spaceId = await resolveActiveMemoSpaceId();
+    const ownerDocumentId = resolveActiveMemoDocumentId();
     console.log('[SimpleEditor] media local-store:start', {
       source: 'file-insert',
       fileName,
       mimeType,
       size: Number(file?.size || 0),
       spaceId,
+      ownerDocumentId,
     });
     const saved = await (window as any).goToolkitMemoMediaStore?.saveFile?.(file, {
       fileName,
       mimeType,
       spaceId,
+      ownerDocumentId,
     });
     const localRef = String(saved?.ref || '').trim();
     if (!localRef) {
@@ -3559,6 +3569,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       mimeType,
       size: Number(file?.size || 0),
       spaceId,
+      ownerDocumentId,
       localRef,
       resolvedSrc,
     });
@@ -3568,7 +3579,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       fileName,
       mimeType,
     };
-  }, [resolveActiveMemoSpaceId]);
+  }, [resolveActiveMemoDocumentId, resolveActiveMemoSpaceId]);
 
   const buildDroppedMediaContent = React.useCallback(async (files: FileList | File[]) => {
     const selected = Array.from(files || []);
@@ -3904,6 +3915,44 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       handleKeyDown: (_view, event) => {
         if (!editor) return false;
         const selection = editor.state.selection;
+        const selectedNodeType = selection instanceof NodeSelection
+          ? String(selection.node?.type?.name || '')
+          : '';
+        const isProtectedBlockSelection =
+          selection instanceof NodeSelection &&
+          (selectedNodeType === 'image' || selectedNodeType === 'videoEmbed' || selectedNodeType === 'mermaidDiagram');
+        if (isProtectedBlockSelection) {
+          const isSpaceKey = event.key === ' ' || event.key === 'Spacebar';
+          const isDeleteKey = event.key === 'Backspace' || event.key === 'Delete';
+          const isTextEntryKey =
+            event.key.length === 1 &&
+            !event.metaKey &&
+            !event.ctrlKey &&
+            !event.altKey;
+          const isBlockedMediaKey =
+            isSpaceKey ||
+            isDeleteKey ||
+            isTextEntryKey ||
+            event.key === 'Enter';
+
+          if (isBlockedMediaKey) {
+            if (isDeleteKey) return false;
+            event.preventDefault();
+            event.stopPropagation();
+            if (isSpaceKey && selectedNodeType === 'videoEmbed') {
+              const nodeDom = editor.view.nodeDOM(selection.from) as HTMLElement | null;
+              const videoEl = nodeDom?.querySelector('video') as HTMLVideoElement | null;
+              if (videoEl) {
+                if (videoEl.paused) {
+                  void videoEl.play().catch(() => null);
+                } else {
+                  videoEl.pause();
+                }
+              }
+            }
+            return true;
+          }
+        }
         const docEnd = editor.state.doc.content.size;
         const isNearDocumentEnd = selection.to >= Math.max(0, docEnd - 1);
         const shouldStickToBottomAfterEnter =

@@ -185,6 +185,7 @@
             fileName: String(record?.fileName || "asset.bin").trim() || "asset.bin",
             size: Number(record?.size || record?.blob?.size || 0) || 0,
             spaceId: String(record?.spaceId || "").trim().toLowerCase() || "",
+            ownerDocumentId: String(record?.ownerDocumentId || "").trim(),
             sourceAssetId: String(record?.sourceAssetId || "").trim(),
             sourceUrl: String(record?.sourceUrl || "").trim(),
             createdAt: String(record?.createdAt || new Date().toISOString()).trim() || new Date().toISOString(),
@@ -207,6 +208,7 @@
             fileName: String(file?.name || nextOptions.fileName || "asset.bin").trim() || "asset.bin",
             size: Number(file?.size || 0),
             spaceId: String(nextOptions.spaceId || "").trim().toLowerCase(),
+            ownerDocumentId: String(nextOptions.ownerDocumentId || "").trim(),
             sourceAssetId: String(nextOptions.sourceAssetId || "").trim(),
             sourceUrl: String(nextOptions.sourceUrl || "").trim(),
             blob: file instanceof Blob ? file : null

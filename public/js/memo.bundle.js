@@ -59140,22 +59140,29 @@ ${promptInput.trim()}`
         return "golive";
       }
     }, [activeDocumentId]);
+    const resolveActiveMemoDocumentId = react_shim_default.useCallback(() => {
+      const globalScope = window;
+      return typeof globalScope.GoToolkitMemoGetActiveDocumentId === "function" ? String(globalScope.GoToolkitMemoGetActiveDocumentId() || "").trim() : String(activeDocumentId || "").trim();
+    }, [activeDocumentId]);
     const uploadEditorAssetFile = react_shim_default.useCallback(async (file) => {
       var _a2, _b2, _c2, _d2;
       const mimeType = String((file == null ? void 0 : file.type) || "").trim() || "application/octet-stream";
       const fileName = String((file == null ? void 0 : file.name) || "asset").trim() || "asset";
       const spaceId = await resolveActiveMemoSpaceId();
+      const ownerDocumentId = resolveActiveMemoDocumentId();
       console.log("[SimpleEditor] media local-store:start", {
         source: "file-insert",
         fileName,
         mimeType,
         size: Number((file == null ? void 0 : file.size) || 0),
-        spaceId
+        spaceId,
+        ownerDocumentId
       });
       const saved = await ((_b2 = (_a2 = window.goToolkitMemoMediaStore) == null ? void 0 : _a2.saveFile) == null ? void 0 : _b2.call(_a2, file, {
         fileName,
         mimeType,
-        spaceId
+        spaceId,
+        ownerDocumentId
       }));
       const localRef = String((saved == null ? void 0 : saved.ref) || "").trim();
       if (!localRef) {
@@ -59172,6 +59179,7 @@ ${promptInput.trim()}`
         mimeType,
         size: Number((file == null ? void 0 : file.size) || 0),
         spaceId,
+        ownerDocumentId,
         localRef,
         resolvedSrc
       });
@@ -59181,7 +59189,7 @@ ${promptInput.trim()}`
         fileName,
         mimeType
       };
-    }, [resolveActiveMemoSpaceId]);
+    }, [resolveActiveMemoDocumentId, resolveActiveMemoSpaceId]);
     const buildDroppedMediaContent = react_shim_default.useCallback(async (files) => {
       const selected = Array.from(files || []);
       const content2 = [];
@@ -59496,9 +59504,34 @@ ${promptInput.trim()}`
           return true;
         },
         handleKeyDown: (_view, event) => {
-          var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v;
+          var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x;
           if (!editor) return false;
           const selection = editor.state.selection;
+          const selectedNodeType = selection instanceof NodeSelection ? String(((_b2 = (_a2 = selection.node) == null ? void 0 : _a2.type) == null ? void 0 : _b2.name) || "") : "";
+          const isProtectedBlockSelection = selection instanceof NodeSelection && (selectedNodeType === "image" || selectedNodeType === "videoEmbed" || selectedNodeType === "mermaidDiagram");
+          if (isProtectedBlockSelection) {
+            const isSpaceKey = event.key === " " || event.key === "Spacebar";
+            const isDeleteKey = event.key === "Backspace" || event.key === "Delete";
+            const isTextEntryKey = event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey;
+            const isBlockedMediaKey = isSpaceKey || isDeleteKey || isTextEntryKey || event.key === "Enter";
+            if (isBlockedMediaKey) {
+              if (isDeleteKey) return false;
+              event.preventDefault();
+              event.stopPropagation();
+              if (isSpaceKey && selectedNodeType === "videoEmbed") {
+                const nodeDom = editor.view.nodeDOM(selection.from);
+                const videoEl = nodeDom == null ? void 0 : nodeDom.querySelector("video");
+                if (videoEl) {
+                  if (videoEl.paused) {
+                    void videoEl.play().catch(() => null);
+                  } else {
+                    videoEl.pause();
+                  }
+                }
+              }
+              return true;
+            }
+          }
           const docEnd = editor.state.doc.content.size;
           const isNearDocumentEnd = selection.to >= Math.max(0, docEnd - 1);
           const shouldStickToBottomAfterEnter = event.key === "Enter" && selection.empty && isNearDocumentEnd && !hasAncestorNode(selection.$from, "table");
@@ -59520,7 +59553,7 @@ ${promptInput.trim()}`
           }
           const isInlineTriggerCandidate = selection.empty && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey;
           const { $from } = selection;
-          const isEmptyCurrentLine = ((_a2 = $from.parent) == null ? void 0 : _a2.isTextblock) && ((_b2 = $from.parent.type) == null ? void 0 : _b2.name) === "paragraph" && $from.parent.content.size === 0;
+          const isEmptyCurrentLine = ((_c2 = $from.parent) == null ? void 0 : _c2.isTextblock) && ((_d2 = $from.parent.type) == null ? void 0 : _d2.name) === "paragraph" && $from.parent.content.size === 0;
           const dispatchInlineEditorOpen = () => {
             var _a3, _b3;
             const currentSelection = editor.state.selection;
@@ -59566,7 +59599,7 @@ ${promptInput.trim()}`
           };
           if (event.key === " " && isInlineTriggerCandidate && selection.empty) {
             const { $from: $from2 } = selection;
-            const isParagraph = ((_d2 = (_c2 = $from2.parent) == null ? void 0 : _c2.type) == null ? void 0 : _d2.name) === "paragraph";
+            const isParagraph = ((_f = (_e = $from2.parent) == null ? void 0 : _e.type) == null ? void 0 : _f.name) === "paragraph";
             if (isParagraph) {
               const beforeText = $from2.parent.textBetween(0, $from2.parentOffset, " ", " ");
               const match = String(beforeText || "").match(/(?:^|\s)(https?:\/\/[^\s]+|www\.[^\s]+)$/i);
@@ -59614,19 +59647,19 @@ ${promptInput.trim()}`
             editor.view.dispatch(tr2);
           };
           if (event.key === "Backspace" && selection.empty) {
-            if (showSlashActionMenu && ((_e = selection.$from.parent) == null ? void 0 : _e.isTextblock) && selection.$from.parent.textContent === "/" && selection.$from.parentOffset === 1) {
+            if (showSlashActionMenu && ((_g = selection.$from.parent) == null ? void 0 : _g.isTextblock) && selection.$from.parent.textContent === "/" && selection.$from.parentOffset === 1) {
               setSlashActionQuery("");
               setShowSlashActionMenu(false);
             }
             const { $from: $from2 } = selection;
             const isAtStart = $from2.parentOffset === 0;
-            const isEmptyParagraph = ((_g = (_f = $from2.parent) == null ? void 0 : _f.type) == null ? void 0 : _g.name) === "paragraph" && ((_i = (_h = $from2.parent) == null ? void 0 : _h.content) == null ? void 0 : _i.size) === 0;
+            const isEmptyParagraph = ((_i = (_h = $from2.parent) == null ? void 0 : _h.type) == null ? void 0 : _i.name) === "paragraph" && ((_k = (_j = $from2.parent) == null ? void 0 : _j.content) == null ? void 0 : _k.size) === 0;
             const inListItem = editor.isActive("listItem");
             if (isAtStart && isEmptyParagraph && !inListItem) {
               const parentDepth = $from2.depth - 1;
               const indexInParent = parentDepth >= 0 ? $from2.index(parentDepth) : -1;
               const prevSibling = parentDepth >= 0 && indexInParent > 0 ? $from2.node(parentDepth).child(indexInParent - 1) : null;
-              const prevType = ((_j = prevSibling == null ? void 0 : prevSibling.type) == null ? void 0 : _j.name) || "";
+              const prevType = ((_l = prevSibling == null ? void 0 : prevSibling.type) == null ? void 0 : _l.name) || "";
               if (prevType === "bulletList" || prevType === "orderedList" || prevType === "taskList") {
                 event.preventDefault();
                 const currentBlockDepth = $from2.depth;
@@ -59643,7 +59676,7 @@ ${promptInput.trim()}`
               event.preventDefault();
               let listItemDepth = -1;
               for (let depth = $from2.depth; depth > 0; depth -= 1) {
-                if (((_k = $from2.node(depth).type) == null ? void 0 : _k.name) === "listItem") {
+                if (((_m = $from2.node(depth).type) == null ? void 0 : _m.name) === "listItem") {
                   listItemDepth = depth;
                   break;
                 }
@@ -59654,7 +59687,7 @@ ${promptInput.trim()}`
                 const itemIndex = $from2.index(listItemDepth - 1);
                 const hasSiblingBefore = itemIndex > 0;
                 const hasSiblingAfter = itemIndex < ((listNode == null ? void 0 : listNode.childCount) || 0) - 1;
-                const isPlainEmptyItem = listItemNode.childCount === 1 && ((_m = (_l = listItemNode.firstChild) == null ? void 0 : _l.type) == null ? void 0 : _m.name) === "paragraph" && ((_o = (_n = listItemNode.firstChild) == null ? void 0 : _n.content) == null ? void 0 : _o.size) === 0;
+                const isPlainEmptyItem = listItemNode.childCount === 1 && ((_o = (_n = listItemNode.firstChild) == null ? void 0 : _n.type) == null ? void 0 : _o.name) === "paragraph" && ((_q = (_p = listItemNode.firstChild) == null ? void 0 : _p.content) == null ? void 0 : _q.size) === 0;
                 if (isPlainEmptyItem && (hasSiblingBefore || hasSiblingAfter)) {
                   const listItemPos = $from2.before(listItemDepth);
                   const tr2 = editor.state.tr.delete(listItemPos, listItemPos + listItemNode.nodeSize);
@@ -59685,7 +59718,7 @@ ${promptInput.trim()}`
                 const $after = editor.state.doc.resolve(afterPos);
                 const nextNode = $after.nodeAfter;
                 if (!nextNode) continue;
-                const isEmptySpacer = ((_p = nextNode.type) == null ? void 0 : _p.name) === "paragraph" && ((_q = nextNode.content) == null ? void 0 : _q.size) === 0;
+                const isEmptySpacer = ((_r = nextNode.type) == null ? void 0 : _r.name) === "paragraph" && ((_s = nextNode.content) == null ? void 0 : _s.size) === 0;
                 if (isEmptySpacer) {
                   event.preventDefault();
                   let tr2 = editor.state.tr;
@@ -59694,7 +59727,7 @@ ${promptInput.trim()}`
                     if (deletePos <= 0 || deletePos >= tr2.doc.content.size) break;
                     const $probe = tr2.doc.resolve(deletePos);
                     const probeNode = $probe.nodeAfter;
-                    const probeIsEmptyParagraph = ((_r = probeNode == null ? void 0 : probeNode.type) == null ? void 0 : _r.name) === "paragraph" && ((_s = probeNode == null ? void 0 : probeNode.content) == null ? void 0 : _s.size) === 0;
+                    const probeIsEmptyParagraph = ((_t = probeNode == null ? void 0 : probeNode.type) == null ? void 0 : _t.name) === "paragraph" && ((_u = probeNode == null ? void 0 : probeNode.content) == null ? void 0 : _u.size) === 0;
                     if (!probeIsEmptyParagraph) break;
                     tr2 = tr2.delete(deletePos, deletePos + probeNode.nodeSize);
                   }
@@ -59794,7 +59827,7 @@ ${promptInput.trim()}`
               }
             }
             if (tablePos >= 0 && tableNode) {
-              const totalCellCount = ((_t = tableNode.content) == null ? void 0 : _t.childCount) ? tableNode.content.content.reduce((count, row) => {
+              const totalCellCount = ((_v = tableNode.content) == null ? void 0 : _v.childCount) ? tableNode.content.content.reduce((count, row) => {
                 var _a3;
                 const rowCellCount = ((_a3 = row == null ? void 0 : row.content) == null ? void 0 : _a3.childCount) || 0;
                 return count + rowCellCount;
@@ -59834,7 +59867,7 @@ ${promptInput.trim()}`
             const { selection: selection2 } = state2;
             const $from2 = selection2.$from;
             const parent = $from2.parent;
-            if (((_u = parent == null ? void 0 : parent.type) == null ? void 0 : _u.name) === "heading" && ((_v = parent.attrs) == null ? void 0 : _v.collapsed)) {
+            if (((_w = parent == null ? void 0 : parent.type) == null ? void 0 : _w.name) === "heading" && ((_x = parent.attrs) == null ? void 0 : _x.collapsed)) {
               const level = parent.attrs.level || 1;
               const headingPos = $from2.before($from2.depth);
               const docSize = state2.doc.content.size;
