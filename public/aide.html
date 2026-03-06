@@ -7,11 +7,11 @@
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>Aide | GoToolkit</title>
-    <script src="js/bootstrap-theme.js?v=2026.03.06.4"></script>
+    <script src="js/bootstrap-theme.js?v=2026.03.06.5"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
-    <script src="js/help.js?v=2026.03.06.4" defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.03.06.4">
+    <script src="js/help.js?v=2026.03.06.5" defer></script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.03.06.5">
     <style>
         .legal-page {
             max-width: 920px;
@@ -170,8 +170,10 @@
     <main id="aide" class="legal-page">
         <p><a href="./">← Retour</a></p>
         <h1>Foire aux questions</h1>
-        <p>Ce document regroupe les questions les plus fréquentes pour utiliser GoToolkit rapidement, sans compte, avec
-            un maximum de contrôle sur vos données.</p>
+        <p>Cette page t’aide à prendre GoToolkit en main simplement, avec des réponses claires et concrètes.</p>
+        <p>Si tu es pressé, commence par <a href="#demarrage">Démarrage</a>, puis va à
+            <a href="#edition">Éditer un document</a> et <a href="#partage">Partage et cloud</a> selon ton besoin.
+        </p>
 
         <div class="legal-nav">
             <a href="#demarrage">Démarrage</a>
@@ -181,6 +183,7 @@
             <a href="#partage">Partage</a>
         </div>
 
+        <p>Le sommaire ci-dessous permet d’aller directement à la bonne question.</p>
         <nav class="question-toc" aria-label="Sommaire des questions">
             <h2>Sommaire des questions</h2>
             <ul id="helpQuestionToc" class="question-toc-list question-toc-list--plain">
@@ -227,63 +230,64 @@
 
         <section id="demarrage" class="legal-section">
             <h2>Démarrage</h2>
+            <p>Pour bien commencer, voici l’essentiel: compte, sécurité, usages, mobile et dépannage.</p>
             <div class="help-list">
                 <div id="q-1">
                     <strong>1. Faut-il créer un compte pour utiliser GoToolkit ?</strong>
-                    <p>Non. GoToolkit fonctionne sans compte. Vos documents privés restent d’abord en local dans votre
+                    <p>Non. GoToolkit fonctionne sans compte. Tes documents privés restent d’abord en local dans ton
                         navigateur. Les connexions à des services tiers sont optionnelles et limitées à l’action que
-                        vous déclenchez.</p>
+                        tu déclenches.</p>
                 </div>
                 <div id="q-2">
                     <strong>2. Est-ce que l’application est sécurisée et adaptée à un usage professionnel ?</strong>
-                    <p>Oui, l’application a été pensée pour un usage professionnel avec plusieurs protections simples
-                        du point de vue utilisateur : les documents privés restent d’abord en local, l’accès aux
-                        espaces partagés passe par une authentification contrôlée, et les contenus cloud protégés
-                        reposent sur des mécanismes de chiffrement et de droits d’accès. Cela ne remplace pas les
-                        bonnes pratiques internes de votre organisation, mais l’outil est conçu pour limiter
-                        l’exposition inutile des données. Pour plus de détails, consultez aussi
+                    <p>Oui. Les documents privés restent d’abord en local, l’accès aux espaces partagés est contrôlé,
+                        et les contenus cloud protégés s’appuient sur le chiffrement et les droits d’accès.
+                        Comme toujours, cela complète (sans remplacer) les règles internes de ton organisation.
+                        Pour plus de détails, consulte
                         <a href="legal.html#privacy">la politique de confidentialité</a>.
                     </p>
                 </div>
                 <div id="q-3">
                     <strong>3. À quoi peut servir GoToolkit ?</strong>
-                    <p>GoToolkit réunit édition, IA et collaboration dans un même espace pour aller de l’idée à
-                        l’action plus vite. Voici des usages à fort impact :</p>
+                    <p>GoToolkit réunit édition, IA et collaboration dans un même espace pour t’aider à passer plus
+                        vite de l’idée à l’action. Voici les usages les plus fréquents :</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="file-text"></i> Édition riche de texte</span> :
-                            créez des contenus clairs et professionnels, immédiatement prêts pour email, web et outils
+                            crée des contenus clairs et professionnels, immédiatement prêts pour email, web et outils
                             collaboratifs.</li>
                         <li><span class="help-icon"><i data-lucide="video"></i> Enregistrement et retranscription</span>
                             :
-                            capturez réunions et présentations avec partage d’écran, puis transformez-les en livrables
+                            capture réunions et présentations avec partage d’écran, puis transforme-les en livrables
                             exploitables (transcript, résumé, vidéo publiée).</li>
                         <li><span class="help-icon"><i data-lucide="search"></i> Recherche documentaire</span> :
-                            accélérez la recherche d’information et la synthèse grâce à l’IA sur vos fichiers de base
+                            accélère la recherche d’information et la synthèse grâce à l’IA sur tes fichiers de base
                             de connaissance.</li>
                         <li><span class="help-icon"><i data-lucide="database-zap"></i> Insights sur données techniques</span> :
-                            interrogez vos fichiers structurés ou techniques et obtenez des synthèses claires,
+                            interroge tes fichiers structurés ou techniques et obtiens des synthèses claires,
                             exploitables et orientées décision.</li>
                         <li><span class="help-icon"><i data-lucide="sparkles"></i> Rédaction créative et
                                 structurée</span> :
-                            passez de l’intention à un rendu structuré (texte, diagrammes, tableaux) en quelques
+                            passe de l’intention à un rendu structuré (texte, diagrammes, tableaux) en quelques
                             minutes avec l’assistance IA.</li>
                         <li><span class="help-icon"><i data-lucide="check-check"></i> Relecture et amélioration</span> :
-                            améliorez la qualité éditoriale avec des suggestions ciblées (style, clarté, cohérence).
+                            améliore la qualité éditoriale avec des suggestions ciblées (style, clarté, cohérence).
                         </li>
                         <li><span class="help-icon"><i data-lucide="shield-check"></i> Partage sécurisé</span> :
-                            diffusez vos documents de travail en ligne avec un contrôle d’accès adapté aux équipes.</li>
+                            diffuse tes documents de travail en ligne avec un contrôle d’accès adapté aux équipes.</li>
                         <li><span class="help-icon"><i data-lucide="rocket"></i> Production de livrables plus
                                 rapide</span> :
-                            réduisez le temps entre brouillon et version finale pour documents, specs, comptes rendus et
+                            réduis le temps entre brouillon et version finale pour documents, specs, comptes rendus et
                             supports de décision.</li>
                         <li><span class="help-icon"><i data-lucide="refresh-cw"></i> Réutilisation intelligente</span> :
-                            capitalisez vos contenus (prompts, documents, sources) pour éviter de repartir de zéro à
+                            capitalise tes contenus (prompts, documents, sources) pour éviter de repartir de zéro à
                             chaque nouveau sujet.</li>
                     </ul>
                 </div>
                 <div id="q-4">
                     <strong>4. Puis-je utiliser GoToolkit sur mobile ?</strong>
-                    <p>Oui. L’application peut rediriger directement vers <code>mobile.html</code>.</p>
+                    <p>Oui. Si tu travailles en déplacement, la version mobile te permet de faire l’essentiel sans
+                        perdre le fil.</p>
+                    <p>L’application peut rediriger directement vers <code>mobile.html</code>.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="file-text"></i> Documents</span> : écriture et
                             édition rapide depuis mobile.</li>
@@ -300,22 +304,24 @@
                 </div>
                 <div id="q-5">
                     <strong>5. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire ?</strong>
+                    <p>Quand un souci bloque vraiment, l’objectif est d’aller du plus simple au plus efficace, sans
+                        perdre tes données.</p>
                     <ul>
-                        <li><span class="help-icon"><i data-lucide="help-circle"></i> Connexion</span> : vérifiez que
-                            vous
-                            êtes bien connecté à Internet.</li>
-                        <li><span class="help-icon"><i data-lucide="rotate-cw"></i> Mise à jour</span> : rechargez
+                        <li><span class="help-icon"><i data-lucide="help-circle"></i> Connexion</span> : vérifie que
+                            tu
+                            es bien connecté à Internet.</li>
+                        <li><span class="help-icon"><i data-lucide="rotate-cw"></i> Mise à jour</span> : recharge
                             avec <a href="./" data-latest-version-link="true">la dernière version</a>.</li>
-                        <li><span class="help-icon"><i data-lucide="trash-2"></i> Données locales</span> : videz
+                        <li><span class="help-icon"><i data-lucide="trash-2"></i> Données locales</span> : vide
                             le stockage local et les cookies du site (ex. Chrome).</li>
                         <li><span class="help-icon"><i data-lucide="download"></i> Sauvegarde avant reset</span>
-                            : exportez vos fichiers ou synchronisez-les vers le cloud.</li>
+                            : exporte tes fichiers ou synchronise-les vers le cloud.</li>
                         <li><span class="help-icon"><i data-lucide="octagon-x"></i> Réinitialiser</span> :
-                            ouvrez <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> puis lancez
+                            ouvre <span class="help-icon"><i data-lucide="help-circle"></i> Aide</span> puis lance
                             la remise à zéro depuis le panneau d’information.</li>
                         <li><span class="help-icon"><i data-lucide="mail"></i> Support</span> :
-                            contactez <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a> avec une capture
-                            ou créez un document dans <strong>Go Live / Feedback</strong>.</li>
+                            contacte <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a> avec une capture
+                            ou crée un document dans <strong>Go Live / Feedback</strong>.</li>
                     </ul>
                 </div>
             </div>
@@ -323,45 +329,46 @@
 
         <section id="documents" class="legal-section">
             <h2>Documents</h2>
+            <p>Cette section couvre le cycle de vie d’un document: créer, organiser, importer, exporter et supprimer.</p>
             <div class="help-list">
                 <div id="q-6">
                     <strong>6. Comment créer ou organiser des documents ?</strong>
+                    <p>Tu peux structurer ton espace très vite avec quelques actions de base, puis affiner ensuite.</p>
                     <ul>
-                        <li><span class="help-icon"><i data-lucide="panel-left"></i></span> Ouvrez le panneau de
+                        <li><span class="help-icon"><i data-lucide="panel-left"></i></span> Ouvre le panneau de
                             documents.</li>
-                        <li><span class="help-icon"><i data-lucide="plus"></i></span> Créez un document ou un sous-document.
+                        <li><span class="help-icon"><i data-lucide="plus"></i></span> Crée un document ou un sous-document.
                         </li>
-                        <li><span class="help-icon"><i data-lucide="move"></i> Glisser-déposer</span> : réorganisez
+                        <li><span class="help-icon"><i data-lucide="move"></i> Glisser-déposer</span> : réorganise
                             l’arborescence (ordre et parent).</li>
-                        <li><span class="help-icon"><i data-lucide="type"></i> Renommer</span> : changez le titre d’un document.</li>
-                        <li><span class="help-icon"><i data-lucide="folder-tree"></i> Catégorie</span> : ajoutez ou
-                            modifiez la catégorie selon le contexte.</li>
+                        <li><span class="help-icon"><i data-lucide="type"></i> Renommer</span> : change le titre d’un document.</li>
+                        <li><span class="help-icon"><i data-lucide="folder-tree"></i> Catégorie</span> : ajoute ou
+                            modifie la catégorie selon le contexte.</li>
                         <li><span class="help-icon"><i data-lucide="check-square"></i> Sélection multiple</span> :
-                            sélectionnez plusieurs documents (Ctrl/Shift) pour lancer des actions groupées comme
+                            sélectionne plusieurs documents (Ctrl/Shift) pour lancer des actions groupées comme
                             <strong>déplacer</strong> ou <strong>supprimer</strong>.
                         </li>
                     </ul>
                 </div>
                 <div id="q-7">
                     <strong>7. Comment renommer un document ?</strong>
-                    <p>Vous pouvez soit modifier directement le champ de titre en haut du document, soit renommer
-                        depuis le panneau de documents en double-cliquant sur le nom du document. Le nouveau titre est
-                        enregistré avec le document actif. Vous pouvez aussi changer l’icône du document pour mieux le
-                        repérer visuellement dans l’arborescence.</p>
+                    <p>Tu peux renommer un document de deux façons:
+                        directement dans le titre en haut de page, ou via le panneau documents (double-clic sur le nom).
+                        Tu peux aussi changer son icône pour le repérer plus vite dans l’arborescence.</p>
                 </div>
                 <div id="q-8">
                     <strong>8. Comment importer un fichier dans un document ?</strong>
-                    <p>Ouvrez <span class="help-icon"><i data-lucide="file-text"></i> Document</span>, puis cliquez
+                    <p>Ouvre <span class="help-icon"><i data-lucide="file-text"></i> Document</span>, puis clique
                         sur <span class="help-icon"><i data-lucide="file-down"></i> Importer</span>. L’import lit le
-                        contenu du fichier et l’insère dans votre document pour le transformer en contenu éditable.
+                        contenu du fichier et l’insère dans ton document pour le transformer en contenu éditable.
                         Formats usuels pris en charge : PDF, DOCX, PPTX, XLSX, JSON, CSV, TSV, TXT, Markdown, ODF,
-                        RTF et fichiers de log. Limites de taille : 5 Mo pour les documents texte/bureautiques,
-                        20 Mo pour les images et l’audio, 100 Mo pour la vidéo.</p>
+                        RTF et fichiers de log. Limites de taille:
+                        5 Mo (texte/bureautique), 20 Mo (image/audio), 100 Mo (vidéo).</p>
                 </div>
                 <div id="q-9">
                     <strong>9. Comment exporter ou envoyer un document ?</strong>
                     <p>Dans le même menu <span class="help-icon"><i data-lucide="file-text"></i> Document</span>,
-                        choisissez l’option adaptée à votre besoin :</p>
+                        choisis l’option adaptée à ton besoin :</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="download"></i> Télécharger</span> : export local
                             du document dans le format choisi.</li>
@@ -386,21 +393,24 @@
                 </div>
                 <div id="q-10">
                     <strong>10. Comment supprimer un document ?</strong>
-                    <p>Ouvrez le menu document, puis choisissez <span class="help-icon"><i data-lucide="trash-2"></i>
+                    <p>Ouvre le menu document, puis choisis <span class="help-icon"><i data-lucide="trash-2"></i>
                             Supprimer</span>.
-                        Vérifiez bien le document actif avant de confirmer. Si vous ne voulez pas supprimer le document
-                        immédiatement, vous pouvez aussi l’archiver en local pour le retirer de l’espace actif tout en
-                        conservant une possibilité de récupération selon votre organisation.</p>
+                        Vérifie bien le document actif avant de confirmer. Si tu ne veux pas supprimer le document
+                        immédiatement, tu peux aussi l’archiver en local pour le retirer de l’espace actif tout en
+                        conservant une possibilité de récupération selon ton organisation.</p>
                 </div>
             </div>
         </section>
 
         <section id="edition" class="legal-section">
             <h2>Éditer un document</h2>
+            <p>Tu trouveras ici les fonctions d’édition au quotidien: assistant IA, formats, blocs, tableaux et médias.</p>
             <div class="help-list">
                 <div id="q-11">
                     <strong>11. Comment fonctionne l’Assistant (conversation par document, références, approfondissement
                         et actions d’édition) ?</strong>
+                    <p>L’Assistant combine conversation, relecture et actions d’édition pour t’aider à avancer sans
+                        sortir du document.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="panel-right"></i> Assist</span> : ouvre le panneau
                             latéral IA avec une conversation liée au document actif.</li>
@@ -415,12 +425,12 @@
                             d’où vient l’information.</li>
                         <li><span class="help-icon"><i data-lucide="search-check"></i> Questions pour approfondir</span>
                             :
-                            utilisez les suggestions pour creuser un point, demander un contre-exemple ou obtenir une
+                            utilise les suggestions pour creuser un point, demander un contre-exemple ou obtenir une
                             version plus opérationnelle.</li>
                         <li><span class="help-icon"><i data-lucide="trash-2"></i> Supprimer la conversation</span> :
-                            efface l’historique du fil courant si vous voulez repartir d’un contexte propre.</li>
+                            efface l’historique du fil courant si tu veux repartir d’un contexte propre.</li>
                         <li><span class="help-icon"><i data-lucide="undo-2"></i> Undo / Redo</span> :
-                            revenez en arrière après une modification IA, puis réappliquez-la si besoin.</li>
+                            reviens en arrière après une modification IA, puis réapplique-la si besoin.</li>
                         <li><span class="help-icon"><i data-lucide="pencil"></i> Re-edit</span> :
                             relance une itération sur une réponse pour ajuster le ton, la longueur ou le niveau de
                             détail sans repartir de zéro.</li>
@@ -429,7 +439,7 @@
                         <li><span class="help-icon"><i data-lucide="panel-right"></i> Explorer</span> : questionne
                             et analyse sans modifier le document.</li>
                         <li><span class="help-icon"><i data-lucide="sparkles"></i> Suggérer</span> : propose des
-                            modifications que vous acceptez ou refusez.</li>
+                            modifications que tu acceptes ou refuses.</li>
                         <li><span class="help-icon"><i data-lucide="quote"></i> Marquage</span> :
                             <code>==texte==</code> pour proposer un ajout, <code>~~texte~~</code> pour proposer un
                             retrait.
@@ -443,7 +453,7 @@
                 </div>
                 <div id="q-12">
                     <strong>12. Quelles sont les mises en forme proposées ?</strong>
-                    <p>Vous pouvez appliquer ces mises en forme avec la barre d’édition, le menu contextuel, ou en
+                    <p>Tu peux appliquer ces mises en forme avec la barre d’édition, le menu contextuel, ou en
                         tapant directement les raccourcis Markdown acceptés :</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="heading-1"></i> Titre 1</span> :
@@ -482,6 +492,8 @@
                 </div>
                 <div id="q-13">
                     <strong>13. À quoi sert l’enregistrement vocal avec partage d’écran et transcription ?</strong>
+                    <p>Cette fonction sert à transformer une réunion, une démo ou un point oral en contenu réutilisable
+                        rapidement.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="mic"></i> Enregistrer</span> : lance la capture
                             voix/écran/caméra pour documenter une démo, une réunion ou un retour utilisateur.</li>
@@ -499,14 +511,15 @@
                 </div>
                 <div id="q-14">
                     <strong>14. Comment éditer rapidement avec les blocs disponibles ?</strong>
-                    <p>Utilisez le menu slash <code>/</code> ou les menus contextuels pour insérer des blocs :
+                    <p>Accès rapide via slash menu : tape <code>/</code>, puis choisis le bloc voulu.</p>
+                    <p>Tu peux aussi passer par les menus contextuels pour insérer des blocs :
                         texte, titres, listes, tâches, liens, libellés, citations, tableaux, diagrammes, images,
                         vidéos, navigation et sommaire.</p>
                 </div>
                 <div id="q-15">
                     <strong>15. Comment fonctionnent la sauvegarde locale, Annuler et Rétablir ?</strong>
-                    <p>GoToolkit sauvegarde automatiquement vos modifications en local au fil de la saisie, sans action
-                        manuelle de votre part. Si vous faites une erreur, vous pouvez revenir en arrière avec
+                    <p>GoToolkit sauvegarde automatiquement tes modifications en local au fil de la saisie, sans action
+                        manuelle de ton part. Si tu fais une erreur, tu peux revenir en arrière avec
                         <span class="help-icon"><i data-lucide="undo-2"></i></span> <strong>Annuler</strong>, puis
                         réappliquer une action avec <span class="help-icon"><i data-lucide="redo-2"></i></span>
                         <strong>Rétablir</strong>. Cette logique permet de travailler rapidement tout en gardant un
@@ -515,7 +528,7 @@
                 </div>
                 <div id="q-16">
                     <strong>16. Comment insérer un diagramme ?</strong>
-                    <p>Accès rapide via slash menu : tapez <code>/diagramme</code> (ou <code>/mermaid</code>).</p>
+                    <p>Accès rapide via slash menu : tape <code>/diagramme</code> (ou <code>/mermaid</code>).</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="shapes"></i> Diagramme</span> : insère un schéma
                             Mermaid dans le document.
@@ -540,15 +553,16 @@
                 </div>
                 <div id="q-17">
                     <strong>17. Comment insérer une image, une vidéo ou une vidéo embarquée ?</strong>
-                    <p>Utilisez <span class="help-icon"><i data-lucide="image"></i> Image</span> pour un média local,
+                    <p>Utilise <span class="help-icon"><i data-lucide="image"></i> Image</span> pour un média local,
                         <span class="help-icon"><i data-lucide="clapperboard"></i> Vidéo</span> pour une vidéo dans le
                         document, et les liens de vidéo embarquée pour des contenus externes affichés comme blocs
                         intégrés (par exemple une vidéo en ligne consultable sans quitter le document).
                     </p>
-                    <p>Accès rapide via slash menu : tapez <code>/image</code> ou <code>/video</code>.</p>
+                    <p>Accès rapide via slash menu : tape <code>/image</code> ou <code>/video</code>.</p>
                 </div>
                 <div id="q-18">
                     <strong>18. À quoi servent les blocs Lien, Sommaire et Navigation ?</strong>
+                    <p>Ces blocs t’aident à rendre tes documents plus faciles à parcourir et à partager.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="link"></i> Lien</span> : crée un accès cliquable
                             vers une URL.</li>
@@ -559,12 +573,14 @@
                         <li><span class="help-icon"><i data-lucide="refresh-cw"></i> Mise à jour automatique</span> :
                             ces blocs se recalculent quand la structure du document ou les titres changent.</li>
                     </ul>
-                    <p>Accès rapide via slash menu : tapez <code>/lien</code>, <code>/sommaire</code> ou
+                    <p>Accès rapide via slash menu : tape <code>/lien</code>, <code>/sommaire</code> ou
                         <code>/navigation</code>.</p>
                 </div>
                 <div id="q-19">
                     <strong>19. Comment utiliser un tableau ?</strong>
-                    <p>Accès rapide via slash menu : tapez <code>/tableau</code>.</p>
+                    <p>Le tableau est utile dès que tu veux comparer, organiser ou suivre des informations de manière
+                        lisible.</p>
+                    <p>Accès rapide via slash menu : tape <code>/tableau</code>.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="table"></i> Tableau</span> : structure les données
                             en lignes et colonnes pour comparatifs, listes et suivi.</li>
@@ -582,11 +598,12 @@
                 </div>
                 <div id="q-20">
                     <strong>20. Quels types de citation existent ?</strong>
+                    <p>Tu peux utiliser plusieurs styles selon l’objectif: mise en avant, référence ou note de contexte.</p>
                     <p>Le bloc <span class="help-icon"><i data-lucide="quote"></i> Citation</span> met en évidence un
                         passage important, une consigne, une remarque ou un avertissement sans casser le flux du texte.
                         Il améliore la lisibilité des documents longs, facilite la relecture et aide à distinguer ce
                         qui est informatif, actionnable ou critique.</p>
-                    <p>Accès rapide via slash menu : tapez <code>/citation</code>.</p>
+                    <p>Accès rapide via slash menu : tape <code>/citation</code>.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="quote"></i> Citation simple</span> :
                             <code>&gt;</code> ou <code>/citation</code>, pour mettre en avant une phrase, une idée ou
@@ -614,8 +631,8 @@
                     <strong>21. À quoi sert le libellé ?</strong>
                     <p>Le bloc <span class="help-icon"><i data-lucide="tag"></i> Libellé</span> sert à créer un tag
                         inline dans le texte pour marquer un thème, un mot-clé ou un repère métier. L’autocomplétion
-                        propose les libellés déjà utilisés afin d’harmoniser votre vocabulaire dans le document.</p>
-                    <p>Vous pouvez l’insérer via <code>/libellé</code> ou directement au clavier en ouvrant puis en
+                        propose les libellés déjà utilisés afin d’harmoniser ton vocabulaire dans le document.</p>
+                    <p>Tu peux l’insérer via <code>/libellé</code> ou directement au clavier en ouvrant puis en
                         refermant le libellé avec un backtick :</p>
                     <pre><code>`mon-libelle`</code></pre>
                 </div>
@@ -624,25 +641,28 @@
 
         <section id="ia" class="legal-section">
             <h2>IA et services tiers</h2>
+            <p>Cette section explique ce qui part vers les services externes, ce qui reste local, et comment garder le contrôle.</p>
             <div class="help-list">
                 <div id="q-22">
                     <strong>22. Comment ajouter un fichier à la base de connaissance et à quoi ça sert ?</strong>
-                    <p>Dans l’assistant, cliquez sur <span class="help-icon"><i data-lucide="brain"></i></span> pour
+                    <p>Accès rapide via slash menu : tape <code>/base</code> pour ouvrir rapidement les options liées
+                        au contexte IA, puis choisis les sources utiles.</p>
+                    <p>Dans l’assistant, clique sur <span class="help-icon"><i data-lucide="brain"></i></span> pour
                         sélectionner les sources utilisées par l’IA.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="brain"></i> Base de connaissance</span> : sert de
                             contexte réutilisable sur la durée, pour éviter de redonner les mêmes informations à
                             chaque requête.</li>
-                        <li><span class="help-icon"><i data-lucide="file-down"></i> Source durable</span> : importez un
-                            fichier dans un document puis ajoutez ce document à la base.</li>
+                        <li><span class="help-icon"><i data-lucide="file-down"></i> Source durable</span> : importe un
+                            fichier dans un document puis ajoute ce document à la base.</li>
                         <li><span class="help-icon"><i data-lucide="clock-3"></i> Gain de temps</span> :
                             l’IA retrouve plus vite les éléments clés (process, specs, comptes rendus, FAQ).</li>
                         <li><span class="help-icon"><i data-lucide="target"></i> Réponses plus pertinentes</span> :
-                            les réponses s’appuient sur vos documents métiers plutôt que sur un contexte générique.</li>
+                            les réponses s’appuient sur tes documents métiers plutôt que sur un contexte générique.</li>
                         <li><span class="help-icon"><i data-lucide="git-branch"></i> Continuité de travail</span> :
                             la même base sert à plusieurs conversations et documents, ce qui améliore la cohérence.</li>
                         <li><span class="help-icon"><i data-lucide="shield-check"></i> Traçabilité</span> :
-                            avec les références et extraits, vous pouvez vérifier rapidement la source d’une réponse.
+                            avec les références et extraits, tu peux vérifier rapidement la source d’une réponse.
                         </li>
                     </ul>
                 </div>
@@ -650,13 +670,15 @@
                     <strong>23. Quelle est la différence entre joindre un fichier à l’IA en contexte et importer un
                         fichier dans le
                         document en base de connaissance ?</strong>
+                    <p>La différence principale tient à la durée d’usage: temporaire pour une demande ponctuelle,
+                        durable pour capitaliser dans tes documents.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="paperclip"></i> Joindre</span> : envoi temporaire
                             en contexte IA (analyse, résumé, questions), sans créer de document.</li>
                         <li><span class="help-icon"><i data-lucide="file-down"></i> Importer</span> : transforme le
                             fichier en contenu éditable durable dans le document.</li>
                         <li><span class="help-icon"><i data-lucide="brain"></i> Base de connaissance</span> :
-                            privilégiez l’import pour enrichir vos sources à long terme.</li>
+                            privilégie l’import pour enrichir tes sources à long terme.</li>
                         <li><span class="help-icon"><i data-lucide="table"></i> Données volumineuses</span> :
                             JSON / tableurs et autres fichiers très structurés sont souvent mieux gérés en pièce jointe.
                         </li>
@@ -664,6 +686,7 @@
                 </div>
                 <div id="q-24">
                     <strong>24. Les réponses de l’IA remplacent-elles automatiquement mon texte ?</strong>
+                    <p>Pas toujours: le comportement dépend du mode et de la sélection active au moment de la demande.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="text-select"></i> Avec sélection</span> :
                             seule la zone sélectionnée est remplacée.</li>
@@ -675,34 +698,35 @@
                 </div>
                 <div id="q-25">
                     <strong>25. Puis-je envoyer du contexte sans modifier le document ?</strong>
-                    <p>Oui. Vous pouvez joindre des fichiers, choisir des sources mémoire et utiliser
+                    <p>Oui. Tu peux joindre des fichiers, choisir des sources mémoire et utiliser
                         <strong>Explorer</strong> pour travailler en lecture seule.
                     </p>
                 </div>
                 <div id="q-26">
                     <strong>26. Puis-je personnaliser les instructions envoyées à l’IA ?</strong>
-                    <p>Oui. Ouvrez le panneau <span class="help-icon"><i data-lucide="settings"></i> Paramètres</span>,
-                        puis allez dans l’onglet <strong>Instructions</strong> pour modifier les consignes envoyées à
-                        l’IA selon votre usage.</p>
+                    <p>Oui. Ouvre le panneau <span class="help-icon"><i data-lucide="settings"></i> Paramètres</span>,
+                        puis va dans l’onglet <strong>Instructions</strong> pour modifier les consignes envoyées à
+                        l’IA selon ton usage.</p>
                 </div>
                 <div id="q-27">
                     <strong>27. Quelles informations sont partagées avec l’IA et les services externes ?</strong>
                     <p><span class="help-icon"><i data-lucide="lock"></i> Local par défaut</span> : plusieurs actions
-                        restent sur votre appareil, notamment l’enregistrement audio/vidéo tant que vous ne lancez pas
+                        restent sur ton appareil, notamment l’enregistrement audio/vidéo tant que tu ne lances pas
                         la transcription, l’édition et la mise en forme du texte, les diagrammes/tableaux/blocs
                         spéciaux, l’organisation des documents dans l’espace privé, ainsi que l’import des documents
                         (hors images) et les exports.</p>
                     <p><span class="help-icon"><i data-lucide="send"></i> Envoi sur action explicite</span> : un
-                        partage externe a lieu uniquement quand vous activez une fonction distante (IA,
+                        partage externe a lieu uniquement quand tu actives une fonction distante (IA,
                         transcription/voix, OCR image, partage/publication). Dans ce cas, l’application envoie
                         seulement les données nécessaires à l’action demandée, par exemple le contenu utile du document
                         et des extraits ciblés de la base de connaissance plutôt qu’un historique complet. Pour le
-                        détail complet du traitement des données, consultez
+                        détail complet du traitement des données, consulte
                         <a href="legal.html#privacy">la politique de confidentialité</a>.
                     </p>
                 </div>
                 <div id="q-28">
                     <strong>28. Quels sont les autres services tiers proposés et à quoi servent-ils ?</strong>
+                    <p>Ces services complètent GoToolkit pour des besoins précis (IA, voix, publication, authentification).</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="audio-lines"></i> AssemblyAI</span> :
                             transcription vocale.</li>
@@ -727,6 +751,8 @@
                             détails de confidentialité dans <a href="legal.html#privacy">la politique de
                                 confidentialité</a>.</li>
                     </ul>
+                    <p>En pratique, tu n’as rien à configurer pour les actions locales: ces services ne sont sollicités
+                        que quand tu lances explicitement une action distante.</p>
                 </div>
                 <div id="q-29">
                     <strong>29. À quoi servent les raccourcis de prompt ?</strong>
@@ -753,7 +779,7 @@
                     <p>Oui. Les catégories de document (aussi appelées superpouvoirs) sont configurables, et la liste par
                         défaut est définie dans <code>category.json</code>.</p>
                     <ul>
-                        <li><span class="help-icon"><i data-lucide="settings"></i> Édition</span> : vous pouvez choisir
+                        <li><span class="help-icon"><i data-lucide="settings"></i> Édition</span> : tu peux choisir
                             un template de catégories et personnaliser les entrées (titre, icône, description).</li>
                         <li><span class="help-icon"><i data-lucide="file-code"></i> Source</span> : la structure
                             (templates + catégories) est maintenue dans <code>public/category.json</code>.</li>
@@ -822,13 +848,11 @@
                 </div>
                 <div id="q-31">
                     <strong>31. Y a-t-il des limites de requêtes pour l’IA et les autres services externes ?</strong>
-                    <p>Oui. Les proxys utilisés pour l’IA, la transcription, la synthèse vocale et certains autres
-                        services appliquent des limites de requêtes pour éviter les abus, protéger les secrets côté
-                        serveur et maintenir une bonne disponibilité. En pratique, si vous enchaînez beaucoup de
-                        demandes en peu de temps, vous pouvez voir un refus temporaire, un délai, ou un message
-                        demandant de réessayer un peu plus tard. Ces limites ne sont pas nécessairement identiques
-                        selon le service utilisé, et elles peuvent dépendre du contexte (par exemple navigation locale,
-                        session active, ou utilisation cloud).</p>
+                    <p>Oui. Des limites de requêtes existent pour éviter les abus, protéger les secrets serveur et
+                        maintenir une bonne disponibilité des services (IA, transcription, synthèse vocale, etc.).</p>
+                    <p>Si tu enchaînes beaucoup de demandes en peu de temps, tu peux voir un refus temporaire, un
+                        délai supplémentaire ou un message te demandant de réessayer plus tard. Les seuils peuvent
+                        varier selon le service et le contexte d’utilisation (local, session active, cloud).</p>
                 </div>
                 <div id="q-32">
                     <strong>32. Puis-je lancer des commandes à la voix ?</strong>
@@ -837,7 +861,7 @@
                         <span class="help-icon"><i data-lucide="mic"></i></span>. Toutes les paroles prononcées sont
                         reconnues comme une instruction envoyée à l’assistant.
                     </p>
-                    <p>Vous pouvez ensuite utiliser trois commandes vocales rapides :
+                    <p>Tu peux ensuite utiliser trois commandes vocales rapides :
                         <strong>“Ok go”</strong> pour envoyer la commande, <strong>“Ok efface”</strong> pour annuler la
                         commande en cours dans le composeur, et <strong>“Ok annule”</strong> pour revenir à la version
                         du document avant la commande précédente.
@@ -848,18 +872,20 @@
 
         <section id="partage" class="legal-section">
             <h2>Partage et cloud</h2>
+            <p>Pour finir, voici les points clés sur la publication, les accès d’équipe et la synchronisation cloud.</p>
             <div class="help-list">
                 <div id="q-33">
                     <strong>33. Comment publier un document ou partager un lien ?</strong>
+                    <p>Pour partager un document, suis ce flux simple : publication, synchronisation, puis envoi du lien.</p>
                     <ul>
-                        <li><span class="help-icon"><i data-lucide="panel-left"></i> Déplacer</span> : glissez le
+                        <li><span class="help-icon"><i data-lucide="panel-left"></i> Déplacer</span> : glisse le
                             document vers l’espace partagé ciblé.</li>
-                        <li><span class="help-icon"><i data-lucide="send"></i> Publish</span> : utilisez aussi
+                        <li><span class="help-icon"><i data-lucide="send"></i> Publish</span> : utilise aussi
                             <strong>File Menu</strong> puis <strong>Publish</strong>.
                         </li>
                         <li><span class="help-icon"><i data-lucide="rotate-cw"></i> Sync</span> : envoie le document dans
                             le cloud.</li>
-                        <li><span class="help-icon"><i data-lucide="link"></i> Partage</span> : transmettez l’URL du document ou le chemin de stockage partagé.</li>
+                        <li><span class="help-icon"><i data-lucide="link"></i> Partage</span> : transmets l’URL du document ou le chemin de stockage partagé.</li>
                         <li><span class="help-icon"><i data-lucide="lock-open"></i> Accès</span> : seuls les
                             utilisateurs autorisés sur l’espace peuvent consulter le document.</li>
                     </ul>
@@ -867,46 +893,43 @@
                 </div>
                 <div id="q-34">
                     <strong>34. Comment accéder aux espaces partagés ?</strong>
-                    <p>L’accès aux espaces partagés se fait via SSO professionnel, avec deux options selon votre
+                    <p>L’accès aux espaces partagés se fait via SSO professionnel, avec deux options selon ton
                         organisation : <span class="help-icon"><i data-lucide="lock-open"></i> Microsoft SSO</span>
                         ou <span class="help-icon"><i data-lucide="lock-open"></i> Google SSO</span>. L’espace
                         disponible dépend du domaine de l’adresse authentifiée. Correspondance actuelle :
                         <strong>savane-group.com</strong> ↔ <strong>GO LIVE</strong>,
                         <strong>safran-group.com</strong> ↔ <strong>SAFRAN</strong>,
                         <strong>epiconcept.fr</strong> ↔ <strong>EPICONCEPT</strong>. Pour l’ouverture d’un nouvel
-                        espace ou une mise à jour de rattachement domaine/espace, contactez
+                        espace ou une mise à jour de rattachement domaine/espace, contacte
                         <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a>.
                     </p>
                 </div>
                 <div id="q-35">
                     <strong>35. Les données cloud sont-elles chiffrées ?</strong>
-                    <p>Oui. Les données partagées en ligne utilisent un chiffrement côté application afin de limiter
-                        l’exposition des contenus synchronisés. En pratique, cela réduit le risque d’accès non autorisé
-                        au contenu brut. L’authentification, les droits d’accès à l’espace, et le partage restreint
-                        aux utilisateurs autorisés complètent cette protection. Le cloud sert à collaborer, mais
-                        l’accès reste conditionné par l’identité et les autorisations attribuées. Un lien, une
-                        synchronisation ou une URL seule ne suffisent pas : il faut aussi appartenir au bon périmètre
-                        d’accès et disposer d’une authentification valide pour voir ou modifier un document.</p>
+                    <p>Oui. Les données partagées en ligne sont chiffrées côté application pour limiter l’exposition
+                        du contenu synchronisé. Cela réduit le risque d’accès non autorisé au contenu brut.</p>
+                    <p>Ce chiffrement est complété par l’authentification et les droits d’accès de l’espace. En clair,
+                        une URL seule ne suffit pas : il faut aussi être authentifié et autorisé sur le bon périmètre
+                        pour consulter ou modifier un document.</p>
                 </div>
                 <div id="q-36">
                     <strong>36. Comment fonctionne la stratégie de synchronisation cloud ?</strong>
-                    <p>Lorsqu’un document doit être synchronisé, GoToolkit conserve d’abord les opérations en attente en
-                        local (pending operations), puis les pousse vers le cloud dès que la synchronisation peut se
-                        faire. En cas de divergence, la résolution de conflit suit une logique
-                        <strong>LWW</strong> (Last Write Wins) : la version la plus récente côté résolution l’emporte,
-                        ce qui évite la plupart des blocages tout en gardant une reprise locale avant envoi.
-                    </p>
+                    <p>GoToolkit garde d’abord les opérations en attente en local, puis les envoie vers le cloud dès
+                        que la synchronisation est possible.</p>
+                    <p>En cas de divergence, la résolution suit une logique <strong>LWW</strong> (Last Write Wins) :
+                        la version la plus récente est conservée. Cette approche limite les blocages et permet de
+                        reprendre localement avant l’envoi.</p>
                 </div>
                 <div id="q-37">
                     <strong>37. Peut-on déplacer des documents par glisser-déposer entre privé et cloud ?</strong>
-                    <p>Oui. Vous pouvez réorganiser des documents dans votre espace privé, dans un espace cloud, et selon le
+                    <p>Oui. Tu peux réorganiser des documents dans ton espace privé, dans un espace cloud, et selon le
                         contexte déplacer par glisser-déposer entre privé et cloud. À l’intérieur des documents cloud,
                         le glisser-déposer permet aussi de changer la hiérarchie entre documents et sous-documents.</p>
                 </div>
                 <div id="q-38">
                     <strong>38. Que faire si la synchronisation semble bloquée ?</strong>
-                    <p>Commencez par vérifier votre connexion et l’espace ciblé. Ensuite, rafraîchissez l’interface ou
-                        relancez l’action de publication. Évitez de dupliquer les clics tant qu’une opération est en
+                    <p>Commence par vérifier ta connexion et l’espace ciblé. Ensuite, rafraîchis l’interface ou
+                        relance l’action de publication. Évite de dupliquer les clics tant qu’une opération est en
                         cours.</p>
                 </div>
             </div>
