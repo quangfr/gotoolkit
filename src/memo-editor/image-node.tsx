@@ -1611,21 +1611,3 @@ export const isSupportedImageFile = (file: File) => {
   if (SUPPORTED_IMAGE_MIME.has(mime)) return true;
   return SUPPORTED_IMAGE_EXT.some(ext => name.endsWith(ext));
 };
-  React.useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      const memoMediaStore = (window as any).goToolkitMemoMediaStore;
-      if (!memoMediaStore?.isLocalRef?.(src) || !memoMediaStore?.resolveBlobUrl) {
-        setResolvedSrc(src);
-        return;
-      }
-      const blobUrl = await memoMediaStore.resolveBlobUrl(src).catch(() => '');
-      if (!cancelled) {
-        setResolvedSrc(String(blobUrl || src));
-      }
-    };
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [src]);

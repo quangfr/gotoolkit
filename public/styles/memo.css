@@ -1273,63 +1273,6 @@
             flex-direction: column;
             min-height: 0;
         }
-        .memo-child-links-footer {
-            border-top: 1px solid var(--border-subtle);
-            padding: 8px 10px 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .memo-child-links-footer[hidden] {
-            display: none !important;
-        }
-        .memo-child-links-footer__item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-radius: 8px;
-            padding: 6px 8px;
-            background: transparent;
-            cursor: pointer;
-            user-select: none;
-        }
-        .memo-child-links-footer__item:hover {
-            background: var(--bg-surface-soft);
-        }
-        .memo-child-links-footer__icon {
-            position: relative;
-            width: 18px;
-            height: 18px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .memo-child-links-footer__overlay {
-            position: absolute;
-            right: -5px;
-            bottom: -4px;
-            width: 11px;
-            height: 11px;
-            border-radius: 50%;
-            background: var(--bg-surface);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-main);
-        }
-        .memo-child-links-footer__title {
-            font-weight: 500;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            color: var(--text-main);
-            flex: 1;
-        }
-        .memo-child-links-footer__item.is-dragging {
-            opacity: 0.55;
-        }
-
         .memo-card {
             background: var(--bg-surface);
             border: 1px solid var(--border-main);
@@ -1460,32 +1403,6 @@
             color: var(--text-main);
             font-size: 16px;
             text-align: center;
-        }
-
-        .memo-page-title-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 16px 2px 16px;
-            margin-left: 15px;
-        }
-
-        .memo-page-title-input {
-            border: none;
-            outline: none;
-            background: transparent;
-            color: var(--text-main);
-            font-size: 28px;
-            line-height: 1.2;
-            font-weight: 700;
-            width: 100%;
-            min-width: 0;
-            padding: 0;
-            margin: 0;
-        }
-
-        .memo-page-title-input:focus {
-            color: var(--text-main);
         }
 
         .editor-wrap {
