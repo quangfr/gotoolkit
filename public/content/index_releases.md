@@ -1,102 +1,108 @@
+## 2026-03-06
+- Authentification SSO Google
+- Espace de partage Epiconcept
+- Protection contre les abus et les attaques (captcha, anti-replay, SOP, CSP)
+- Recherche texte sur les pages
+
 ## 2026-02-27
-- Docs : Authentification Microsoft
+- Authentification SSO Microsoft
+- Espace de partage Safran
 
 ## 2026-02-21
-- Docs : Chiffrement du contenu de bout en bout
-- Docs : Vidéos Youtube et Loom intégrées 
-- Docs : Affichage URL par page
+- Chiffrement dans les espaces partagés
+- Vidéos Youtube et Loom intégrées 
+- Affichage URL unique d'une page pour partage
 
 ## 2026-02-21
-- Docs : Vue en arborescence des documents
-- Docs : Espace de partage GoLive
+- Vue en arborescence des documents
+- Espace de partage Go Live
 
 ## 2026-02-19
-- Voice : Télécharger l'enregistrement vidéo
-- Docs : Ajouter des images et des vidéos
-- Docs : Éditer une image
+- Télécharger l'enregistrement vidéo
+- Ajouter des images et des vidéos
+- Éditer une image
 
 ## 2026-02-16
-- Docs : Générer une synthèse vocale avec `Google TTS`
-- Docs : Envoyer le contenu sur `Outlook` et `Gmail`
-- Mobile : Modifier le contenu en mode IA
+- Générer une synthèse vocale avec `Google TTS`
+- Envoyer le contenu sur `Outlook` et `Gmail`
+- Modifier le contenu sur mobile en mode IA
 
 ## 2026-02-13
-- Voice : Publier un enregistrement sur `Youtube`
-- Voice : Transcription texte en temps réel
-- Docs : Publier le contenu sur `Notion`
-- AI : Ajouter plusieurs commandes IA en attente
+- Publier un enregistrement sur `Youtube`
+- Transcription en temps réel pour l'enregistrement
+- Publier le contenu sur `Notion`
+- Ajouter plusieurs commandes IA en attente
 
 ## 2026-01-28
-- AI : Éditer un prompt et restaurer une version
-- AI : Commande vocale et sélection automatique
-- Mobile : OCR, prise de note et transcription audio
-- Mobile : Envoyer le contenu dans un document sur PC
+- Éditer un prompt IA et restaurer une version
+- Commande vocale IA et sélection automatique
+- OCR, prise de note et transcription audio sur mobile
+- Envoyer le contenu mobile en page sur PC par QR Code
 
 ## 2026-01-27
-- AI : Raccourcis Prompts
-- Files : Vectorisation des données structurées avec `qwen/qwen3-embedding-8b`
+- Bibliothèque de raccourcis prompts
+- Vectorisation des données structurées avec `qwen/qwen3-embedding-8b`
 
 ## 2026-01-21
-- Docs : Exporter en HTML Email, Markdown, PDF et texte
+- Exporter en HTML Email, Markdown, PDF et texte
 
 ## 2026-01-18
-- Docs : Libellé avec autocomplétion, style et couleurs
-- Docs : Sommaire et entêtes dépliables
+- Libellé avec autocomplétion, style et couleurs
+- Sommaire et entêtes dépliables
 
 ## 2026-01-16
-- Docs : Mode sombre
-- Docs : Glisser-déposer et copier-coller des blocs
-- Docs : Catalogue de modèles de document
+- Mode sombre
+- Glisser-déposer et copier-coller des blocs
+- Catalogue de modèles de document
 
 ## 2026-01-14
-- Draw : Visualiser et éditer un diagramme dans un document
-- Docs : Couleur de texte, lien 
-- Docs : Blocs tableau, code et encadrés 
+- Visualiser et éditer un diagramme dans un document
+- Couleur de texte, lien 
+- Blocs tableau, code et encadrés 
 
 ## 2026-01-12
-- AI : Reconnaissance texte OCR avec `qwen-2.5-vl-72b-instruct` 
-- Files : Extraction du texte des images, PDF, DOCX et PPTX mixtes
-- Files : Import des médias avec transcription
-- Files : Ajout des fichiers JSON
-- Docs : Ouverture de documents en barre latérale
+- Reconnaissance texte OCR avec `qwen-2.5-vl-72b-instruct` 
+- Extraction du texte des images, PDF, DOCX et PPTX mixtes
+- Import des médias avec transcription
+- Ajout des fichiers JSON
+- Ouverture de documents en barre latérale
 
 ## 2026-01-09
-- Voice : Enregistrement vocale et partage d'écran
-- Voice : Transcription texte en différé
-- Docs : Bibliothèque locale en barre latérale
-- Assist : Mode `↬ Demander` pour discuter sans éditer avec références 
+- Enregistrement vocale et partage d'écran
+- Transcription texte en différé
+- Bibliothèque locale en barre latérale
+- Mode IA `↬ Explorer` pour discuter sans éditer avec références 
 
 ## 2026-01-08
-- Docs : Mode `⤷ Importer` pour convertir les fichiers en documents
-- Docs : Édition avec sélection du texte
+- Mode `⤷ Importer` pour convertir les fichiers en pages
+- Édition IA avec sélection du texte
 
 ## 2026-01-06
 - Module `Docs` pour la création de notes assistée AI
-- Docs : Mode `✂ Éditer` en direct ou `✦ Suggérer` avec annotation
+- Modes IA `✂ Éditer` en direct ou `✦ Suggérer` avec annotation
 
 ## 2026-01-04
 - Module `Assist` pour discuter avec l'AI
-- AI : Moteur `gpt-oss-120b` plus rapide et sans rétention de données
+- Moteur IA `gpt-oss-120b` plus rapide et sans rétention de données
 
 ## 2025-12-29
-- Misc : Ajout des `Notes de version` et de la `Feuille de route`
+- Ajout des `Notes de version` et de la `Feuille de route`
 
 ## 2025-12-28
 - Module `Voice` pour enregistrer audio et partage d’écran
-- AI : Transcription vocale avec `AssemblyAI`
+- Transcription vocale avec `AssemblyAI`
 
 ## 2025-12-27
-- AI : Choix du fournisseur AI `OpenRouter`
-- Misc : Clarification des `Mentions légales`
+- Choix du fournisseur AI `OpenRouter`
+- Clarification des `Mentions légales`
 
 ## 2025-12-24
-- Feedback : Liste des demandes de feedback (admin)
-
-## 2025-12-20
-- Grid : Nouveaux modèles pour le mapping et la structure des données
+- Liste des demandes de feedback (déprécié)
 
 ## 2025-12-17
-- Module `Grid` pour génération de données
+- Module `Grid` pour génération de données (déprécié)
+- Modèles pour le mapping et la structure des données
+
 
 ## 2025-12-16
 - Brouillon, stockage local et bibliothèque en local

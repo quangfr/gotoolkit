@@ -62914,16 +62914,19 @@ ${innerMarkdown}
         window.exportMemoToDocx = methods.exportDocx;
       }
     }, [activeId, editors]);
-    return /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
-      EditorItem,
-      {
-        editor,
-        activeId,
-        onEditorChange: handleEditorChange,
-        handleEditorReady
-      },
-      editor.id
-    )) }) });
+    return /* @__PURE__ */ jsxs(Fragment3, { children: [
+      /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
+        EditorItem,
+        {
+          editor,
+          activeId,
+          onEditorChange: handleEditorChange,
+          handleEditorReady
+        },
+        editor.id
+      )) }) }),
+      /* @__PURE__ */ jsx("section", { id: "memoSearchCard", className: "memo-card memo-search-card", children: /* @__PURE__ */ jsx("div", { id: "memoSearchResults", className: "memo-search-results" }) })
+    ] });
   };
   var container = document.getElementById("app");
   if (container) {

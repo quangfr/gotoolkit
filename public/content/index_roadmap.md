@@ -1,8 +1,5 @@
 ## Document
-- Recherche texte contenu
-
-## Sécurité des données 
-- Authentification SSO Google / M365
+- Recherche document sur le texte
 
 ## Assistance IA
 - Réponse au fil de l'eau (streaming)

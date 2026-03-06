@@ -15,8 +15,9 @@ This file is the short operational guide. Use the docs below as the canonical re
 
 ## High-value rules
 - Bump the version only when the user asks for a `bump`, `commit`, or `push`.
-- For any request involving `bump`, `commit`, or `push`, run the CSP hash workflow first:
+- After any HTML/CSS edit in the CSP scope (`public/index.html`, `public/grid.html`, `public/mobile.html`, `public/styles/*`, and CSP mirror/config files), run:
   - `npm run csp:inline:sync`
+- For any request involving `bump`, `commit`, or `push`, run:
   - `npm run check:csp`
 - Only after CSP hash workflow passes, run `npm run bump`.
 - Commit title format: `vYYYY.MM.DD.N : <summary>` with a summary under 15 words.
@@ -58,7 +59,7 @@ This file is the short operational guide. Use the docs below as the canonical re
   - run draw/connect builds only for draw-side `src/` changes
 - After modifying a worker, deploy that worker with Wrangler through `scripts/with-env-local.sh`.
 - Release flow:
-  - for any request involving `bump`, `commit`, or `push`, run CSP hash workflow first (`npm run csp:inline:sync` then `npm run check:csp`)
+  - for any request involving `bump`, `commit`, or `push`, run `npm run check:csp`
   - then run `npm run bump`
   - then commit and push (do not deploy Firebase Hosting directly from this workflow)
 
@@ -73,6 +74,7 @@ This file is the short operational guide. Use the docs below as the canonical re
 - If an inline block uses helpers defined in another script block, either expose the helper on `window` intentionally or provide a local fallback in the dependent block.
 
 ## Testing defaults
+- On app launch for tests, always click to close the onboarding/tour overlay (`docs-tour-overlay`) before interacting with the UI.
 - Prefer the local Playwright binary: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`.
 - On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails because Chrome is not installed here. Use the repo-local `playwright` package (`./node_modules/.bin/playwright ...`) or small ad hoc Node scripts with `require("playwright")` instead.
 - Prestart the server when possible; grouped cloud suites are more stable against a prestarted `start:test` server than Playwright-managed `webServer` restarts.

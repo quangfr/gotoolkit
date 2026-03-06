@@ -377,19 +377,24 @@ const App = () => {
     }, [activeId, editors]);
 
     return (
-        <div className="memo-card">
-            <div className="editor-wrap">
-                {Object.values(editors).map((editor) => (
-                    <EditorItem 
-                        key={editor.id}
-                        editor={editor}
-                        activeId={activeId}
-                        onEditorChange={handleEditorChange}
-                        handleEditorReady={handleEditorReady}
-                    />
-                ))}
+        <>
+            <div className="memo-card">
+                <div className="editor-wrap">
+                    {Object.values(editors).map((editor) => (
+                        <EditorItem
+                            key={editor.id}
+                            editor={editor}
+                            activeId={activeId}
+                            onEditorChange={handleEditorChange}
+                            handleEditorReady={handleEditorReady}
+                        />
+                    ))}
+                </div>
             </div>
-        </div>
+            <section id="memoSearchCard" className="memo-card memo-search-card">
+                <div id="memoSearchResults" className="memo-search-results"></div>
+            </section>
+        </>
     );
 };
 

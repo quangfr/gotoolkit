@@ -858,6 +858,82 @@
             background: var(--bg-surface-soft);
             color: var(--text-main);
         }
+        #memoSearchCard.memo-search-card {
+            display: none;
+            padding: 0;
+        }
+        body.memo-search-mode .app-main > .memo-card:not(.memo-search-card) {
+            display: none !important;
+        }
+        body.memo-search-mode #memoSearchCard {
+            display: flex !important;
+        }
+        .memo-search-results {
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            padding: 8px 10px 16px;
+            box-sizing: border-box;
+            background: var(--bg-main);
+        }
+        .memo-search-results__empty {
+            border: 1px dashed var(--border-main);
+            border-radius: 10px;
+            padding: 16px;
+            color: var(--text-muted);
+            background: var(--bg-surface);
+            font-size: var(--go-ui-font-size, 16px);
+        }
+        .memo-search-results__list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .memo-search-result {
+            text-align: left;
+            width: 100%;
+            border: 1px solid var(--border-main);
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            cursor: pointer;
+            color: var(--text-main);
+        }
+        .memo-search-result:hover,
+        .memo-search-result:focus-visible {
+            border-color: var(--color-primary);
+            background: var(--bg-surface-soft);
+            outline: none;
+        }
+        .memo-search-result__title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .memo-search-result__path {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .memo-search-result__snippet {
+            margin: 0;
+            white-space: pre-wrap;
+            color: var(--text-main);
+            font-size: 12px;
+            line-height: 1.45;
+            font-family: inherit;
+            opacity: 0.9;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .memo-search-result__highlight {
+            background: rgba(255, 214, 10, 0.35);
+            color: inherit;
+            padding: 0 2px;
+            border-radius: 4px;
+        }
         .document-explorer__empty--child {
             padding-top: 0;
             padding-bottom: 4px;
@@ -1029,6 +1105,11 @@
             color: var(--text-main);
             font-weight: 600;
             font-size: var(--go-ui-font-size, 16px);
+        }
+        .document-breadcrumb__item--search {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .document-breadcrumb__item:hover {
             background: var(--bg-surface-strong);

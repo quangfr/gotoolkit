@@ -388,6 +388,8 @@
         const onSectionAdd = typeof opts.onSectionAdd === "function" ? opts.onSectionAdd : null;
         const onSectionSettings = typeof opts.onSectionSettings === "function" ? opts.onSectionSettings : null;
         const onSectionRefresh = typeof opts.onSectionRefresh === "function" ? opts.onSectionRefresh : null;
+        const onSearchSubmit = typeof opts.onSearchSubmit === "function" ? opts.onSearchSubmit : null;
+        const onSearchCleared = typeof opts.onSearchCleared === "function" ? opts.onSearchCleared : null;
         const getItems = typeof opts.getItems === "function" ? opts.getItems : null;
         const getOpenIds = typeof opts.getOpenIds === "function" ? opts.getOpenIds : null;
         const getActiveId = typeof opts.getActiveId === "function" ? opts.getActiveId : null;
@@ -2668,11 +2670,22 @@
                 ensureSearchViewState();
                 renderList(cachedItems);
             });
+            searchInput?.addEventListener("keydown", event => {
+                if (event.key !== "Enter") return;
+                const query = String(searchInput?.value || "").trim();
+                if (!query) return;
+                event.preventDefault();
+                onSearchSubmit?.(query);
+            });
             searchClearBtn?.addEventListener("click", () => {
+                const hadQuery = Boolean(String(searchQuery || "").trim());
                 searchQuery = "";
                 if (searchInput) searchInput.value = "";
                 ensureSearchViewState();
                 renderList(cachedItems);
+                if (hadQuery) {
+                    onSearchCleared?.();
+                }
             });
             if (window.lucide) window.lucide.createIcons();
         }
