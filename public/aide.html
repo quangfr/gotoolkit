@@ -7,171 +7,19 @@
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>Aide | GoToolkit</title>
-    <script src="js/bootstrap-theme.js?v=2026.03.06.20"></script>
+    <script src="js/bootstrap-theme.js?v=2026.03.06.21"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
-    <script src="js/help.js?v=2026.03.06.20" defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.03.06.20">
-    <style>
-        .legal-page {
-            max-width: 920px;
-            margin: 0 auto;
-            padding: 32px 20px 84px;
-            line-height: 1.65;
-        }
-
-        .legal-nav {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 30px;
-        }
-
-        .legal-nav a {
-            text-decoration: none;
-            padding: 6px 10px;
-            border-radius: 8px;
-            background: var(--bg-surface-soft);
-            color: var(--text-primary);
-        }
-
-        .legal-section {
-            margin-bottom: 48px;
-            scroll-margin-top: 22px;
-        }
-
-        .legal-section h2 {
-            margin-bottom: 18px;
-        }
-
-        .help-icon {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: 600;
-            vertical-align: middle;
-            line-height: 1.25;
-        }
-
-        .help-icon i,
-        .help-icon svg.lucide {
-            width: 15px;
-            height: 15px;
-            flex: 0 0 15px;
-        }
-
-        .help-icon svg.lucide {
-            display: inline-block;
-        }
-
-        .help-list {
-            display: grid;
-            gap: 30px;
-        }
-
-        .help-list p {
-            margin: 14px 0 0;
-            line-height: 1.75;
-        }
-
-        .help-list ul {
-            margin: 14px 0 0;
-            padding: 0;
-            display: grid;
-            gap: 14px;
-        }
-
-        .help-list li {
-            margin: 0;
-            list-style: none;
-        }
-
-        .help-bulleted-list {
-            padding-left: 18px;
-        }
-
-        .help-bulleted-list li {
-            list-style: disc;
-        }
-
-        .question-toc {
-            margin: 0 0 36px;
-            padding: 18px 18px 16px;
-            border: 1px solid var(--border-default);
-            border-radius: 10px;
-            background: var(--bg-surface-soft);
-        }
-
-        .question-toc h2 {
-            margin: 0 0 14px;
-            font-size: 1rem;
-        }
-
-        .question-toc-list {
-            margin: 0;
-            padding-left: 18px;
-            display: grid;
-            gap: 10px;
-        }
-
-        .question-toc-list--plain {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .question-toc-list--plain li {
-            list-style: none;
-        }
-
-        .question-toc-list a {
-            color: var(--text-primary);
-            text-decoration: none;
-        }
-
-        .question-toc-list a:hover {
-            text-decoration: underline;
-        }
-
-        .back-to-top-btn {
-            position: fixed;
-            right: 16px;
-            bottom: 20px;
-            width: 38px;
-            height: 38px;
-            border-radius: 999px;
-            border: 1px solid var(--border-default);
-            background: var(--bg-surface);
-            color: var(--text-primary);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--shadow-md);
-            z-index: 60;
-        }
-
-        .back-to-top-btn.show {
-            display: inline-flex;
-        }
-
-        .legal-table {
-            margin-top: 18px;
-        }
-
-        .legal-table th,
-        .legal-table td {
-            padding-top: 12px;
-            padding-bottom: 12px;
-        }
-    </style>
+    <script src="js/help.js?v=2026.03.06.21" defer></script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.03.06.21">
 </head>
 
 <body>
-    <main id="aide" class="legal-page">
+    <main id="aide" class="help-page">
         <p><a href="./">← Retour</a></p>
         <h1>Foire aux questions</h1>
 
-        <div class="legal-nav">
+        <div class="help-page-nav">
             <a href="#demarrage">Démarrage</a>
             <a href="#pages">Pages</a>
             <a href="#edition">Édition</a>
@@ -223,7 +71,7 @@
             </ul>
         </nav>
 
-        <section id="demarrage" class="legal-section">
+        <section id="demarrage" class="help-page-section">
             <h2>Démarrage</h2>
             <p>Pour bien commencer, voici l’essentiel: compte, sécurité, usages, mobile et dépannage.</p>
             <div class="help-list">
@@ -324,7 +172,7 @@
             </div>
         </section>
 
-        <section id="pages" class="legal-section">
+        <section id="pages" class="help-page-section">
             <h2>Pages</h2>
             <p>Cette section couvre le cycle de vie d’une page: créer, organiser, importer, exporter et supprimer.</p>
             <div class="help-list">
@@ -429,7 +277,7 @@
             </div>
         </section>
 
-        <section id="edition" class="legal-section">
+        <section id="edition" class="help-page-section">
             <h2>Éditer une page</h2>
             <p>Tu trouveras ici les fonctions d’édition au quotidien: assistant IA, formats, blocs, tableaux et médias.
             </p>
@@ -686,7 +534,7 @@
             </div>
         </section>
 
-        <section id="ia" class="legal-section">
+        <section id="ia" class="help-page-section">
             <h2>IA et services tiers</h2>
             <p>Cette section explique ce qui part vers les services externes, ce qui reste local, et comment garder le
                 contrôle.</p>
@@ -919,7 +767,7 @@
             </div>
         </section>
 
-        <section id="partage" class="legal-section">
+        <section id="partage" class="help-page-section">
             <h2>Partage et cloud</h2>
             <p>Pour finir, voici les points clés sur la publication, les accès d’équipe et la synchronisation cloud.</p>
             <div class="help-list">

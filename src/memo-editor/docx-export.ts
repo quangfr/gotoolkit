@@ -492,8 +492,8 @@ async function transformListItem(node: any, listType: string, _index: number, ed
   return children;
 }
 
-async function transformInlineContent(nodes: any[], defaults: { font?: string, color?: string } = {}): Promise<TextRun[]> {
-  const runs: TextRun[] = [];
+async function transformInlineContent(nodes: any[], defaults: { font?: string, color?: string } = {}): Promise<any[]> {
+  const runs: any[] = [];
   for (const node of nodes) {
     if (node.type === 'text') {
       const marks = node.marks || [];
@@ -504,8 +504,9 @@ async function transformInlineContent(nodes: any[], defaults: { font?: string, c
       const color = resolveDocxColor(marks.find((m: any) => m.type === 'textStyle')?.attrs?.color);
       const highlight = resolveDocxColor(marks.find((m: any) => m.type === 'highlight')?.attrs?.color);
       const isCode = marks.some((m: any) => m.type === 'code');
+      const href = String(marks.find((m: any) => m.type === 'link')?.attrs?.href || '').trim();
 
-      runs.push(new TextRun({
+      const textRun = new TextRun({
         text: node.text,
         bold: isBold,
         italics: isItalic,
@@ -516,7 +517,26 @@ async function transformInlineContent(nodes: any[], defaults: { font?: string, c
         font: isCode ? "Consolas" : (defaults.font || DEFAULT_FONT),
         size: isCode ? 18 : undefined,
         shading: isCode ? { fill: "F1F5F9", type: ShadingType.CLEAR } : undefined
-      }));
+      });
+
+      if (href) {
+        runs.push(new ExternalHyperlink({
+          link: href,
+          children: [
+            new TextRun({
+              text: node.text,
+              style: "Hyperlink",
+              bold: isBold,
+              italics: isItalic,
+              underline: { type: UnderlineType.SINGLE },
+              font: isCode ? "Consolas" : (defaults.font || DEFAULT_FONT),
+              size: isCode ? 18 : undefined,
+            }),
+          ],
+        }));
+      } else {
+        runs.push(textRun);
+      }
     } else if (node.type === 'hardBreak') {
         runs.push(new TextRun({ break: 1 }));
     }

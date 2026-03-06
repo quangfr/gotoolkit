@@ -1,7 +1,7 @@
 import React from 'react';
 import { mergeAttributes, Node } from '@tiptap/core';
 import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
-import { Copy, Play, Trash2 } from 'lucide-react';
+import { Copy, Download, Maximize, Pause, Play, Trash2 } from 'lucide-react';
 import { sanitizeUrl } from './sanitize';
 
 const parseSizePx = (value: unknown) => {
@@ -13,6 +13,37 @@ const parseSizePx = (value: unknown) => {
 
 const DEFAULT_VIDEO_HEIGHT_PX = 600;
 const DEFAULT_VIDEO_ASPECT_RATIO = 16 / 9;
+const VOICE_RECORDING_SPEED_STORAGE_KEY = 'go-toolkit-voice-recording-speed';
+
+const normalizePlaybackSpeed = (value: unknown) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 1.2;
+  const rounded = Math.round(numeric * 10) / 10;
+  return Math.min(4, Math.max(0.4, rounded));
+};
+
+const getConfiguredPlaybackSpeed = () => {
+  const globalSpeed = (window as any).GoToolkitVoiceRecordingSpeed;
+  if (globalSpeed != null) return normalizePlaybackSpeed(globalSpeed);
+  try {
+    const fromLocal = localStorage.getItem(VOICE_RECORDING_SPEED_STORAGE_KEY);
+    if (fromLocal) return normalizePlaybackSpeed(fromLocal);
+  } catch (err) {
+    // noop
+  }
+  const fromConfig = (window as any).GoToolkitSiteConfig?.get?.('voice.recordingSpeed', null);
+  if (fromConfig != null) return normalizePlaybackSpeed(fromConfig);
+  return 1.2;
+};
+
+const formatVideoTime = (value: unknown) => {
+  const totalSeconds = Math.max(0, Math.floor(Number(value) || 0));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+};
 
 const copyVideoHtml = async (attrs: Record<string, any>) => {
   const src = String(attrs?.src || '');
@@ -66,6 +97,9 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
   const [aspectRatio, setAspectRatio] = React.useState(DEFAULT_VIDEO_ASPECT_RATIO);
   const [progressRatio, setProgressRatio] = React.useState(0);
   const [controlsVisible, setControlsVisible] = React.useState(false);
+  const [currentTime, setCurrentTime] = React.useState(0);
+  const [duration, setDuration] = React.useState(0);
+  const [playbackRate, setPlaybackRate] = React.useState(() => getConfiguredPlaybackSpeed());
   const widthPx = parseSizePx(node?.attrs?.width);
   const heightPx = parseSizePx(node?.attrs?.height);
 
@@ -106,6 +140,8 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
     const updateProgress = () => {
       const duration = Number(el.duration || 0);
       const current = Number(el.currentTime || 0);
+      setDuration(duration > 0 ? duration : 0);
+      setCurrentTime(current > 0 ? current : 0);
       setProgressRatio(duration > 0 ? Math.min(1, Math.max(0, current / duration)) : 0);
     };
     const onPlay = () => {
@@ -136,6 +172,23 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
       el.removeEventListener('timeupdate', onTimeUpdate);
     };
   }, [showMiniControls]);
+
+  React.useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.playbackRate = playbackRate;
+  }, [playbackRate]);
+
+  React.useEffect(() => {
+    const onSpeedChange = (event: Event) => {
+      const nextValue = (event as CustomEvent)?.detail?.value ?? (window as any).GoToolkitVoiceRecordingSpeed;
+      setPlaybackRate(normalizePlaybackSpeed(nextValue));
+    };
+    window.addEventListener('go-toolkit:voice-recording-speed-changed', onSpeedChange as EventListener);
+    return () => {
+      window.removeEventListener('go-toolkit:voice-recording-speed-changed', onSpeedChange as EventListener);
+    };
+  }, []);
 
   React.useEffect(() => {
     const el = videoRef.current;
@@ -247,6 +300,57 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
     showMiniControls();
   };
 
+  const handlePlayPauseButton = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    showMiniControls();
+    if (video.paused) {
+      void video.play().catch(() => null);
+    } else {
+      video.pause();
+    }
+  };
+
+  const handleSpeedChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const nextRate = normalizePlaybackSpeed(event.target.value);
+    setPlaybackRate(nextRate);
+    showMiniControls();
+  };
+
+  const handleDownload = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const href = String(resolvedSrc || src).trim();
+    if (!href) return;
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.download = String(node?.attrs?.fileName || node?.attrs?.title || 'video').trim() || 'video';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+  };
+
+  const handleFullscreen = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = frameRef.current || videoRef.current;
+    const requestFullscreen = (target as any)?.requestFullscreen
+      || (target as any)?.webkitRequestFullscreen
+      || (target as any)?.msRequestFullscreen;
+    if (typeof requestFullscreen === 'function') {
+      try {
+        await Promise.resolve(requestFullscreen.call(target));
+      } catch (err) {
+        // noop
+      }
+    }
+    showMiniControls();
+  };
+
   const defaultHeightPx = DEFAULT_VIDEO_HEIGHT_PX;
   const defaultWidthPx = Math.round(defaultHeightPx * (aspectRatio || DEFAULT_VIDEO_ASPECT_RATIO));
   const frameStyle: React.CSSProperties = {
@@ -289,6 +393,15 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
           <button
             type="button"
             className="block-delete-button memo-image-action"
+            title="Plein écran"
+            onClick={handleFullscreen}
+          >
+            <i data-lucide="fullscreen" style={{ display: 'none' }} aria-hidden="true"></i>
+            <Maximize size={14} />
+          </button>
+          <button
+            type="button"
+            className="block-delete-button memo-image-action"
             title="Supprimer"
             style={{ display: canEdit ? 'inline-flex' : 'none' }}
             onClick={(event) => {
@@ -322,6 +435,38 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
             onInput={handleProgressInput}
             onChange={handleProgressInput}
           />
+          <div className="memo-video-mini-controls__row">
+            <button
+              type="button"
+              className="memo-video-mini-button"
+              title={isPlaying ? 'Pause' : 'Lecture'}
+              aria-label={isPlaying ? 'Pause' : 'Lecture'}
+              onClick={handlePlayPauseButton}
+            >
+              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+            </button>
+            <span className="memo-video-mini-time">{formatVideoTime(currentTime)}/{formatVideoTime(duration)}</span>
+            <select
+              className="memo-video-mini-speed"
+              value={playbackRate.toFixed(1)}
+              aria-label="Vitesse"
+              onClick={(event) => event.stopPropagation()}
+              onChange={handleSpeedChange}
+            >
+              {Array.from({ length: 19 }, (_, index) => ((index * 2 + 4) / 10).toFixed(1)).map((value) => (
+                <option key={value} value={value}>{value}x</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="memo-video-mini-button"
+              title="Télécharger"
+              aria-label="Télécharger"
+              onClick={handleDownload}
+            >
+              <Download size={14} />
+            </button>
+          </div>
         </div>
         {!isPlaying && (
           <div className="memo-video-play-overlay" aria-hidden="true">

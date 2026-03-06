@@ -29568,10 +29568,21 @@ img.ProseMirror-separator {
   var __iconNode37 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
   var LoaderCircle = createLucideIcon("loader-circle", __iconNode37);
 
-  // node_modules/lucide-react/dist/esm/icons/mouse-pointer-2.js
+  // node_modules/lucide-react/dist/esm/icons/maximize.js
   init_define_process_env();
   init_polyfills();
   var __iconNode38 = [
+    ["path", { d: "M8 3H5a2 2 0 0 0-2 2v3", key: "1dcmit" }],
+    ["path", { d: "M21 8V5a2 2 0 0 0-2-2h-3", key: "1e4gt3" }],
+    ["path", { d: "M3 16v3a2 2 0 0 0 2 2h3", key: "wsl5sc" }],
+    ["path", { d: "M16 21h3a2 2 0 0 0 2-2v-3", key: "18trek" }]
+  ];
+  var Maximize = createLucideIcon("maximize", __iconNode38);
+
+  // node_modules/lucide-react/dist/esm/icons/mouse-pointer-2.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode39 = [
     [
       "path",
       {
@@ -29580,12 +29591,21 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var MousePointer2 = createLucideIcon("mouse-pointer-2", __iconNode38);
+  var MousePointer2 = createLucideIcon("mouse-pointer-2", __iconNode39);
+
+  // node_modules/lucide-react/dist/esm/icons/pause.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode40 = [
+    ["rect", { x: "14", y: "3", width: "5", height: "18", rx: "1", key: "kaeet6" }],
+    ["rect", { x: "5", y: "3", width: "5", height: "18", rx: "1", key: "1wsw3u" }]
+  ];
+  var Pause = createLucideIcon("pause", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/pencil.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode41 = [
     [
       "path",
       {
@@ -29595,12 +29615,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
   ];
-  var Pencil = createLucideIcon("pencil", __iconNode39);
+  var Pencil = createLucideIcon("pencil", __iconNode41);
 
   // node_modules/lucide-react/dist/esm/icons/play.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode42 = [
     [
       "path",
       {
@@ -29609,21 +29629,21 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Play = createLucideIcon("play", __iconNode40);
+  var Play = createLucideIcon("play", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/plus.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode43 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode41);
+  var Plus = createLucideIcon("plus", __iconNode43);
 
   // node_modules/lucide-react/dist/esm/icons/quote.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode44 = [
     [
       "path",
       {
@@ -29639,38 +29659,38 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Quote = createLucideIcon("quote", __iconNode42);
+  var Quote = createLucideIcon("quote", __iconNode44);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode43 = [
+  var __iconNode45 = [
     ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }]
   ];
-  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode43);
+  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode45);
 
   // node_modules/lucide-react/dist/esm/icons/redo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode44 = [
+  var __iconNode46 = [
     ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
     ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
   ];
-  var Redo2 = createLucideIcon("redo-2", __iconNode44);
+  var Redo2 = createLucideIcon("redo-2", __iconNode46);
 
   // node_modules/lucide-react/dist/esm/icons/rotate-cw.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode45 = [
+  var __iconNode47 = [
     ["path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8", key: "1p45f6" }],
     ["path", { d: "M21 3v5h-5", key: "1q7to0" }]
   ];
-  var RotateCw = createLucideIcon("rotate-cw", __iconNode45);
+  var RotateCw = createLucideIcon("rotate-cw", __iconNode47);
 
   // node_modules/lucide-react/dist/esm/icons/send.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode46 = [
+  var __iconNode48 = [
     [
       "path",
       {
@@ -29680,12 +29700,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
   ];
-  var Send = createLucideIcon("send", __iconNode46);
+  var Send = createLucideIcon("send", __iconNode48);
 
   // node_modules/lucide-react/dist/esm/icons/shapes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode47 = [
+  var __iconNode49 = [
     [
       "path",
       {
@@ -29696,12 +29716,12 @@ img.ProseMirror-separator {
     ["rect", { x: "3", y: "14", width: "7", height: "7", rx: "1", key: "1bkyp8" }],
     ["circle", { cx: "17.5", cy: "17.5", r: "3.5", key: "w3z12y" }]
   ];
-  var Shapes = createLucideIcon("shapes", __iconNode47);
+  var Shapes = createLucideIcon("shapes", __iconNode49);
 
   // node_modules/lucide-react/dist/esm/icons/sparkles.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode48 = [
+  var __iconNode50 = [
     [
       "path",
       {
@@ -29713,72 +29733,72 @@ img.ProseMirror-separator {
     ["path", { d: "M22 4h-4", key: "gwowj6" }],
     ["circle", { cx: "4", cy: "20", r: "2", key: "6kqj1y" }]
   ];
-  var Sparkles = createLucideIcon("sparkles", __iconNode48);
+  var Sparkles = createLucideIcon("sparkles", __iconNode50);
 
   // node_modules/lucide-react/dist/esm/icons/square-check-big.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode49 = [
+  var __iconNode51 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode49);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode51);
 
   // node_modules/lucide-react/dist/esm/icons/square-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode50 = [
+  var __iconNode52 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
   ];
-  var SquareCheck = createLucideIcon("square-check", __iconNode50);
+  var SquareCheck = createLucideIcon("square-check", __iconNode52);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode51 = [
+  var __iconNode53 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode51);
+  var SquareCode = createLucideIcon("square-code", __iconNode53);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode52 = [
+  var __iconNode54 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode52);
+  var Square = createLucideIcon("square", __iconNode54);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode53 = [
+  var __iconNode55 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode53);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode55);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode54 = [
+  var __iconNode56 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode54);
+  var Table2 = createLucideIcon("table", __iconNode56);
 
   // node_modules/lucide-react/dist/esm/icons/tag.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode55 = [
+  var __iconNode57 = [
     [
       "path",
       {
@@ -29788,24 +29808,24 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
   ];
-  var Tag = createLucideIcon("tag", __iconNode55);
+  var Tag = createLucideIcon("tag", __iconNode57);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode56 = [
+  var __iconNode58 = [
     ["path", { d: "M10 11v6", key: "nco0om" }],
     ["path", { d: "M14 11v6", key: "outv1u" }],
     ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
     ["path", { d: "M3 6h18", key: "d0wm0j" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
   ];
-  var Trash2 = createLucideIcon("trash-2", __iconNode56);
+  var Trash2 = createLucideIcon("trash-2", __iconNode58);
 
   // node_modules/lucide-react/dist/esm/icons/triangle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode57 = [
+  var __iconNode59 = [
     [
       "path",
       {
@@ -29816,54 +29836,54 @@ img.ProseMirror-separator {
     ["path", { d: "M12 9v4", key: "juzpu7" }],
     ["path", { d: "M12 17h.01", key: "p32p05" }]
   ];
-  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode57);
+  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode59);
 
   // node_modules/lucide-react/dist/esm/icons/type.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode58 = [
+  var __iconNode60 = [
     ["path", { d: "M12 4v16", key: "1654pz" }],
     ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
     ["path", { d: "M9 20h6", key: "s66wpe" }]
   ];
-  var Type = createLucideIcon("type", __iconNode58);
+  var Type = createLucideIcon("type", __iconNode60);
 
   // node_modules/lucide-react/dist/esm/icons/underline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode59 = [
+  var __iconNode61 = [
     ["path", { d: "M6 4v6a6 6 0 0 0 12 0V4", key: "9kb039" }],
     ["line", { x1: "4", x2: "20", y1: "20", y2: "20", key: "nun2al" }]
   ];
-  var Underline2 = createLucideIcon("underline", __iconNode59);
+  var Underline2 = createLucideIcon("underline", __iconNode61);
 
   // node_modules/lucide-react/dist/esm/icons/undo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode60 = [
+  var __iconNode62 = [
     ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
     ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
   ];
-  var Undo2 = createLucideIcon("undo-2", __iconNode60);
+  var Undo2 = createLucideIcon("undo-2", __iconNode62);
 
   // node_modules/lucide-react/dist/esm/icons/workflow.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode61 = [
+  var __iconNode63 = [
     ["rect", { width: "8", height: "8", x: "3", y: "3", rx: "2", key: "by2w9f" }],
     ["path", { d: "M7 11v4a2 2 0 0 0 2 2h4", key: "xkn7yn" }],
     ["rect", { width: "8", height: "8", x: "13", y: "13", rx: "2", key: "1cgmvn" }]
   ];
-  var Workflow = createLucideIcon("workflow", __iconNode61);
+  var Workflow = createLucideIcon("workflow", __iconNode63);
 
   // node_modules/lucide-react/dist/esm/icons/x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode62 = [
+  var __iconNode64 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode62);
+  var X = createLucideIcon("x", __iconNode64);
 
   // src/memo-editor/docx-export.ts
   init_define_process_env();
@@ -50000,7 +50020,7 @@ img.ProseMirror-separator {
     return children;
   }
   async function transformInlineContent(nodes, defaults2 = {}) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     const runs = [];
     for (const node of nodes) {
       if (node.type === "text") {
@@ -50012,7 +50032,8 @@ img.ProseMirror-separator {
         const color = resolveDocxColor((_b = (_a = marks.find((m) => m.type === "textStyle")) == null ? void 0 : _a.attrs) == null ? void 0 : _b.color);
         const highlight = resolveDocxColor((_d = (_c = marks.find((m) => m.type === "highlight")) == null ? void 0 : _c.attrs) == null ? void 0 : _d.color);
         const isCode = marks.some((m) => m.type === "code");
-        runs.push(new TextRun({
+        const href = String(((_f = (_e = marks.find((m) => m.type === "link")) == null ? void 0 : _e.attrs) == null ? void 0 : _f.href) || "").trim();
+        const textRun = new TextRun({
           text: node.text,
           bold: isBold,
           italics: isItalic,
@@ -50023,7 +50044,25 @@ img.ProseMirror-separator {
           font: isCode ? "Consolas" : defaults2.font || DEFAULT_FONT,
           size: isCode ? 18 : void 0,
           shading: isCode ? { fill: "F1F5F9", type: ShadingType.CLEAR } : void 0
-        }));
+        });
+        if (href) {
+          runs.push(new ExternalHyperlink({
+            link: href,
+            children: [
+              new TextRun({
+                text: node.text,
+                style: "Hyperlink",
+                bold: isBold,
+                italics: isItalic,
+                underline: { type: UnderlineType.SINGLE },
+                font: isCode ? "Consolas" : defaults2.font || DEFAULT_FONT,
+                size: isCode ? 18 : void 0
+              })
+            ]
+          }));
+        } else {
+          runs.push(textRun);
+        }
       } else if (node.type === "hardBreak") {
         runs.push(new TextRun({ break: 1 }));
       }
@@ -55787,6 +55826,34 @@ ${promptInput.trim()}`
   };
   var DEFAULT_VIDEO_HEIGHT_PX = 600;
   var DEFAULT_VIDEO_ASPECT_RATIO = 16 / 9;
+  var VOICE_RECORDING_SPEED_STORAGE_KEY = "go-toolkit-voice-recording-speed";
+  var normalizePlaybackSpeed = (value) => {
+    const numeric2 = Number(value);
+    if (!Number.isFinite(numeric2)) return 1.2;
+    const rounded = Math.round(numeric2 * 10) / 10;
+    return Math.min(4, Math.max(0.4, rounded));
+  };
+  var getConfiguredPlaybackSpeed = () => {
+    var _a, _b;
+    const globalSpeed = window.GoToolkitVoiceRecordingSpeed;
+    if (globalSpeed != null) return normalizePlaybackSpeed(globalSpeed);
+    try {
+      const fromLocal = localStorage.getItem(VOICE_RECORDING_SPEED_STORAGE_KEY);
+      if (fromLocal) return normalizePlaybackSpeed(fromLocal);
+    } catch (err) {
+    }
+    const fromConfig = (_b = (_a = window.GoToolkitSiteConfig) == null ? void 0 : _a.get) == null ? void 0 : _b.call(_a, "voice.recordingSpeed", null);
+    if (fromConfig != null) return normalizePlaybackSpeed(fromConfig);
+    return 1.2;
+  };
+  var formatVideoTime = (value) => {
+    const totalSeconds = Math.max(0, Math.floor(Number(value) || 0));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor(totalSeconds % 3600 / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  };
   var copyVideoHtml = async (attrs) => {
     var _a;
     const src = String((attrs == null ? void 0 : attrs.src) || "");
@@ -55836,6 +55903,9 @@ ${promptInput.trim()}`
     const [aspectRatio, setAspectRatio] = react_shim_default.useState(DEFAULT_VIDEO_ASPECT_RATIO);
     const [progressRatio, setProgressRatio] = react_shim_default.useState(0);
     const [controlsVisible, setControlsVisible] = react_shim_default.useState(false);
+    const [currentTime, setCurrentTime] = react_shim_default.useState(0);
+    const [duration, setDuration] = react_shim_default.useState(0);
+    const [playbackRate, setPlaybackRate] = react_shim_default.useState(() => getConfiguredPlaybackSpeed());
     const widthPx = parseSizePx((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.width);
     const heightPx = parseSizePx((_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.height);
     const showMiniControls = react_shim_default.useCallback(() => {
@@ -55872,9 +55942,11 @@ ${promptInput.trim()}`
       const el = videoRef.current;
       if (!el) return;
       const updateProgress = () => {
-        const duration = Number(el.duration || 0);
+        const duration2 = Number(el.duration || 0);
         const current = Number(el.currentTime || 0);
-        setProgressRatio(duration > 0 ? Math.min(1, Math.max(0, current / duration)) : 0);
+        setDuration(duration2 > 0 ? duration2 : 0);
+        setCurrentTime(current > 0 ? current : 0);
+        setProgressRatio(duration2 > 0 ? Math.min(1, Math.max(0, current / duration2)) : 0);
       };
       const onPlay = () => {
         setIsPlaying(true);
@@ -55904,6 +55976,22 @@ ${promptInput.trim()}`
         el.removeEventListener("timeupdate", onTimeUpdate);
       };
     }, [showMiniControls]);
+    react_shim_default.useEffect(() => {
+      const el = videoRef.current;
+      if (!el) return;
+      el.playbackRate = playbackRate;
+    }, [playbackRate]);
+    react_shim_default.useEffect(() => {
+      const onSpeedChange = (event) => {
+        var _a2, _b2;
+        const nextValue = (_b2 = (_a2 = event == null ? void 0 : event.detail) == null ? void 0 : _a2.value) != null ? _b2 : window.GoToolkitVoiceRecordingSpeed;
+        setPlaybackRate(normalizePlaybackSpeed(nextValue));
+      };
+      window.addEventListener("go-toolkit:voice-recording-speed-changed", onSpeedChange);
+      return () => {
+        window.removeEventListener("go-toolkit:voice-recording-speed-changed", onSpeedChange);
+      };
+    }, []);
     react_shim_default.useEffect(() => {
       const el = videoRef.current;
       if (!el) return;
@@ -56001,11 +56089,56 @@ ${promptInput.trim()}`
       const video = videoRef.current;
       if (!video) return;
       const ratio = Math.min(1, Math.max(0, Number(event.target.value) || 0));
-      const duration = Number(video.duration || 0);
-      if (duration > 0) {
-        video.currentTime = duration * ratio;
+      const duration2 = Number(video.duration || 0);
+      if (duration2 > 0) {
+        video.currentTime = duration2 * ratio;
       }
       setProgressRatio(ratio);
+      showMiniControls();
+    };
+    const handlePlayPauseButton = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const video = videoRef.current;
+      if (!video) return;
+      showMiniControls();
+      if (video.paused) {
+        void video.play().catch(() => null);
+      } else {
+        video.pause();
+      }
+    };
+    const handleSpeedChange = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const nextRate = normalizePlaybackSpeed(event.target.value);
+      setPlaybackRate(nextRate);
+      showMiniControls();
+    };
+    const handleDownload = async (event) => {
+      var _a2, _b2;
+      event.preventDefault();
+      event.stopPropagation();
+      const href = String(resolvedSrc || src).trim();
+      if (!href) return;
+      const anchor = document.createElement("a");
+      anchor.href = href;
+      anchor.download = String(((_a2 = node == null ? void 0 : node.attrs) == null ? void 0 : _a2.fileName) || ((_b2 = node == null ? void 0 : node.attrs) == null ? void 0 : _b2.title) || "video").trim() || "video";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    };
+    const handleFullscreen = async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = frameRef.current || videoRef.current;
+      const requestFullscreen = (target == null ? void 0 : target.requestFullscreen) || (target == null ? void 0 : target.webkitRequestFullscreen) || (target == null ? void 0 : target.msRequestFullscreen);
+      if (typeof requestFullscreen === "function") {
+        try {
+          await Promise.resolve(requestFullscreen.call(target));
+        } catch (err) {
+        }
+      }
       showMiniControls();
     };
     const defaultHeightPx = DEFAULT_VIDEO_HEIGHT_PX;
@@ -56052,6 +56185,19 @@ ${promptInput.trim()}`
               {
                 type: "button",
                 className: "block-delete-button memo-image-action",
+                title: "Plein \xE9cran",
+                onClick: handleFullscreen,
+                children: [
+                  /* @__PURE__ */ jsx("i", { "data-lucide": "fullscreen", style: { display: "none" }, "aria-hidden": "true" }),
+                  /* @__PURE__ */ jsx(Maximize, { size: 14 })
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                className: "block-delete-button memo-image-action",
                 title: "Supprimer",
                 style: { display: canEdit ? "inline-flex" : "none" },
                 onClick: (event) => {
@@ -56078,20 +56224,65 @@ ${promptInput.trim()}`
               title: String(((_e = node == null ? void 0 : node.attrs) == null ? void 0 : _e.title) || "")
             }
           ),
-          /* @__PURE__ */ jsx("div", { className: `memo-video-mini-controls${controlsVisible ? " is-visible" : ""}`, "aria-hidden": !controlsVisible, children: /* @__PURE__ */ jsx(
-            "input",
-            {
-              type: "range",
-              min: "0",
-              max: "1",
-              step: "0.001",
-              value: String(progressRatio),
-              className: "memo-video-mini-progress",
-              onClick: (event) => event.stopPropagation(),
-              onInput: handleProgressInput,
-              onChange: handleProgressInput
-            }
-          ) }),
+          /* @__PURE__ */ jsxs("div", { className: `memo-video-mini-controls${controlsVisible ? " is-visible" : ""}`, "aria-hidden": !controlsVisible, children: [
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "range",
+                min: "0",
+                max: "1",
+                step: "0.001",
+                value: String(progressRatio),
+                className: "memo-video-mini-progress",
+                onClick: (event) => event.stopPropagation(),
+                onInput: handleProgressInput,
+                onChange: handleProgressInput
+              }
+            ),
+            /* @__PURE__ */ jsxs("div", { className: "memo-video-mini-controls__row", children: [
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  className: "memo-video-mini-button",
+                  title: isPlaying ? "Pause" : "Lecture",
+                  "aria-label": isPlaying ? "Pause" : "Lecture",
+                  onClick: handlePlayPauseButton,
+                  children: isPlaying ? /* @__PURE__ */ jsx(Pause, { size: 14 }) : /* @__PURE__ */ jsx(Play, { size: 14 })
+                }
+              ),
+              /* @__PURE__ */ jsxs("span", { className: "memo-video-mini-time", children: [
+                formatVideoTime(currentTime),
+                "/",
+                formatVideoTime(duration)
+              ] }),
+              /* @__PURE__ */ jsx(
+                "select",
+                {
+                  className: "memo-video-mini-speed",
+                  value: playbackRate.toFixed(1),
+                  "aria-label": "Vitesse",
+                  onClick: (event) => event.stopPropagation(),
+                  onChange: handleSpeedChange,
+                  children: Array.from({ length: 19 }, (_, index) => ((index * 2 + 4) / 10).toFixed(1)).map((value) => /* @__PURE__ */ jsxs("option", { value, children: [
+                    value,
+                    "x"
+                  ] }, value))
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  className: "memo-video-mini-button",
+                  title: "T\xE9l\xE9charger",
+                  "aria-label": "T\xE9l\xE9charger",
+                  onClick: handleDownload,
+                  children: /* @__PURE__ */ jsx(Download, { size: 14 })
+                }
+              )
+            ] })
+          ] }),
           !isPlaying && /* @__PURE__ */ jsxs("div", { className: "memo-video-play-overlay", "aria-hidden": "true", children: [
             /* @__PURE__ */ jsx("i", { "data-lucide": "play", style: { display: "none" }, "aria-hidden": "true" }),
             /* @__PURE__ */ jsx(Play, { size: 28 })
@@ -56514,6 +56705,75 @@ ${promptInput.trim()}`
     }
     return false;
   };
+  var getLinkMarkAtCursor = (editor) => {
+    const linkMark = editor.state.schema.marks.link;
+    if (!linkMark) return null;
+    const { from: from2, empty: empty2 } = editor.state.selection;
+    if (!empty2) return null;
+    const $pos = editor.state.doc.resolve(from2);
+    const parent = $pos.parent;
+    const parentStart = $pos.start();
+    const segments = [];
+    let targetIndex = -1;
+    parent.forEach((node, offset3, index) => {
+      var _a, _b;
+      if (!node.isText) return;
+      const href = String(((_b = (_a = node.marks.find((item) => item.type === linkMark)) == null ? void 0 : _a.attrs) == null ? void 0 : _b.href) || "").trim();
+      if (!href) return;
+      const nodeFrom = parentStart + offset3;
+      const nodeTo = nodeFrom + node.nodeSize;
+      segments.push({ index, from: nodeFrom, to: nodeTo, text: node.text || "", href });
+      if (from2 >= nodeFrom && from2 <= nodeTo) targetIndex = segments.length - 1;
+    });
+    if (targetIndex < 0) return null;
+    const targetHref = segments[targetIndex].href;
+    let first2 = targetIndex;
+    let last = targetIndex;
+    while (first2 > 0 && segments[first2 - 1].index === segments[first2].index - 1 && segments[first2 - 1].href === targetHref) {
+      first2 -= 1;
+    }
+    while (last < segments.length - 1 && segments[last + 1].index === segments[last].index + 1 && segments[last + 1].href === targetHref) {
+      last += 1;
+    }
+    const text2 = segments.slice(first2, last + 1).map((item) => item.text).join("");
+    const rangeFrom = segments[first2].from;
+    const rangeTo = segments[last].to;
+    if (!text2) return null;
+    return {
+      href: targetHref,
+      text: text2,
+      from: rangeFrom,
+      to: rangeTo
+    };
+  };
+  var getSelectionLinkContext = (editor) => {
+    const linkMark = editor.state.schema.marks.link;
+    if (!linkMark) return null;
+    const { from: from2, to, empty: empty2 } = editor.state.selection;
+    if (empty2) {
+      return getLinkMarkAtCursor(editor);
+    }
+    let href = "";
+    let text2 = "";
+    let coveredFrom = from2;
+    let coveredTo = to;
+    editor.state.doc.nodesBetween(from2, to, (node, pos) => {
+      var _a, _b;
+      if (!node.isText) return;
+      const mark = node.marks.find((item) => item.type === linkMark);
+      if (!mark) return;
+      if (!href) href = String(((_a = mark.attrs) == null ? void 0 : _a.href) || "").trim();
+      if (href !== String(((_b = mark.attrs) == null ? void 0 : _b.href) || "").trim()) return false;
+      const start = Math.max(pos, from2);
+      const end = Math.min(pos + node.nodeSize, to);
+      if (start >= end) return;
+      if (!text2) coveredFrom = start;
+      coveredTo = end;
+      text2 += (node.text || "").slice(start - pos, end - pos);
+    });
+    if (!href || !text2) return null;
+    return { href, text: text2, from: coveredFrom, to: coveredTo };
+  };
   var getScrollableAncestors = (element) => {
     const scrollables = [];
     let current = (element == null ? void 0 : element.parentElement) || null;
@@ -56639,17 +56899,27 @@ ${promptInput.trim()}`
     onClose,
     anchorPos,
     selectionRange,
-    containerRef
+    containerRef,
+    initialQuery,
+    initialLabel
   }) => {
-    const [query, setQuery] = react_shim_default.useState("");
+    const [query, setQuery] = react_shim_default.useState(initialQuery || "");
+    const [label, setLabel] = react_shim_default.useState(initialLabel || "");
     const [selectedIndex, setSelectedIndex] = react_shim_default.useState(0);
     const [documents, setDocuments] = react_shim_default.useState([]);
     const modalRef = react_shim_default.useRef(null);
+    const queryInputRef = react_shim_default.useRef(null);
     const [modalStyle, setModalStyle] = react_shim_default.useState({
       position: "absolute",
       zIndex: 2e3,
       visibility: "hidden"
     });
+    react_shim_default.useEffect(() => {
+      setQuery(initialQuery || "");
+    }, [initialQuery]);
+    react_shim_default.useEffect(() => {
+      setLabel(initialLabel || "");
+    }, [initialLabel]);
     react_shim_default.useEffect(() => {
       let cancelled = false;
       const loadDocuments = async () => {
@@ -56786,94 +57056,10 @@ ${promptInput.trim()}`
       setSelectedIndex(0);
     }, [queryTrimmed, hasUrlQuery]);
     react_shim_default.useEffect(() => {
-      const onKeyDown = (e) => {
-        var _a, _b;
-        if (e.isComposing) return;
-        const key = e.key;
-        if (key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-          onClose();
-          return;
-        }
-        if (key === "Enter") {
-          e.preventDefault();
-          e.stopPropagation();
-          if (items[selectedIndex]) {
-            handleSelect(items[selectedIndex]);
-            return;
-          }
-          if (queryTrimmed) {
-            const from2 = Math.max(1, Math.min((_a = selectionRange == null ? void 0 : selectionRange.from) != null ? _a : editor.state.selection.from, editor.state.doc.content.size));
-            const to = Math.max(from2, Math.min((_b = selectionRange == null ? void 0 : selectionRange.to) != null ? _b : editor.state.selection.to, editor.state.doc.content.size));
-            editor.chain().focus().insertContentAt({ from: from2, to }, queryTrimmed).run();
-            onClose();
-          }
-          return;
-        }
-        if (key === "ArrowDown") {
-          if (!items.length) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setSelectedIndex((prev) => (prev + 1) % items.length);
-          return;
-        }
-        if (key === "ArrowUp") {
-          if (!items.length) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
-          return;
-        }
-        if (key === "Backspace") {
-          e.preventDefault();
-          e.stopPropagation();
-          setQuery((prev) => prev.slice(0, -1));
-          return;
-        }
-        if (key === " ") {
-          e.preventDefault();
-          e.stopPropagation();
-          setQuery((prev) => prev + " ");
-          return;
-        }
-        if (key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-          e.preventDefault();
-          e.stopPropagation();
-          setQuery((prev) => prev + key);
-        }
-      };
-      document.addEventListener("keydown", onKeyDown, true);
-      return () => document.removeEventListener("keydown", onKeyDown, true);
-    }, [editor, items, onClose, queryTrimmed, selectedIndex, selectionRange]);
-    const insertMemoLinkBlockAt = react_shim_default.useCallback((pos, item) => {
-      var _a, _b, _c, _d, _e, _f;
-      const schema = (_a = editor == null ? void 0 : editor.state) == null ? void 0 : _a.schema;
-      const nodeType = (_b = schema == null ? void 0 : schema.nodes) == null ? void 0 : _b.memoLinkBlock;
-      if (!schema || !nodeType) return false;
-      const safePos = Math.max(0, Math.min(pos, editor.state.doc.content.size));
-      const linkNode = nodeType.create({
-        href: `memo://${item.id}`,
-        title: item.title || "Document",
-        icon: item.icon || "",
-        documentId: item.id || ""
-      });
-      const paragraph2 = ((_d = (_c = schema.nodes.paragraph) == null ? void 0 : _c.create) == null ? void 0 : _d.call(_c)) || null;
-      const fragment = paragraph2 ? schema.nodes.doc.create(null, [linkNode, paragraph2]).content : schema.nodes.doc.create(null, [linkNode]).content;
-      let tr2 = editor.state.tr;
-      const { selection } = editor.state;
-      const $from = selection.$from;
-      const inEmptyParagraph = selection.empty && ((_f = (_e = $from.parent) == null ? void 0 : _e.type) == null ? void 0 : _f.name) === "paragraph" && $from.parent.content.size === 0;
-      if (inEmptyParagraph && $from.depth > 0) {
-        const paraFrom = $from.before($from.depth);
-        const paraTo = paraFrom + $from.parent.nodeSize;
-        tr2 = tr2.replaceWith(paraFrom, paraTo, fragment);
-      } else {
-        tr2 = tr2.insert(safePos, fragment);
-      }
-      editor.view.dispatch(tr2);
-      return true;
-    }, [editor]);
+      var _a, _b;
+      (_a = queryInputRef.current) == null ? void 0 : _a.focus();
+      (_b = queryInputRef.current) == null ? void 0 : _b.select();
+    }, []);
     const handleSelect = (item) => {
       var _a, _b;
       let url = item.type === "document" ? `memo://${item.id}` : item.title;
@@ -56887,22 +57073,8 @@ ${promptInput.trim()}`
       );
       const from2 = Math.max(1, Math.min((_a = selectionRange == null ? void 0 : selectionRange.from) != null ? _a : editor.state.selection.from, editor.state.doc.content.size));
       const to = Math.max(from2, Math.min((_b = selectionRange == null ? void 0 : selectionRange.to) != null ? _b : editor.state.selection.to, editor.state.doc.content.size));
-      const tr2 = editor.state.tr.setSelection(TextSelection.create(editor.state.doc, from2, to));
-      editor.view.dispatch(tr2);
-      if (item.type === "document") {
-        const inserted = insertMemoLinkBlockAt(from2, item);
-        if (!inserted) {
-          editor.chain().focus().insertContent({
-            type: "memoLinkBlock",
-            attrs: {
-              href: url,
-              title: item.title,
-              icon: item.icon || "",
-              documentId: item.id
-            }
-          }).insertContent({ type: "paragraph" }).run();
-        }
-      } else {
+      const finalLabel = String(label || "").trim() || (item.type === "document" ? String(item.title || "Document") : queryTrimmed);
+      if (item.type !== "document") {
         const insertedEmbed = insertExternalEmbedAtSelection(editor, from2, to, item.title);
         if (insertedEmbed) {
           onClose();
@@ -56913,24 +57085,54 @@ ${promptInput.trim()}`
           onClose();
           return;
         }
-        if (!safeUrl) {
-          onClose();
-          return;
-        }
-        if (from2 !== to) {
-          editor.chain().focus().setLink({ href: safeUrl }).setColor("var(--color-primary)").run();
-        } else {
-          editor.chain().focus().insertContent([
-            {
-              type: "text",
-              text: item.title,
-              marks: [{ type: "link", attrs: { href: safeUrl } }, { type: "textStyle", attrs: { color: "var(--color-primary)" } }]
-            },
-            { type: "text", text: " " }
-          ]).run();
-        }
       }
+      if (!safeUrl) {
+        onClose();
+        return;
+      }
+      const contentToInsert = [
+        {
+          type: "text",
+          text: finalLabel,
+          marks: [{ type: "link", attrs: { href: safeUrl } }, { type: "textStyle", attrs: { color: "var(--color-primary)" } }]
+        }
+      ];
+      if (from2 === to) {
+        contentToInsert.push({ type: "text", text: " " });
+      }
+      editor.chain().focus().insertContentAt({ from: from2, to }, contentToInsert).run();
       onClose();
+    };
+    const handleSubmit = () => {
+      if (items[selectedIndex]) {
+        handleSelect(items[selectedIndex]);
+        return;
+      }
+      if (!queryTrimmed) return;
+      handleSelect({ type: "url", title: queryTrimmed });
+    };
+    const handleInputKeyDown = (e, field) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (field === "query" && e.key === "ArrowDown" && items.length) {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % items.length);
+        return;
+      }
+      if (field === "query" && e.key === "ArrowUp" && items.length) {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleSubmit();
+      }
     };
     return /* @__PURE__ */ jsxs(
       "div",
@@ -56939,7 +57141,29 @@ ${promptInput.trim()}`
         className: "link-search-modal",
         style: modalStyle,
         children: [
-          /* @__PURE__ */ jsx("div", { className: `link-search-modal__query ${queryTrimmed ? "has-value" : ""}`, children: queryTrimmed || "Tape pour rechercher un titre ou un lien" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              ref: queryInputRef,
+              type: "text",
+              value: query,
+              className: "link-search-modal__search-input",
+              placeholder: "Rechercher une page ou coller une URL",
+              onChange: (e) => setQuery(e.target.value),
+              onKeyDown: (e) => handleInputKeyDown(e, "query")
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: label,
+              className: `link-search-modal__query ${String(label || "").trim() ? "has-value" : ""}`,
+              placeholder: "Libell\xE9 du lien",
+              onChange: (e) => setLabel(e.target.value),
+              onKeyDown: (e) => handleInputKeyDown(e, "label")
+            }
+          ),
           /* @__PURE__ */ jsxs("div", { className: "link-search-results", children: [
             items.map((item, i) => /* @__PURE__ */ jsxs(
               "div",
@@ -59001,6 +59225,9 @@ ${promptInput.trim()}`
     const [showLinkModal, setShowLinkModal] = react_shim_default.useState(false);
     const [linkModalAnchorPos, setLinkModalAnchorPos] = react_shim_default.useState(1);
     const [linkModalRange, setLinkModalRange] = react_shim_default.useState({ from: 1, to: 1 });
+    const [linkModalInitialQuery, setLinkModalInitialQuery] = react_shim_default.useState("");
+    const [linkModalInitialLabel, setLinkModalInitialLabel] = react_shim_default.useState("");
+    const [linkTooltip, setLinkTooltip] = react_shim_default.useState(null);
     const [showSlashActionMenu, setShowSlashActionMenu] = react_shim_default.useState(false);
     const [slashActionMenuPos, setSlashActionMenuPos] = react_shim_default.useState({ top: 0, left: 0 });
     const [slashActionQuery, setSlashActionQuery] = react_shim_default.useState("");
@@ -61667,7 +61894,7 @@ ${innerMarkdown}
             }
             if (format === "text") {
               const markdown = getEditorMarkdown();
-              return markdown.replace(/\\-/g, "-").replace(/\[([^\]]+)\]\(([^\)]+)\)/g, "$2").replace(/(\*\*|__)(.*?)\1/g, "$2").replace(/(\*|_)(.*?)\1/g, "$2").replace(/~~(.*?)~~/g, "$1").replace(/`(.*?)`/g, "$1").replace(/^#+\s+/gm, "").replace(/^\s*>\s*/gm, "> ").replace(/^\s*-\s+/gm, "- ").replace(/\n\n(?=\s*-)/g, "\n");
+              return markdown.replace(/\\-/g, "-").replace(/\[([^\]]+)\]\(([^\)]+)\)/g, "$1 ($2)").replace(/(\*\*|__)(.*?)\1/g, "$2").replace(/(\*|_)(.*?)\1/g, "$2").replace(/~~(.*?)~~/g, "$1").replace(/`(.*?)`/g, "$1").replace(/^#+\s+/gm, "").replace(/^\s*>\s*/gm, "> ").replace(/^\s*-\s+/gm, "- ").replace(/\n\n(?=\s*-)/g, "\n");
             }
             return getEditorMarkdown();
           } catch (err) {
@@ -62163,11 +62390,50 @@ ${innerMarkdown}
         editor.off("selectionUpdate", handleSelectionChange);
       };
     }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      const updateLinkTooltip = () => {
+        const host = containerRef.current;
+        const context = getSelectionLinkContext(editor);
+        if (!host || !context) {
+          setLinkTooltip(null);
+          return;
+        }
+        try {
+          const coords = editor.view.coordsAtPos(context.from);
+          const hostRect = host.getBoundingClientRect();
+          setLinkTooltip({
+            href: context.href,
+            left: coords.left - hostRect.left,
+            top: coords.top - hostRect.top - 40
+          });
+        } catch (e) {
+          setLinkTooltip(null);
+        }
+      };
+      editor.on("update", updateLinkTooltip);
+      editor.on("selectionUpdate", updateLinkTooltip);
+      updateLinkTooltip();
+      return () => {
+        editor.off("update", updateLinkTooltip);
+        editor.off("selectionUpdate", updateLinkTooltip);
+      };
+    }, [editor]);
     const openLinkModal = react_shim_default.useCallback(() => {
       if (!editor) return;
-      const { from: from2, to } = editor.state.selection;
-      setLinkModalAnchorPos(from2);
-      setLinkModalRange({ from: from2, to });
+      const context = getSelectionLinkContext(editor);
+      if (context) {
+        setLinkModalAnchorPos(context.from);
+        setLinkModalRange({ from: context.from, to: context.to });
+        setLinkModalInitialQuery(context.href);
+        setLinkModalInitialLabel(context.text);
+      } else {
+        const { from: from2, to } = editor.state.selection;
+        setLinkModalAnchorPos(from2);
+        setLinkModalRange({ from: from2, to });
+        setLinkModalInitialQuery("");
+        setLinkModalInitialLabel("");
+      }
       setShowLinkModal(true);
     }, [editor]);
     const insertNavigationBlock = react_shim_default.useCallback(() => {
@@ -62522,8 +62788,52 @@ ${innerMarkdown}
               editor,
               anchorPos: linkModalAnchorPos,
               selectionRange: linkModalRange,
+              initialQuery: linkModalInitialQuery,
+              initialLabel: linkModalInitialLabel,
               containerRef,
               onClose: () => setShowLinkModal(false)
+            }
+          ),
+          linkTooltip && !showLinkModal && /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: "memo-link-tooltip",
+              style: { top: linkTooltip.top, left: linkTooltip.left },
+              children: [
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    className: "memo-link-tooltip__edit",
+                    onMouseDown: (event) => event.preventDefault(),
+                    onClick: () => openLinkModal(),
+                    "aria-label": "Modifier le lien",
+                    children: /* @__PURE__ */ jsx(Pencil, { size: 12 })
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    className: "memo-link-tooltip__href",
+                    onMouseDown: (event) => event.preventDefault(),
+                    onClick: () => {
+                      const href = String(linkTooltip.href || "").trim();
+                      if (!href) return;
+                      if (href.startsWith("memo://")) {
+                        const open = window.GoToolkitMemoOpenDocumentByLink;
+                        if (typeof open === "function") {
+                          open(href.replace(/^memo:\/\//, ""));
+                          return;
+                        }
+                      }
+                      window.open(href, "_blank", "noopener,noreferrer");
+                    },
+                    title: linkTooltip.href,
+                    children: linkTooltip.href
+                  }
+                )
+              ]
             }
           ),
           rowHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
@@ -63504,7 +63814,9 @@ lucide-react/dist/esm/icons/list-ordered.js:
 lucide-react/dist/esm/icons/list-tree.js:
 lucide-react/dist/esm/icons/list.js:
 lucide-react/dist/esm/icons/loader-circle.js:
+lucide-react/dist/esm/icons/maximize.js:
 lucide-react/dist/esm/icons/mouse-pointer-2.js:
+lucide-react/dist/esm/icons/pause.js:
 lucide-react/dist/esm/icons/pencil.js:
 lucide-react/dist/esm/icons/play.js:
 lucide-react/dist/esm/icons/plus.js:

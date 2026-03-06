@@ -214,6 +214,84 @@ const hasAncestorNode = ($pos: any, typeName: string) => {
   return false;
 };
 
+const getLinkMarkAtCursor = (editor: Editor) => {
+  const linkMark = editor.state.schema.marks.link;
+  if (!linkMark) return null;
+  const { from, empty } = editor.state.selection;
+  if (!empty) return null;
+  const $pos = editor.state.doc.resolve(from);
+  const parent = $pos.parent;
+  const parentStart = $pos.start();
+  const segments: Array<{ index: number; from: number; to: number; text: string; href: string }> = [];
+  let targetIndex = -1;
+
+  parent.forEach((node, offset, index) => {
+    if (!node.isText) return;
+    const href = String(node.marks.find((item: any) => item.type === linkMark)?.attrs?.href || '').trim();
+    if (!href) return;
+    const nodeFrom = parentStart + offset;
+    const nodeTo = nodeFrom + node.nodeSize;
+    segments.push({ index, from: nodeFrom, to: nodeTo, text: node.text || '', href });
+    if (from >= nodeFrom && from <= nodeTo) targetIndex = segments.length - 1;
+  });
+
+  if (targetIndex < 0) return null;
+  const targetHref = segments[targetIndex].href;
+  let first = targetIndex;
+  let last = targetIndex;
+
+  while (first > 0 && segments[first - 1].index === segments[first].index - 1 && segments[first - 1].href === targetHref) {
+    first -= 1;
+  }
+  while (last < segments.length - 1 && segments[last + 1].index === segments[last].index + 1 && segments[last + 1].href === targetHref) {
+    last += 1;
+  }
+
+  const text = segments.slice(first, last + 1).map((item) => item.text).join('');
+  const rangeFrom = segments[first].from;
+  const rangeTo = segments[last].to;
+
+  if (!text) return null;
+  return {
+    href: targetHref,
+    text,
+    from: rangeFrom,
+    to: rangeTo,
+  };
+};
+
+const getSelectionLinkContext = (editor: Editor) => {
+  const linkMark = editor.state.schema.marks.link;
+  if (!linkMark) return null;
+  const { from, to, empty } = editor.state.selection;
+
+  if (empty) {
+    return getLinkMarkAtCursor(editor);
+  }
+
+  let href = '';
+  let text = '';
+  let coveredFrom = from;
+  let coveredTo = to;
+
+  editor.state.doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isText) return;
+    const mark = node.marks.find((item: any) => item.type === linkMark);
+    if (!mark) return;
+    if (!href) href = String(mark.attrs?.href || '').trim();
+    if (href !== String(mark.attrs?.href || '').trim()) return false;
+    const start = Math.max(pos, from);
+    const end = Math.min(pos + node.nodeSize, to);
+    if (start >= end) return;
+    if (!text) coveredFrom = start;
+    coveredTo = end;
+    text += (node.text || '').slice(start - pos, end - pos);
+  });
+
+  if (!href || !text) return null;
+  return { href, text, from: coveredFrom, to: coveredTo };
+};
+
 const getScrollableAncestors = (element: HTMLElement | null): HTMLElement[] => {
   const scrollables: HTMLElement[] = [];
   let current = element?.parentElement || null;
@@ -355,23 +433,37 @@ const LinkSearchModal = ({
   onClose,
   anchorPos,
   selectionRange,
-  containerRef
+  containerRef,
+  initialQuery,
+  initialLabel,
 }: {
   editor: Editor,
   onClose: () => void,
   anchorPos: number,
   selectionRange: { from: number; to: number },
-  containerRef: React.RefObject<HTMLDivElement | null>
+  containerRef: React.RefObject<HTMLDivElement | null>,
+  initialQuery?: string,
+  initialLabel?: string,
 }) => {
-  const [query, setQuery] = React.useState('');
+  const [query, setQuery] = React.useState(initialQuery || '');
+  const [label, setLabel] = React.useState(initialLabel || '');
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [documents, setDocuments] = React.useState<any[]>([]);
   const modalRef = React.useRef<HTMLDivElement>(null);
+  const queryInputRef = React.useRef<HTMLInputElement>(null);
   const [modalStyle, setModalStyle] = React.useState<React.CSSProperties>({
     position: 'absolute',
     zIndex: 2000,
     visibility: 'hidden',
   });
+
+  React.useEffect(() => {
+    setQuery(initialQuery || '');
+  }, [initialQuery]);
+
+  React.useEffect(() => {
+    setLabel(initialLabel || '');
+  }, [initialLabel]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -526,96 +618,9 @@ const LinkSearchModal = ({
   }, [queryTrimmed, hasUrlQuery]);
 
   React.useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.isComposing) return;
-      const key = e.key;
-
-      if (key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        onClose();
-        return;
-      }
-      if (key === 'Enter') {
-        e.preventDefault();
-        e.stopPropagation();
-        if (items[selectedIndex]) {
-          handleSelect(items[selectedIndex]);
-          return;
-        }
-        if (queryTrimmed) {
-          const from = Math.max(1, Math.min(selectionRange?.from ?? editor.state.selection.from, editor.state.doc.content.size));
-          const to = Math.max(from, Math.min(selectionRange?.to ?? editor.state.selection.to, editor.state.doc.content.size));
-          editor.chain().focus().insertContentAt({ from, to }, queryTrimmed).run();
-          onClose();
-        }
-        return;
-      }
-      if (key === 'ArrowDown') {
-        if (!items.length) return;
-        e.preventDefault();
-        e.stopPropagation();
-        setSelectedIndex((prev) => (prev + 1) % items.length);
-        return;
-      }
-      if (key === 'ArrowUp') {
-        if (!items.length) return;
-        e.preventDefault();
-        e.stopPropagation();
-        setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
-        return;
-      }
-      if (key === 'Backspace') {
-        e.preventDefault();
-        e.stopPropagation();
-        setQuery((prev) => prev.slice(0, -1));
-        return;
-      }
-      if (key === ' ') {
-        e.preventDefault();
-        e.stopPropagation();
-        setQuery((prev) => prev + ' ');
-        return;
-      }
-      if (key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault();
-        e.stopPropagation();
-        setQuery((prev) => prev + key);
-      }
-    };
-    document.addEventListener('keydown', onKeyDown, true);
-    return () => document.removeEventListener('keydown', onKeyDown, true);
-  }, [editor, items, onClose, queryTrimmed, selectedIndex, selectionRange]);
-
-  const insertMemoLinkBlockAt = React.useCallback((pos: number, item: any) => {
-    const schema = editor?.state?.schema;
-    const nodeType = schema?.nodes?.memoLinkBlock;
-    if (!schema || !nodeType) return false;
-    const safePos = Math.max(0, Math.min(pos, editor.state.doc.content.size));
-    const linkNode = nodeType.create({
-      href: `memo://${item.id}`,
-      title: item.title || 'Document',
-      icon: item.icon || '',
-      documentId: item.id || ''
-    });
-    const paragraph = schema.nodes.paragraph?.create?.() || null;
-    const fragment = paragraph ? schema.nodes.doc.create(null, [linkNode, paragraph]).content : schema.nodes.doc.create(null, [linkNode]).content;
-    let tr = editor.state.tr;
-    const { selection } = editor.state;
-    const $from = selection.$from;
-    const inEmptyParagraph = selection.empty
-      && $from.parent?.type?.name === 'paragraph'
-      && $from.parent.content.size === 0;
-    if (inEmptyParagraph && $from.depth > 0) {
-      const paraFrom = $from.before($from.depth);
-      const paraTo = paraFrom + $from.parent.nodeSize;
-      tr = tr.replaceWith(paraFrom, paraTo, fragment);
-    } else {
-      tr = tr.insert(safePos, fragment);
-    }
-    editor.view.dispatch(tr);
-    return true;
-  }, [editor]);
+    queryInputRef.current?.focus();
+    queryInputRef.current?.select();
+  }, []);
 
   const handleSelect = (item: any) => {
     let url = item.type === 'document' ? `memo://${item.id}` : item.title;
@@ -630,22 +635,9 @@ const LinkSearchModal = ({
 
     const from = Math.max(1, Math.min(selectionRange?.from ?? editor.state.selection.from, editor.state.doc.content.size));
     const to = Math.max(from, Math.min(selectionRange?.to ?? editor.state.selection.to, editor.state.doc.content.size));
-    const tr = editor.state.tr.setSelection(TextSelection.create(editor.state.doc, from, to));
-    editor.view.dispatch(tr);
-    if (item.type === 'document') {
-      const inserted = insertMemoLinkBlockAt(from, item);
-      if (!inserted) {
-        editor.chain().focus().insertContent({
-          type: 'memoLinkBlock',
-          attrs: {
-            href: url,
-            title: item.title,
-            icon: item.icon || '',
-            documentId: item.id
-          }
-        }).insertContent({ type: 'paragraph' }).run();
-      }
-    } else {
+    const finalLabel = String(label || '').trim() || (item.type === 'document' ? String(item.title || 'Document') : queryTrimmed);
+
+    if (item.type !== 'document') {
       const insertedEmbed = insertExternalEmbedAtSelection(editor, from, to, item.title);
       if (insertedEmbed) {
         onClose();
@@ -656,24 +648,58 @@ const LinkSearchModal = ({
         onClose();
         return;
       }
-      if (!safeUrl) {
-        onClose();
-        return;
-      }
-      if (from !== to) {
-        editor.chain().focus().setLink({ href: safeUrl }).setColor('var(--color-primary)').run();
-      } else {
-        editor.chain().focus().insertContent([
-          {
-            type: 'text',
-            text: item.title,
-            marks: [{ type: 'link', attrs: { href: safeUrl } }, { type: 'textStyle', attrs: { color: 'var(--color-primary)' } }]
-          },
-          { type: 'text', text: ' ' }
-        ]).run();
-      }
     }
+    if (!safeUrl) {
+      onClose();
+      return;
+    }
+
+    const contentToInsert: any[] = [
+      {
+        type: 'text',
+        text: finalLabel,
+        marks: [{ type: 'link', attrs: { href: safeUrl } }, { type: 'textStyle', attrs: { color: 'var(--color-primary)' } }]
+      }
+    ];
+    if (from === to) {
+      contentToInsert.push({ type: 'text', text: ' ' });
+    }
+
+    editor.chain().focus().insertContentAt({ from, to }, contentToInsert).run();
     onClose();
+  };
+
+  const handleSubmit = () => {
+    if (items[selectedIndex]) {
+      handleSelect(items[selectedIndex]);
+      return;
+    }
+    if (!queryTrimmed) return;
+    handleSelect({ type: 'url', title: queryTrimmed });
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, field: 'query' | 'label') => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      onClose();
+      return;
+    }
+    if (field === 'query' && e.key === 'ArrowDown' && items.length) {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % items.length);
+      return;
+    }
+    if (field === 'query' && e.key === 'ArrowUp' && items.length) {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSubmit();
+    }
   };
 
   return (
@@ -682,9 +708,23 @@ const LinkSearchModal = ({
       className="link-search-modal"
       style={modalStyle}
     >
-      <div className={`link-search-modal__query ${queryTrimmed ? 'has-value' : ''}`}>
-        {queryTrimmed || 'Tape pour rechercher un titre ou un lien'}
-      </div>
+      <input
+        ref={queryInputRef}
+        type="text"
+        value={query}
+        className="link-search-modal__search-input"
+        placeholder="Rechercher une page ou coller une URL"
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => handleInputKeyDown(e, 'query')}
+      />
+      <input
+        type="text"
+        value={label}
+        className={`link-search-modal__query ${String(label || '').trim() ? 'has-value' : ''}`}
+        placeholder="Libellé du lien"
+        onChange={(e) => setLabel(e.target.value)}
+        onKeyDown={(e) => handleInputKeyDown(e, 'label')}
+      />
       <div className="link-search-results">
         {items.map((item, i) => (
           <div 
@@ -3378,6 +3418,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [showLinkModal, setShowLinkModal] = React.useState(false);
   const [linkModalAnchorPos, setLinkModalAnchorPos] = React.useState(1);
   const [linkModalRange, setLinkModalRange] = React.useState<{ from: number; to: number }>({ from: 1, to: 1 });
+  const [linkModalInitialQuery, setLinkModalInitialQuery] = React.useState('');
+  const [linkModalInitialLabel, setLinkModalInitialLabel] = React.useState('');
+  const [linkTooltip, setLinkTooltip] = React.useState<{ href: string; top: number; left: number } | null>(null);
   const [showSlashActionMenu, setShowSlashActionMenu] = React.useState(false);
   const [slashActionMenuPos, setSlashActionMenuPos] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [slashActionQuery, setSlashActionQuery] = React.useState('');
@@ -6389,7 +6432,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             // Simplify markdown for plain text
             return markdown
               .replace(/\\-/g, '-')                     // Remove escaping: \- -> -
-              .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '$2') // Keep URL: [Text](URL) -> URL
+              .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '$1 ($2)') // Raw text: Title (URL Link)
               .replace(/(\*\*|__)(.*?)\1/g, '$2')      // Strip bold: **Text** -> Text
               .replace(/(\*|_)(.*?)\1/g, '$2')         // Strip italic: *Text* -> Text
               .replace(/~~(.*?)~~/g, '$1')              // Strip strikethrough
@@ -6989,11 +7032,54 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     };
   }, [editor]);
 
+  React.useEffect(() => {
+    if (!editor) return;
+
+    const updateLinkTooltip = () => {
+      const host = containerRef.current;
+      const context = getSelectionLinkContext(editor);
+      if (!host || !context) {
+        setLinkTooltip(null);
+        return;
+      }
+      try {
+        const coords = editor.view.coordsAtPos(context.from);
+        const hostRect = host.getBoundingClientRect();
+        setLinkTooltip({
+          href: context.href,
+          left: coords.left - hostRect.left,
+          top: coords.top - hostRect.top - 40,
+        });
+      } catch {
+        setLinkTooltip(null);
+      }
+    };
+
+    editor.on('update', updateLinkTooltip);
+    editor.on('selectionUpdate', updateLinkTooltip);
+    updateLinkTooltip();
+
+    return () => {
+      editor.off('update', updateLinkTooltip);
+      editor.off('selectionUpdate', updateLinkTooltip);
+    };
+  }, [editor]);
+
   const openLinkModal = React.useCallback(() => {
     if (!editor) return;
-    const { from, to } = editor.state.selection;
-    setLinkModalAnchorPos(from);
-    setLinkModalRange({ from, to });
+    const context = getSelectionLinkContext(editor);
+    if (context) {
+      setLinkModalAnchorPos(context.from);
+      setLinkModalRange({ from: context.from, to: context.to });
+      setLinkModalInitialQuery(context.href);
+      setLinkModalInitialLabel(context.text);
+    } else {
+      const { from, to } = editor.state.selection;
+      setLinkModalAnchorPos(from);
+      setLinkModalRange({ from, to });
+      setLinkModalInitialQuery('');
+      setLinkModalInitialLabel('');
+    }
     setShowLinkModal(true);
   }, [editor]);
 
@@ -7380,9 +7466,48 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           editor={editor} 
           anchorPos={linkModalAnchorPos}
           selectionRange={linkModalRange}
+          initialQuery={linkModalInitialQuery}
+          initialLabel={linkModalInitialLabel}
           containerRef={containerRef}
           onClose={() => setShowLinkModal(false)} 
         />
+      )}
+
+      {linkTooltip && !showLinkModal && (
+        <div
+          className="memo-link-tooltip"
+          style={{ top: linkTooltip.top, left: linkTooltip.left }}
+        >
+          <button
+            type="button"
+            className="memo-link-tooltip__edit"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => openLinkModal()}
+            aria-label="Modifier le lien"
+          >
+            <Pencil size={12} />
+          </button>
+          <button
+            type="button"
+            className="memo-link-tooltip__href"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              const href = String(linkTooltip.href || '').trim();
+              if (!href) return;
+              if (href.startsWith('memo://')) {
+                const open = (window as any).GoToolkitMemoOpenDocumentByLink;
+                if (typeof open === 'function') {
+                  open(href.replace(/^memo:\/\//, ''));
+                  return;
+                }
+              }
+              window.open(href, '_blank', 'noopener,noreferrer');
+            }}
+            title={linkTooltip.href}
+          >
+            {linkTooltip.href}
+          </button>
+        </div>
       )}
 
       {rowHandle && !dragState && !blockDragState && (
