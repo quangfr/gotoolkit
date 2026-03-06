@@ -4,7 +4,7 @@ This file is the short operational guide. Use the docs below as the canonical re
 
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Data model and storage: [`docs/DATA.md`](docs/DATA.md)
-- Automation and Playwright: [`docs/AUTOMATION.md`](docs/AUTOMATION.md)
+- Automation and Playwright: [`docs/TEST.md`](docs/TEST.md)
 - Security and space auth: [`docs/SECURITY.MD`](docs/SECURITY.MD)
 
 ## Core layout
@@ -75,7 +75,10 @@ This file is the short operational guide. Use the docs below as the canonical re
 
 ## Testing defaults
 - On app launch for tests, always click to close the onboarding/tour overlay (`docs-tour-overlay`) before interacting with the UI.
+- Before running Playwright, ensure the test server is running on `:5000`; if not, start it with `npm run start:test`.
 - Prefer the local Playwright binary: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`.
+- When a request explicitly asks for Playwright/browser automation, use the `playwright` Codex skill workflow first, then adapt to the repo constraints in this section.
+- For recording artifacts, follow `docs/TEST.md` naming: include `test-name` + timestamp for videos, and `step-XX-step-name` + `test-name` + timestamp for screenshots.
 - On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails because Chrome is not installed here. Use the repo-local `playwright` package (`./node_modules/.bin/playwright ...`) or small ad hoc Node scripts with `require("playwright")` instead.
 - Prestart the server when possible; grouped cloud suites are more stable against a prestarted `start:test` server than Playwright-managed `webServer` restarts.
 - For cloud/test-space coverage, prefer `spaceCode` bootstrap over repeated OAuth UI.
@@ -101,5 +104,5 @@ This file is the short operational guide. Use the docs below as the canonical re
 ## When to open the reference docs
 - Open [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module boundaries, sync architecture, and app responsibilities.
 - Open [`docs/DATA.md`](docs/DATA.md) for IndexedDB stores, cloud drafts, share-history, and payload structure.
-- Open [`docs/AUTOMATION.md`](docs/AUTOMATION.md) for Playwright strategy, `spaceCode` bootstrap, and CI guidance.
+- Open [`docs/TEST.md`](docs/TEST.md) for Playwright strategy, `spaceCode` bootstrap, and CI guidance.
 - Open [`docs/SECURITY.MD`](docs/SECURITY.MD) for CSP, OAuth, managed spaces, `contentKey`, and auth headers.
