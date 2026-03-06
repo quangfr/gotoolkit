@@ -1634,6 +1634,7 @@
                     label.textContent = "";
                     label.appendChild(input);
                     activeInlineRenameInput = input;
+                    button.draggable = false;
                     input.focus();
                     input.select();
                     let finished = false;
@@ -1678,6 +1679,7 @@
                         if (activeInlineRenameInput === input) {
                             activeInlineRenameInput = null;
                         }
+                        button.draggable = true;
                     };
                     input.addEventListener("keydown", keyEvent => {
                         if (keyEvent.key === "Enter") {
@@ -1740,6 +1742,13 @@
                     event.preventDefault();
                 });
                 button.addEventListener("dragstart", event => {
+                    if (
+                        (activeInlineRenameInput && button.contains(activeInlineRenameInput))
+                        || event.target?.closest?.(".document-explorer__item-inline-input")
+                    ) {
+                        event.preventDefault();
+                        return;
+                    }
                     draggingId = item.id;
                     draggingSection = sectionName || getItemSection(item);
                     button.classList.add("is-dragging");

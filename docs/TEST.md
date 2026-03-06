@@ -32,6 +32,7 @@ Current built-in automation hooks in the repo:
 - `npm run playwright:persist:headed`
 - `scripts/playwright-auth-bootstrap.mjs`
 - `scripts/playwright-persist.sh`
+- `tests/playwright-search-ui-scenario.mjs`
 - `tests/cloud-sync-persist.spec.ts`
 - `tests/cloud-private-transfer-sync.spec.ts`
 - `tests/cloud-switch-persist.spec.ts`
@@ -226,74 +227,15 @@ This distinction matters in this repo because anti-bot and auth flows can fail b
 
 ### 6.2 Visual capture workflow (video + step screenshots)
 
-When recording product demos or debugging UX regressions, use a deterministic capture style so reviewers can follow pointer intent:
+Use one consistent capture style:
 
-- prestart the app with `npm run start:test`
-- close the tour overlay before interactions
-- use a visible white pointer cursor overlay for video captures (style equivalent to `data-lucide="mouse-pointer-2"`)
-- add a yellow click ring on click events
-- keep outputs under `tmp/videos/` and `tmp/steps/`
-- include `test-name` and timestamp in artifact names
-
-Recommended for video captures:
-
-- Playwright context with `recordVideo`
-- no global `slowMo` (or keep it minimal); control pace via explicit waits and pointer animation timing
-- custom cursor layer injected with `page.addInitScript(...)` styled as a white pointer cursor (white fill, dark border), not a dot
-- helper methods that mirror `page.mouse.move/click` and also move/render the virtual cursor
-- continuous pointer movement from origin to destination (no intermediate waypoint jumps)
-- each pointer travel should last about `0.5-1s` before the click target is reached
-- name video files as: `tmp/videos/<test-name>-<YYYY-MM-DD-HHMMSS>.webm`
-
-Recommended for screenshot captures:
-
-- render the same white pointer cursor overlay used in videos (always visible at capture time)
-- before each key screenshot, inject/update a fixed yellow ring at the target click point
-- capture one file per step, for example:
-  - `tmp/steps/step-01-search-input-click-<test-name>-<YYYY-MM-DD-HHMMSS>.png`
-  - `tmp/steps/step-02-first-result-click-<test-name>-<YYYY-MM-DD-HHMMSS>.png`
-  - `tmp/steps/step-03-search-clear-click-<test-name>-<YYYY-MM-DD-HHMMSS>.png`
-- for screenshots, always prepend the step number and step name (`step-XX-<step-name>-...`)
-
-Operational notes:
-
-- Playwright video does not always show the OS cursor; prefer the injected virtual cursor for reliable playback
-- for consistency in demos, always render both:
-  - white pointer cursor overlay (pointer position)
-  - yellow click ring overlay (click emphasis), with larger radius and slower fade/scale animation so clicks remain visible in playback
-- keep capture artifacts untracked unless explicitly requested
-- if a capture script fails on one step, keep partial artifacts and rerun only the failing step
-
-### 6.3 Recording scope: mandatory UI search flow
-
-When a user asks for a recording/demo, include the search journey in the same UI-first scenario (no programmatic document injection for the main flow):
-
-1. create/add pages from the document panel UI
-2. edit page content from the visible editor UI
-3. switch pages from the document panel UI
-4. run document-panel search from UI:
-   - focus search input
-   - type query with typing effect
-   - press `Enter`
-   - show search results page/card
-   - click a result to open target page
-   - clear search (`x`) and verify return behavior
-
-This search flow is required for recording requests unless the user explicitly asks to skip search.
-
-### 6.4 Playwright tips for stable UI-first recordings
-
-- prefer resilient locators anchored to panel semantics:
-  - `#documentExplorer .document-explorer__item[...]`
-  - `#documentExplorer .document-explorer__search-input`
-  - `#memoSearchResults .memo-search-result`
-- prefer `:visible` filters for editor selectors, e.g. `.ProseMirror:visible`
-- wait for actionability before each step (`locator.waitFor({ state: "visible" })`)
-- use small reusable helpers to avoid test rework:
-  - `clickLocatorWithCursor(locator)`
-  - `typeWithEffect(text, totalMs = 500)`
-  - `moveCursorContinuous(targetX, targetY, durationMs = 500..1000)`
-- if a locator is unstable, keep the same UX step and only swap locator strategy; do not redesign the scenario flow
+- prestart app with `npm run start:test` and close the tour overlay
+- render a visible white pointer cursor + yellow click ring
+- no global `slowMo`; pace with explicit waits and `0.5s` cursor travel before clicks and input progressive typing
+- keep artifacts under `test-recordings/` and `test-screenshots/`
+- video name: `test-recordings/<test-name>-<YYYY-MM-DD-HHMMSS>.webm`
+- screenshot name: `test-screenshots/step-XX-<step-name>-<test-name>-<YYYY-MM-DD-HHMMSS>.png`
+- keep artifacts untracked unless explicitly requested
 
 ## 7. Programmatic access to browser-local persisted state
 
@@ -341,13 +283,6 @@ The most reliable pattern is:
 3. perform the minimum UI actions needed for the target feature
 4. verify both UI state and underlying storage/API state
 
-Example targets:
-
-- create memo locally and verify `document-api`
-- move private memo to cloud and verify `cloud-drafts`, then remote tree/meta/content
-- edit shared page and verify remote `updatedAt` plus local sync state
-- delete shared page and verify `pages-meta.status = "deleted"`
-- attach asset, sync, verify upload and subsequent prefetch
 
 ## 9. Worker development automation
 

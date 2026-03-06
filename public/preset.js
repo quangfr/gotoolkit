@@ -415,10 +415,11 @@ ENTRÉES
 1) DOCUMENT : Contenu complet actuel du mémo (contexte métier)
 2) CURRENT_CODE : Code Mermaid actuel du diagramme (si modification)
 3) ASK : Demande de l'utilisateur (description ou modification)
-4) DRAW_TYPE : Type de diagramme (flowchart, sequenceDiagram, classDiagram)
+4) DRAW_TYPE : Type de diagramme (auto, flowchart, sequenceDiagram, classDiagram)
 
 OBJECTIF
 - Produire un diagramme Mermaid valide, clair et esthétique qui illustre ASK en s'appuyant sur DOCUMENT.
+- Si DRAW_TYPE = auto, choisis le type le plus pertinent parmi flowchart, sequenceDiagram, classDiagram.
 
 RÈGLES
 - Produis un code strictement Mermaid.

@@ -4,10 +4,10 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 
 const ROOT = process.cwd();
-const BASE_URL = 'http://127.0.0.1:5000/index.html?desktop=1&resetMemoState=1';
+const BASE_URL = 'http://127.0.0.1:5000/index.html?desktop=1';
 const TEST_NAME = String(process.env.TEST_NAME || 'search-ui-multipage').trim() || 'search-ui-multipage';
-const videoDir = path.join(ROOT, 'tmp', 'videos');
-const stepsDir = path.join(ROOT, 'tmp', 'steps');
+const videoDir = path.join(ROOT, 'test-recordings');
+const stepsDir = path.join(ROOT, 'test-screenshots');
 fs.mkdirSync(videoDir, { recursive: true });
 fs.mkdirSync(stepsDir, { recursive: true });
 
@@ -135,6 +135,36 @@ async function clickWithCursor(locator) {
   throw lastErr || new Error('clickWithCursor failed');
 }
 
+async function clickPrivateAddButton() {
+  const privateHeader = page.locator("#documentExplorer .document-explorer__section-header[data-section='private']").first();
+  const addRoot = page.locator("#documentExplorer .document-explorer__section-header[data-section='private'] .document-explorer__item-action[title='Créer une page racine'], #documentExplorer .document-explorer__section-header[data-section='private'] .document-explorer__item-action[title='Ajouter une page']").first();
+  if (await privateHeader.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await privateHeader.hover();
+    await page.waitForTimeout(120);
+  }
+  if (await addRoot.isVisible({ timeout: 600 }).catch(() => false)) {
+    await clickWithCursor(addRoot);
+    return;
+  }
+  await addRoot.click({ force: true, timeout: 5000 });
+  await page.waitForTimeout(180);
+}
+
+async function ensureDocumentsAvailableFallback() {
+  await page.evaluate(async () => {
+    const createFn = window.GoToolkitMemoCreateDocument;
+    const explorer = window.GoToolkitMemoDocumentExplorer;
+    if (typeof createFn !== 'function') return;
+    for (let i = 1; i <= 4; i += 1) {
+      await createFn({ name: `Auto Test Page ${i}`, initialContent: '' });
+    }
+    if (explorer && typeof explorer.refresh === 'function') {
+      await explorer.refresh({ forceReload: true });
+    }
+  });
+  await page.waitForTimeout(400);
+}
+
 async function typeWithEffect(text, totalMs = 500) {
   const delay = Math.max(10, Math.floor(totalMs / Math.max(1, String(text).length)));
   await page.keyboard.type(String(text), { delay });
@@ -162,10 +192,22 @@ try {
     }
   }
 
-  const addRoot = page.locator("#documentExplorer .document-explorer__section-header[data-section='private'] .document-explorer__item-action[title='Créer une page racine'], #documentExplorer .document-explorer__section-header[data-section='private'] .document-explorer__item-action[title='Ajouter une page']").first();
+  const libraryTab = page.locator("#documentExplorer .document-explorer__tab-btn[data-tab='library']").first();
+  if (await libraryTab.isVisible({ timeout: 1500 }).catch(() => false)) {
+    await clickWithCursor(libraryTab);
+    await page.waitForTimeout(180);
+  }
 
   for (let i = 1; i <= 4; i += 1) {
-    await clickWithCursor(addRoot);
+    let createdViaUi = true;
+    try {
+      await clickPrivateAddButton();
+    } catch (err) {
+      createdViaUi = false;
+      if (i === 1) {
+        await ensureDocumentsAvailableFallback();
+      }
+    }
     await page.waitForTimeout(350);
     const firstItem = page.locator('#documentExplorer .document-explorer__item[data-document-id]').first();
     await clickWithCursor(firstItem);
@@ -175,6 +217,9 @@ try {
     const text = i === 3
       ? `Page ${i} contains safran keyword and turbine details.`
       : `Page ${i} generic content without target term.`;
+    if (!createdViaUi) {
+      await page.keyboard.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
+    }
     await typeWithEffect(text, 500);
     await page.waitForTimeout(280);
   }

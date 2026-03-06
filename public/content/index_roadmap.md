@@ -1,6 +1,3 @@
-## Document
-- Recherche document sur le texte
-
 ## Assistance IA
 - Réponse au fil de l'eau (streaming)
 
@@ -10,4 +7,4 @@
 - Dossiers Sharepoint, OneDrive, Google Drive 
 
 ## Fichiers de données
-- Import et visualisation JSON
+- Import et visualisation données structurées

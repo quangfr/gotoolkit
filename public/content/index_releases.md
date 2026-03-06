@@ -2,7 +2,7 @@
 - Authentification SSO Google
 - Espace de partage Epiconcept
 - Protection contre les abus et les attaques (captcha, anti-replay, SOP, CSP)
-- Recherche texte sur les pages
+- Recherche texte sur le contenu des pages
 
 ## 2026-02-27
 - Authentification SSO Microsoft
