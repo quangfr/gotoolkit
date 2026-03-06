@@ -21,8 +21,9 @@
     const INTERACTIVE_OVERLAY_ID = "go-toolkit-turnstile-overlay";
     const INTERACTIVE_CONTAINER_ID = "go-toolkit-turnstile-interactive";
     const DIAGNOSTIC_LIMIT = 50;
-    const INTERACTIVE_TRIGGER_DELAY_MS = 2500;
+    const INTERACTIVE_TRIGGER_DELAY_MS = 600;
     const INTERACTIVE_TIMEOUT_MS = 120000;
+    let interactiveWidgetPrewarmPromise = null;
 
     function pushDiagnostic(event, details) {
         try {
@@ -238,6 +239,11 @@
         }
     }
 
+    function ensureInteractiveElements() {
+        const parts = ensureInteractiveOverlay();
+        return parts?.container ? parts : null;
+    }
+
     function settleTokenResolver(error, token) {
         const resolve = widgetTokenResolver;
         const reject = widgetTokenRejecter;
@@ -302,6 +308,9 @@
                 widgetId: String(renderedId),
                 siteKey: getSiteKey().slice(0, 8)
             });
+            void prewarmInteractiveWidget().catch(function () {
+                // ignore prewarm failures; interactive path can still render on demand
+            });
             return { turnstile, widgetId: renderedId };
         }).catch(function (error) {
             widgetPromise = null;
@@ -312,32 +321,22 @@
         return widgetPromise;
     }
 
-    async function ensureInteractiveWidget() {
-        const turnstile = await ensureTurnstileLoaded();
-        const parts = showInteractiveOverlay();
-        const container = parts?.container;
-        if (!container) {
-            throw new Error("TURNSTILE_INTERACTIVE_CONTAINER_MISSING");
-        }
-
+    async function prewarmInteractiveWidget() {
         if (interactiveWidgetId !== null && interactiveWidgetId !== undefined) {
-            try {
-                if (typeof turnstile.reset === "function") {
-                    turnstile.reset(interactiveWidgetId);
-                    pushDiagnostic("interactive-reset", { widgetId: String(interactiveWidgetId) });
-                }
-            } catch (error) {
-                pushDiagnostic("interactive-reset-error", { error: String(error?.message || error || "") });
-            }
-            pushDiagnostic("interactive-widget-reused", { widgetId: String(interactiveWidgetId) });
-            return { turnstile, widgetId: interactiveWidgetId };
+            return interactiveWidgetId;
         }
-
         if (interactiveWidgetPromise) {
-            return interactiveWidgetPromise;
+            const existing = await interactiveWidgetPromise;
+            return existing?.widgetId || null;
         }
-
-        interactiveWidgetPromise = Promise.resolve().then(function () {
+        if (interactiveWidgetPrewarmPromise) return interactiveWidgetPrewarmPromise;
+        interactiveWidgetPrewarmPromise = ensureTurnstileLoaded().then(function (turnstile) {
+            const parts = ensureInteractiveElements();
+            const container = parts?.container;
+            if (!container) return null;
+            if (interactiveWidgetId !== null && interactiveWidgetId !== undefined) {
+                return interactiveWidgetId;
+            }
             const renderedId = turnstile.render(container, {
                 sitekey: getSiteKey(),
                 appearance: "always",
@@ -389,9 +388,40 @@
             interactiveWidgetId = renderedId;
             pushDiagnostic("interactive-widget-rendered", {
                 widgetId: String(renderedId),
-                siteKey: getSiteKey().slice(0, 8)
+                siteKey: getSiteKey().slice(0, 8),
+                prewarmed: true
             });
-            return { turnstile, widgetId: renderedId };
+            return renderedId;
+        }).finally(function () {
+            interactiveWidgetPrewarmPromise = null;
+        });
+        return interactiveWidgetPrewarmPromise;
+    }
+
+    async function ensureInteractiveWidget() {
+        const turnstile = await ensureTurnstileLoaded();
+        const parts = showInteractiveOverlay();
+        const container = parts?.container;
+        if (!container) {
+            throw new Error("TURNSTILE_INTERACTIVE_CONTAINER_MISSING");
+        }
+
+        if (interactiveWidgetId !== null && interactiveWidgetId !== undefined) {
+            pushDiagnostic("interactive-widget-reused", { widgetId: String(interactiveWidgetId) });
+            return { turnstile, widgetId: interactiveWidgetId };
+        }
+
+        if (interactiveWidgetPromise) {
+            return interactiveWidgetPromise;
+        }
+
+        interactiveWidgetPromise = Promise.resolve().then(function () {
+            return prewarmInteractiveWidget().then(function (renderedId) {
+                if (renderedId === null || renderedId === undefined) {
+                    throw new Error("TURNSTILE_INTERACTIVE_CONTAINER_MISSING");
+                }
+                return { turnstile, widgetId: renderedId };
+            });
         }).catch(function (error) {
             interactiveWidgetId = null;
             interactiveChallengeActive = false;
