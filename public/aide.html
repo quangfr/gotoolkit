@@ -7,11 +7,11 @@
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>Aide | GoToolkit</title>
-    <script src="js/bootstrap-theme.js?v=2026.03.06.5"></script>
+    <script src="js/bootstrap-theme.js?v=2026.03.06.6"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
-    <script src="js/help.js?v=2026.03.06.5" defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.03.06.5">
+    <script src="js/help.js?v=2026.03.06.6" defer></script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.03.06.6">
     <style>
         .legal-page {
             max-width: 920px;
@@ -170,20 +170,15 @@
     <main id="aide" class="legal-page">
         <p><a href="./">← Retour</a></p>
         <h1>Foire aux questions</h1>
-        <p>Cette page t’aide à prendre GoToolkit en main simplement, avec des réponses claires et concrètes.</p>
-        <p>Si tu es pressé, commence par <a href="#demarrage">Démarrage</a>, puis va à
-            <a href="#edition">Éditer un document</a> et <a href="#partage">Partage et cloud</a> selon ton besoin.
-        </p>
 
         <div class="legal-nav">
             <a href="#demarrage">Démarrage</a>
-            <a href="#documents">Documents</a>
+            <a href="#pages">Pages</a>
             <a href="#edition">Édition</a>
             <a href="#ia">IA</a>
             <a href="#partage">Partage</a>
         </div>
 
-        <p>Le sommaire ci-dessous permet d’aller directement à la bonne question.</p>
         <nav class="question-toc" aria-label="Sommaire des questions">
             <h2>Sommaire des questions</h2>
             <ul id="helpQuestionToc" class="question-toc-list question-toc-list--plain">
@@ -192,12 +187,12 @@
                 <li><a href="#q-3">3. À quoi peut servir GoToolkit ?</a></li>
                 <li><a href="#q-4">4. Puis-je utiliser GoToolkit sur mobile ?</a></li>
                 <li><a href="#q-5">5. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire ?</a></li>
-                <li><a href="#q-6">6. Comment créer ou organiser des documents ?</a></li>
-                <li><a href="#q-7">7. Comment renommer un document ?</a></li>
-                <li><a href="#q-8">8. Comment importer un fichier dans un document ?</a></li>
-                <li><a href="#q-9">9. Comment exporter ou envoyer un document ?</a></li>
-                <li><a href="#q-10">10. Comment supprimer un document ?</a></li>
-                <li><a href="#q-11">11. Comment fonctionne l’Assistant (conversation par document, références, approfondissement et actions d’édition) ?</a></li>
+                <li><a href="#q-6">6. Comment créer ou organiser des pages ?</a></li>
+                <li><a href="#q-7">7. Comment personnaliser une page ?</a></li>
+                <li><a href="#q-8">8. Comment importer un fichier dans une page ?</a></li>
+                <li><a href="#q-9">9. Comment exporter ou envoyer une page ?</a></li>
+                <li><a href="#q-10">10. Comment supprimer une page ?</a></li>
+                <li><a href="#q-11">11. Comment fonctionne l’Assistant (conversation par page, références, approfondissement et actions d’édition) ?</a></li>
                 <li><a href="#q-12">12. Quelles sont les mises en forme proposées ?</a></li>
                 <li><a href="#q-13">13. À quoi sert l’enregistrement vocal avec partage d’écran et transcription ?</a></li>
                 <li><a href="#q-14">14. Comment éditer rapidement avec les blocs disponibles ?</a></li>
@@ -209,21 +204,21 @@
                 <li><a href="#q-20">20. Quels types de citation existent ?</a></li>
                 <li><a href="#q-21">21. À quoi sert le libellé ?</a></li>
                 <li><a href="#q-22">22. Comment ajouter un fichier à la base de connaissance et à quoi ça sert ?</a></li>
-                <li><a href="#q-23">23. Quelle est la différence entre joindre un fichier à l’IA en contexte et importer un fichier dans le document en base de connaissance ?</a></li>
+                <li><a href="#q-23">23. Quelle est la différence entre joindre un fichier à l’IA en contexte et importer un fichier dans la page en base de connaissance ?</a></li>
                 <li><a href="#q-24">24. Les réponses de l’IA remplacent-elles automatiquement mon texte ?</a></li>
-                <li><a href="#q-25">25. Puis-je envoyer du contexte sans modifier le document ?</a></li>
+                <li><a href="#q-25">25. Puis-je envoyer du contexte sans modifier la page ?</a></li>
                 <li><a href="#q-26">26. Puis-je personnaliser les instructions envoyées à l’IA ?</a></li>
                 <li><a href="#q-27">27. Quelles informations sont partagées avec l’IA et les services externes ?</a></li>
                 <li><a href="#q-28">28. Quels sont les autres services tiers proposés et à quoi servent-ils ?</a></li>
                 <li><a href="#q-29">29. À quoi servent les raccourcis de prompt ?</a></li>
-                <li><a href="#q-30">30. Peut-on gérer les catégories de document et les éditer ?</a></li>
+                <li><a href="#q-30">30. Peut-on gérer les catégories de page et les éditer ?</a></li>
                 <li><a href="#q-31">31. Y a-t-il des limites de requêtes pour l’IA et les autres services externes ?</a></li>
                 <li><a href="#q-32">32. Puis-je lancer des commandes à la voix ?</a></li>
-                <li><a href="#q-33">33. Comment publier un document ou partager un lien ?</a></li>
+                <li><a href="#q-33">33. Comment publier une page ou partager un lien ?</a></li>
                 <li><a href="#q-34">34. Comment accéder aux espaces partagés ?</a></li>
                 <li><a href="#q-35">35. Les données cloud sont-elles chiffrées ?</a></li>
                 <li><a href="#q-36">36. Comment fonctionne la stratégie de synchronisation cloud ?</a></li>
-                <li><a href="#q-37">37. Peut-on déplacer des documents par glisser-déposer entre privé et cloud ?</a></li>
+                <li><a href="#q-37">37. Peut-on déplacer des pages par glisser-déposer entre privé et cloud ?</a></li>
                 <li><a href="#q-38">38. Que faire si la synchronisation semble bloquée ?</a></li>
             </ul>
         </nav>
@@ -234,13 +229,13 @@
             <div class="help-list">
                 <div id="q-1">
                     <strong>1. Faut-il créer un compte pour utiliser GoToolkit ?</strong>
-                    <p>Non. GoToolkit fonctionne sans compte. Tes documents privés restent d’abord en local dans ton
+                    <p>Non. GoToolkit fonctionne sans compte. Tes pages privés restent d’abord en local dans ton
                         navigateur. Les connexions à des services tiers sont optionnelles et limitées à l’action que
                         tu déclenches.</p>
                 </div>
                 <div id="q-2">
                     <strong>2. Est-ce que l’application est sécurisée et adaptée à un usage professionnel ?</strong>
-                    <p>Oui. Les documents privés restent d’abord en local, l’accès aux espaces partagés est contrôlé,
+                    <p>Oui. Les pages privés restent d’abord en local, l’accès aux espaces partagés est contrôlé,
                         et les contenus cloud protégés s’appuient sur le chiffrement et les droits d’accès.
                         Comme toujours, cela complète (sans remplacer) les règles internes de ton organisation.
                         Pour plus de détails, consulte
@@ -273,13 +268,13 @@
                             améliore la qualité éditoriale avec des suggestions ciblées (style, clarté, cohérence).
                         </li>
                         <li><span class="help-icon"><i data-lucide="shield-check"></i> Partage sécurisé</span> :
-                            diffuse tes documents de travail en ligne avec un contrôle d’accès adapté aux équipes.</li>
+                            diffuse tes pages de travail en ligne avec un contrôle d’accès adapté aux équipes.</li>
                         <li><span class="help-icon"><i data-lucide="rocket"></i> Production de livrables plus
                                 rapide</span> :
-                            réduis le temps entre brouillon et version finale pour documents, specs, comptes rendus et
+                            réduis le temps entre brouillon et version finale pour pages, specs, comptes rendus et
                             supports de décision.</li>
                         <li><span class="help-icon"><i data-lucide="refresh-cw"></i> Réutilisation intelligente</span> :
-                            capitalise tes contenus (prompts, documents, sources) pour éviter de repartir de zéro à
+                            capitalise tes contenus (prompts, pages, sources) pour éviter de repartir de zéro à
                             chaque nouveau sujet.</li>
                     </ul>
                 </div>
@@ -289,17 +284,17 @@
                         perdre le fil.</p>
                     <p>L’application peut rediriger directement vers <code>mobile.html</code>.</p>
                     <ul>
-                        <li><span class="help-icon"><i data-lucide="file-text"></i> Documents</span> : écriture et
+                        <li><span class="help-icon"><i data-lucide="file-text"></i> Pages</span> : écriture et
                             édition rapide depuis mobile.</li>
                         <li><span class="help-icon"><i data-lucide="mic"></i> Voix</span> : transcription
                             d’enregistrements en texte.</li>
                         <li><span class="help-icon"><i data-lucide="scan-text"></i> Capture</span> : conversion de
-                            contenus manuscrits ou documents scannés.</li>
+                            contenus manuscrits ou pages scannés.</li>
                         <li><span class="help-icon"><i data-lucide="sparkles"></i> IA</span> : mêmes raccourcis de
                             transformation que sur desktop.</li>
                         <li><span class="help-icon"><i data-lucide="audio-lines"></i> Audio</span> : génération et
                             téléchargement d’une lecture vocale.</li>
-                        <li><span class="help-icon"><i data-lucide="qr-code"></i> Envoi</span> : transfert vers un document via QR code et mode capture.</li>
+                        <li><span class="help-icon"><i data-lucide="qr-code"></i> Envoi</span> : transfert vers une page via QR code et mode capture.</li>
                     </ul>
                 </div>
                 <div id="q-5">
@@ -321,57 +316,62 @@
                             la remise à zéro depuis le panneau d’information.</li>
                         <li><span class="help-icon"><i data-lucide="mail"></i> Support</span> :
                             contacte <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a> avec une capture
-                            ou crée un document dans <strong>Go Live / Feedback</strong>.</li>
+                            ou crée une page dans <strong>Go Live / Feedback</strong>.</li>
                     </ul>
                 </div>
             </div>
         </section>
 
-        <section id="documents" class="legal-section">
-            <h2>Documents</h2>
-            <p>Cette section couvre le cycle de vie d’un document: créer, organiser, importer, exporter et supprimer.</p>
+        <section id="pages" class="legal-section">
+            <h2>Pages</h2>
+            <p>Cette section couvre le cycle de vie d’une page: créer, organiser, importer, exporter et supprimer.</p>
             <div class="help-list">
                 <div id="q-6">
-                    <strong>6. Comment créer ou organiser des documents ?</strong>
+                    <strong>6. Comment créer ou organiser des pages ?</strong>
                     <p>Tu peux structurer ton espace très vite avec quelques actions de base, puis affiner ensuite.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="panel-left"></i></span> Ouvre le panneau de
-                            documents.</li>
-                        <li><span class="help-icon"><i data-lucide="plus"></i></span> Crée un document ou un sous-document.
+                            pages.</li>
+                        <li><span class="help-icon"><i data-lucide="plus"></i></span> Crée une page ou une sous-page.
                         </li>
-                        <li><span class="help-icon"><i data-lucide="move"></i> Glisser-déposer</span> : réorganise
-                            l’arborescence (ordre et parent).</li>
-                        <li><span class="help-icon"><i data-lucide="type"></i> Renommer</span> : change le titre d’un document.</li>
-                        <li><span class="help-icon"><i data-lucide="folder-tree"></i> Catégorie</span> : ajoute ou
-                            modifie la catégorie selon le contexte.</li>
+                        <li><span class="help-icon"><i data-lucide="move"></i> Glisser-déposer</span> :
+                            déplace la page vers une autre page (pour changer de parent) ou change son ordre au sein
+                            de la même page.</li>
+                        <li><span class="help-icon"><i data-lucide="type"></i> Renommer</span> :
+                            renomme la page directement dans le titre en haut de page, ou depuis le panneau pages
+                            (double-clic sur le nom). Tu peux aussi changer son icône pour la repérer plus vite.</li>
+                        <li><span class="help-icon"><i data-lucide="folder-tree"></i> Catégorie et description</span> :
+                            pour placer la page dans une nouvelle catégorie ou ajouter une description, double-clique
+                            sur le titre de la page. Tu peux aussi changer de catégorie en déplaçant la page dans le
+                            panneau pages, vers la catégorie souhaitée.</li>
                         <li><span class="help-icon"><i data-lucide="check-square"></i> Sélection multiple</span> :
-                            sélectionne plusieurs documents (Ctrl/Shift) pour lancer des actions groupées comme
+                            sélectionne plusieurs pages (Ctrl/Shift) pour lancer des actions groupées comme
                             <strong>déplacer</strong> ou <strong>supprimer</strong>.
                         </li>
                     </ul>
                 </div>
                 <div id="q-7">
-                    <strong>7. Comment renommer un document ?</strong>
-                    <p>Tu peux renommer un document de deux façons:
-                        directement dans le titre en haut de page, ou via le panneau documents (double-clic sur le nom).
-                        Tu peux aussi changer son icône pour le repérer plus vite dans l’arborescence.</p>
+                    <strong>7. Comment retrouver rapidement une page dans un espace chargé ?</strong>
+                    <p>Le plus efficace est de combiner le panneau pages (avec l’arborescence), les catégories et une
+                        nomenclature claire des titres. Tu peux aussi t’appuyer sur les icônes pour repérer visuellement
+                        les pages clés plus vite.</p>
                 </div>
                 <div id="q-8">
-                    <strong>8. Comment importer un fichier dans un document ?</strong>
-                    <p>Ouvre <span class="help-icon"><i data-lucide="file-text"></i> Document</span>, puis clique
+                    <strong>8. Comment importer un fichier dans une page ?</strong>
+                    <p>Ouvre <span class="help-icon"><i data-lucide="file-text"></i> Page</span>, puis clique
                         sur <span class="help-icon"><i data-lucide="file-down"></i> Importer</span>. L’import lit le
-                        contenu du fichier et l’insère dans ton document pour le transformer en contenu éditable.
+                        contenu du fichier et l’insère dans ta page pour le transformer en contenu éditable.
                         Formats usuels pris en charge : PDF, DOCX, PPTX, XLSX, JSON, CSV, TSV, TXT, Markdown, ODF,
                         RTF et fichiers de log. Limites de taille:
                         5 Mo (texte/bureautique), 20 Mo (image/audio), 100 Mo (vidéo).</p>
                 </div>
                 <div id="q-9">
-                    <strong>9. Comment exporter ou envoyer un document ?</strong>
-                    <p>Dans le même menu <span class="help-icon"><i data-lucide="file-text"></i> Document</span>,
+                    <strong>9. Comment exporter ou envoyer une page ?</strong>
+                    <p>Dans le même menu <span class="help-icon"><i data-lucide="file-text"></i> Page</span>,
                         choisis l’option adaptée à ton besoin :</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="download"></i> Télécharger</span> : export local
-                            du document dans le format choisi.</li>
+                            de la page dans le format choisi.</li>
                         <li><span class="help-icon"><i data-lucide="send"></i> Envoyer</span> : partage ou envoi vers
                             une destination externe compatible.</li>
                         <li><span class="help-icon"><i data-lucide="copy"></i> Copier</span> : options de copie selon
@@ -387,38 +387,38 @@
                             <strong>Audio</strong> pour l’écoute/lecture vocale quand disponible.
                         </li>
                         <li><span class="help-icon"><i data-lucide="code-2"></i> Source</span> :
-                            ouvre la vue source du document (Markdown, HTML, JSON, Texte et formats IA) pour
+                            ouvre la vue source de la page (Markdown, HTML, JSON, Texte et formats IA) pour
                             inspecter, copier ou télécharger exactement le format technique attendu.</li>
                     </ul>
                 </div>
                 <div id="q-10">
-                    <strong>10. Comment supprimer un document ?</strong>
-                    <p>Ouvre le menu document, puis choisis <span class="help-icon"><i data-lucide="trash-2"></i>
+                    <strong>10. Comment supprimer une page ?</strong>
+                    <p>Ouvre le menu page, puis choisis <span class="help-icon"><i data-lucide="trash-2"></i>
                             Supprimer</span>.
-                        Vérifie bien le document actif avant de confirmer. Si tu ne veux pas supprimer le document
-                        immédiatement, tu peux aussi l’archiver en local pour le retirer de l’espace actif tout en
-                        conservant une possibilité de récupération selon ton organisation.</p>
+                        Vérifie bien la page active avant de confirmer: la suppression est irréversible.
+                        Si tu ne veux pas supprimer tout de suite, tu peux aussi déplacer la page dans les archives
+                        pour la retirer de l’espace actif.</p>
                 </div>
             </div>
         </section>
 
         <section id="edition" class="legal-section">
-            <h2>Éditer un document</h2>
+            <h2>Éditer une page</h2>
             <p>Tu trouveras ici les fonctions d’édition au quotidien: assistant IA, formats, blocs, tableaux et médias.</p>
             <div class="help-list">
                 <div id="q-11">
-                    <strong>11. Comment fonctionne l’Assistant (conversation par document, références, approfondissement
+                    <strong>11. Comment fonctionne l’Assistant (conversation par page, références, approfondissement
                         et actions d’édition) ?</strong>
                     <p>L’Assistant combine conversation, relecture et actions d’édition pour t’aider à avancer sans
-                        sortir du document.</p>
+                        sortir de la page.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="panel-right"></i> Assist</span> : ouvre le panneau
-                            latéral IA avec une conversation liée au document actif.</li>
+                            latéral IA avec une conversation liée à la page active.</li>
                         <li><span class="help-icon"><i data-lucide="file-text"></i> Inline</span> : lance une
-                            action directement depuis une sélection dans le document, sans quitter l’éditeur.</li>
+                            action directement depuis une sélection dans la page, sans quitter l’éditeur.</li>
                         <li><span class="help-icon"><i data-lucide="message-square"></i> Conversation par
-                                document</span> :
-                            chaque document conserve son fil d’échanges pour garder le contexte métier et les décisions.
+                                page</span> :
+                            chaque page conserve son fil d’échanges pour garder le contexte métier et les décisions.
                         </li>
                         <li><span class="help-icon"><i data-lucide="quote"></i> Références et extrait</span> :
                             les réponses peuvent afficher la source utilisée avec un extrait pour vérifier rapidement
@@ -437,7 +437,7 @@
                         <li><span class="help-icon"><i data-lucide="file-text"></i> Éditer</span> : modifie,
                             reformule ou enrichit le texte directement.</li>
                         <li><span class="help-icon"><i data-lucide="panel-right"></i> Explorer</span> : questionne
-                            et analyse sans modifier le document.</li>
+                            et analyse sans modifier la page.</li>
                         <li><span class="help-icon"><i data-lucide="sparkles"></i> Suggérer</span> : propose des
                             modifications que tu acceptes ou refuses.</li>
                         <li><span class="help-icon"><i data-lucide="quote"></i> Marquage</span> :
@@ -457,7 +457,7 @@
                         tapant directement les raccourcis Markdown acceptés :</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="heading-1"></i> Titre 1</span> :
-                            <code># Titre</code>. Usage : section principale du document.</li>
+                            <code># Titre</code>. Usage : section principale de la page.</li>
                         <li><span class="help-icon"><i data-lucide="heading-2"></i> Titre 2</span> :
                             <code>## Titre</code>. Usage : sous-section d’un titre principal.</li>
                         <li><span class="help-icon"><i data-lucide="heading-3"></i> Titre 3</span> :
@@ -483,7 +483,7 @@
                         <li><span class="help-icon"><i data-lucide="highlighter"></i> Surlignage</span> :
                             <code>==texte==</code>. Usage : attirer l’attention sur un passage important.</li>
                         <li><span class="help-icon"><i data-lucide="link"></i> Lien</span> :
-                            <code>[texte](https://...)</code>. Usage : relier vers une source, un document ou un outil.</li>
+                            <code>[texte](https://...)</code>. Usage : relier vers une source, une page ou un outil.</li>
                         <li><span class="help-icon"><i data-lucide="image"></i> Image</span> : <code>![alt](url)</code>. Usage : illustrer visuellement un point.
                         </li>
                         <li><span class="help-icon"><i data-lucide="table"></i> Tableau</span> :
@@ -496,7 +496,7 @@
                         rapidement.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="mic"></i> Enregistrer</span> : lance la capture
-                            voix/écran/caméra pour documenter une démo, une réunion ou un retour utilisateur.</li>
+                            voix/écran/caméra pour pageer une démo, une réunion ou un retour utilisateur.</li>
                         <li><span class="help-icon"><i data-lucide="captions"></i> Transcription continue</span> :
                             affiche le texte en direct pendant l’enregistrement.</li>
                         <li><span class="help-icon"><i data-lucide="clock-3"></i> Transcription différée</span> :
@@ -531,7 +531,7 @@
                     <p>Accès rapide via slash menu : tape <code>/diagramme</code> (ou <code>/mermaid</code>).</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="shapes"></i> Diagramme</span> : insère un schéma
-                            Mermaid dans le document.
+                            Mermaid dans la page.
                             <ul>
                                 <li><span class="help-icon"><i data-lucide="git-branch"></i> Diagramme de flux</span> :
                                     idéal pour représenter un processus, des étapes et des décisions.</li>
@@ -555,23 +555,23 @@
                     <strong>17. Comment insérer une image, une vidéo ou une vidéo embarquée ?</strong>
                     <p>Utilise <span class="help-icon"><i data-lucide="image"></i> Image</span> pour un média local,
                         <span class="help-icon"><i data-lucide="clapperboard"></i> Vidéo</span> pour une vidéo dans le
-                        document, et les liens de vidéo embarquée pour des contenus externes affichés comme blocs
-                        intégrés (par exemple une vidéo en ligne consultable sans quitter le document).
+                        page, et les liens de vidéo embarquée pour des contenus externes affichés comme blocs
+                        intégrés (par exemple une vidéo en ligne consultable sans quitter la page).
                     </p>
                     <p>Accès rapide via slash menu : tape <code>/image</code> ou <code>/video</code>.</p>
                 </div>
                 <div id="q-18">
                     <strong>18. À quoi servent les blocs Lien, Sommaire et Navigation ?</strong>
-                    <p>Ces blocs t’aident à rendre tes documents plus faciles à parcourir et à partager.</p>
+                    <p>Ces blocs t’aident à rendre tes pages plus faciles à parcourir et à partager.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="link"></i> Lien</span> : crée un accès cliquable
                             vers une URL.</li>
                         <li><span class="help-icon"><i data-lucide="list-tree"></i> Sommaire</span> : génère la liste
-                            des titres du document courant.</li>
+                            des titres de la page courant.</li>
                         <li><span class="help-icon"><i data-lucide="folder-tree"></i> Navigation</span> : affiche les
-                            documents liés à l’arborescence pour naviguer dans le dossier courant.</li>
+                            pages liés à l’arborescence pour naviguer dans le dossier courant.</li>
                         <li><span class="help-icon"><i data-lucide="refresh-cw"></i> Mise à jour automatique</span> :
-                            ces blocs se recalculent quand la structure du document ou les titres changent.</li>
+                            ces blocs se recalculent quand la structure de la page ou les titres changent.</li>
                     </ul>
                     <p>Accès rapide via slash menu : tape <code>/lien</code>, <code>/sommaire</code> ou
                         <code>/navigation</code>.</p>
@@ -601,7 +601,7 @@
                     <p>Tu peux utiliser plusieurs styles selon l’objectif: mise en avant, référence ou note de contexte.</p>
                     <p>Le bloc <span class="help-icon"><i data-lucide="quote"></i> Citation</span> met en évidence un
                         passage important, une consigne, une remarque ou un avertissement sans casser le flux du texte.
-                        Il améliore la lisibilité des documents longs, facilite la relecture et aide à distinguer ce
+                        Il améliore la lisibilité des pages longs, facilite la relecture et aide à distinguer ce
                         qui est informatif, actionnable ou critique.</p>
                     <p>Accès rapide via slash menu : tape <code>/citation</code>.</p>
                     <ul>
@@ -631,7 +631,7 @@
                     <strong>21. À quoi sert le libellé ?</strong>
                     <p>Le bloc <span class="help-icon"><i data-lucide="tag"></i> Libellé</span> sert à créer un tag
                         inline dans le texte pour marquer un thème, un mot-clé ou un repère métier. L’autocomplétion
-                        propose les libellés déjà utilisés afin d’harmoniser ton vocabulaire dans le document.</p>
+                        propose les libellés déjà utilisés afin d’harmoniser ton vocabulaire dans la page.</p>
                     <p>Tu peux l’insérer via <code>/libellé</code> ou directement au clavier en ouvrant puis en
                         refermant le libellé avec un backtick :</p>
                     <pre><code>`mon-libelle`</code></pre>
@@ -654,13 +654,13 @@
                             contexte réutilisable sur la durée, pour éviter de redonner les mêmes informations à
                             chaque requête.</li>
                         <li><span class="help-icon"><i data-lucide="file-down"></i> Source durable</span> : importe un
-                            fichier dans un document puis ajoute ce document à la base.</li>
+                            fichier dans une page puis ajoute cette page à la base.</li>
                         <li><span class="help-icon"><i data-lucide="clock-3"></i> Gain de temps</span> :
                             l’IA retrouve plus vite les éléments clés (process, specs, comptes rendus, FAQ).</li>
                         <li><span class="help-icon"><i data-lucide="target"></i> Réponses plus pertinentes</span> :
-                            les réponses s’appuient sur tes documents métiers plutôt que sur un contexte générique.</li>
+                            les réponses s’appuient sur tes pages métiers plutôt que sur un contexte générique.</li>
                         <li><span class="help-icon"><i data-lucide="git-branch"></i> Continuité de travail</span> :
-                            la même base sert à plusieurs conversations et documents, ce qui améliore la cohérence.</li>
+                            la même base sert à plusieurs conversations et pages, ce qui améliore la cohérence.</li>
                         <li><span class="help-icon"><i data-lucide="shield-check"></i> Traçabilité</span> :
                             avec les références et extraits, tu peux vérifier rapidement la source d’une réponse.
                         </li>
@@ -669,14 +669,14 @@
                 <div id="q-23">
                     <strong>23. Quelle est la différence entre joindre un fichier à l’IA en contexte et importer un
                         fichier dans le
-                        document en base de connaissance ?</strong>
+                        page en base de connaissance ?</strong>
                     <p>La différence principale tient à la durée d’usage: temporaire pour une demande ponctuelle,
-                        durable pour capitaliser dans tes documents.</p>
+                        durable pour capitaliser dans tes pages.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="paperclip"></i> Joindre</span> : envoi temporaire
-                            en contexte IA (analyse, résumé, questions), sans créer de document.</li>
+                            en contexte IA (analyse, résumé, questions), sans créer de page.</li>
                         <li><span class="help-icon"><i data-lucide="file-down"></i> Importer</span> : transforme le
-                            fichier en contenu éditable durable dans le document.</li>
+                            fichier en contenu éditable durable dans la page.</li>
                         <li><span class="help-icon"><i data-lucide="brain"></i> Base de connaissance</span> :
                             privilégie l’import pour enrichir tes sources à long terme.</li>
                         <li><span class="help-icon"><i data-lucide="table"></i> Données volumineuses</span> :
@@ -697,7 +697,7 @@
                     </ul>
                 </div>
                 <div id="q-25">
-                    <strong>25. Puis-je envoyer du contexte sans modifier le document ?</strong>
+                    <strong>25. Puis-je envoyer du contexte sans modifier la page ?</strong>
                     <p>Oui. Tu peux joindre des fichiers, choisir des sources mémoire et utiliser
                         <strong>Explorer</strong> pour travailler en lecture seule.
                     </p>
@@ -713,12 +713,12 @@
                     <p><span class="help-icon"><i data-lucide="lock"></i> Local par défaut</span> : plusieurs actions
                         restent sur ton appareil, notamment l’enregistrement audio/vidéo tant que tu ne lances pas
                         la transcription, l’édition et la mise en forme du texte, les diagrammes/tableaux/blocs
-                        spéciaux, l’organisation des documents dans l’espace privé, ainsi que l’import des documents
+                        spéciaux, l’organisation des pages dans l’espace privé, ainsi que l’import des pages
                         (hors images) et les exports.</p>
                     <p><span class="help-icon"><i data-lucide="send"></i> Envoi sur action explicite</span> : un
                         partage externe a lieu uniquement quand tu actives une fonction distante (IA,
                         transcription/voix, OCR image, partage/publication). Dans ce cas, l’application envoie
-                        seulement les données nécessaires à l’action demandée, par exemple le contenu utile du document
+                        seulement les données nécessaires à l’action demandée, par exemple le contenu utile de la page
                         et des extraits ciblés de la base de connaissance plutôt qu’un historique complet. Pour le
                         détail complet du traitement des données, consulte
                         <a href="legal.html#privacy">la politique de confidentialité</a>.
@@ -769,14 +769,14 @@
                             comparaison, risques, aide à la décision.</li>
                         <li><span class="help-icon"><i data-lucide="graduation-cap"></i> Scolaire</span> : explications,
                             fiches de révision, quiz, méthode.</li>
-                        <li><span class="help-icon"><i data-lucide="briefcase"></i> Bureautique</span> : document de service, procédure, synthèse.</li>
+                        <li><span class="help-icon"><i data-lucide="briefcase"></i> Bureautique</span> : page de service, procédure, synthèse.</li>
                         <li><span class="help-icon"><i data-lucide="user"></i> Personnel</span> : organisation perso,
                             objectifs, budget, habitudes.</li>
                     </ul>
                 </div>
                 <div id="q-30">
-                    <strong>30. Peut-on gérer les catégories de document et les éditer ?</strong>
-                    <p>Oui. Les catégories de document (aussi appelées superpouvoirs) sont configurables, et la liste par
+                    <strong>30. Peut-on gérer les catégories de page et les éditer ?</strong>
+                    <p>Oui. Les catégories de page (aussi appelées superpouvoirs) sont configurables, et la liste par
                         défaut est définie dans <code>category.json</code>.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="settings"></i> Édition</span> : tu peux choisir
@@ -864,7 +864,7 @@
                     <p>Tu peux ensuite utiliser trois commandes vocales rapides :
                         <strong>“Ok go”</strong> pour envoyer la commande, <strong>“Ok efface”</strong> pour annuler la
                         commande en cours dans le composeur, et <strong>“Ok annule”</strong> pour revenir à la version
-                        du document avant la commande précédente.
+                        de la page avant la commande précédente.
                     </p>
                 </div>
             </div>
@@ -875,19 +875,19 @@
             <p>Pour finir, voici les points clés sur la publication, les accès d’équipe et la synchronisation cloud.</p>
             <div class="help-list">
                 <div id="q-33">
-                    <strong>33. Comment publier un document ou partager un lien ?</strong>
-                    <p>Pour partager un document, suis ce flux simple : publication, synchronisation, puis envoi du lien.</p>
+                    <strong>33. Comment publier une page ou partager un lien ?</strong>
+                    <p>Pour partager une page, suis ce flux simple : publication, synchronisation, puis envoi du lien.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="panel-left"></i> Déplacer</span> : glisse le
-                            document vers l’espace partagé ciblé.</li>
+                            page vers l’espace partagé ciblé.</li>
                         <li><span class="help-icon"><i data-lucide="send"></i> Publish</span> : utilise aussi
                             <strong>File Menu</strong> puis <strong>Publish</strong>.
                         </li>
-                        <li><span class="help-icon"><i data-lucide="rotate-cw"></i> Sync</span> : envoie le document dans
+                        <li><span class="help-icon"><i data-lucide="rotate-cw"></i> Sync</span> : envoie la page dans
                             le cloud.</li>
-                        <li><span class="help-icon"><i data-lucide="link"></i> Partage</span> : transmets l’URL du document ou le chemin de stockage partagé.</li>
+                        <li><span class="help-icon"><i data-lucide="link"></i> Partage</span> : transmets l’URL de la page ou le chemin de stockage partagé.</li>
                         <li><span class="help-icon"><i data-lucide="lock-open"></i> Accès</span> : seuls les
-                            utilisateurs autorisés sur l’espace peuvent consulter le document.</li>
+                            utilisateurs autorisés sur l’espace peuvent consulter la page.</li>
                     </ul>
                     <p>Pour les règles d’accès des espaces GO LIVE et SAFRAN, voir la question suivante.</p>
                 </div>
@@ -910,7 +910,7 @@
                         du contenu synchronisé. Cela réduit le risque d’accès non autorisé au contenu brut.</p>
                     <p>Ce chiffrement est complété par l’authentification et les droits d’accès de l’espace. En clair,
                         une URL seule ne suffit pas : il faut aussi être authentifié et autorisé sur le bon périmètre
-                        pour consulter ou modifier un document.</p>
+                        pour consulter ou modifier une page.</p>
                 </div>
                 <div id="q-36">
                     <strong>36. Comment fonctionne la stratégie de synchronisation cloud ?</strong>
@@ -921,10 +921,10 @@
                         reprendre localement avant l’envoi.</p>
                 </div>
                 <div id="q-37">
-                    <strong>37. Peut-on déplacer des documents par glisser-déposer entre privé et cloud ?</strong>
-                    <p>Oui. Tu peux réorganiser des documents dans ton espace privé, dans un espace cloud, et selon le
-                        contexte déplacer par glisser-déposer entre privé et cloud. À l’intérieur des documents cloud,
-                        le glisser-déposer permet aussi de changer la hiérarchie entre documents et sous-documents.</p>
+                    <strong>37. Peut-on déplacer des pages par glisser-déposer entre privé et cloud ?</strong>
+                    <p>Oui. Tu peux réorganiser des pages dans ton espace privé, dans un espace cloud, et selon le
+                        contexte déplacer par glisser-déposer entre privé et cloud. À l’intérieur des pages cloud,
+                        le glisser-déposer permet aussi de changer la hiérarchie entre pages et sous-pages.</p>
                 </div>
                 <div id="q-38">
                     <strong>38. Que faire si la synchronisation semble bloquée ?</strong>

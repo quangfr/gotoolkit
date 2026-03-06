@@ -3087,7 +3087,6 @@
                 const wantsCloudEmbeddings = shouldUseCloudEmbeddingsForFile(file);
                 const useCloudEmbeddings = wantsCloudEmbeddings && canUseOpenRouterEmbeddings();
                 try {
-                    console.log(`[DocumentIngest] ${file?.name || "document"} embeddings: ${useCloudEmbeddings ? "cloud" : "local"}`);
                 } catch (err) {
                     // ignore
                 }

@@ -1334,6 +1334,31 @@
             let dropHintTarget = null;
             let dropHintMode = "";
             let rootDropBody = null;
+            let dragHoverExpandTimer = null;
+            let dragHoverExpandKey = "";
+            const clearDragHoverExpand = () => {
+                if (dragHoverExpandTimer) {
+                    clearTimeout(dragHoverExpandTimer);
+                    dragHoverExpandTimer = null;
+                }
+                dragHoverExpandKey = "";
+            };
+            const scheduleDragHoverExpand = (key, callback, delayMs = 650) => {
+                const expandKey = String(key || "").trim();
+                if (!expandKey || typeof callback !== "function") return;
+                if (dragHoverExpandKey === expandKey && dragHoverExpandTimer) return;
+                clearDragHoverExpand();
+                dragHoverExpandKey = expandKey;
+                dragHoverExpandTimer = setTimeout(async () => {
+                    dragHoverExpandTimer = null;
+                    dragHoverExpandKey = "";
+                    try {
+                        await callback();
+                    } catch (err) {
+                        // ignore
+                    }
+                }, delayMs);
+            };
             const clearDropHint = () => {
                 if (!dropHintTarget) return;
                 dropHintTarget.classList.remove(
@@ -1376,6 +1401,7 @@
             const clearAllDropHints = () => {
                 clearDropHint();
                 clearRootDropHint();
+                clearDragHoverExpand();
             };
             const getDropModeFromPointer = (buttonEl, clientY) => {
                 const rect = buttonEl.getBoundingClientRect();
@@ -1527,6 +1553,37 @@
                         onCreateChild?.(item);
                     });
                     actions.appendChild(plusBtn);
+                }
+
+                const itemSection = getItemSection(item);
+                if (itemSection === "archives" && onMove) {
+                    const restoreBtn = document.createElement("button");
+                    restoreBtn.type = "button";
+                    restoreBtn.className = "document-explorer__item-action";
+                    setElementIconOnly(restoreBtn, "archive-restore", { fallback: "archive-restore" });
+                    restoreBtn.title = "Sortir des archives";
+                    restoreBtn.addEventListener("click", async event => {
+                        event.stopPropagation();
+                        const selected = getSelectedIdsSnapshot();
+                        const selectedForRestore = selected.length > 1 && selected.includes(item.id)
+                            ? selected
+                            : [item.id];
+                        const idsToRestore = Array.from(new Set(
+                            selectedForRestore
+                                .map(id => String(id || "").trim())
+                                .filter(Boolean)
+                        ));
+                        for (let index = 0; index < idsToRestore.length; index += 1) {
+                            const id = idsToRestore[index];
+                            await onMove(id, "", 1, "", {
+                                fromSection: "archives",
+                                toSection: "private",
+                                selectedIds: idsToRestore
+                            });
+                        }
+                        await renderList(cachedItems);
+                    });
+                    actions.appendChild(restoreBtn);
                 }
 
                 const deleteBtn = document.createElement("button");
@@ -1703,12 +1760,23 @@
                     clearRootDropHint();
                     const mode = getDropModeFromPointer(button, event.clientY);
                     setDropHint(button, mode);
+                    if (mode === "inside" && hasChildren && !isExpanded) {
+                        scheduleDragHoverExpand(`item:${String(item.id || "")}`, async () => {
+                            if (!draggingId || draggingId === item.id) return;
+                            expandedIds.add(item.id);
+                            persistExpandedState();
+                            await renderList(cachedItems);
+                        });
+                    } else {
+                        clearDragHoverExpand();
+                    }
                 });
                 button.addEventListener("dragleave", event => {
                     if (dropHintTarget !== button) return;
                     const nextTarget = event.relatedTarget;
                     if (nextTarget && button.contains(nextTarget)) return;
                     clearDropHint();
+                    clearDragHoverExpand();
                 });
                 button.addEventListener("drop", async event => {
                     event.preventDefault();
@@ -1948,16 +2016,29 @@
                     clearDropHint();
                     clearRootDropHint();
                     sectionHeader.classList.add("document-explorer__section-header--drop-root");
+                    const isCollapsedSection = !isSearching && sectionExpanded[sectionName] === false;
+                    if (isCollapsedSection) {
+                        scheduleDragHoverExpand(`section:${sectionName}`, async () => {
+                            if (!draggingId) return;
+                            sectionExpanded[sectionName] = true;
+                            persistSectionExpandedState();
+                            await renderList(cachedItems);
+                        });
+                    } else {
+                        clearDragHoverExpand();
+                    }
                 });
                 sectionHeader.addEventListener("dragleave", event => {
                     const nextTarget = event.relatedTarget;
                     if (nextTarget && sectionHeader.contains(nextTarget)) return;
                     sectionHeader.classList.remove("document-explorer__section-header--drop-root");
+                    clearDragHoverExpand();
                 });
                 sectionHeader.addEventListener("drop", async event => {
                     if (!draggingId || !onMove) return;
                     if (event.target.closest(".document-explorer__section-actions")) return;
                     event.preventDefault();
+                    event.stopPropagation();
                     sectionHeader.classList.remove("document-explorer__section-header--drop-root");
                     clearAllDropHints();
                     const fromItem = normalizeList(cachedItems).find(entry => String(entry?.id || "") === String(draggingId));
@@ -2668,6 +2749,13 @@
                 if (!itemId) return;
                 expandedIds.add(itemId);
                 persistExpandedState();
+                await renderList(cachedItems);
+            },
+            async expandSection(sectionName) {
+                const key = String(sectionName || "").trim();
+                if (!key) return;
+                sectionExpanded[key] = true;
+                persistSectionExpandedState();
                 await renderList(cachedItems);
             }
         };

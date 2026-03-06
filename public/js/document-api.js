@@ -70,6 +70,7 @@
         const hasIcon = Object.prototype.hasOwnProperty.call(value, "icon");
         const hasSpaceId = Object.prototype.hasOwnProperty.call(value, "spaceId");
         const hasShareToken = Object.prototype.hasOwnProperty.call(value, "shareToken");
+        const hasStatus = Object.prototype.hasOwnProperty.call(value, "status");
         return {
             id,
             app,
@@ -90,7 +91,8 @@
             parentId: hasParentId ? String(value.parentId || "").trim() : undefined,
             icon: hasIcon ? String(value.icon || "").trim() : undefined,
             spaceId: hasSpaceId ? String(value.spaceId || "").trim() : undefined,
-            shareToken: hasShareToken ? String(value.shareToken || "").trim() : undefined
+            shareToken: hasShareToken ? String(value.shareToken || "").trim() : undefined,
+            status: hasStatus ? String(value.status || "active").trim().toLowerCase() || "active" : undefined
         };
     }
 
@@ -134,6 +136,7 @@
         const hasIcon = Object.prototype.hasOwnProperty.call(record, "icon");
         const hasSpaceId = Object.prototype.hasOwnProperty.call(record, "spaceId");
         const hasShareToken = Object.prototype.hasOwnProperty.call(record, "shareToken");
+        const hasStatus = Object.prototype.hasOwnProperty.call(record, "status");
         const next = {
             id: normalized.id,
             app: normalized.app,
@@ -149,6 +152,11 @@
                     ? record.pinned
                     : (existing && existing.pinned) || false
         };
+        if (hasStatus) {
+            next.status = String(normalized.status || "active").trim().toLowerCase() || "active";
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "status")) {
+            next.status = String(existing.status || "active").trim().toLowerCase() || "active";
+        }
         if (hasVoiceRecordingId) {
             next.voiceRecordingId = normalized.voiceRecordingId || null;
         } else if (existing && Object.prototype.hasOwnProperty.call(existing, "voiceRecordingId")) {
