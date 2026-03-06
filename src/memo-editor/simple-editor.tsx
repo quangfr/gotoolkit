@@ -3548,6 +3548,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (!localRef) {
       throw new Error('Missing local media ref');
     }
+    const blobUrl = await (window as any).goToolkitMemoMediaStore?.resolveBlobUrl?.(localRef);
+    const resolvedSrc = String(blobUrl || '').trim();
+    if (!resolvedSrc) {
+      throw new Error('Missing local media blob URL');
+    }
     console.log('[SimpleEditor] media local-store:done', {
       source: 'file-insert',
       fileName,
@@ -3555,9 +3560,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       size: Number(file?.size || 0),
       spaceId,
       localRef,
+      resolvedSrc,
     });
     return {
-      src: localRef,
+      src: resolvedSrc,
+      localSrc: localRef,
       fileName,
       mimeType,
     };
@@ -3581,6 +3588,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               type: 'image',
             attrs: {
               src: uploaded.src,
+              localSrc: uploaded.localSrc || '',
               alt: uploaded.fileName || 'image',
               title: uploaded.fileName || '',
               fileName: uploaded.fileName || '',
@@ -3621,6 +3629,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               type: 'videoEmbed',
             attrs: {
               src: uploaded.src,
+              localSrc: uploaded.localSrc || '',
               title: uploaded.fileName || 'video',
               fileName: uploaded.fileName || '',
               mimeType: uploaded.mimeType || '',
@@ -4468,25 +4477,26 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const openVideoInsertDialog = React.useCallback(() => {
     if (!editor) return;
     console.log('[SimpleEditor] media picker:open', { trigger: 'slash-menu', type: 'video' });
-    const insertVideoFromSrc = (src: string, providedName?: string, providedMimeType?: string) => {
-      const normalized = String(src || '').trim();
-      const safeSrc = sanitizeUrl(normalized, ['http', 'https']);
+    const insertVideoNode = (attrs: Record<string, any>) => {
+      const normalizedSrc = String(attrs?.src || '').trim();
+      const safeSrc = sanitizeUrl(normalizedSrc, ['http', 'https', 'blob', 'data']);
       if (!safeSrc) return;
-      if (!/^https?:\/\//i.test(safeSrc)) return;
 
       const label = (() => {
-        if (providedName) return providedName;
+        if (attrs?.fileName) return String(attrs.fileName);
+        if (attrs?.title) return String(attrs.title);
         const withoutQuery = safeSrc.split('#')[0].split('?')[0];
         const file = withoutQuery.split('/').pop() || '';
         return file || 'video';
       })();
 
-      const mimeType = providedMimeType
-        || (/\.mp4([?#].*)?$/i.test(safeSrc)
+      const mimeType = String(attrs?.mimeType || '').trim() || (
+        (/\.mp4([?#].*)?$/i.test(safeSrc)
           ? 'video/mp4'
           : (/\.mov([?#].*)?$/i.test(safeSrc)
             ? 'video/quicktime'
-            : (/\.m4v([?#].*)?$/i.test(safeSrc) ? 'video/x-m4v' : 'video/webm')));
+            : (/\.m4v([?#].*)?$/i.test(safeSrc) ? 'video/x-m4v' : 'video/webm')))
+      );
 
       editor
         .chain()
@@ -4495,6 +4505,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           type: 'videoEmbed',
           attrs: {
             src: safeSrc,
+            localSrc: String(attrs?.localSrc || '').trim(),
             title: label,
             fileName: label,
             mimeType,
@@ -4523,9 +4534,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
       try {
         const mediaNodes = await buildDroppedMediaContent([file]);
-        const uploadedUrl = String(mediaNodes.find((node) => node?.type === 'videoEmbed')?.attrs?.src || '').trim();
-        if (!uploadedUrl) throw new Error('Missing uploaded video URL');
-        insertVideoFromSrc(uploadedUrl, file.name || 'video', mimeType || undefined);
+        const videoNode = mediaNodes.find((node) => node?.type === 'videoEmbed');
+        const videoAttrs = videoNode?.attrs && typeof videoNode.attrs === 'object' ? videoNode.attrs : null;
+        if (!videoAttrs?.src) throw new Error('Missing prepared video attrs');
+        insertVideoNode({
+          ...videoAttrs,
+          fileName: file.name || videoAttrs.fileName || 'video',
+          mimeType: mimeType || videoAttrs.mimeType || undefined,
+        });
       } catch (err) {
         (window as any).GoToolkitMemoToast?.('Import vidéo échoué', true);
       } finally {

@@ -1,12 +1,13 @@
 (function () {
     const DB_NAME = "go-toolkit";
-    const DB_VERSION = 12;
+    const DB_VERSION = 13;
     const STORES = [
         "document-api",
         "share-history",
         "documents-settings",
         "memo-images",
         "memo-media-assets",
+        "memo-media-pending",
         "voice-recordings",
         "knowledge-manifest",
         "knowledge-manifest-cache",
@@ -121,6 +122,7 @@
 
     const memoMediaBlobUrlCache = new Map();
     const MEMO_MEDIA_STORE = "memo-media-assets";
+    const MEMO_MEDIA_PENDING_STORE = "memo-media-pending";
     const MEMO_MEDIA_REF_PREFIX = "gtlocal://memo-media/";
 
     function createMemoMediaId() {
@@ -254,6 +256,51 @@
         return removed;
     }
 
+    async function readMemoMediaPendingStore() {
+        return (await withStore(MEMO_MEDIA_PENDING_STORE, "readonly", store => store.get("records"))) || {};
+    }
+
+    async function writeMemoMediaPendingStore(value) {
+        const next = value && typeof value === "object" ? value : {};
+        await withStore(MEMO_MEDIA_PENDING_STORE, "readwrite", store => store.put(next, "records"));
+        return next;
+    }
+
+    async function queueRemoteDelete(spaceId, assetId) {
+        const normalizedSpaceId = String(spaceId || "").trim().toLowerCase();
+        const normalizedAssetId = String(assetId || "").trim();
+        if (!normalizedSpaceId || !normalizedAssetId) return false;
+        const current = await readMemoMediaPendingStore();
+        const nextList = Array.isArray(current[normalizedSpaceId]) ? current[normalizedSpaceId] : [];
+        if (!nextList.includes(normalizedAssetId)) nextList.push(normalizedAssetId);
+        current[normalizedSpaceId] = nextList;
+        await writeMemoMediaPendingStore(current);
+        return true;
+    }
+
+    async function listQueuedRemoteDeletes(spaceId) {
+        const current = await readMemoMediaPendingStore();
+        const normalizedSpaceId = String(spaceId || "").trim().toLowerCase();
+        return Array.isArray(current[normalizedSpaceId]) ? current[normalizedSpaceId].slice() : [];
+    }
+
+    async function clearQueuedRemoteDeletes(spaceId, assetIds) {
+        const normalizedSpaceId = String(spaceId || "").trim().toLowerCase();
+        if (!normalizedSpaceId) return 0;
+        const current = await readMemoMediaPendingStore();
+        const existing = Array.isArray(current[normalizedSpaceId]) ? current[normalizedSpaceId] : [];
+        const remove = new Set(Array.isArray(assetIds) ? assetIds.map(id => String(id || "").trim()).filter(Boolean) : []);
+        if (!existing.length || !remove.size) return 0;
+        const next = existing.filter(id => !remove.has(String(id || "").trim()));
+        if (next.length) {
+            current[normalizedSpaceId] = next;
+        } else {
+            delete current[normalizedSpaceId];
+        }
+        await writeMemoMediaPendingStore(current);
+        return existing.length - next.length;
+    }
+
     window.goToolkitMemoMediaStore = window.goToolkitMemoMediaStore || {
         STORE_NAME: MEMO_MEDIA_STORE,
         REF_PREFIX: MEMO_MEDIA_REF_PREFIX,
@@ -268,6 +315,9 @@
         saveFile: saveMemoMediaFile,
         resolveBlobUrl: resolveMemoMediaBlobUrl,
         delete: deleteMemoMedia,
-        prune: pruneMemoMedia
+        prune: pruneMemoMedia,
+        queueRemoteDelete,
+        listQueuedRemoteDeletes,
+        clearQueuedRemoteDeletes
     };
 })();

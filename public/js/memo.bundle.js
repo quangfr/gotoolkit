@@ -54440,8 +54440,9 @@ ${promptInput.trim()}`
     document.body.removeChild(a);
   };
   var ImageNodeView = ({ node, editor, updateAttributes: updateAttributes2, getPos }) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     const src = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src) || "");
+    const localSrc = String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.localSrc) || "");
     const [resolvedSrc, setResolvedSrc] = react_shim_default.useState(src);
     const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
     const isGif = isGifSource(resolvedSrc);
@@ -54480,8 +54481,28 @@ ${promptInput.trim()}`
     const [textDraft, setTextDraft] = react_shim_default.useState(null);
     const [shapeDraft, setShapeDraft] = react_shim_default.useState(null);
     const [selectedDraft, setSelectedDraft] = react_shim_default.useState(null);
-    const widthPx = getPixels((_b = node.attrs) == null ? void 0 : _b.width);
-    const heightPx = getPixels((_c = node.attrs) == null ? void 0 : _c.height);
+    react_shim_default.useEffect(() => {
+      let cancelled = false;
+      const run3 = async () => {
+        var _a2;
+        const memoMediaStore = window.goToolkitMemoMediaStore;
+        const ref2 = String(localSrc || src);
+        if (!((_a2 = memoMediaStore == null ? void 0 : memoMediaStore.isLocalRef) == null ? void 0 : _a2.call(memoMediaStore, ref2)) || !(memoMediaStore == null ? void 0 : memoMediaStore.resolveBlobUrl)) {
+          setResolvedSrc(src);
+          return;
+        }
+        const blobUrl = await memoMediaStore.resolveBlobUrl(ref2).catch(() => "");
+        if (!cancelled) {
+          setResolvedSrc(String(blobUrl || src));
+        }
+      };
+      void run3();
+      return () => {
+        cancelled = true;
+      };
+    }, [localSrc, src]);
+    const widthPx = getPixels((_c = node.attrs) == null ? void 0 : _c.width);
+    const heightPx = getPixels((_d = node.attrs) == null ? void 0 : _d.height);
     react_shim_default.useEffect(() => {
       historyRef.current = history2;
       historyIndexRef.current = historyIndex;
@@ -54639,6 +54660,26 @@ ${promptInput.trim()}`
       });
     };
     const handleDelete = () => {
+      var _a2, _b2, _c2, _d2, _e2;
+      const memoMediaStore = window.goToolkitMemoMediaStore;
+      const currentLocalSrc = String(((_a2 = node == null ? void 0 : node.attrs) == null ? void 0 : _a2.localSrc) || "").trim();
+      const currentSrc = String(((_b2 = node == null ? void 0 : node.attrs) == null ? void 0 : _b2.src) || "").trim();
+      const currentSpaceId = String(((_d2 = (_c2 = window.GoToolkitSpaces) == null ? void 0 : _c2.getCurrentSpaceId) == null ? void 0 : _d2.call(_c2)) || "golive").trim().toLowerCase() || "golive";
+      const assetMatch = currentSrc.match(/\/v1\/assets\/([A-Za-z0-9_-]+)/);
+      if (currentLocalSrc && (memoMediaStore == null ? void 0 : memoMediaStore.parseRef) && (memoMediaStore == null ? void 0 : memoMediaStore.delete)) {
+        const localId = String(memoMediaStore.parseRef(currentLocalSrc) || "").trim();
+        if (localId) {
+          void ((_e2 = memoMediaStore.get) == null ? void 0 : _e2.call(memoMediaStore, localId).then((record) => {
+            const remoteAssetId = String((record == null ? void 0 : record.sourceAssetId) || "").trim();
+            if (remoteAssetId && (memoMediaStore == null ? void 0 : memoMediaStore.queueRemoteDelete)) {
+              void memoMediaStore.queueRemoteDelete(String((record == null ? void 0 : record.spaceId) || currentSpaceId), remoteAssetId);
+            }
+          }).catch(() => null));
+          void memoMediaStore.delete(localId).catch(() => null);
+        }
+      } else if ((assetMatch == null ? void 0 : assetMatch[1]) && (memoMediaStore == null ? void 0 : memoMediaStore.queueRemoteDelete)) {
+        void memoMediaStore.queueRemoteDelete(currentSpaceId, assetMatch[1]).catch(() => null);
+      }
       if (typeof getPos !== "function") return;
       const pos = getPos();
       editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
@@ -54776,7 +54817,7 @@ ${promptInput.trim()}`
       } catch (err) {
         console.warn(err);
       }
-    }, [currentSource, (_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.fileName]);
+    }, [currentSource, (_e = node == null ? void 0 : node.attrs) == null ? void 0 : _e.fileName]);
     const runRotate = react_shim_default.useCallback(async () => {
       await applySimpleOperation(({ canvas, image }) => {
         const rotated = document.createElement("canvas");
@@ -55675,10 +55716,24 @@ ${promptInput.trim()}`
         ...(_a = this.parent) == null ? void 0 : _a.call(this),
         src: {
           default: null,
-          parseHTML: (element) => sanitizeUrl(element.getAttribute("src"), ["http", "https", "data", "blob", "gtlocal"]) || null,
+          parseHTML: (element) => {
+            const localSrc = sanitizeUrl(element.getAttribute("data-gt-local-src"), ["gtlocal"]);
+            if (localSrc) {
+              return sanitizeUrl(element.getAttribute("src"), ["http", "https", "data", "blob"]) || "";
+            }
+            return sanitizeUrl(element.getAttribute("src"), ["http", "https", "data", "blob", "gtlocal"]) || null;
+          },
           renderHTML: (attributes) => {
-            const src = sanitizeUrl(attributes.src, ["http", "https", "data", "blob", "gtlocal"]);
+            const src = sanitizeUrl(attributes.src, ["http", "https", "data", "blob"]);
             return src ? { src } : {};
+          }
+        },
+        localSrc: {
+          default: null,
+          parseHTML: (element) => sanitizeUrl(element.getAttribute("data-gt-local-src"), ["gtlocal"]) || null,
+          renderHTML: (attributes) => {
+            const ref2 = sanitizeUrl(attributes.localSrc, ["gtlocal"]);
+            return ref2 ? { "data-gt-local-src": ref2 } : {};
           }
         },
         width: {
@@ -55768,27 +55823,42 @@ ${promptInput.trim()}`
     }
   };
   var VideoNodeView = ({ node, editor, getPos, updateAttributes: updateAttributes2 }) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     const src = sanitizeUrl((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src, ["http", "https", "data", "gtlocal"]) || "";
+    const localSrc = sanitizeUrl((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.localSrc, ["gtlocal"]) || "";
     const [resolvedSrc, setResolvedSrc] = react_shim_default.useState(src);
     const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
     const videoRef = react_shim_default.useRef(null);
     const frameRef = react_shim_default.useRef(null);
     const resizeStateRef = react_shim_default.useRef(null);
+    const controlsHideTimerRef = react_shim_default.useRef(null);
     const [isPlaying, setIsPlaying] = react_shim_default.useState(false);
     const [aspectRatio, setAspectRatio] = react_shim_default.useState(DEFAULT_VIDEO_ASPECT_RATIO);
-    const widthPx = parseSizePx((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.width);
-    const heightPx = parseSizePx((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.height);
+    const [progressRatio, setProgressRatio] = react_shim_default.useState(0);
+    const [controlsVisible, setControlsVisible] = react_shim_default.useState(false);
+    const widthPx = parseSizePx((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.width);
+    const heightPx = parseSizePx((_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.height);
+    const showMiniControls = react_shim_default.useCallback(() => {
+      setControlsVisible(true);
+      if (controlsHideTimerRef.current !== null) {
+        window.clearTimeout(controlsHideTimerRef.current);
+      }
+      controlsHideTimerRef.current = window.setTimeout(() => {
+        setControlsVisible(false);
+        controlsHideTimerRef.current = null;
+      }, 5e3);
+    }, []);
     react_shim_default.useEffect(() => {
       let cancelled = false;
       const run3 = async () => {
         var _a2;
         const memoMediaStore = window.goToolkitMemoMediaStore;
-        if (!((_a2 = memoMediaStore == null ? void 0 : memoMediaStore.isLocalRef) == null ? void 0 : _a2.call(memoMediaStore, src)) || !(memoMediaStore == null ? void 0 : memoMediaStore.resolveBlobUrl)) {
+        const ref2 = String(localSrc || src);
+        if (!((_a2 = memoMediaStore == null ? void 0 : memoMediaStore.isLocalRef) == null ? void 0 : _a2.call(memoMediaStore, ref2)) || !(memoMediaStore == null ? void 0 : memoMediaStore.resolveBlobUrl)) {
           setResolvedSrc(src);
           return;
         }
-        const blobUrl = await memoMediaStore.resolveBlobUrl(src).catch(() => "");
+        const blobUrl = await memoMediaStore.resolveBlobUrl(ref2).catch(() => "");
         if (!cancelled) {
           setResolvedSrc(String(blobUrl || src));
         }
@@ -55797,22 +55867,43 @@ ${promptInput.trim()}`
       return () => {
         cancelled = true;
       };
-    }, [src]);
+    }, [localSrc, src]);
     react_shim_default.useEffect(() => {
       const el = videoRef.current;
       if (!el) return;
-      const onPlay = () => setIsPlaying(true);
-      const onPause = () => setIsPlaying(false);
-      const onEnded = () => setIsPlaying(false);
+      const updateProgress = () => {
+        const duration = Number(el.duration || 0);
+        const current = Number(el.currentTime || 0);
+        setProgressRatio(duration > 0 ? Math.min(1, Math.max(0, current / duration)) : 0);
+      };
+      const onPlay = () => {
+        setIsPlaying(true);
+        showMiniControls();
+      };
+      const onPause = () => {
+        setIsPlaying(false);
+        showMiniControls();
+      };
+      const onEnded = () => {
+        setIsPlaying(false);
+        updateProgress();
+        showMiniControls();
+      };
+      const onLoadedMetadata = () => updateProgress();
+      const onTimeUpdate = () => updateProgress();
       el.addEventListener("play", onPlay);
       el.addEventListener("pause", onPause);
       el.addEventListener("ended", onEnded);
+      el.addEventListener("loadedmetadata", onLoadedMetadata);
+      el.addEventListener("timeupdate", onTimeUpdate);
       return () => {
         el.removeEventListener("play", onPlay);
         el.removeEventListener("pause", onPause);
         el.removeEventListener("ended", onEnded);
+        el.removeEventListener("loadedmetadata", onLoadedMetadata);
+        el.removeEventListener("timeupdate", onTimeUpdate);
       };
-    }, []);
+    }, [showMiniControls]);
     react_shim_default.useEffect(() => {
       const el = videoRef.current;
       if (!el) return;
@@ -55829,6 +55920,13 @@ ${promptInput.trim()}`
         el.removeEventListener("loadedmetadata", syncRatio);
       };
     }, [resolvedSrc]);
+    react_shim_default.useEffect(() => {
+      return () => {
+        if (controlsHideTimerRef.current !== null) {
+          window.clearTimeout(controlsHideTimerRef.current);
+        }
+      };
+    }, []);
     react_shim_default.useEffect(() => {
       if (!canEdit) return;
       const onPointerMove = (event) => {
@@ -55859,6 +55957,26 @@ ${promptInput.trim()}`
       };
     }, [canEdit, updateAttributes2]);
     const handleDelete = () => {
+      var _a2, _b2, _c2, _d2, _e2;
+      const memoMediaStore = window.goToolkitMemoMediaStore;
+      const currentLocalSrc = String(((_a2 = node == null ? void 0 : node.attrs) == null ? void 0 : _a2.localSrc) || "").trim();
+      const currentSrc = String(((_b2 = node == null ? void 0 : node.attrs) == null ? void 0 : _b2.src) || "").trim();
+      const currentSpaceId = String(((_d2 = (_c2 = window.GoToolkitSpaces) == null ? void 0 : _c2.getCurrentSpaceId) == null ? void 0 : _d2.call(_c2)) || "golive").trim().toLowerCase() || "golive";
+      const assetMatch = currentSrc.match(/\/v1\/assets\/([A-Za-z0-9_-]+)/);
+      if (currentLocalSrc && (memoMediaStore == null ? void 0 : memoMediaStore.parseRef) && (memoMediaStore == null ? void 0 : memoMediaStore.delete)) {
+        const localId = String(memoMediaStore.parseRef(currentLocalSrc) || "").trim();
+        if (localId) {
+          void ((_e2 = memoMediaStore.get) == null ? void 0 : _e2.call(memoMediaStore, localId).then((record) => {
+            const remoteAssetId = String((record == null ? void 0 : record.sourceAssetId) || "").trim();
+            if (remoteAssetId && (memoMediaStore == null ? void 0 : memoMediaStore.queueRemoteDelete)) {
+              void memoMediaStore.queueRemoteDelete(String((record == null ? void 0 : record.spaceId) || currentSpaceId), remoteAssetId);
+            }
+          }).catch(() => null));
+          void memoMediaStore.delete(localId).catch(() => null);
+        }
+      } else if ((assetMatch == null ? void 0 : assetMatch[1]) && (memoMediaStore == null ? void 0 : memoMediaStore.queueRemoteDelete)) {
+        void memoMediaStore.queueRemoteDelete(currentSpaceId, assetMatch[1]).catch(() => null);
+      }
       if (typeof getPos !== "function") return;
       const pos = getPos();
       editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
@@ -55870,12 +55988,25 @@ ${promptInput.trim()}`
       event.stopPropagation();
       const video = videoRef.current;
       if (!video) return;
+      showMiniControls();
       if (video.paused) {
         void video.play().catch(() => {
         });
         return;
       }
       video.pause();
+    };
+    const handleProgressInput = (event) => {
+      event.stopPropagation();
+      const video = videoRef.current;
+      if (!video) return;
+      const ratio = Math.min(1, Math.max(0, Number(event.target.value) || 0));
+      const duration = Number(video.duration || 0);
+      if (duration > 0) {
+        video.currentTime = duration * ratio;
+      }
+      setProgressRatio(ratio);
+      showMiniControls();
     };
     const defaultHeightPx = DEFAULT_VIDEO_HEIGHT_PX;
     const defaultWidthPx = Math.round(defaultHeightPx * (aspectRatio || DEFAULT_VIDEO_ASPECT_RATIO));
@@ -55887,81 +56018,106 @@ ${promptInput.trim()}`
       width: "100%",
       height: heightPx ? "100%" : "auto"
     };
-    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-video-wrapper", children: /* @__PURE__ */ jsxs("div", { ref: frameRef, className: "memo-video-frame", style: frameStyle, onClick: handleTogglePlayback, children: [
-      /* @__PURE__ */ jsx("button", { className: "memo-link-block__handle", type: "button", "aria-label": "D\xE9placer", "data-drag-handle": true, children: /* @__PURE__ */ jsx("i", { "data-lucide": "grip-vertical", "aria-hidden": "true" }) }),
-      /* @__PURE__ */ jsxs("div", { className: "memo-image-controls", children: [
-        /* @__PURE__ */ jsxs(
-          "button",
-          {
-            type: "button",
-            className: "block-delete-button memo-image-action",
-            title: "Copier",
-            onClick: (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              copyVideoHtml(node.attrs || {});
-            },
-            children: [
-              /* @__PURE__ */ jsx("i", { "data-lucide": "copy", style: { display: "none" }, "aria-hidden": "true" }),
-              /* @__PURE__ */ jsx(Copy, { size: 14 })
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxs(
-          "button",
-          {
-            type: "button",
-            className: "block-delete-button memo-image-action",
-            title: "Supprimer",
-            style: { display: canEdit ? "inline-flex" : "none" },
-            onClick: (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              handleDelete();
-            },
-            children: [
-              /* @__PURE__ */ jsx("i", { "data-lucide": "trash-2", style: { display: "none" }, "aria-hidden": "true" }),
-              /* @__PURE__ */ jsx(Trash2, { size: 14 })
-            ]
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsx(
-        "video",
-        {
-          ref: videoRef,
-          className: "memo-video",
-          style: videoStyle,
-          src: resolvedSrc,
-          playsInline: true,
-          preload: "metadata",
-          title: String(((_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.title) || "")
-        }
-      ),
-      !isPlaying && /* @__PURE__ */ jsxs("div", { className: "memo-video-play-overlay", "aria-hidden": "true", children: [
-        /* @__PURE__ */ jsx("i", { "data-lucide": "play", style: { display: "none" }, "aria-hidden": "true" }),
-        /* @__PURE__ */ jsx(Play, { size: 28 })
-      ] }),
-      canEdit && /* @__PURE__ */ jsx(
-        "div",
-        {
-          className: "memo-video-resize-handle",
-          onPointerDown: (event) => {
-            var _a2;
-            event.preventDefault();
-            event.stopPropagation();
-            const rect = (_a2 = frameRef.current) == null ? void 0 : _a2.getBoundingClientRect();
-            resizeStateRef.current = {
-              startX: event.clientX,
-              startY: event.clientY,
-              width: (rect == null ? void 0 : rect.width) || 320,
-              height: (rect == null ? void 0 : rect.height) || 180
-            };
-            document.body.classList.add("table-resize-cursor");
-          }
-        }
-      )
-    ] }) });
+    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-video-wrapper", children: /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref: frameRef,
+        className: "memo-video-frame",
+        style: frameStyle,
+        onClick: handleTogglePlayback,
+        onMouseEnter: showMiniControls,
+        onMouseMove: showMiniControls,
+        children: [
+          /* @__PURE__ */ jsx("button", { className: "memo-link-block__handle", type: "button", "aria-label": "D\xE9placer", "data-drag-handle": true, children: /* @__PURE__ */ jsx("i", { "data-lucide": "grip-vertical", "aria-hidden": "true" }) }),
+          /* @__PURE__ */ jsxs("div", { className: "memo-image-controls", children: [
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                className: "block-delete-button memo-image-action",
+                title: "Copier",
+                onClick: (event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  copyVideoHtml(node.attrs || {});
+                },
+                children: [
+                  /* @__PURE__ */ jsx("i", { "data-lucide": "copy", style: { display: "none" }, "aria-hidden": "true" }),
+                  /* @__PURE__ */ jsx(Copy, { size: 14 })
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                className: "block-delete-button memo-image-action",
+                title: "Supprimer",
+                style: { display: canEdit ? "inline-flex" : "none" },
+                onClick: (event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleDelete();
+                },
+                children: [
+                  /* @__PURE__ */ jsx("i", { "data-lucide": "trash-2", style: { display: "none" }, "aria-hidden": "true" }),
+                  /* @__PURE__ */ jsx(Trash2, { size: 14 })
+                ]
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsx(
+            "video",
+            {
+              ref: videoRef,
+              className: "memo-video",
+              style: videoStyle,
+              src: resolvedSrc,
+              playsInline: true,
+              preload: "metadata",
+              title: String(((_e = node == null ? void 0 : node.attrs) == null ? void 0 : _e.title) || "")
+            }
+          ),
+          /* @__PURE__ */ jsx("div", { className: `memo-video-mini-controls${controlsVisible ? " is-visible" : ""}`, "aria-hidden": !controlsVisible, children: /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "range",
+              min: "0",
+              max: "1",
+              step: "0.001",
+              value: String(progressRatio),
+              className: "memo-video-mini-progress",
+              onClick: (event) => event.stopPropagation(),
+              onInput: handleProgressInput,
+              onChange: handleProgressInput
+            }
+          ) }),
+          !isPlaying && /* @__PURE__ */ jsxs("div", { className: "memo-video-play-overlay", "aria-hidden": "true", children: [
+            /* @__PURE__ */ jsx("i", { "data-lucide": "play", style: { display: "none" }, "aria-hidden": "true" }),
+            /* @__PURE__ */ jsx(Play, { size: 28 })
+          ] }),
+          canEdit && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "memo-video-resize-handle",
+              onPointerDown: (event) => {
+                var _a2;
+                event.preventDefault();
+                event.stopPropagation();
+                const rect = (_a2 = frameRef.current) == null ? void 0 : _a2.getBoundingClientRect();
+                resizeStateRef.current = {
+                  startX: event.clientX,
+                  startY: event.clientY,
+                  width: (rect == null ? void 0 : rect.width) || 320,
+                  height: (rect == null ? void 0 : rect.height) || 180
+                };
+                document.body.classList.add("table-resize-cursor");
+              }
+            }
+          )
+        ]
+      }
+    ) });
   };
   var EmbedNodeView = ({ node, editor, getPos, updateAttributes: updateAttributes2 }) => {
     var _a, _b, _c, _d, _e;
@@ -56111,10 +56267,24 @@ ${promptInput.trim()}`
       return {
         src: {
           default: null,
-          parseHTML: (element) => sanitizeUrl(element.getAttribute("src"), ["http", "https", "data", "gtlocal"]) || null,
+          parseHTML: (element) => {
+            const localSrc = sanitizeUrl(element.getAttribute("data-gt-local-src"), ["gtlocal"]);
+            if (localSrc) {
+              return sanitizeUrl(element.getAttribute("src"), ["http", "https", "data"]) || "";
+            }
+            return sanitizeUrl(element.getAttribute("src"), ["http", "https", "data", "gtlocal"]) || null;
+          },
           renderHTML: (attributes) => {
-            const src = sanitizeUrl(attributes.src, ["http", "https", "data", "gtlocal"]);
+            const src = sanitizeUrl(attributes.src, ["http", "https", "data", "blob"]);
             return src ? { src } : {};
+          }
+        },
+        localSrc: {
+          default: null,
+          parseHTML: (element) => sanitizeUrl(element.getAttribute("data-gt-local-src"), ["gtlocal"]) || null,
+          renderHTML: (attributes) => {
+            const ref2 = sanitizeUrl(attributes.localSrc, ["gtlocal"]);
+            return ref2 ? { "data-gt-local-src": ref2 } : {};
           }
         },
         title: { default: null },
@@ -56126,7 +56296,7 @@ ${promptInput.trim()}`
     },
     parseHTML() {
       return [
-        { tag: "video[src]" }
+        { tag: "video[src],video[data-gt-local-src]" }
       ];
     },
     renderHTML({ HTMLAttributes }) {
@@ -58971,7 +59141,7 @@ ${promptInput.trim()}`
       }
     }, [activeDocumentId]);
     const uploadEditorAssetFile = react_shim_default.useCallback(async (file) => {
-      var _a2, _b2;
+      var _a2, _b2, _c2, _d2;
       const mimeType = String((file == null ? void 0 : file.type) || "").trim() || "application/octet-stream";
       const fileName = String((file == null ? void 0 : file.name) || "asset").trim() || "asset";
       const spaceId = await resolveActiveMemoSpaceId();
@@ -58991,16 +59161,23 @@ ${promptInput.trim()}`
       if (!localRef) {
         throw new Error("Missing local media ref");
       }
+      const blobUrl = await ((_d2 = (_c2 = window.goToolkitMemoMediaStore) == null ? void 0 : _c2.resolveBlobUrl) == null ? void 0 : _d2.call(_c2, localRef));
+      const resolvedSrc = String(blobUrl || "").trim();
+      if (!resolvedSrc) {
+        throw new Error("Missing local media blob URL");
+      }
       console.log("[SimpleEditor] media local-store:done", {
         source: "file-insert",
         fileName,
         mimeType,
         size: Number((file == null ? void 0 : file.size) || 0),
         spaceId,
-        localRef
+        localRef,
+        resolvedSrc
       });
       return {
-        src: localRef,
+        src: resolvedSrc,
+        localSrc: localRef,
         fileName,
         mimeType
       };
@@ -59023,6 +59200,7 @@ ${promptInput.trim()}`
               type: "image",
               attrs: {
                 src: uploaded.src,
+                localSrc: uploaded.localSrc || "",
                 alt: uploaded.fileName || "image",
                 title: uploaded.fileName || "",
                 fileName: uploaded.fileName || "",
@@ -59062,6 +59240,7 @@ ${promptInput.trim()}`
               type: "videoEmbed",
               attrs: {
                 src: uploaded.src,
+                localSrc: uploaded.localSrc || "",
                 title: uploaded.fileName || "video",
                 fileName: uploaded.fileName || "",
                 mimeType: uploaded.mimeType || ""
@@ -59823,22 +60002,23 @@ ${promptInput.trim()}`
     const openVideoInsertDialog = react_shim_default.useCallback(() => {
       if (!editor) return;
       console.log("[SimpleEditor] media picker:open", { trigger: "slash-menu", type: "video" });
-      const insertVideoFromSrc = (src, providedName, providedMimeType) => {
-        const normalized = String(src || "").trim();
-        const safeSrc = sanitizeUrl(normalized, ["http", "https"]);
+      const insertVideoNode = (attrs) => {
+        const normalizedSrc = String((attrs == null ? void 0 : attrs.src) || "").trim();
+        const safeSrc = sanitizeUrl(normalizedSrc, ["http", "https", "blob", "data"]);
         if (!safeSrc) return;
-        if (!/^https?:\/\//i.test(safeSrc)) return;
         const label = (() => {
-          if (providedName) return providedName;
+          if (attrs == null ? void 0 : attrs.fileName) return String(attrs.fileName);
+          if (attrs == null ? void 0 : attrs.title) return String(attrs.title);
           const withoutQuery = safeSrc.split("#")[0].split("?")[0];
           const file = withoutQuery.split("/").pop() || "";
           return file || "video";
         })();
-        const mimeType = providedMimeType || (/\.mp4([?#].*)?$/i.test(safeSrc) ? "video/mp4" : /\.mov([?#].*)?$/i.test(safeSrc) ? "video/quicktime" : /\.m4v([?#].*)?$/i.test(safeSrc) ? "video/x-m4v" : "video/webm");
+        const mimeType = String((attrs == null ? void 0 : attrs.mimeType) || "").trim() || (/\.mp4([?#].*)?$/i.test(safeSrc) ? "video/mp4" : /\.mov([?#].*)?$/i.test(safeSrc) ? "video/quicktime" : /\.m4v([?#].*)?$/i.test(safeSrc) ? "video/x-m4v" : "video/webm");
         editor.chain().focus().insertContent({
           type: "videoEmbed",
           attrs: {
             src: safeSrc,
+            localSrc: String((attrs == null ? void 0 : attrs.localSrc) || "").trim(),
             title: label,
             fileName: label,
             mimeType
@@ -59852,7 +60032,7 @@ ${promptInput.trim()}`
       input.style.left = "-9999px";
       input.style.top = "0";
       input.addEventListener("change", async () => {
-        var _a2, _b2, _c2, _d2;
+        var _a2, _b2;
         const file = (_a2 = input.files) == null ? void 0 : _a2[0];
         if (!file) {
           try {
@@ -59872,11 +60052,16 @@ ${promptInput.trim()}`
         }
         try {
           const mediaNodes = await buildDroppedMediaContent([file]);
-          const uploadedUrl = String(((_c2 = (_b2 = mediaNodes.find((node) => (node == null ? void 0 : node.type) === "videoEmbed")) == null ? void 0 : _b2.attrs) == null ? void 0 : _c2.src) || "").trim();
-          if (!uploadedUrl) throw new Error("Missing uploaded video URL");
-          insertVideoFromSrc(uploadedUrl, file.name || "video", mimeType || void 0);
+          const videoNode = mediaNodes.find((node) => (node == null ? void 0 : node.type) === "videoEmbed");
+          const videoAttrs = (videoNode == null ? void 0 : videoNode.attrs) && typeof videoNode.attrs === "object" ? videoNode.attrs : null;
+          if (!(videoAttrs == null ? void 0 : videoAttrs.src)) throw new Error("Missing prepared video attrs");
+          insertVideoNode({
+            ...videoAttrs,
+            fileName: file.name || videoAttrs.fileName || "video",
+            mimeType: mimeType || videoAttrs.mimeType || void 0
+          });
         } catch (err) {
-          (_d2 = window.GoToolkitMemoToast) == null ? void 0 : _d2.call(window, "Import vid\xE9o \xE9chou\xE9", true);
+          (_b2 = window.GoToolkitMemoToast) == null ? void 0 : _b2.call(window, "Import vid\xE9o \xE9chou\xE9", true);
         } finally {
           try {
             input.remove();

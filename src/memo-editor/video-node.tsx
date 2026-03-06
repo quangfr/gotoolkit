@@ -55,25 +55,41 @@ const copyVideoHtml = async (attrs: Record<string, any>) => {
 
 const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
   const src = sanitizeUrl(node?.attrs?.src, ['http', 'https', 'data', 'gtlocal']) || '';
+  const localSrc = sanitizeUrl(node?.attrs?.localSrc, ['gtlocal']) || '';
   const [resolvedSrc, setResolvedSrc] = React.useState(src);
   const canEdit = Boolean(editor?.isEditable);
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const frameRef = React.useRef<HTMLDivElement | null>(null);
   const resizeStateRef = React.useRef<null | { startX: number; startY: number; width: number; height: number }>(null);
+  const controlsHideTimerRef = React.useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [aspectRatio, setAspectRatio] = React.useState(DEFAULT_VIDEO_ASPECT_RATIO);
+  const [progressRatio, setProgressRatio] = React.useState(0);
+  const [controlsVisible, setControlsVisible] = React.useState(false);
   const widthPx = parseSizePx(node?.attrs?.width);
   const heightPx = parseSizePx(node?.attrs?.height);
+
+  const showMiniControls = React.useCallback(() => {
+    setControlsVisible(true);
+    if (controlsHideTimerRef.current !== null) {
+      window.clearTimeout(controlsHideTimerRef.current);
+    }
+    controlsHideTimerRef.current = window.setTimeout(() => {
+      setControlsVisible(false);
+      controlsHideTimerRef.current = null;
+    }, 5000);
+  }, []);
 
   React.useEffect(() => {
     let cancelled = false;
     const run = async () => {
       const memoMediaStore = (window as any).goToolkitMemoMediaStore;
-      if (!memoMediaStore?.isLocalRef?.(src) || !memoMediaStore?.resolveBlobUrl) {
+      const ref = String(localSrc || src);
+      if (!memoMediaStore?.isLocalRef?.(ref) || !memoMediaStore?.resolveBlobUrl) {
         setResolvedSrc(src);
         return;
       }
-      const blobUrl = await memoMediaStore.resolveBlobUrl(src).catch(() => '');
+      const blobUrl = await memoMediaStore.resolveBlobUrl(ref).catch(() => '');
       if (!cancelled) {
         setResolvedSrc(String(blobUrl || src));
       }
@@ -82,23 +98,44 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
     return () => {
       cancelled = true;
     };
-  }, [src]);
+  }, [localSrc, src]);
 
   React.useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    const onEnded = () => setIsPlaying(false);
+    const updateProgress = () => {
+      const duration = Number(el.duration || 0);
+      const current = Number(el.currentTime || 0);
+      setProgressRatio(duration > 0 ? Math.min(1, Math.max(0, current / duration)) : 0);
+    };
+    const onPlay = () => {
+      setIsPlaying(true);
+      showMiniControls();
+    };
+    const onPause = () => {
+      setIsPlaying(false);
+      showMiniControls();
+    };
+    const onEnded = () => {
+      setIsPlaying(false);
+      updateProgress();
+      showMiniControls();
+    };
+    const onLoadedMetadata = () => updateProgress();
+    const onTimeUpdate = () => updateProgress();
     el.addEventListener('play', onPlay);
     el.addEventListener('pause', onPause);
     el.addEventListener('ended', onEnded);
+    el.addEventListener('loadedmetadata', onLoadedMetadata);
+    el.addEventListener('timeupdate', onTimeUpdate);
     return () => {
       el.removeEventListener('play', onPlay);
       el.removeEventListener('pause', onPause);
       el.removeEventListener('ended', onEnded);
+      el.removeEventListener('loadedmetadata', onLoadedMetadata);
+      el.removeEventListener('timeupdate', onTimeUpdate);
     };
-  }, []);
+  }, [showMiniControls]);
 
   React.useEffect(() => {
     const el = videoRef.current;
@@ -116,6 +153,14 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
       el.removeEventListener('loadedmetadata', syncRatio);
     };
   }, [resolvedSrc]);
+
+  React.useEffect(() => {
+    return () => {
+      if (controlsHideTimerRef.current !== null) {
+        window.clearTimeout(controlsHideTimerRef.current);
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     if (!canEdit) return;
@@ -148,6 +193,25 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
   }, [canEdit, updateAttributes]);
 
   const handleDelete = () => {
+    const memoMediaStore = (window as any).goToolkitMemoMediaStore;
+    const currentLocalSrc = String(node?.attrs?.localSrc || '').trim();
+    const currentSrc = String(node?.attrs?.src || '').trim();
+    const currentSpaceId = String((window as any).GoToolkitSpaces?.getCurrentSpaceId?.() || 'golive').trim().toLowerCase() || 'golive';
+    const assetMatch = currentSrc.match(/\/v1\/assets\/([A-Za-z0-9_-]+)/);
+    if (currentLocalSrc && memoMediaStore?.parseRef && memoMediaStore?.delete) {
+      const localId = String(memoMediaStore.parseRef(currentLocalSrc) || '').trim();
+      if (localId) {
+        void memoMediaStore.get?.(localId).then((record: any) => {
+          const remoteAssetId = String(record?.sourceAssetId || '').trim();
+          if (remoteAssetId && memoMediaStore?.queueRemoteDelete) {
+            void memoMediaStore.queueRemoteDelete(String(record?.spaceId || currentSpaceId), remoteAssetId);
+          }
+        }).catch(() => null);
+        void memoMediaStore.delete(localId).catch(() => null);
+      }
+    } else if (assetMatch?.[1] && memoMediaStore?.queueRemoteDelete) {
+      void memoMediaStore.queueRemoteDelete(currentSpaceId, assetMatch[1]).catch(() => null);
+    }
     if (typeof getPos !== 'function') return;
     const pos = getPos();
     editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
@@ -160,6 +224,7 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
     event.stopPropagation();
     const video = videoRef.current;
     if (!video) return;
+    showMiniControls();
     if (video.paused) {
       void video.play().catch(() => {
         // no-op
@@ -167,6 +232,19 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
       return;
     }
     video.pause();
+  };
+
+  const handleProgressInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    const ratio = Math.min(1, Math.max(0, Number(event.target.value) || 0));
+    const duration = Number(video.duration || 0);
+    if (duration > 0) {
+      video.currentTime = duration * ratio;
+    }
+    setProgressRatio(ratio);
+    showMiniControls();
   };
 
   const defaultHeightPx = DEFAULT_VIDEO_HEIGHT_PX;
@@ -183,7 +261,14 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
 
   return (
     <NodeViewWrapper className="memo-video-wrapper">
-      <div ref={frameRef} className="memo-video-frame" style={frameStyle} onClick={handleTogglePlayback}>
+      <div
+        ref={frameRef}
+        className="memo-video-frame"
+        style={frameStyle}
+        onClick={handleTogglePlayback}
+        onMouseEnter={showMiniControls}
+        onMouseMove={showMiniControls}
+      >
         <button className="memo-link-block__handle" type="button" aria-label="Déplacer" data-drag-handle>
           <i data-lucide="grip-vertical" aria-hidden="true" />
         </button>
@@ -225,6 +310,19 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
           preload="metadata"
           title={String(node?.attrs?.title || '')}
         />
+        <div className={`memo-video-mini-controls${controlsVisible ? ' is-visible' : ''}`} aria-hidden={!controlsVisible}>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.001"
+            value={String(progressRatio)}
+            className="memo-video-mini-progress"
+            onClick={(event) => event.stopPropagation()}
+            onInput={handleProgressInput}
+            onChange={handleProgressInput}
+          />
+        </div>
         {!isPlaying && (
           <div className="memo-video-play-overlay" aria-hidden="true">
             <i data-lucide="play" style={{ display: 'none' }} aria-hidden="true"></i>
@@ -402,10 +500,24 @@ export const VideoEmbed = Node.create({
     return {
       src: {
         default: null,
-        parseHTML: element => sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data', 'gtlocal']) || null,
+        parseHTML: element => {
+          const localSrc = sanitizeUrl(element.getAttribute('data-gt-local-src'), ['gtlocal']);
+          if (localSrc) {
+            return sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data']) || '';
+          }
+          return sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data', 'gtlocal']) || null;
+        },
         renderHTML: attributes => {
-          const src = sanitizeUrl(attributes.src, ['http', 'https', 'data', 'gtlocal']);
+          const src = sanitizeUrl(attributes.src, ['http', 'https', 'data', 'blob']);
           return src ? { src } : {};
+        },
+      },
+      localSrc: {
+        default: null,
+        parseHTML: element => sanitizeUrl(element.getAttribute('data-gt-local-src'), ['gtlocal']) || null,
+        renderHTML: attributes => {
+          const ref = sanitizeUrl(attributes.localSrc, ['gtlocal']);
+          return ref ? { 'data-gt-local-src': ref } : {};
         },
       },
       title: { default: null },
@@ -418,7 +530,7 @@ export const VideoEmbed = Node.create({
 
   parseHTML() {
     return [
-      { tag: 'video[src]' },
+      { tag: 'video[src],video[data-gt-local-src]' },
     ];
   },
 

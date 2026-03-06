@@ -248,6 +248,7 @@ const downloadDataUrl = (dataUrl: string, fileName: string) => {
 
 const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   const src = String(node?.attrs?.src || '');
+  const localSrc = String(node?.attrs?.localSrc || '');
   const [resolvedSrc, setResolvedSrc] = React.useState(src);
   const canEdit = Boolean(editor?.isEditable);
   const isGif = isGifSource(resolvedSrc);
@@ -293,6 +294,26 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   const [textDraft, setTextDraft] = React.useState<TextDraft | null>(null);
   const [shapeDraft, setShapeDraft] = React.useState<ShapeDraft | null>(null);
   const [selectedDraft, setSelectedDraft] = React.useState<DraftSelection>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const memoMediaStore = (window as any).goToolkitMemoMediaStore;
+      const ref = String(localSrc || src);
+      if (!memoMediaStore?.isLocalRef?.(ref) || !memoMediaStore?.resolveBlobUrl) {
+        setResolvedSrc(src);
+        return;
+      }
+      const blobUrl = await memoMediaStore.resolveBlobUrl(ref).catch(() => '');
+      if (!cancelled) {
+        setResolvedSrc(String(blobUrl || src));
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [localSrc, src]);
 
   const widthPx = getPixels(node.attrs?.width);
   const heightPx = getPixels(node.attrs?.height);
@@ -467,6 +488,25 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   };
 
   const handleDelete = () => {
+    const memoMediaStore = (window as any).goToolkitMemoMediaStore;
+    const currentLocalSrc = String(node?.attrs?.localSrc || '').trim();
+    const currentSrc = String(node?.attrs?.src || '').trim();
+    const currentSpaceId = String((window as any).GoToolkitSpaces?.getCurrentSpaceId?.() || 'golive').trim().toLowerCase() || 'golive';
+    const assetMatch = currentSrc.match(/\/v1\/assets\/([A-Za-z0-9_-]+)/);
+    if (currentLocalSrc && memoMediaStore?.parseRef && memoMediaStore?.delete) {
+      const localId = String(memoMediaStore.parseRef(currentLocalSrc) || '').trim();
+      if (localId) {
+        void memoMediaStore.get?.(localId).then((record: any) => {
+          const remoteAssetId = String(record?.sourceAssetId || '').trim();
+          if (remoteAssetId && memoMediaStore?.queueRemoteDelete) {
+            void memoMediaStore.queueRemoteDelete(String(record?.spaceId || currentSpaceId), remoteAssetId);
+          }
+        }).catch(() => null);
+        void memoMediaStore.delete(localId).catch(() => null);
+      }
+    } else if (assetMatch?.[1] && memoMediaStore?.queueRemoteDelete) {
+      void memoMediaStore.queueRemoteDelete(currentSpaceId, assetMatch[1]).catch(() => null);
+    }
     if (typeof getPos !== 'function') return;
     const pos = getPos();
     editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
@@ -1565,10 +1605,24 @@ export const CustomImage = Image.extend({
       ...this.parent?.(),
       src: {
         default: null,
-        parseHTML: element => sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data', 'blob', 'gtlocal']) || null,
+        parseHTML: element => {
+          const localSrc = sanitizeUrl(element.getAttribute('data-gt-local-src'), ['gtlocal']);
+          if (localSrc) {
+            return sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data', 'blob']) || '';
+          }
+          return sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data', 'blob', 'gtlocal']) || null;
+        },
         renderHTML: attributes => {
-          const src = sanitizeUrl(attributes.src, ['http', 'https', 'data', 'blob', 'gtlocal']);
+          const src = sanitizeUrl(attributes.src, ['http', 'https', 'data', 'blob']);
           return src ? { src } : {};
+        },
+      },
+      localSrc: {
+        default: null,
+        parseHTML: element => sanitizeUrl(element.getAttribute('data-gt-local-src'), ['gtlocal']) || null,
+        renderHTML: attributes => {
+          const ref = sanitizeUrl(attributes.localSrc, ['gtlocal']);
+          return ref ? { 'data-gt-local-src': ref } : {};
         },
       },
       width: {
