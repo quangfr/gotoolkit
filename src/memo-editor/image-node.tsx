@@ -271,6 +271,12 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     start: Point;
     end: Point;
   }>(null);
+  const textDragFrameRef = React.useRef<number | null>(null);
+  const textResizeFrameRef = React.useRef<number | null>(null);
+  const shapeEditFrameRef = React.useRef<number | null>(null);
+  const textDragEventRef = React.useRef<PointerEvent | null>(null);
+  const textResizeEventRef = React.useRef<PointerEvent | null>(null);
+  const shapeEditEventRef = React.useRef<PointerEvent | null>(null);
 
   const [gifPoster, setGifPoster] = React.useState<string | null>(null);
   const [gifPlaying, setGifPlaying] = React.useState(!isGif);
@@ -924,27 +930,47 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   }, [drag, commitDragOperation]);
 
   React.useEffect(() => {
+    return () => {
+      if (textDragFrameRef.current !== null) window.cancelAnimationFrame(textDragFrameRef.current);
+      if (textResizeFrameRef.current !== null) window.cancelAnimationFrame(textResizeFrameRef.current);
+      if (shapeEditFrameRef.current !== null) window.cancelAnimationFrame(shapeEditFrameRef.current);
+    };
+  }, []);
+
+  React.useEffect(() => {
     const onMove = (event: PointerEvent) => {
-      const dragState = textDragRef.current;
-      if (!dragState) return;
-      setTextDraft((prev) => {
-        if (!prev || prev.surface !== dragState.surface) return prev;
-        const surfaceEl = dragState.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
-        if (!surfaceEl) return prev;
-        const rect = surfaceEl.getBoundingClientRect();
-        const nextX = Math.min(
-          Math.max(event.clientX - rect.left - prev.offsetX - dragState.offsetX, 0),
-          Math.max(0, prev.canvasWidth - prev.width),
-        );
-        const nextY = Math.min(
-          Math.max(event.clientY - rect.top - prev.offsetY - dragState.offsetY, 0),
-          Math.max(0, prev.canvasHeight - prev.height),
-        );
-        return { ...prev, x: nextX, y: nextY };
+      textDragEventRef.current = event;
+      if (textDragFrameRef.current !== null) return;
+      textDragFrameRef.current = window.requestAnimationFrame(() => {
+        textDragFrameRef.current = null;
+        const dragState = textDragRef.current;
+        const moveEvent = textDragEventRef.current;
+        if (!dragState || !moveEvent) return;
+        setTextDraft((prev) => {
+          if (!prev || prev.surface !== dragState.surface) return prev;
+          const surfaceEl = dragState.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+          if (!surfaceEl) return prev;
+          const rect = surfaceEl.getBoundingClientRect();
+          const nextX = Math.min(
+            Math.max(moveEvent.clientX - rect.left - prev.offsetX - dragState.offsetX, 0),
+            Math.max(0, prev.canvasWidth - prev.width),
+          );
+          const nextY = Math.min(
+            Math.max(moveEvent.clientY - rect.top - prev.offsetY - dragState.offsetY, 0),
+            Math.max(0, prev.canvasHeight - prev.height),
+          );
+          if (nextX === prev.x && nextY === prev.y) return prev;
+          return { ...prev, x: nextX, y: nextY };
+        });
       });
     };
     const onUp = () => {
       textDragRef.current = null;
+      textDragEventRef.current = null;
+      if (textDragFrameRef.current !== null) {
+        window.cancelAnimationFrame(textDragFrameRef.current);
+        textDragFrameRef.current = null;
+      }
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -956,25 +982,37 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
 
   React.useEffect(() => {
     const onMove = (event: PointerEvent) => {
-      const resize = textResizeRef.current;
-      if (!resize) return;
-      setTextDraft((prev) => {
-        if (!prev || prev.surface !== resize.surface) return prev;
-        const surfaceEl = resize.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
-        if (!surfaceEl) return prev;
-        const nextWidth = Math.min(
-          Math.max(60, resize.width + (event.clientX - resize.startX)),
-          Math.max(60, prev.canvasWidth - prev.x),
-        );
-        const nextHeight = Math.min(
-          Math.max(40, resize.height + (event.clientY - resize.startY)),
-          Math.max(40, prev.canvasHeight - prev.y),
-        );
-        return { ...prev, width: nextWidth, height: nextHeight };
+      textResizeEventRef.current = event;
+      if (textResizeFrameRef.current !== null) return;
+      textResizeFrameRef.current = window.requestAnimationFrame(() => {
+        textResizeFrameRef.current = null;
+        const resize = textResizeRef.current;
+        const moveEvent = textResizeEventRef.current;
+        if (!resize || !moveEvent) return;
+        setTextDraft((prev) => {
+          if (!prev || prev.surface !== resize.surface) return prev;
+          const surfaceEl = resize.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+          if (!surfaceEl) return prev;
+          const nextWidth = Math.min(
+            Math.max(60, resize.width + (moveEvent.clientX - resize.startX)),
+            Math.max(60, prev.canvasWidth - prev.x),
+          );
+          const nextHeight = Math.min(
+            Math.max(40, resize.height + (moveEvent.clientY - resize.startY)),
+            Math.max(40, prev.canvasHeight - prev.y),
+          );
+          if (nextWidth === prev.width && nextHeight === prev.height) return prev;
+          return { ...prev, width: nextWidth, height: nextHeight };
+        });
       });
     };
     const onUp = () => {
       textResizeRef.current = null;
+      textResizeEventRef.current = null;
+      if (textResizeFrameRef.current !== null) {
+        window.cancelAnimationFrame(textResizeFrameRef.current);
+        textResizeFrameRef.current = null;
+      }
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -986,32 +1024,56 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
 
   React.useEffect(() => {
     const onMove = (event: PointerEvent) => {
-      const edit = shapeEditRef.current;
-      if (!edit) return;
-      setShapeDraft((prev) => {
-        if (!prev || prev.surface !== edit.surface) return prev;
-        const surfaceEl = edit.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
-        if (!surfaceEl) return prev;
-        const rect = surfaceEl.getBoundingClientRect();
-        const next = clampPoint(
-          { x: event.clientX - rect.left - prev.offsetX, y: event.clientY - rect.top - prev.offsetY },
-          prev.canvasWidth,
-          prev.canvasHeight
-        );
-        if (edit.mode === 'start') return { ...prev, start: next };
-        if (edit.mode === 'end') return { ...prev, end: next };
-        if (edit.mode === 'square-resize') return { ...prev, end: next };
-        const dx = next.x - (edit.anchor?.x || 0);
-        const dy = next.y - (edit.anchor?.y || 0);
-        return {
-          ...prev,
-          start: clampPoint({ x: edit.start.x + dx, y: edit.start.y + dy }, prev.canvasWidth, prev.canvasHeight),
-          end: clampPoint({ x: edit.end.x + dx, y: edit.end.y + dy }, prev.canvasWidth, prev.canvasHeight),
-        };
+      shapeEditEventRef.current = event;
+      if (shapeEditFrameRef.current !== null) return;
+      shapeEditFrameRef.current = window.requestAnimationFrame(() => {
+        shapeEditFrameRef.current = null;
+        const edit = shapeEditRef.current;
+        const moveEvent = shapeEditEventRef.current;
+        if (!edit || !moveEvent) return;
+        setShapeDraft((prev) => {
+          if (!prev || prev.surface !== edit.surface) return prev;
+          const surfaceEl = edit.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+          if (!surfaceEl) return prev;
+          const rect = surfaceEl.getBoundingClientRect();
+          const next = clampPoint(
+            { x: moveEvent.clientX - rect.left - prev.offsetX, y: moveEvent.clientY - rect.top - prev.offsetY },
+            prev.canvasWidth,
+            prev.canvasHeight
+          );
+          if (edit.mode === 'start') {
+            if (next.x === prev.start.x && next.y === prev.start.y) return prev;
+            return { ...prev, start: next };
+          }
+          if (edit.mode === 'end' || edit.mode === 'square-resize') {
+            if (next.x === prev.end.x && next.y === prev.end.y) return prev;
+            return { ...prev, end: next };
+          }
+          const dx = next.x - (edit.anchor?.x || 0);
+          const dy = next.y - (edit.anchor?.y || 0);
+          const nextStart = clampPoint({ x: edit.start.x + dx, y: edit.start.y + dy }, prev.canvasWidth, prev.canvasHeight);
+          const nextEnd = clampPoint({ x: edit.end.x + dx, y: edit.end.y + dy }, prev.canvasWidth, prev.canvasHeight);
+          if (
+            nextStart.x === prev.start.x
+            && nextStart.y === prev.start.y
+            && nextEnd.x === prev.end.x
+            && nextEnd.y === prev.end.y
+          ) return prev;
+          return {
+            ...prev,
+            start: nextStart,
+            end: nextEnd,
+          };
+        });
       });
     };
     const onUp = () => {
       shapeEditRef.current = null;
+      shapeEditEventRef.current = null;
+      if (shapeEditFrameRef.current !== null) {
+        window.cancelAnimationFrame(shapeEditFrameRef.current);
+        shapeEditFrameRef.current = null;
+      }
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);

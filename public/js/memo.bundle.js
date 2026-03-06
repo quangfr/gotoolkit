@@ -54459,6 +54459,12 @@ ${promptInput.trim()}`
     const textDragRef = react_shim_default.useRef(null);
     const textResizeRef = react_shim_default.useRef(null);
     const shapeEditRef = react_shim_default.useRef(null);
+    const textDragFrameRef = react_shim_default.useRef(null);
+    const textResizeFrameRef = react_shim_default.useRef(null);
+    const shapeEditFrameRef = react_shim_default.useRef(null);
+    const textDragEventRef = react_shim_default.useRef(null);
+    const textResizeEventRef = react_shim_default.useRef(null);
+    const shapeEditEventRef = react_shim_default.useRef(null);
     const [gifPoster, setGifPoster] = react_shim_default.useState(null);
     const [gifPlaying, setGifPlaying] = react_shim_default.useState(!isGif);
     const [gifDurationMs, setGifDurationMs] = react_shim_default.useState(4e3);
@@ -55046,27 +55052,46 @@ ${promptInput.trim()}`
       };
     }, [drag, commitDragOperation]);
     react_shim_default.useEffect(() => {
+      return () => {
+        if (textDragFrameRef.current !== null) window.cancelAnimationFrame(textDragFrameRef.current);
+        if (textResizeFrameRef.current !== null) window.cancelAnimationFrame(textResizeFrameRef.current);
+        if (shapeEditFrameRef.current !== null) window.cancelAnimationFrame(shapeEditFrameRef.current);
+      };
+    }, []);
+    react_shim_default.useEffect(() => {
       const onMove = (event) => {
-        const dragState = textDragRef.current;
-        if (!dragState) return;
-        setTextDraft((prev) => {
-          if (!prev || prev.surface !== dragState.surface) return prev;
-          const surfaceEl = dragState.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
-          if (!surfaceEl) return prev;
-          const rect = surfaceEl.getBoundingClientRect();
-          const nextX = Math.min(
-            Math.max(event.clientX - rect.left - prev.offsetX - dragState.offsetX, 0),
-            Math.max(0, prev.canvasWidth - prev.width)
-          );
-          const nextY = Math.min(
-            Math.max(event.clientY - rect.top - prev.offsetY - dragState.offsetY, 0),
-            Math.max(0, prev.canvasHeight - prev.height)
-          );
-          return { ...prev, x: nextX, y: nextY };
+        textDragEventRef.current = event;
+        if (textDragFrameRef.current !== null) return;
+        textDragFrameRef.current = window.requestAnimationFrame(() => {
+          textDragFrameRef.current = null;
+          const dragState = textDragRef.current;
+          const moveEvent = textDragEventRef.current;
+          if (!dragState || !moveEvent) return;
+          setTextDraft((prev) => {
+            if (!prev || prev.surface !== dragState.surface) return prev;
+            const surfaceEl = dragState.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+            if (!surfaceEl) return prev;
+            const rect = surfaceEl.getBoundingClientRect();
+            const nextX = Math.min(
+              Math.max(moveEvent.clientX - rect.left - prev.offsetX - dragState.offsetX, 0),
+              Math.max(0, prev.canvasWidth - prev.width)
+            );
+            const nextY = Math.min(
+              Math.max(moveEvent.clientY - rect.top - prev.offsetY - dragState.offsetY, 0),
+              Math.max(0, prev.canvasHeight - prev.height)
+            );
+            if (nextX === prev.x && nextY === prev.y) return prev;
+            return { ...prev, x: nextX, y: nextY };
+          });
         });
       };
       const onUp = () => {
         textDragRef.current = null;
+        textDragEventRef.current = null;
+        if (textDragFrameRef.current !== null) {
+          window.cancelAnimationFrame(textDragFrameRef.current);
+          textDragFrameRef.current = null;
+        }
       };
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
@@ -55077,25 +55102,37 @@ ${promptInput.trim()}`
     }, []);
     react_shim_default.useEffect(() => {
       const onMove = (event) => {
-        const resize = textResizeRef.current;
-        if (!resize) return;
-        setTextDraft((prev) => {
-          if (!prev || prev.surface !== resize.surface) return prev;
-          const surfaceEl = resize.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
-          if (!surfaceEl) return prev;
-          const nextWidth = Math.min(
-            Math.max(60, resize.width + (event.clientX - resize.startX)),
-            Math.max(60, prev.canvasWidth - prev.x)
-          );
-          const nextHeight = Math.min(
-            Math.max(40, resize.height + (event.clientY - resize.startY)),
-            Math.max(40, prev.canvasHeight - prev.y)
-          );
-          return { ...prev, width: nextWidth, height: nextHeight };
+        textResizeEventRef.current = event;
+        if (textResizeFrameRef.current !== null) return;
+        textResizeFrameRef.current = window.requestAnimationFrame(() => {
+          textResizeFrameRef.current = null;
+          const resize = textResizeRef.current;
+          const moveEvent = textResizeEventRef.current;
+          if (!resize || !moveEvent) return;
+          setTextDraft((prev) => {
+            if (!prev || prev.surface !== resize.surface) return prev;
+            const surfaceEl = resize.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+            if (!surfaceEl) return prev;
+            const nextWidth = Math.min(
+              Math.max(60, resize.width + (moveEvent.clientX - resize.startX)),
+              Math.max(60, prev.canvasWidth - prev.x)
+            );
+            const nextHeight = Math.min(
+              Math.max(40, resize.height + (moveEvent.clientY - resize.startY)),
+              Math.max(40, prev.canvasHeight - prev.y)
+            );
+            if (nextWidth === prev.width && nextHeight === prev.height) return prev;
+            return { ...prev, width: nextWidth, height: nextHeight };
+          });
         });
       };
       const onUp = () => {
         textResizeRef.current = null;
+        textResizeEventRef.current = null;
+        if (textResizeFrameRef.current !== null) {
+          window.cancelAnimationFrame(textResizeFrameRef.current);
+          textResizeFrameRef.current = null;
+        }
       };
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
@@ -55106,33 +55143,52 @@ ${promptInput.trim()}`
     }, []);
     react_shim_default.useEffect(() => {
       const onMove = (event) => {
-        const edit2 = shapeEditRef.current;
-        if (!edit2) return;
-        setShapeDraft((prev) => {
-          var _a2, _b2;
-          if (!prev || prev.surface !== edit2.surface) return prev;
-          const surfaceEl = edit2.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
-          if (!surfaceEl) return prev;
-          const rect = surfaceEl.getBoundingClientRect();
-          const next2 = clampPoint(
-            { x: event.clientX - rect.left - prev.offsetX, y: event.clientY - rect.top - prev.offsetY },
-            prev.canvasWidth,
-            prev.canvasHeight
-          );
-          if (edit2.mode === "start") return { ...prev, start: next2 };
-          if (edit2.mode === "end") return { ...prev, end: next2 };
-          if (edit2.mode === "square-resize") return { ...prev, end: next2 };
-          const dx = next2.x - (((_a2 = edit2.anchor) == null ? void 0 : _a2.x) || 0);
-          const dy = next2.y - (((_b2 = edit2.anchor) == null ? void 0 : _b2.y) || 0);
-          return {
-            ...prev,
-            start: clampPoint({ x: edit2.start.x + dx, y: edit2.start.y + dy }, prev.canvasWidth, prev.canvasHeight),
-            end: clampPoint({ x: edit2.end.x + dx, y: edit2.end.y + dy }, prev.canvasWidth, prev.canvasHeight)
-          };
+        shapeEditEventRef.current = event;
+        if (shapeEditFrameRef.current !== null) return;
+        shapeEditFrameRef.current = window.requestAnimationFrame(() => {
+          shapeEditFrameRef.current = null;
+          const edit2 = shapeEditRef.current;
+          const moveEvent = shapeEditEventRef.current;
+          if (!edit2 || !moveEvent) return;
+          setShapeDraft((prev) => {
+            var _a2, _b2;
+            if (!prev || prev.surface !== edit2.surface) return prev;
+            const surfaceEl = edit2.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+            if (!surfaceEl) return prev;
+            const rect = surfaceEl.getBoundingClientRect();
+            const next2 = clampPoint(
+              { x: moveEvent.clientX - rect.left - prev.offsetX, y: moveEvent.clientY - rect.top - prev.offsetY },
+              prev.canvasWidth,
+              prev.canvasHeight
+            );
+            if (edit2.mode === "start") {
+              if (next2.x === prev.start.x && next2.y === prev.start.y) return prev;
+              return { ...prev, start: next2 };
+            }
+            if (edit2.mode === "end" || edit2.mode === "square-resize") {
+              if (next2.x === prev.end.x && next2.y === prev.end.y) return prev;
+              return { ...prev, end: next2 };
+            }
+            const dx = next2.x - (((_a2 = edit2.anchor) == null ? void 0 : _a2.x) || 0);
+            const dy = next2.y - (((_b2 = edit2.anchor) == null ? void 0 : _b2.y) || 0);
+            const nextStart = clampPoint({ x: edit2.start.x + dx, y: edit2.start.y + dy }, prev.canvasWidth, prev.canvasHeight);
+            const nextEnd = clampPoint({ x: edit2.end.x + dx, y: edit2.end.y + dy }, prev.canvasWidth, prev.canvasHeight);
+            if (nextStart.x === prev.start.x && nextStart.y === prev.start.y && nextEnd.x === prev.end.x && nextEnd.y === prev.end.y) return prev;
+            return {
+              ...prev,
+              start: nextStart,
+              end: nextEnd
+            };
+          });
         });
       };
       const onUp = () => {
         shapeEditRef.current = null;
+        shapeEditEventRef.current = null;
+        if (shapeEditFrameRef.current !== null) {
+          window.cancelAnimationFrame(shapeEditFrameRef.current);
+          shapeEditFrameRef.current = null;
+        }
       };
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
@@ -58687,6 +58743,11 @@ ${promptInput.trim()}`
     reader.onerror = () => reject(reader.error || new Error("Impossible de lire le fichier image"));
     reader.readAsDataURL(file);
   });
+  var isSupportedVideoFile = (file) => {
+    const mime = String((file == null ? void 0 : file.type) || "").toLowerCase();
+    const name = String((file == null ? void 0 : file.name) || "").toLowerCase();
+    return mime === "video/mp4" || mime === "video/webm" || name.endsWith(".mp4") || name.endsWith(".webm");
+  };
   var INITIAL_NAV_DISMISSED_KEY = "go-toolkit-memo-initial-navigation-dismissed-v1";
   var parseDismissedInitialNavigation = () => {
     try {
@@ -58761,6 +58822,8 @@ ${promptInput.trim()}`
     const [tableSelectionResize, setTableSelectionResize] = react_shim_default.useState(null);
     const saveTimeoutRef = react_shim_default.useRef(null);
     const saveIdleRef = react_shim_default.useRef(null);
+    const snapshotTimeoutRef = react_shim_default.useRef(null);
+    const lastSerializedHtmlRef = react_shim_default.useRef(String(content || ""));
     const blockDragMovedRef = react_shim_default.useRef(false);
     const tableLayoutRafRef = react_shim_default.useRef(null);
     const isAutoLayoutRef = react_shim_default.useRef(false);
@@ -58783,6 +58846,37 @@ ${promptInput.trim()}`
         saveIdleRef.current = null;
       }
     }, []);
+    const clearPendingSnapshotTasks = react_shim_default.useCallback(() => {
+      if (snapshotTimeoutRef.current !== null) {
+        window.clearTimeout(snapshotTimeoutRef.current);
+        snapshotTimeoutRef.current = null;
+      }
+    }, []);
+    const scheduleEditorSync = react_shim_default.useCallback((editorInstance, options2 = {}) => {
+      var _a2;
+      clearPendingSaveTasks();
+      const delayMs = Math.max(0, Number((_a2 = options2.delayMs) != null ? _a2 : 500) || 0);
+      const runSync = () => {
+        saveTimeoutRef.current = null;
+        saveIdleRef.current = window.setTimeout(() => {
+          const html3 = editorInstance.getHTML();
+          lastSerializedHtmlRef.current = html3;
+          setEditorHtmlSnapshot((prev) => prev === html3 ? prev : html3);
+          if (onChange) {
+            onChange(html3, editorId);
+          }
+          saveIdleRef.current = null;
+        }, 0);
+      };
+      if (delayMs > 0) {
+        saveTimeoutRef.current = window.setTimeout(runSync, delayMs);
+        return;
+      }
+      saveTimeoutRef.current = window.setTimeout(runSync, 0);
+    }, [clearPendingSaveTasks, editorId, onChange]);
+    react_shim_default.useEffect(() => {
+      lastSerializedHtmlRef.current = String(content || "");
+    }, [content, editorId]);
     const clearScheduledTocSync = react_shim_default.useCallback(() => {
       if (tocThrottleTimerRef.current !== null) {
         window.clearTimeout(tocThrottleTimerRef.current);
@@ -58790,12 +58884,22 @@ ${promptInput.trim()}`
       }
       const idleHandle = tocIdleTimerRef.current;
       if (idleHandle !== null) {
-        const cancelIdle = window.cancelIdleCallback;
-        if (typeof cancelIdle === "function") cancelIdle(idleHandle);
-        else window.clearTimeout(idleHandle);
+        window.clearTimeout(idleHandle);
         tocIdleTimerRef.current = null;
       }
     }, []);
+    const scheduleEditorSnapshot = react_shim_default.useCallback((editorInstance, options2 = {}) => {
+      var _a2;
+      clearPendingSnapshotTasks();
+      const delayMs = Math.max(0, Number((_a2 = options2.delayMs) != null ? _a2 : 250) || 0);
+      const runSnapshot = () => {
+        snapshotTimeoutRef.current = null;
+        const html3 = editorInstance.getHTML();
+        lastSerializedHtmlRef.current = html3;
+        setEditorHtmlSnapshot((prev) => prev === html3 ? prev : html3);
+      };
+      snapshotTimeoutRef.current = window.setTimeout(runSnapshot, delayMs);
+    }, [clearPendingSnapshotTasks]);
     const computeTocHash = react_shim_default.useCallback((rawContent) => {
       const rows = Array.isArray(rawContent) ? rawContent : [];
       let out = `${rows.length}|`;
@@ -58821,22 +58925,108 @@ ${promptInput.trim()}`
       if (tocThrottleTimerRef.current !== null) return;
       const now = Date.now();
       const elapsed = now - tocLastRunAtRef.current;
-      const delay = elapsed >= 120 ? 0 : 120 - elapsed;
+      const delay = elapsed >= 220 ? 0 : 220 - elapsed;
       tocThrottleTimerRef.current = window.setTimeout(() => {
         tocThrottleTimerRef.current = null;
         if (tocIdleTimerRef.current !== null) return;
-        const run3 = () => flushTocSync();
-        const requestIdle = window.requestIdleCallback;
-        if (typeof requestIdle === "function") {
-          tocIdleTimerRef.current = requestIdle(run3, { timeout: 180 });
-        } else {
-          tocIdleTimerRef.current = window.setTimeout(run3, 0);
-        }
+        tocIdleTimerRef.current = window.setTimeout(() => flushTocSync(), 0);
       }, delay);
     }, [flushTocSync]);
     react_shim_default.useEffect(() => {
       return () => clearScheduledTocSync();
     }, [clearScheduledTocSync]);
+    const resolveActiveMemoSpaceId = react_shim_default.useCallback(async () => {
+      var _a2, _b2, _c2, _d2;
+      const globalScope = window;
+      const currentActiveDocumentId = typeof globalScope.GoToolkitMemoGetActiveDocumentId === "function" ? String(globalScope.GoToolkitMemoGetActiveDocumentId() || "").trim() : String(activeDocumentId || "").trim();
+      if (!currentActiveDocumentId) return "golive";
+      try {
+        const record = await ((_b2 = (_a2 = globalScope.goToolkitDocumentApi) == null ? void 0 : _a2.getRecord) == null ? void 0 : _b2.call(_a2, currentActiveDocumentId));
+        const rawSpaceId = (record == null ? void 0 : record.spaceId) || ((_c2 = record == null ? void 0 : record.payload) == null ? void 0 : _c2.spaceId) || ((_d2 = record == null ? void 0 : record.content) == null ? void 0 : _d2.spaceId);
+        const normalizedSpaceId = String(rawSpaceId || "").trim().toLowerCase();
+        return normalizedSpaceId || "golive";
+      } catch (err) {
+        return "golive";
+      }
+    }, [activeDocumentId]);
+    const uploadEditorAssetFile = react_shim_default.useCallback(async (file) => {
+      var _a2, _b2, _c2;
+      const mimeType = String((file == null ? void 0 : file.type) || "").trim() || "application/octet-stream";
+      const fileName = String((file == null ? void 0 : file.name) || "asset").trim() || "asset";
+      const spaceId = await resolveActiveMemoSpaceId();
+      const uploadResponse = await ((_b2 = (_a2 = window.goToolkitShareWorker) == null ? void 0 : _a2.uploadAsset) == null ? void 0 : _b2.call(_a2, {
+        file,
+        fileName,
+        mimeType
+      }, {
+        scope: "shared",
+        collection: "assets",
+        spaceId
+      }));
+      const uploadedUrl = String(((_c2 = uploadResponse == null ? void 0 : uploadResponse.asset) == null ? void 0 : _c2.url) || "").trim();
+      if (!uploadedUrl) {
+        throw new Error("Missing uploaded asset URL");
+      }
+      return {
+        src: uploadedUrl,
+        fileName,
+        mimeType
+      };
+    }, [resolveActiveMemoSpaceId]);
+    const buildDroppedMediaContent = react_shim_default.useCallback(async (files) => {
+      const selected = Array.from(files || []);
+      const content2 = [];
+      for (const file of selected) {
+        if (isSupportedImageFile(file)) {
+          try {
+            const uploaded = await uploadEditorAssetFile(file);
+            content2.push({
+              type: "image",
+              attrs: {
+                src: uploaded.src,
+                alt: uploaded.fileName || "image",
+                title: uploaded.fileName || "",
+                fileName: uploaded.fileName || "",
+                mimeType: uploaded.mimeType || ""
+              }
+            });
+          } catch (err) {
+            try {
+              const src = await readFileAsDataUrl(file);
+              if (!src) continue;
+              content2.push({
+                type: "image",
+                attrs: {
+                  src,
+                  alt: file.name || "image",
+                  title: file.name || "",
+                  fileName: file.name || "",
+                  mimeType: file.type || ""
+                }
+              });
+            } catch (_fallbackErr) {
+            }
+          }
+          continue;
+        }
+        if (isSupportedVideoFile(file)) {
+          try {
+            const uploaded = await uploadEditorAssetFile(file);
+            content2.push({
+              type: "videoEmbed",
+              attrs: {
+                src: uploaded.src,
+                title: uploaded.fileName || "video",
+                fileName: uploaded.fileName || "",
+                mimeType: uploaded.mimeType || ""
+              }
+            });
+          } catch (err) {
+          }
+        }
+      }
+      return content2;
+    }, [uploadEditorAssetFile]);
     react_shim_default.useEffect(() => {
       setEditorHtmlSnapshot(String(content || ""));
     }, [content, editorId]);
@@ -59480,33 +59670,16 @@ ${promptInput.trim()}`
             return true;
           }
           const droppedFiles = Array.from(((_e = event.dataTransfer) == null ? void 0 : _e.files) || []);
-          const droppedImages = droppedFiles.filter(isSupportedImageFile);
-          if (droppedImages.length) {
+          const droppedMedia = droppedFiles.filter((file) => isSupportedImageFile(file) || isSupportedVideoFile(file));
+          if (droppedMedia.length) {
             event.preventDefault();
             event.stopPropagation();
             const coords2 = view.posAtCoords({ left: event.clientX, top: event.clientY });
             const insertionPos = (_f = coords2 == null ? void 0 : coords2.pos) != null ? _f : view.state.selection.from;
             (async () => {
-              const imageNodes = [];
-              for (const file of droppedImages) {
-                try {
-                  const src = await readFileAsDataUrl(file);
-                  if (!src) continue;
-                  imageNodes.push({
-                    type: "image",
-                    attrs: {
-                      src,
-                      alt: file.name || "image",
-                      title: file.name || "",
-                      fileName: file.name || "",
-                      mimeType: file.type || ""
-                    }
-                  });
-                } catch (err) {
-                }
-              }
-              if (!imageNodes.length || !editor) return;
-              const content2 = imageNodes.flatMap((imageNode, index) => index === 0 ? [imageNode] : [{ type: "paragraph" }, imageNode]);
+              const mediaNodes = await buildDroppedMediaContent(droppedMedia);
+              if (!mediaNodes.length || !editor) return;
+              const content2 = mediaNodes.flatMap((mediaNode, index) => index === 0 ? [mediaNode] : [{ type: "paragraph" }, mediaNode]);
               editor.chain().focus().insertContentAt(insertionPos, content2).run();
             })();
             return true;
@@ -59532,41 +59705,23 @@ ${promptInput.trim()}`
       },
       onUpdate: ({ editor: editor2 }) => {
         const start = performance.now();
-        const html3 = editor2.getHTML();
-        setEditorHtmlSnapshot(html3);
-        if (onChange) {
-          clearPendingSaveTasks();
-          saveTimeoutRef.current = window.setTimeout(() => {
-            saveTimeoutRef.current = null;
-            const runSave = () => {
-              onChange(html3, editorId);
-              saveIdleRef.current = null;
-            };
-            const requestIdle = window.requestIdleCallback;
-            if (typeof requestIdle === "function") {
-              saveIdleRef.current = requestIdle(runSave, { timeout: 250 });
-            } else {
-              saveIdleRef.current = window.setTimeout(runSave, 0);
-            }
-          }, 500);
-        }
+        scheduleEditorSnapshot(editor2, { delayMs: 180 });
+        scheduleEditorSync(editor2, { delayMs: 500 });
         const totalDuration = Math.round(performance.now() - start);
         if (totalDuration > 10) {
         }
       },
       onBlur: ({ editor: editor2 }) => {
-        setEditorHtmlSnapshot(editor2.getHTML());
-        if (onChange) {
-          clearPendingSaveTasks();
-          onChange(editor2.getHTML());
-        }
+        scheduleEditorSnapshot(editor2, { delayMs: 0 });
+        scheduleEditorSync(editor2, { delayMs: 0 });
       }
     });
     react_shim_default.useEffect(() => {
       return () => {
         clearPendingSaveTasks();
+        clearPendingSnapshotTasks();
       };
-    }, [clearPendingSaveTasks]);
+    }, [clearPendingSaveTasks, clearPendingSnapshotTasks]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       const syncSpellcheck = () => {
@@ -59586,28 +59741,11 @@ ${promptInput.trim()}`
       if (!editor || !(files == null ? void 0 : files.length)) return;
       const selected = Array.from(files).filter(isSupportedImageFile);
       if (!selected.length) return;
-      const imageNodes = [];
-      for (const file of selected) {
-        try {
-          const src = await readFileAsDataUrl(file);
-          if (!src) continue;
-          imageNodes.push({
-            type: "image",
-            attrs: {
-              src,
-              alt: file.name || "image",
-              title: file.name || "",
-              fileName: file.name || "",
-              mimeType: file.type || ""
-            }
-          });
-        } catch (err) {
-        }
-      }
+      const imageNodes = (await buildDroppedMediaContent(selected)).filter((node) => (node == null ? void 0 : node.type) === "image");
       if (!imageNodes.length) return;
       const content2 = imageNodes.flatMap((imageNode, index) => index === 0 ? [imageNode] : [{ type: "paragraph" }, imageNode]);
       editor.chain().focus().insertContent(content2).run();
-    }, [editor]);
+    }, [buildDroppedMediaContent, editor]);
     const openImagePicker = react_shim_default.useCallback(() => {
       const input = document.createElement("input");
       input.type = "file";
@@ -59633,13 +59771,11 @@ ${promptInput.trim()}`
       if (!editor) return;
       const insertVideoFromSrc = (src, providedName, providedMimeType) => {
         const normalized = String(src || "").trim();
-        const safeSrc = sanitizeUrl(normalized, ["http", "https", "data"]);
+        const safeSrc = sanitizeUrl(normalized, ["http", "https"]);
         if (!safeSrc) return;
-        if (!/^https?:\/\//i.test(safeSrc) && !/^data:video\//i.test(safeSrc)) return;
-        if (!/(\.webm([?#].*)?$)|(\.mp4([?#].*)?$)|(^data:video\/(webm|mp4);)/i.test(safeSrc)) return;
+        if (!/^https?:\/\//i.test(safeSrc)) return;
         const label = (() => {
           if (providedName) return providedName;
-          if (/^data:video\//i.test(safeSrc)) return "video";
           const withoutQuery = safeSrc.split("#")[0].split("?")[0];
           const file = withoutQuery.split("/").pop() || "";
           return file || "video";
@@ -59662,7 +59798,7 @@ ${promptInput.trim()}`
       input.style.left = "-9999px";
       input.style.top = "0";
       input.addEventListener("change", async () => {
-        var _a2;
+        var _a2, _b2, _c2, _d2;
         const file = (_a2 = input.files) == null ? void 0 : _a2[0];
         if (!file) {
           try {
@@ -59681,14 +59817,12 @@ ${promptInput.trim()}`
           return;
         }
         try {
-          const dataUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(String(reader.result || ""));
-            reader.onerror = () => reject(reader.error || new Error("Failed to read video file"));
-            reader.readAsDataURL(file);
-          });
-          insertVideoFromSrc(dataUrl, file.name || "video", mimeType || void 0);
+          const mediaNodes = await buildDroppedMediaContent([file]);
+          const uploadedUrl = String(((_c2 = (_b2 = mediaNodes.find((node) => (node == null ? void 0 : node.type) === "videoEmbed")) == null ? void 0 : _b2.attrs) == null ? void 0 : _c2.src) || "").trim();
+          if (!uploadedUrl) throw new Error("Missing uploaded video URL");
+          insertVideoFromSrc(uploadedUrl, file.name || "video", mimeType || void 0);
         } catch (err) {
+          (_d2 = window.GoToolkitMemoToast) == null ? void 0 : _d2.call(window, "Import vid\xE9o \xE9chou\xE9", true);
         } finally {
           try {
             input.remove();
@@ -59698,7 +59832,7 @@ ${promptInput.trim()}`
       }, { once: true });
       document.body.appendChild(input);
       input.click();
-    }, [editor]);
+    }, [buildDroppedMediaContent, editor]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       editor.setEditable(Boolean(editable));
@@ -63141,4 +63275,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map

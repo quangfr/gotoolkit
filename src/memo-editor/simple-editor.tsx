@@ -3294,6 +3294,15 @@ const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) 
   reader.readAsDataURL(file);
 });
 
+const isSupportedVideoFile = (file: File) => {
+  const mime = String(file?.type || '').toLowerCase();
+  const name = String(file?.name || '').toLowerCase();
+  return mime === 'video/mp4'
+    || mime === 'video/webm'
+    || name.endsWith('.mp4')
+    || name.endsWith('.webm');
+};
+
 const INITIAL_NAV_DISMISSED_KEY = 'go-toolkit-memo-initial-navigation-dismissed-v1';
 
 const parseDismissedInitialNavigation = () => {
@@ -3379,6 +3388,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [tableSelectionResize, setTableSelectionResize] = React.useState<{ anchorPos: number, tablePos: number } | null>(null);
   const saveTimeoutRef = React.useRef<number | null>(null);
   const saveIdleRef = React.useRef<number | null>(null);
+  const snapshotTimeoutRef = React.useRef<number | null>(null);
+  const lastSerializedHtmlRef = React.useRef<string>(String(content || ''));
   const blockDragMovedRef = React.useRef(false);
   const tableLayoutRafRef = React.useRef<number | null>(null);
   const isAutoLayoutRef = React.useRef(false);
@@ -3403,6 +3414,39 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     }
   }, []);
 
+  const clearPendingSnapshotTasks = React.useCallback(() => {
+    if (snapshotTimeoutRef.current !== null) {
+      window.clearTimeout(snapshotTimeoutRef.current);
+      snapshotTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleEditorSync = React.useCallback((editorInstance: Editor, options: { delayMs?: number } = {}) => {
+    clearPendingSaveTasks();
+    const delayMs = Math.max(0, Number(options.delayMs ?? 500) || 0);
+    const runSync = () => {
+      saveTimeoutRef.current = null;
+      saveIdleRef.current = window.setTimeout(() => {
+        const html = editorInstance.getHTML();
+        lastSerializedHtmlRef.current = html;
+        setEditorHtmlSnapshot((prev) => (prev === html ? prev : html));
+        if (onChange) {
+          onChange(html, editorId);
+        }
+        saveIdleRef.current = null;
+      }, 0);
+    };
+    if (delayMs > 0) {
+      saveTimeoutRef.current = window.setTimeout(runSync, delayMs);
+      return;
+    }
+    saveTimeoutRef.current = window.setTimeout(runSync, 0);
+  }, [clearPendingSaveTasks, editorId, onChange]);
+
+  React.useEffect(() => {
+    lastSerializedHtmlRef.current = String(content || '');
+  }, [content, editorId]);
+
   const clearScheduledTocSync = React.useCallback(() => {
     if (tocThrottleTimerRef.current !== null) {
       window.clearTimeout(tocThrottleTimerRef.current);
@@ -3410,12 +3454,22 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     }
     const idleHandle = tocIdleTimerRef.current;
     if (idleHandle !== null) {
-      const cancelIdle = (window as any).cancelIdleCallback;
-      if (typeof cancelIdle === 'function') cancelIdle(idleHandle);
-      else window.clearTimeout(idleHandle);
+      window.clearTimeout(idleHandle);
       tocIdleTimerRef.current = null;
     }
   }, []);
+
+  const scheduleEditorSnapshot = React.useCallback((editorInstance: Editor, options: { delayMs?: number } = {}) => {
+    clearPendingSnapshotTasks();
+    const delayMs = Math.max(0, Number(options.delayMs ?? 250) || 0);
+    const runSnapshot = () => {
+      snapshotTimeoutRef.current = null;
+      const html = editorInstance.getHTML();
+      lastSerializedHtmlRef.current = html;
+      setEditorHtmlSnapshot((prev) => (prev === html ? prev : html));
+    };
+    snapshotTimeoutRef.current = window.setTimeout(runSnapshot, delayMs);
+  }, [clearPendingSnapshotTasks]);
 
   const computeTocHash = React.useCallback((rawContent: any[]) => {
     const rows = Array.isArray(rawContent) ? rawContent : [];
@@ -3444,23 +3498,114 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (tocThrottleTimerRef.current !== null) return;
     const now = Date.now();
     const elapsed = now - tocLastRunAtRef.current;
-    const delay = elapsed >= 120 ? 0 : (120 - elapsed);
+    const delay = elapsed >= 220 ? 0 : (220 - elapsed);
     tocThrottleTimerRef.current = window.setTimeout(() => {
       tocThrottleTimerRef.current = null;
       if (tocIdleTimerRef.current !== null) return;
-      const run = () => flushTocSync();
-      const requestIdle = (window as any).requestIdleCallback;
-      if (typeof requestIdle === 'function') {
-        tocIdleTimerRef.current = requestIdle(run, { timeout: 180 });
-      } else {
-        tocIdleTimerRef.current = window.setTimeout(run, 0);
-      }
+      tocIdleTimerRef.current = window.setTimeout(() => flushTocSync(), 0);
     }, delay);
   }, [flushTocSync]);
 
   React.useEffect(() => {
     return () => clearScheduledTocSync();
   }, [clearScheduledTocSync]);
+
+  const resolveActiveMemoSpaceId = React.useCallback(async () => {
+    const globalScope = window as any;
+    const currentActiveDocumentId = typeof globalScope.GoToolkitMemoGetActiveDocumentId === 'function'
+      ? String(globalScope.GoToolkitMemoGetActiveDocumentId() || '').trim()
+      : String(activeDocumentId || '').trim();
+    if (!currentActiveDocumentId) return 'golive';
+    try {
+      const record = await globalScope.goToolkitDocumentApi?.getRecord?.(currentActiveDocumentId);
+      const rawSpaceId = record?.spaceId || record?.payload?.spaceId || record?.content?.spaceId;
+      const normalizedSpaceId = String(rawSpaceId || '').trim().toLowerCase();
+      return normalizedSpaceId || 'golive';
+    } catch (err) {
+      return 'golive';
+    }
+  }, [activeDocumentId]);
+
+  const uploadEditorAssetFile = React.useCallback(async (file: File) => {
+    const mimeType = String(file?.type || '').trim() || 'application/octet-stream';
+    const fileName = String(file?.name || 'asset').trim() || 'asset';
+    const spaceId = await resolveActiveMemoSpaceId();
+    const uploadResponse = await (window as any).goToolkitShareWorker?.uploadAsset?.({
+      file,
+      fileName,
+      mimeType,
+    }, {
+      scope: 'shared',
+      collection: 'assets',
+      spaceId,
+    });
+    const uploadedUrl = String(uploadResponse?.asset?.url || '').trim();
+    if (!uploadedUrl) {
+      throw new Error('Missing uploaded asset URL');
+    }
+    return {
+      src: uploadedUrl,
+      fileName,
+      mimeType,
+    };
+  }, [resolveActiveMemoSpaceId]);
+
+  const buildDroppedMediaContent = React.useCallback(async (files: FileList | File[]) => {
+    const selected = Array.from(files || []);
+    const content: Array<Record<string, any>> = [];
+    for (const file of selected) {
+      if (isSupportedImageFile(file)) {
+        try {
+          const uploaded = await uploadEditorAssetFile(file);
+          content.push({
+            type: 'image',
+            attrs: {
+              src: uploaded.src,
+              alt: uploaded.fileName || 'image',
+              title: uploaded.fileName || '',
+              fileName: uploaded.fileName || '',
+              mimeType: uploaded.mimeType || '',
+            },
+          });
+        } catch (err) {
+          try {
+            const src = await readFileAsDataUrl(file);
+            if (!src) continue;
+            content.push({
+              type: 'image',
+              attrs: {
+                src,
+                alt: file.name || 'image',
+                title: file.name || '',
+                fileName: file.name || '',
+                mimeType: file.type || '',
+              },
+            });
+          } catch (_fallbackErr) {
+            // Keep processing remaining files.
+          }
+        }
+        continue;
+      }
+      if (isSupportedVideoFile(file)) {
+        try {
+          const uploaded = await uploadEditorAssetFile(file);
+          content.push({
+            type: 'videoEmbed',
+            attrs: {
+              src: uploaded.src,
+              title: uploaded.fileName || 'video',
+              fileName: uploaded.fileName || '',
+              mimeType: uploaded.mimeType || '',
+            },
+          });
+        } catch (err) {
+          // Keep processing remaining files.
+        }
+      }
+    }
+    return content;
+  }, [uploadEditorAssetFile]);
 
   React.useEffect(() => {
     setEditorHtmlSnapshot(String(content || ''));
@@ -4178,35 +4323,17 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           return true;
         }
         const droppedFiles = Array.from(event.dataTransfer?.files || []);
-        const droppedImages = droppedFiles.filter(isSupportedImageFile);
-        if (droppedImages.length) {
+        const droppedMedia = droppedFiles.filter((file) => isSupportedImageFile(file) || isSupportedVideoFile(file));
+        if (droppedMedia.length) {
           event.preventDefault();
           event.stopPropagation();
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
           const insertionPos = coords?.pos ?? view.state.selection.from;
           (async () => {
-            const imageNodes: Array<{ type: string; attrs: Record<string, any> }> = [];
-            for (const file of droppedImages) {
-              try {
-                const src = await readFileAsDataUrl(file);
-                if (!src) continue;
-                imageNodes.push({
-                  type: 'image',
-                  attrs: {
-                    src,
-                    alt: file.name || 'image',
-                    title: file.name || '',
-                    fileName: file.name || '',
-                    mimeType: file.type || '',
-                  },
-                });
-              } catch (err) {
-                // Keep processing remaining dropped images.
-              }
-            }
-            if (!imageNodes.length || !editor) return;
-            const content = imageNodes.flatMap((imageNode, index) => (
-              index === 0 ? [imageNode] : [{ type: 'paragraph' }, imageNode]
+            const mediaNodes = await buildDroppedMediaContent(droppedMedia);
+            if (!mediaNodes.length || !editor) return;
+            const content = mediaNodes.flatMap((mediaNode, index) => (
+              index === 0 ? [mediaNode] : [{ type: 'paragraph' }, mediaNode]
             ));
             editor.chain().focus().insertContentAt(insertionPos, content).run();
           })();
@@ -4233,45 +4360,25 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     },
     onUpdate: ({ editor }) => {
       const start = performance.now();
-      const html = editor.getHTML();
-      setEditorHtmlSnapshot(html);
-      if (onChange) {
-        // Debounce the onChange call to avoid excessive saves
-        clearPendingSaveTasks();
-        saveTimeoutRef.current = window.setTimeout(() => {
-          saveTimeoutRef.current = null;
-          const runSave = () => {
-            onChange(html, editorId);
-            saveIdleRef.current = null;
-          };
-          const requestIdle = (window as any).requestIdleCallback;
-          if (typeof requestIdle === 'function') {
-            saveIdleRef.current = requestIdle(runSave, { timeout: 250 });
-          } else {
-            saveIdleRef.current = window.setTimeout(runSave, 0);
-          }
-        }, 500);
-      }
+      scheduleEditorSnapshot(editor, { delayMs: 180 });
+      scheduleEditorSync(editor, { delayMs: 500 });
       const totalDuration = Math.round(performance.now() - start);
       if (totalDuration > 10) {
         // no-op
       }
     },
     onBlur: ({ editor }) => {
-      setEditorHtmlSnapshot(editor.getHTML());
-      if (onChange) {
-        // Save immediately on blur
-        clearPendingSaveTasks();
-        onChange(editor.getHTML());
-      }
+      scheduleEditorSnapshot(editor, { delayMs: 0 });
+      scheduleEditorSync(editor, { delayMs: 0 });
     },
   });
 
   React.useEffect(() => {
     return () => {
       clearPendingSaveTasks();
+      clearPendingSnapshotTasks();
     };
-  }, [clearPendingSaveTasks]);
+  }, [clearPendingSaveTasks, clearPendingSnapshotTasks]);
 
   React.useEffect(() => {
     if (!editor) return;
@@ -4293,31 +4400,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (!editor || !files?.length) return;
     const selected = Array.from(files).filter(isSupportedImageFile);
     if (!selected.length) return;
-    const imageNodes: Array<{ type: string; attrs: Record<string, any> }> = [];
-    for (const file of selected) {
-      try {
-        const src = await readFileAsDataUrl(file);
-        if (!src) continue;
-        imageNodes.push({
-          type: 'image',
-          attrs: {
-            src,
-            alt: file.name || 'image',
-            title: file.name || '',
-            fileName: file.name || '',
-            mimeType: file.type || '',
-          },
-        });
-      } catch (err) {
-        // Ignore invalid files and keep the batch insert running.
-      }
-    }
+    const imageNodes = (await buildDroppedMediaContent(selected)).filter((node) => node?.type === 'image');
     if (!imageNodes.length) return;
     const content = imageNodes.flatMap((imageNode, index) => (
       index === 0 ? [imageNode] : [{ type: 'paragraph' }, imageNode]
     ));
     editor.chain().focus().insertContent(content).run();
-  }, [editor]);
+  }, [buildDroppedMediaContent, editor]);
 
   const openImagePicker = React.useCallback(() => {
     const input = document.createElement('input');
@@ -4346,21 +4435,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (!editor) return;
     const insertVideoFromSrc = (src: string, providedName?: string, providedMimeType?: string) => {
       const normalized = String(src || '').trim();
-      const safeSrc = sanitizeUrl(normalized, ['http', 'https', 'data']);
+      const safeSrc = sanitizeUrl(normalized, ['http', 'https']);
       if (!safeSrc) return;
-      if (!/^https?:\/\//i.test(safeSrc) && !/^data:video\//i.test(safeSrc)) return;
-      if (!/(\.webm([?#].*)?$)|(\.mp4([?#].*)?$)|(^data:video\/(webm|mp4);)/i.test(safeSrc)) return;
+      if (!/^https?:\/\//i.test(safeSrc)) return;
 
       const label = (() => {
         if (providedName) return providedName;
-        if (/^data:video\//i.test(safeSrc)) return 'video';
         const withoutQuery = safeSrc.split('#')[0].split('?')[0];
         const file = withoutQuery.split('/').pop() || '';
         return file || 'video';
       })();
 
-      const mimeType = providedMimeType
-        || (/\.mp4([?#].*)?$/i.test(safeSrc) ? 'video/mp4' : 'video/webm');
+      const mimeType = providedMimeType || (/\.mp4([?#].*)?$/i.test(safeSrc) ? 'video/mp4' : 'video/webm');
 
       editor
         .chain()
@@ -4400,22 +4486,19 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         return;
       }
       try {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result || ''));
-          reader.onerror = () => reject(reader.error || new Error('Failed to read video file'));
-          reader.readAsDataURL(file);
-        });
-        insertVideoFromSrc(dataUrl, file.name || 'video', mimeType || undefined);
+        const mediaNodes = await buildDroppedMediaContent([file]);
+        const uploadedUrl = String(mediaNodes.find((node) => node?.type === 'videoEmbed')?.attrs?.src || '').trim();
+        if (!uploadedUrl) throw new Error('Missing uploaded video URL');
+        insertVideoFromSrc(uploadedUrl, file.name || 'video', mimeType || undefined);
       } catch (err) {
-        // noop
+        (window as any).GoToolkitMemoToast?.('Import vidéo échoué', true);
       } finally {
         try { input.remove(); } catch (err) { /* noop */ }
       }
     }, { once: true });
     document.body.appendChild(input);
     input.click();
-  }, [editor]);
+  }, [buildDroppedMediaContent, editor]);
 
   React.useEffect(() => {
     if (!editor) return;

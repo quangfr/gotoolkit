@@ -225,7 +225,8 @@
         recordKey: CLOUD_DRAFTS_RECORD_KEY,
         defaultValue: () => ({}),
         normalize: normalizeCloudDraftStore,
-        logPrefix: "GoToolkitCloudDraftStore"
+        logPrefix: "GoToolkitCloudDraftStore",
+        persistToLocalStorage: false
       });
     }
     return {

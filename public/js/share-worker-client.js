@@ -338,6 +338,33 @@
     };
   }
 
+  async function encryptAssetBlob(base, blob, mimeType, fileName, spaceId) {
+    const normalizedBlob = blob instanceof Blob
+      ? blob
+      : new Blob([blob], { type: mimeType || "application/octet-stream" });
+    const bytes = new Uint8Array(await normalizedBlob.arrayBuffer());
+    const key = await getSpaceCryptoKey(base, spaceId);
+    if (!key) {
+      throw new Error(`Clé de contenu manquante pour l'espace ${String(spaceId || "").trim().toLowerCase() || "inconnu"}`);
+    }
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const cipherBuffer = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      bytes
+    );
+    const wrapper = {
+      gtke: 1,
+      alg: "AES-256-GCM",
+      spaceId: String(spaceId || "").trim().toLowerCase(),
+      iv: toBase64FromBytes(iv),
+      ciphertext: toBase64FromBytes(new Uint8Array(cipherBuffer)),
+      mimeType: String(mimeType || normalizedBlob.type || "application/octet-stream").trim() || "application/octet-stream",
+      fileName: String(fileName || "asset.bin").trim() || "asset.bin"
+    };
+    return new Blob([JSON.stringify(wrapper)], { type: E2EE_ASSET_MIME });
+  }
+
   function isEncryptedPagePayload(payload) {
     return Boolean(
       payload &&
@@ -907,24 +934,42 @@
 
   async function uploadAssetWithBase(base, uploadPayload, options = {}) {
     const url = `${base}/${API_VERSION}/assets/upload`;
+    const hasBinaryBody = uploadPayload?.blob instanceof Blob || uploadPayload?.file instanceof File;
     logShareDebug("r2-asset-upload:start", {
       scope: uploadPayload?.scope || "",
       fileName: uploadPayload?.fileName || "",
       mimeType: uploadPayload?.mimeType || "",
-      contentBase64Length: String(uploadPayload?.contentBase64 || "").length
+      contentBase64Length: String(uploadPayload?.contentBase64 || "").length,
+      binarySize: Number(uploadPayload?.blob?.size || uploadPayload?.file?.size || 0)
     });
     const headers = await withSpaceAuthHeaders(base, {
-      "Content-Type": "application/json",
       Accept: "application/json"
     }, {
       method: "POST",
       collection: "assets",
       spaceId: options?.spaceId || ""
     });
+    let body = null;
+    if (hasBinaryBody) {
+      const fileBlob = uploadPayload?.file instanceof File ? uploadPayload.file : uploadPayload.blob;
+      const form = new FormData();
+      form.append(
+        "file",
+        fileBlob,
+        String(uploadPayload?.fileName || uploadPayload?.file?.name || "asset.bin")
+      );
+      form.append("scope", String(uploadPayload?.scope || "shared"));
+      form.append("mimeType", String(uploadPayload?.mimeType || fileBlob?.type || "application/octet-stream"));
+      form.append("fileName", String(uploadPayload?.fileName || uploadPayload?.file?.name || "asset.bin"));
+      body = form;
+    } else {
+      headers["Content-Type"] = "application/json";
+      body = JSON.stringify(uploadPayload || {});
+    }
     const response = await fetchWithSyncRetry(url, {
       method: "POST",
       headers,
-      body: JSON.stringify(uploadPayload || {})
+      body
     });
     if (!response.ok) {
       const body = await response.text().catch(() => "");
@@ -1806,15 +1851,33 @@
       const scope = String(options.assetScope || options.scope || "shared").trim() || "shared";
       const spaceId = String(options?.spaceId || "golive").trim().toLowerCase() || "golive";
       let finalPayload = Object.assign({}, payload || {}, { scope });
+      const binaryBlob = payload?.blob instanceof Blob
+        ? payload.blob
+        : (payload?.file instanceof File ? payload.file : null);
       if (shouldEncryptMedia(String(options?.collection || "pages"), spaceId)) {
-        const encryptedAsset = await encryptAssetPayload(
-          base,
-          String(payload?.contentBase64 || ""),
-          String(payload?.mimeType || "application/octet-stream"),
-          String(payload?.fileName || "asset.bin"),
-          spaceId
-        );
-        finalPayload = Object.assign({}, finalPayload, encryptedAsset);
+        if (binaryBlob) {
+          finalPayload = {
+            scope,
+            mimeType: E2EE_ASSET_MIME,
+            fileName: `${String(payload?.fileName || payload?.file?.name || "asset.bin").trim() || "asset.bin"}.gtke`,
+            blob: await encryptAssetBlob(
+              base,
+              binaryBlob,
+              String(payload?.mimeType || binaryBlob.type || "application/octet-stream"),
+              String(payload?.fileName || payload?.file?.name || "asset.bin"),
+              spaceId
+            )
+          };
+        } else {
+          const encryptedAsset = await encryptAssetPayload(
+            base,
+            String(payload?.contentBase64 || ""),
+            String(payload?.mimeType || "application/octet-stream"),
+            String(payload?.fileName || "asset.bin"),
+            spaceId
+          );
+          finalPayload = Object.assign({}, finalPayload, encryptedAsset);
+        }
       }
       const data = await uploadAssetWithBase(base, finalPayload, {
         spaceId,

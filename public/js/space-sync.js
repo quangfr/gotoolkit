@@ -14,6 +14,7 @@
         var cloudDraftsMutationVersion = 0;
         var cloudDraftsDeletedWhileLoading = new Set();
         var deviceId = String(getDeviceId() || "device-local").trim() || "device-local";
+        var useLegacyLocalStorageMirror = !store?.write;
 
         function normalizeCloudDraftStore(value) {
             if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -136,9 +137,15 @@
         function writeAllSync(nextStore) {
             cloudDraftsCache = cloneCloudDraftStore(nextStore);
             cloudDraftsLoaded = true;
-            if (typeof localStorage !== "undefined") {
+            if (useLegacyLocalStorageMirror && typeof localStorage !== "undefined") {
                 try {
                     localStorage.setItem(storageKey, JSON.stringify(cloudDraftsCache));
+                } catch (err) {
+                    // ignore
+                }
+            } else if (typeof localStorage !== "undefined") {
+                try {
+                    localStorage.removeItem(storageKey);
                 } catch (err) {
                     // ignore
                 }

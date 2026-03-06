@@ -26,7 +26,7 @@ const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
 ]);
 const SYNC_REPLAY_TTL_SECONDS = 10 * 60;
 const SYNC_SKEW_MS = 10 * 60 * 1000;
-const MAX_ASSET_BYTES = 25 * 1024 * 1024;
+const MAX_ASSET_BYTES = 100 * 1024 * 1024;
 const LOCAL_SYNC_REVOKE_CACHE_TTL_MS = 60 * 1000;
 const LOCAL_SYNC_JTI_CACHE_TTL_MS = 2 * 60 * 1000;
 const LOCAL_SYNC_CACHE_MAX_ENTRIES = 5000;
@@ -363,6 +363,41 @@ function parseAssetUploadBody(body) {
     throw new Error("Image base64 manquante");
   }
   return { mimeType, contentBase64, fileName, scope };
+}
+
+async function parseAssetUploadRequest(request) {
+  const contentType = String(request.headers.get("content-type") || "").toLowerCase();
+  if (contentType.includes("multipart/form-data")) {
+    const form = await request.formData();
+    const file = form.get("file");
+    const scope = safeAssetScope(form.get("scope") || form.get("documentId") || form.get("collection") || "shared");
+    const requestedMimeType = String(form.get("mimeType") || "").trim().toLowerCase();
+    const requestedFileName = String(form.get("fileName") || "").trim();
+    if (!(file instanceof File)) {
+      throw new Error("Fichier manquant");
+    }
+    const mimeType = String(requestedMimeType || file.type || "").trim().toLowerCase();
+    if (!isAllowedAssetMime(mimeType)) {
+      throw new Error("Type de fichier non autorisé");
+    }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (!bytes.length) {
+      throw new Error("Image vide");
+    }
+    return {
+      mimeType,
+      fileName: requestedFileName || file.name || "asset.bin",
+      scope,
+      bytes
+    };
+  }
+  let body = null;
+  try {
+    body = await request.json();
+  } catch (err) {
+    throw new Error("Payload JSON ou multipart attendu");
+  }
+  return parseAssetUploadBody(body);
 }
 
 function readAssetSpaceId(object) {
@@ -1174,7 +1209,7 @@ function mapStorageObjectToAsset(objectName, upload) {
 
 async function uploadAssetToStorage(env, upload) {
   const bucket = resolveR2MediaBucket(env);
-  const bytes = decodeBase64ToBytes(upload.contentBase64);
+  const bytes = upload.bytes instanceof Uint8Array ? upload.bytes : decodeBase64ToBytes(upload.contentBase64);
   if (!bytes.length) {
     throw new Error("Image vide");
   }
@@ -1804,15 +1839,9 @@ async function handleRequest(request, env) {
       if (rateLimitResponse) {
         return rateLimitResponse;
       }
-      let body = null;
-      try {
-        body = await request.json();
-      } catch (err) {
-        return errorResponse("Payload JSON attendu", 400, request, env);
-      }
       let parsed;
       try {
-        parsed = parseAssetUploadBody(body);
+        parsed = await parseAssetUploadRequest(request);
       } catch (err) {
         return errorResponse(err?.message || "Payload image invalide", 400, request, env);
       }
