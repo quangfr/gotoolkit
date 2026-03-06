@@ -4334,7 +4334,7 @@
   // src/draw-editor/index.tsx
   var MERMAID_OPTIONS = { fontSize: 20 };
   if (typeof window !== "undefined" && !window.EXCALIDRAW_ASSET_PATH) {
-    window.EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6";
+    window.EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/";
   }
   var getExcalidrawLib = () => {
     const lib = window.ExcalidrawLib;
@@ -4497,6 +4497,22 @@
     const num = Number(value);
     return Number.isFinite(num) ? num : fallback;
   };
+  var sanitizeNumbersDeep = (value) => {
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? value : 0;
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => sanitizeNumbersDeep(item));
+    }
+    if (!value || typeof value !== "object") {
+      return value;
+    }
+    const out = {};
+    for (const [key, val] of Object.entries(value)) {
+      out[key] = sanitizeNumbersDeep(val);
+    }
+    return out;
+  };
   var hasFinitePoint = (point) => {
     if (!Array.isArray(point) || point.length < 2) return false;
     return Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]));
@@ -4506,11 +4522,12 @@
     const sanitized = [];
     for (const raw of list) {
       if (!raw || typeof raw !== "object") continue;
-      const x = toFiniteNumber(raw.x, NaN);
-      const y = toFiniteNumber(raw.y, NaN);
+      const safeRaw = sanitizeNumbersDeep(raw);
+      const x = toFiniteNumber(safeRaw.x, NaN);
+      const y = toFiniteNumber(safeRaw.y, NaN);
       if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
       const normalized = {
-        ...raw,
+        ...safeRaw,
         x,
         y
       };
@@ -4520,13 +4537,20 @@
       if ("height" in normalized) {
         normalized.height = Math.max(0, toFiniteNumber(normalized.height, 0));
       }
-      if (normalized.type === "line" || normalized.type === "arrow") {
-        const points = Array.isArray(normalized.points) ? normalized.points.filter(hasFinitePoint).map((point) => [
-          Number(point[0]),
-          Number(point[1])
-        ]) : [];
-        if (points.length < 2) continue;
+      if (Array.isArray(normalized.points)) {
+        const points = normalized.points.filter(hasFinitePoint).map((point) => [Number(point[0]), Number(point[1])]);
+        if ((normalized.type === "line" || normalized.type === "arrow") && points.length < 2) continue;
+        if (normalized.type !== "line" && normalized.type !== "arrow" && points.length < 1) continue;
         normalized.points = points;
+      }
+      if ("angle" in normalized) {
+        normalized.angle = toFiniteNumber(normalized.angle, 0);
+      }
+      if ("strokeWidth" in normalized) {
+        normalized.strokeWidth = Math.max(0, toFiniteNumber(normalized.strokeWidth, 1));
+      }
+      if ("opacity" in normalized) {
+        normalized.opacity = Math.max(0, Math.min(100, toFiniteNumber(normalized.opacity, 100)));
       }
       sanitized.push(normalized);
     }
@@ -5417,7 +5441,13 @@
         elements: safeElements,
         appState: { ...appState, zoom: { value: safeZoom } },
         files
-      });
+      }).catch(
+        () => exportToSvg({
+          elements: safeElements,
+          appState: { ...appState, zoom: { value: 1 } },
+          files
+        })
+      );
     })()
   };
 })();

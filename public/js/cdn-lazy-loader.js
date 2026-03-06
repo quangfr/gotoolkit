@@ -16,18 +16,15 @@
             test: () => Boolean(global.ExcalidrawLib),
             beforeLoad: () => {
                 if (!global.EXCALIDRAW_ASSET_PATH) {
-                    global.EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6";
+                    global.EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/";
                 }
             },
             src: "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js",
             integrity: "sha384-2RnaDBiRrWXqT5k4HtP4X4gh/ukRFg9zn1Sjt+JeYQOUWSYYnN1tKE4FL9QA3Wdl"
         },
-        jsonViewer: {
-            key: "jsonViewer",
-            test: () => typeof global.JSONViewer === "function",
-            styleHref: "https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css",
-            src: "https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"
-        }
+        // Optional dependency removed: invalid package/version caused 404+MIME errors.
+        // `memo-source-modal` already falls back to textarea view when JSONViewer is unavailable.
+        jsonViewer: null
     };
 
     const pending = new Map();
@@ -91,7 +88,6 @@
         const run = () => {
             loadLib(LIBS.mermaid).catch(() => { });
             loadLib(LIBS.excalidraw).catch(() => { });
-            loadLib(LIBS.jsonViewer).catch(() => { });
         };
         if (typeof global.requestIdleCallback === "function") {
             global.requestIdleCallback(() => run(), { timeout: 4000 });

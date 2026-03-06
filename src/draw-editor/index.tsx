@@ -10,7 +10,7 @@ import { parseMermaidToExcalidraw } from "@excalidraw/mermaid-to-excalidraw";
 const MERMAID_OPTIONS = { fontSize: 20 };
 // Fix for Excalidraw assets version being undefined
 if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
-    (window as any).EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6";
+    (window as any).EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/";
 }
 const getExcalidrawLib = () => {
     const lib = (window as any).ExcalidrawLib;
@@ -197,6 +197,22 @@ const toFiniteNumber = (value: unknown, fallback = 0): number => {
     const num = Number(value);
     return Number.isFinite(num) ? num : fallback;
 };
+const sanitizeNumbersDeep = (value: any): any => {
+    if (typeof value === "number") {
+        return Number.isFinite(value) ? value : 0;
+    }
+    if (Array.isArray(value)) {
+        return value.map(item => sanitizeNumbersDeep(item));
+    }
+    if (!value || typeof value !== "object") {
+        return value;
+    }
+    const out: Record<string, any> = {};
+    for (const [key, val] of Object.entries(value)) {
+        out[key] = sanitizeNumbersDeep(val);
+    }
+    return out;
+};
 const hasFinitePoint = (point: unknown): point is [number, number] => {
     if (!Array.isArray(point) || point.length < 2) return false;
     return Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]));
@@ -206,12 +222,13 @@ const sanitizeSceneElements = (elements: any[]): ExcalidrawElement[] => {
     const sanitized: ExcalidrawElement[] = [];
     for (const raw of list) {
         if (!raw || typeof raw !== "object") continue;
-        const x = toFiniteNumber((raw as any).x, NaN);
-        const y = toFiniteNumber((raw as any).y, NaN);
+        const safeRaw = sanitizeNumbersDeep(raw);
+        const x = toFiniteNumber((safeRaw as any).x, NaN);
+        const y = toFiniteNumber((safeRaw as any).y, NaN);
         if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
 
         const normalized: any = {
-            ...raw,
+            ...safeRaw,
             x,
             y
         };
@@ -221,15 +238,22 @@ const sanitizeSceneElements = (elements: any[]): ExcalidrawElement[] => {
         if ("height" in normalized) {
             normalized.height = Math.max(0, toFiniteNumber(normalized.height, 0));
         }
-        if (normalized.type === "line" || normalized.type === "arrow") {
-            const points = Array.isArray(normalized.points)
-                ? normalized.points.filter(hasFinitePoint).map((point: [number, number]) => [
-                      Number(point[0]),
-                      Number(point[1])
-                  ])
-                : [];
-            if (points.length < 2) continue;
+        if (Array.isArray(normalized.points)) {
+            const points = normalized.points
+                .filter(hasFinitePoint)
+                .map((point: [number, number]) => [Number(point[0]), Number(point[1])]);
+            if ((normalized.type === "line" || normalized.type === "arrow") && points.length < 2) continue;
+            if (normalized.type !== "line" && normalized.type !== "arrow" && points.length < 1) continue;
             normalized.points = points;
+        }
+        if ("angle" in normalized) {
+            normalized.angle = toFiniteNumber(normalized.angle, 0);
+        }
+        if ("strokeWidth" in normalized) {
+            normalized.strokeWidth = Math.max(0, toFiniteNumber(normalized.strokeWidth, 1));
+        }
+        if ("opacity" in normalized) {
+            normalized.opacity = Math.max(0, Math.min(100, toFiniteNumber(normalized.opacity, 100)));
         }
         sanitized.push(normalized as ExcalidrawElement);
     }
@@ -1211,10 +1235,16 @@ window.GoToolkitExcalidraw = {
                 ? Number(zoom)
                 : (Number(appState?.zoom?.value) > 0 ? Number(appState.zoom.value) : 1);
             const safeElements = sanitizeSceneElements(elements);
-            return exportToSvg({ 
-                elements: safeElements, 
-                appState: { ...appState, zoom: { value: safeZoom } }, 
-                files 
-            });
+            return exportToSvg({
+                elements: safeElements,
+                appState: { ...appState, zoom: { value: safeZoom } },
+                files
+            }).catch(() =>
+                exportToSvg({
+                    elements: safeElements,
+                    appState: { ...appState, zoom: { value: 1 } },
+                    files
+                })
+            );
         })()
 };
