@@ -17,7 +17,20 @@ const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const ALLOWED_ASSET_MIME_PREFIXES = ["image/", "video/", "audio/"];
 const ALLOWED_ASSET_MIME_TYPES = new Set([
   "application/x-gotoolkit-e2ee+json",
-  "application/json"
+  "application/json",
+  "application/pdf",
+  "text/plain",
+  "text/markdown",
+  "text/csv",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+]);
+const ALLOWED_ASSET_FILE_EXTENSIONS = new Set([
+  "png", "gif", "jpg", "jpeg", "webp",
+  "mp4", "webm", "mov",
+  "mp3", "wav", "ogg",
+  "json", "pdf", "txt", "md", "csv", "docx", "xlsx", "pptx"
 ]);
 const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
   "https://gotoolkit.fr",
@@ -314,6 +327,14 @@ function isAllowedAssetMime(mimeType) {
   return ALLOWED_ASSET_MIME_PREFIXES.some(prefix => mime.startsWith(prefix)) || ALLOWED_ASSET_MIME_TYPES.has(mime);
 }
 
+function isAllowedAssetFileName(fileName) {
+  const raw = String(fileName || "").trim().toLowerCase();
+  if (!raw) return false;
+  const parts = raw.split(".");
+  const ext = parts.length > 1 ? String(parts.pop() || "").trim() : "";
+  return Boolean(ext) && ALLOWED_ASSET_FILE_EXTENSIONS.has(ext);
+}
+
 function detectAssetExtension(mimeType, fileName) {
   const mime = String(mimeType || "").toLowerCase();
   if (mime === "image/png") return "png";
@@ -328,6 +349,13 @@ function detectAssetExtension(mimeType, fileName) {
   if (mime === "audio/webm") return "webm";
   if (mime === "audio/ogg") return "ogg";
   if (mime === "application/json") return "json";
+  if (mime === "application/pdf") return "pdf";
+  if (mime === "text/plain") return "txt";
+  if (mime === "text/markdown") return "md";
+  if (mime === "text/csv") return "csv";
+  if (mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") return "docx";
+  if (mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") return "xlsx";
+  if (mime === "application/vnd.openxmlformats-officedocument.presentationml.presentation") return "pptx";
   const lowerName = String(fileName || "").toLowerCase();
   if (lowerName.endsWith(".png")) return "png";
   if (lowerName.endsWith(".gif")) return "gif";
@@ -340,6 +368,13 @@ function detectAssetExtension(mimeType, fileName) {
   if (lowerName.endsWith(".wav")) return "wav";
   if (lowerName.endsWith(".ogg")) return "ogg";
   if (lowerName.endsWith(".json")) return "json";
+  if (lowerName.endsWith(".pdf")) return "pdf";
+  if (lowerName.endsWith(".txt")) return "txt";
+  if (lowerName.endsWith(".md")) return "md";
+  if (lowerName.endsWith(".csv")) return "csv";
+  if (lowerName.endsWith(".docx")) return "docx";
+  if (lowerName.endsWith(".xlsx")) return "xlsx";
+  if (lowerName.endsWith(".pptx")) return "pptx";
   return "bin";
 }
 
@@ -370,11 +405,11 @@ function parseAssetUploadBody(body) {
   const contentBase64 = String(payload.contentBase64 || inline?.contentBase64 || "").replace(/\s+/g, "");
   const fileName = String(payload.fileName || "").trim();
   const scope = safeAssetScope(payload.scope || payload.documentId || payload.collection || "shared");
-  if (!isAllowedAssetMime(mimeType)) {
+  if (!isAllowedAssetMime(mimeType) && !isAllowedAssetFileName(fileName)) {
     throw new Error("Type de fichier non autorisé");
   }
   if (!contentBase64) {
-    throw new Error("Image base64 manquante");
+    throw new Error("Fichier base64 manquant");
   }
   return { mimeType, contentBase64, fileName, scope };
 }
@@ -391,12 +426,12 @@ async function parseAssetUploadRequest(request) {
       throw new Error("Fichier manquant");
     }
     const mimeType = String(requestedMimeType || file.type || "").trim().toLowerCase();
-    if (!isAllowedAssetMime(mimeType)) {
+    if (!isAllowedAssetMime(mimeType) && !isAllowedAssetFileName(requestedFileName || file.name || "")) {
       throw new Error("Type de fichier non autorisé");
     }
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (!bytes.length) {
-      throw new Error("Image vide");
+      throw new Error("Fichier vide");
     }
     return {
       mimeType,
@@ -1288,10 +1323,10 @@ async function uploadAssetToStorage(env, upload) {
   const bucket = resolveR2MediaBucket(env);
   const bytes = upload.bytes instanceof Uint8Array ? upload.bytes : decodeBase64ToBytes(upload.contentBase64);
   if (!bytes.length) {
-    throw new Error("Image vide");
+    throw new Error("Fichier vide");
   }
   if (bytes.length > MAX_ASSET_BYTES) {
-    throw new Error("Image trop volumineuse");
+    throw new Error("Fichier trop volumineux");
   }
   const hash = await sha256Hex(bytes);
   const ext = detectAssetExtension(upload.mimeType, upload.fileName);

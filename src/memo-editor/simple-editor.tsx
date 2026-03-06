@@ -54,7 +54,7 @@ import {
   CheckSquare,
   Pencil, Copy, Image as ImageIcon, Clapperboard,
   Square, RectangleHorizontal, Tag,
-  ArrowDownAZ, ArrowUpAZ, ArrowUpRight, Link2, ListTree, FolderTree, ListOrdered
+  ArrowDownAZ, ArrowUpAZ, ArrowUpRight, Link2, ListTree, FolderTree, ListOrdered, File as FileIcon
   , ArrowUp
 } from 'lucide-react';
 
@@ -759,6 +759,332 @@ const LinkSearchModal = ({
   );
 };
 
+const FileSearchModal = ({
+  editor,
+  onClose,
+  anchorPos,
+  selectionRange,
+  containerRef,
+  initialLabel,
+  onUploadFiles,
+}: {
+  editor: Editor,
+  onClose: () => void,
+  anchorPos: number,
+  selectionRange: { from: number; to: number },
+  containerRef: React.RefObject<HTMLDivElement | null>,
+  initialLabel?: string,
+  onUploadFiles: (files: File[]) => Promise<Array<Record<string, any>>>,
+}) => {
+  const [query, setQuery] = React.useState('');
+  const [label, setLabel] = React.useState(initialLabel || '');
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [items, setItems] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const modalRef = React.useRef<HTMLDivElement>(null);
+  const queryInputRef = React.useRef<HTMLInputElement>(null);
+  const [modalStyle, setModalStyle] = React.useState<React.CSSProperties>({
+    position: 'absolute',
+    zIndex: 2000,
+    visibility: 'hidden',
+  });
+
+  React.useEffect(() => {
+    setLabel(initialLabel || '');
+  }, [initialLabel]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const loadItems = async () => {
+      setLoading(true);
+      const nextItems: any[] = [];
+      const memoMediaStore = (window as any).goToolkitMemoMediaStore;
+      const currentSpaceId = String((window as any).GoToolkitSpaces?.getCurrentSpaceId?.() || 'golive').trim().toLowerCase() || 'golive';
+      const baseUrl = String((window as any).goToolkitShareWorker?.baseUrl || '').trim();
+      const localAssets = await memoMediaStore?.list?.().catch(() => []) || [];
+      localAssets.forEach((entry: any) => {
+        const fileName = String(entry?.fileName || '').trim();
+        const mimeType = String(entry?.mimeType || '').trim().toLowerCase();
+        if (!fileName || !isSupportedGenericFile(new File(['x'], fileName, { type: mimeType || 'application/octet-stream' }))) return;
+        const localRef = memoMediaStore?.createRef?.(entry?.id);
+        const href = String(localRef || entry?.sourceUrl || '').trim();
+        if (!href) return;
+        nextItems.push({
+          id: `local:${String(entry?.id || '')}`,
+          source: 'local',
+          href,
+          fileName,
+          title: fileName,
+          size: Number(entry?.size || entry?.blob?.size || 0),
+          ext: getFileExtension(fileName).toUpperCase(),
+          mimeType,
+        });
+      });
+      if ((window as any).goToolkitShareWorker?.listAssets) {
+        const listed = await (window as any).goToolkitShareWorker.listAssets({ spaceId: currentSpaceId }).catch(() => ({ assets: [] }));
+        const remoteAssets = Array.isArray(listed?.assets) ? listed.assets : [];
+        remoteAssets.forEach((asset: any) => {
+          const objectName = String(asset?.objectName || '').trim();
+          const fileName = objectName.split('/').pop()?.replace(/^[a-f0-9]+-/, '') || '';
+          const mimeType = String(asset?.mimeType || '').trim().toLowerCase();
+          if (!fileName || !isSupportedGenericFile(new File(['x'], fileName, { type: mimeType || 'application/octet-stream' }))) return;
+          const href = asset?.url || (baseUrl && asset?.id ? (window as any).goToolkitShareWorker?.buildAssetUrl?.(asset.id) || `${baseUrl}/v1/assets/${encodeURIComponent(asset.id)}` : '');
+          if (!href) return;
+          nextItems.push({
+            id: `remote:${String(asset?.id || '')}`,
+            source: 'remote',
+            href,
+            fileName,
+            title: fileName,
+            size: Number(asset?.size || 0),
+            ext: getFileExtension(fileName).toUpperCase(),
+            mimeType,
+          });
+        });
+      }
+      const deduped = new Map<string, any>();
+      nextItems.forEach((item) => {
+        const key = `${String(item?.href || '')}|${String(item?.fileName || '')}`;
+        if (!deduped.has(key)) deduped.set(key, item);
+      });
+      if (!cancelled) {
+        setItems(Array.from(deduped.values()));
+        setLoading(false);
+      }
+    };
+    void loadItems();
+    return () => { cancelled = true; };
+  }, []);
+
+  const updateModalPosition = React.useCallback(() => {
+    const { view } = editor;
+    const from = Math.max(1, Math.min(anchorPos || 1, editor.state.doc.content.size));
+    const host = containerRef.current;
+    const modal = modalRef.current;
+    if (!host || !modal) return;
+    let coords;
+    try {
+      coords = view.coordsAtPos(from);
+    } catch {
+      const hostRect = host.getBoundingClientRect();
+      coords = { left: hostRect.left + 20, top: hostRect.top + 20 };
+    }
+    const hostRect = host.getBoundingClientRect();
+    const padding = 10;
+    const caretLeftInHost = coords.left - hostRect.left;
+    const caretTopInHost = coords.top - hostRect.top;
+    const caretBottomInHost = (coords.bottom ?? coords.top) - hostRect.top;
+    const modalWidth = modal.offsetWidth || 520;
+    const modalHeight = modal.offsetHeight || 360;
+    const nextLeft = Math.min(Math.max(caretLeftInHost, padding), Math.max(padding, host.clientWidth - modalWidth - padding));
+    const aboveTop = caretTopInHost - modalHeight - 8;
+    const belowTop = caretBottomInHost + 8;
+    const preferredTop = aboveTop >= padding ? aboveTop : belowTop;
+    const nextTop = Math.min(Math.max(preferredTop, padding), Math.max(padding, host.clientHeight - modalHeight - padding));
+    setModalStyle({
+      position: 'absolute',
+      zIndex: 2000,
+      left: `${nextLeft}px`,
+      top: `${nextTop}px`,
+      visibility: 'visible',
+    });
+  }, [anchorPos, containerRef, editor]);
+
+  React.useLayoutEffect(() => {
+    updateModalPosition();
+    const onLayoutChange = () => updateModalPosition();
+    window.addEventListener('resize', onLayoutChange);
+    const host = containerRef.current;
+    host?.addEventListener('scroll', onLayoutChange, true);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', onLayoutChange);
+      host?.removeEventListener('scroll', onLayoutChange, true);
+    };
+  }, [containerRef, onClose, updateModalPosition]);
+
+  React.useEffect(() => {
+    queryInputRef.current?.focus();
+  }, []);
+
+  const filteredItems = React.useMemo(() => {
+    const normalizedQuery = String(query || '').trim().toLowerCase();
+    if (!normalizedQuery) return items;
+    return items.filter((item) => {
+      const haystack = [
+        item?.title,
+        item?.fileName,
+        item?.ext,
+        item?.mimeType,
+      ].join(' ').toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [items, query]);
+
+  React.useEffect(() => {
+    setSelectedIndex(0);
+  }, [query, items.length]);
+
+  const insertFileNode = React.useCallback((item: any) => {
+    const from = Math.max(1, Math.min(selectionRange?.from ?? editor.state.selection.from, editor.state.doc.content.size));
+    const to = Math.max(from, Math.min(selectionRange?.to ?? editor.state.selection.to, editor.state.doc.content.size));
+    const finalLabel = String(label || '').trim() || String(item?.fileName || item?.title || 'Fichier').trim() || 'Fichier';
+    editor.chain().focus().insertContentAt({ from, to }, {
+      type: 'fileBlock',
+      attrs: {
+        src: String(item?.href || '').trim(),
+        localSrc: String(item?.source === 'local' && String(item?.href || '').startsWith('gtlocal://') ? item.href : '').trim(),
+        title: finalLabel,
+        fileName: String(item?.fileName || finalLabel).trim() || finalLabel,
+        mimeType: String(item?.mimeType || '').trim(),
+        size: Number(item?.size || 0) || 0,
+      },
+    }).run();
+    onClose();
+  }, [editor, label, onClose, selectionRange]);
+
+  const insertMultipleFileNodes = React.useCallback((entries: any[]) => {
+    const from = Math.max(1, Math.min(selectionRange?.from ?? editor.state.selection.from, editor.state.doc.content.size));
+    const to = Math.max(from, Math.min(selectionRange?.to ?? editor.state.selection.to, editor.state.doc.content.size));
+    const content = (Array.isArray(entries) ? entries : []).flatMap((item, index) => {
+      const finalLabel = (index === 0 && String(label || '').trim())
+        ? String(label || '').trim()
+        : (String(item?.fileName || item?.title || 'Fichier').trim() || 'Fichier');
+      const node = {
+        type: 'fileBlock',
+        attrs: {
+          src: String(item?.href || '').trim(),
+          localSrc: String(item?.source === 'local' && String(item?.href || '').startsWith('gtlocal://') ? item.href : '').trim(),
+          title: finalLabel,
+          fileName: String(item?.fileName || finalLabel).trim() || finalLabel,
+          mimeType: String(item?.mimeType || '').trim(),
+          size: Number(item?.size || 0) || 0,
+        },
+      };
+      return index === 0 ? [node] : [{ type: 'paragraph' }, node];
+    });
+    if (!content.length) return;
+    editor.chain().focus().insertContentAt({ from, to }, content).run();
+    onClose();
+  }, [editor, label, onClose, selectionRange]);
+
+  const handleUpload = React.useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.txt,.md,.csv,.json,.docx,.xlsx,.pptx,application/pdf,text/plain,text/markdown,text/csv,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    input.multiple = true;
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    input.addEventListener('change', async () => {
+      const files = Array.from(input.files || []).filter(isSupportedGenericFile);
+      if (!files.length) return;
+      const created = await onUploadFiles(files);
+      if (!created.length) return;
+      insertMultipleFileNodes(created);
+    }, { once: true });
+    document.body.appendChild(input);
+    input.click();
+  }, [insertMultipleFileNodes, onUploadFiles]);
+
+  const handleSubmit = React.useCallback(() => {
+    if (filteredItems[selectedIndex]) {
+      insertFileNode(filteredItems[selectedIndex]);
+    }
+  }, [filteredItems, insertFileNode, selectedIndex]);
+
+  const renderItem = (item: any, index: number) => (
+    <div
+      key={item.id || index}
+      className={`link-search-item ${index === selectedIndex ? 'selected' : ''}`}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onMouseEnter={() => setSelectedIndex(index)}
+      onClick={() => insertFileNode(item)}
+    >
+      <div className="link-search-item-info">
+        <div className="link-search-item-title memo-file-search-item-title">
+          <span className="memo-file-search-item__ext">{item.ext || 'FILE'}</span>
+          <span>{item.fileName}</span>
+        </div>
+        <div className="link-search-item-path">{item.source === 'remote' ? 'Cloud' : 'Local'}</div>
+      </div>
+      <div className="link-search-item-action memo-file-search-item__size">
+        {formatFileSize(item.size)}
+      </div>
+    </div>
+  );
+
+  return (
+    <div ref={modalRef} className="link-search-modal memo-file-search-modal" style={modalStyle}>
+      <input
+        ref={queryInputRef}
+        type="text"
+        value={query}
+        className="link-search-modal__search-input"
+        placeholder="Rechercher un fichier"
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            onClose();
+            return;
+          }
+          if (e.key === 'ArrowDown' && filteredItems.length) {
+            e.preventDefault();
+            setSelectedIndex((prev) => (prev + 1) % filteredItems.length);
+            return;
+          }
+          if (e.key === 'ArrowUp' && filteredItems.length) {
+            e.preventDefault();
+            setSelectedIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
+            return;
+          }
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSubmit();
+          }
+        }}
+      />
+      <input
+        type="text"
+        value={label}
+        className={`link-search-modal__query ${String(label || '').trim() ? 'has-value' : ''}`}
+        placeholder="Libellé du fichier"
+        onChange={(e) => setLabel(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            onClose();
+            return;
+          }
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSubmit();
+          }
+        }}
+      />
+      <div className="memo-file-search-modal__toolbar">
+        <button type="button" className="memo-file-search-modal__upload" onMouseDown={(e) => e.preventDefault()} onClick={handleUpload}>
+          Ajouter un fichier
+        </button>
+      </div>
+      <div className="link-search-results">
+        {loading && <div className="link-search-no-results">Chargement…</div>}
+        {!loading && filteredItems.map(renderItem)}
+        {!loading && !filteredItems.length && (
+          <div className="link-search-no-results">Aucun fichier trouvé</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const MemoLinkBlockView = ({ node, editor, getPos, updateAttributes }: any) => {
   const href = String(node?.attrs?.href || '');
   const title = String(node?.attrs?.title || 'Document');
@@ -1314,6 +1640,7 @@ import { MermaidNode, insertMermaidDiagram } from './mermaid-node';
 import { Alert, ALERT_TYPES } from './blockquote-node';
 import { CustomImage, isSupportedImageFile } from './image-node';
 import { ExternalVideoEmbed, VideoEmbed } from './video-node';
+import { FileBlock, formatFileSize, getFileExtension, isSupportedGenericFile } from './file-node';
 import './simple-editor.css';
 
 const TEXT_COLORS = [
@@ -1328,6 +1655,8 @@ const TEXT_COLORS = [
   { name: 'Rose', value: 'var(--bg-text-pink)' },
   { name: 'Rouge', value: 'var(--bg-text-red)' },
 ];
+
+const MAX_FILE_BLOCK_BYTES = 100 * 1024 * 1024;
 
 interface SimpleEditorProps {
   content?: string;
@@ -1467,7 +1796,7 @@ const insertExternalEmbedAtSelection = (
 };
 
 // Custom BubbleMenu component for Tiptap v3
-const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink, onInsertImage, onInsertVideo, onDropdownToggle }: { 
+const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink, onInsertImage, onInsertVideo, onInsertFile, onDropdownToggle }: { 
   editor: Editor | null, 
   visible: boolean,
   onKeep: () => void,
@@ -1476,6 +1805,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
   onLink: () => void,
   onInsertImage: () => void,
   onInsertVideo: () => void,
+  onInsertFile: () => void,
   onDropdownToggle?: (isOpen: boolean) => void,
 }) => {
   const [position, setPosition] = React.useState({ top: 0, left: 0, opacity: 0 });
@@ -1679,6 +2009,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
               onLink={onLink}
               onInsertImage={onInsertImage}
               onInsertVideo={onInsertVideo}
+              onInsertFile={onInsertFile}
             />
           )}
         </div>
@@ -2353,12 +2684,14 @@ const TiptapActionsDropdown = ({
   onLink,
   onInsertImage,
   onInsertVideo,
+  onInsertFile,
 }: {
   editor: Editor,
   onOpenChange?: (isOpen: boolean) => void,
   onLink?: () => void,
   onInsertImage?: () => void,
   onInsertVideo?: () => void,
+  onInsertFile?: () => void,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -2393,11 +2726,12 @@ const TiptapActionsDropdown = ({
     { label: 'Diagramme', value: 'diagram', icon: Shapes, active: editor.isActive('mermaidDiagram') },
     { label: 'Image', value: 'image', icon: ImageIcon, active: false },
     { label: 'Vidéo', value: 'video', icon: Clapperboard, active: false },
+    { label: 'Fichier', value: 'file', icon: FileIcon, active: false },
   ];
   const currentOption = options.find(o => o.active) || options[0];
 
   const handleSelect = (value: string) => {
-    runEditorDropdownAction(editor, value, { onLink, onInsertImage, onInsertVideo });
+    runEditorDropdownAction(editor, value, { onLink, onInsertImage, onInsertVideo, onInsertFile });
     setIsOpen(false);
   };
 
@@ -2439,12 +2773,14 @@ const BubbleActionsDropdown = ({
   onLink,
   onInsertImage,
   onInsertVideo,
+  onInsertFile,
 }: {
   editor: Editor,
   onOpenChange?: (isOpen: boolean) => void,
   onLink?: () => void,
   onInsertImage?: () => void,
   onInsertVideo?: () => void,
+  onInsertFile?: () => void,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -2481,6 +2817,7 @@ const BubbleActionsDropdown = ({
     { label: 'Diagramme', value: 'diagram', icon: Shapes, active: editor.isActive('mermaidDiagram') },
     { label: 'Image', value: 'image', icon: ImageIcon, active: false },
     { label: 'Vidéo', value: 'video', icon: Clapperboard, active: false },
+    { label: 'Fichier', value: 'file', icon: FileIcon, active: false },
   ];
   const currentOption = options.find(o => o.active) || options[0];
 
@@ -2493,7 +2830,7 @@ const BubbleActionsDropdown = ({
   const handleSelect = (event: React.MouseEvent<HTMLDivElement>, value: string) => {
     event.preventDefault();
     event.stopPropagation();
-    runEditorDropdownAction(editor, value, { onLink, onInsertImage, onInsertVideo });
+    runEditorDropdownAction(editor, value, { onLink, onInsertImage, onInsertVideo, onInsertFile });
     setIsOpen(false);
   };
 
@@ -2610,12 +2947,13 @@ const QuoteTypeDropdown = ({ editor }: { editor: Editor }) => {
   );
 };
 
-const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVideo }: {
+const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVideo, onInsertFile }: {
   editor: Editor, 
   onDropdownToggle?: (isOpen: boolean) => void,
   onLink: () => void,
   onInsertImage: () => void,
   onInsertVideo: () => void,
+  onInsertFile: () => void,
 }) => {
   // Force re-render when editor state changes
   const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
@@ -2696,6 +3034,7 @@ const runEditorDropdownAction = (
     onLink?: () => void;
     onInsertImage?: () => void;
     onInsertVideo?: () => void;
+    onInsertFile?: () => void;
     onInsertNavigation?: () => void;
     onInsertPageSummary?: () => void;
   }
@@ -2731,6 +3070,8 @@ const runEditorDropdownAction = (
     callbacks.onInsertImage?.();
   } else if (value === 'video') {
     callbacks.onInsertVideo?.();
+  } else if (value === 'file') {
+    callbacks.onInsertFile?.();
   } else if (value === 'navigation') {
     callbacks.onInsertNavigation?.();
   } else if (value === 'summary') {
@@ -3421,6 +3762,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [linkModalInitialQuery, setLinkModalInitialQuery] = React.useState('');
   const [linkModalInitialLabel, setLinkModalInitialLabel] = React.useState('');
   const [linkTooltip, setLinkTooltip] = React.useState<{ href: string; top: number; left: number } | null>(null);
+  const [showFileModal, setShowFileModal] = React.useState(false);
+  const [fileModalAnchorPos, setFileModalAnchorPos] = React.useState(1);
+  const [fileModalRange, setFileModalRange] = React.useState<{ from: number; to: number }>({ from: 1, to: 1 });
+  const [fileModalInitialLabel, setFileModalInitialLabel] = React.useState('');
   const [showSlashActionMenu, setShowSlashActionMenu] = React.useState(false);
   const [slashActionMenuPos, setSlashActionMenuPos] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [slashActionQuery, setSlashActionQuery] = React.useState('');
@@ -3621,6 +3966,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       localSrc: localRef,
       fileName,
       mimeType,
+      size: Number(file?.size || 0),
     };
   }, [resolveActiveMemoDocumentId, resolveActiveMemoSpaceId]);
 
@@ -3691,6 +4037,36 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           });
         } catch (err) {
           // Keep processing remaining files.
+        }
+        continue;
+      }
+      if (isSupportedGenericFile(file)) {
+        if (Number(file.size || 0) > MAX_FILE_BLOCK_BYTES) {
+          (window as any).GoToolkitMemoToast?.('Fichier trop volumineux (100 Mo max)', true);
+          continue;
+        }
+        try {
+          console.log('[SimpleEditor] media insert:prepare', {
+            trigger: 'file-input',
+            type: 'file',
+            fileName: String(file?.name || ''),
+            mimeType: String(file?.type || ''),
+            size: Number(file?.size || 0),
+          });
+          const uploaded = await uploadEditorAssetFile(file);
+          content.push({
+            type: 'fileBlock',
+            attrs: {
+              src: uploaded.src,
+              localSrc: uploaded.localSrc || '',
+              title: uploaded.fileName || 'Fichier',
+              fileName: uploaded.fileName || '',
+              mimeType: uploaded.mimeType || '',
+              size: uploaded.size || Number(file?.size || 0),
+            },
+          });
+        } catch (err) {
+          (window as any).GoToolkitMemoToast?.(`Import fichier échoué: ${String(file?.name || 'fichier')}`, true);
         }
       }
     }
@@ -3794,6 +4170,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       CustomImage,
       VideoEmbed,
       ExternalVideoEmbed,
+      FileBlock,
       TableNode,
       TableRow,
       TableHeader,
@@ -4451,20 +4828,22 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           return true;
         }
         const droppedFiles = Array.from(event.dataTransfer?.files || []);
-        const droppedMedia = droppedFiles.filter((file) => isSupportedImageFile(file) || isSupportedVideoFile(file));
-        if (droppedMedia.length) {
-          console.log('[SimpleEditor] media insert:drop', droppedMedia.map((file) => ({
+        const droppedAcceptedFiles = droppedFiles.filter((file) =>
+          isSupportedImageFile(file) || isSupportedVideoFile(file) || isSupportedGenericFile(file)
+        );
+        if (droppedAcceptedFiles.length) {
+          console.log('[SimpleEditor] media insert:drop', droppedAcceptedFiles.map((file) => ({
             fileName: String(file?.name || ''),
             mimeType: String(file?.type || ''),
             size: Number(file?.size || 0),
-            type: isSupportedVideoFile(file) ? 'video' : 'image',
+            type: isSupportedVideoFile(file) ? 'video' : isSupportedImageFile(file) ? 'image' : 'file',
           })));
           event.preventDefault();
           event.stopPropagation();
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
           const insertionPos = coords?.pos ?? view.state.selection.from;
           (async () => {
-            const mediaNodes = await buildDroppedMediaContent(droppedMedia);
+            const mediaNodes = await buildDroppedMediaContent(droppedAcceptedFiles);
             if (!mediaNodes.length || !editor) return;
             const content = mediaNodes.flatMap((mediaNode, index) => (
               index === 0 ? [mediaNode] : [{ type: 'paragraph' }, mediaNode]
@@ -4643,6 +5022,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     document.body.appendChild(input);
     input.click();
   }, [buildDroppedMediaContent, editor]);
+
+  const uploadFilesToFileBlocks = React.useCallback(async (files: File[]) => {
+    const fileNodes = (await buildDroppedMediaContent(files)).filter((node) => node?.type === 'fileBlock');
+    return fileNodes.map((node) => ({ ...(node?.attrs || {}) }));
+  }, [buildDroppedMediaContent]);
 
   React.useEffect(() => {
     if (!editor) return;
@@ -5939,6 +6323,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               if (src) replacement.setAttribute('href', src);
               video.replaceWith(replacement);
             });
+            doc.querySelectorAll('div[data-type="memo-file-block"]').forEach(fileBlock => {
+              const href = String(fileBlock.getAttribute('data-href') || '').trim();
+              const title = String(fileBlock.getAttribute('data-file-name') || fileBlock.textContent || 'Fichier').trim() || 'Fichier';
+              const replacement = doc.createElement('a');
+              replacement.textContent = title;
+              if (href) replacement.setAttribute('href', href);
+              fileBlock.replaceWith(replacement);
+            });
             doc.querySelectorAll('iframe[data-type="external-video-embed"], iframe').forEach(iframe => {
               const src = String(iframe.getAttribute('src') || '').trim();
               const replacement = doc.createElement('a');
@@ -6312,6 +6704,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               style.margin = '20px auto';
               style.borderRadius = '10px';
               style.background = '#000';
+            });
+
+            doc.querySelectorAll('div[data-type="memo-file-block"]').forEach(block => {
+              const el = block as HTMLElement;
+              const href = String(el.getAttribute('data-href') || '').trim();
+              const title = String(el.getAttribute('data-file-name') || el.textContent || 'Fichier').trim() || 'Fichier';
+              const link = doc.createElement('a');
+              if (href) link.href = href;
+              link.textContent = title;
+              link.setAttribute('download', title);
+              link.setAttribute('style', 'color:#2563eb;text-decoration:underline;word-break:break-all;');
+              el.replaceWith(link);
             });
 
             doc.querySelectorAll('iframe[data-type="external-video-embed"], iframe').forEach(frame => {
@@ -7083,6 +7487,40 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     setShowLinkModal(true);
   }, [editor]);
 
+  const openFileModal = React.useCallback(() => {
+    if (!editor) return;
+    const { from, to, empty } = editor.state.selection;
+    const selectedText = empty ? '' : String(editor.state.doc.textBetween(from, to, ' ', ' ') || '').trim();
+    setFileModalAnchorPos(from);
+    setFileModalRange({ from, to });
+    setFileModalInitialLabel(selectedText);
+    setShowFileModal(true);
+  }, [editor]);
+
+  React.useEffect(() => {
+    (window as any).GoToolkitMemoOpenFileBlockEditor = (payload: any) => {
+      if (!editor) return;
+      const pos = Number(payload?.pos);
+      const node = Number.isFinite(pos) ? editor.state.doc.nodeAt(pos) : null;
+      if (!node || node.type.name !== 'fileBlock') return;
+      setFileModalAnchorPos(pos);
+      setFileModalRange({ from: pos, to: pos + node.nodeSize });
+      setFileModalInitialLabel(String(payload?.title || node.attrs?.title || node.attrs?.fileName || '').trim());
+      setShowFileModal(true);
+    };
+    return () => {
+      try {
+        delete (window as any).GoToolkitMemoOpenFileBlockEditor;
+      } catch {
+        (window as any).GoToolkitMemoOpenFileBlockEditor = undefined;
+      }
+    };
+  }, [editor]);
+
+  const openFileInsertDialog = React.useCallback(() => {
+    openFileModal();
+  }, [openFileModal]);
+
   const insertNavigationBlock = React.useCallback(() => {
     if (!editor) return;
     const parentId = String((window as any).__memoActiveDocumentId || '').trim();
@@ -7213,6 +7651,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     { label: 'Diagramme', value: 'diagram', icon: Shapes, markdownShortcut: 'mermaid', aliases: ['schema', 'graph', 'mermaid'] },
     { label: 'Image', value: 'image', icon: ImageIcon, markdownShortcut: '![alt](url)', aliases: ['photo', 'illustration'] },
     { label: 'Vidéo', value: 'video', icon: Clapperboard, markdownShortcut: 'video', aliases: ['movie', 'clip'] },
+    { label: 'Fichier', value: 'file', icon: FileIcon, markdownShortcut: '[titre](fichier)', aliases: ['document', 'piece jointe', 'attachment'] },
   ]), []);
 
   const filteredSlashActions = React.useMemo(() => {
@@ -7252,12 +7691,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       onLink: openLinkModal,
       onInsertImage: openImagePicker,
       onInsertVideo: openVideoInsertDialog,
+      onInsertFile: openFileInsertDialog,
       onInsertNavigation: insertNavigationBlock,
       onInsertPageSummary: insertPageSummaryBlock,
     });
     setSlashActionQuery('');
     setShowSlashActionMenu(false);
-  }, [editor, insertNavigationBlock, insertPageSummaryBlock, openImagePicker, openLinkModal, openVideoInsertDialog]);
+  }, [editor, insertNavigationBlock, insertPageSummaryBlock, openFileInsertDialog, openImagePicker, openLinkModal, openVideoInsertDialog]);
 
   const runFirstSlashAction = React.useCallback(() => {
     const firstAction = filteredSlashActions[0];
@@ -7370,6 +7810,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         onLink={openLinkModal}
         onInsertImage={openImagePicker}
         onInsertVideo={openVideoInsertDialog}
+        onInsertFile={openFileInsertDialog}
       />
       <BubbleMenuComponent 
         editor={editor}
@@ -7380,6 +7821,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         onLink={openLinkModal}
         onInsertImage={openImagePicker}
         onInsertVideo={openVideoInsertDialog}
+        onInsertFile={openFileInsertDialog}
         onDropdownToggle={setIsDropdownOpen}
       />
       {showInitialNavigationBlock && (
@@ -7470,6 +7912,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           initialLabel={linkModalInitialLabel}
           containerRef={containerRef}
           onClose={() => setShowLinkModal(false)} 
+        />
+      )}
+
+      {showFileModal && (
+        <FileSearchModal
+          editor={editor}
+          anchorPos={fileModalAnchorPos}
+          selectionRange={fileModalRange}
+          initialLabel={fileModalInitialLabel}
+          containerRef={containerRef}
+          onUploadFiles={uploadFilesToFileBlocks}
+          onClose={() => setShowFileModal(false)}
         />
       )}
 

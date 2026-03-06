@@ -457,6 +457,30 @@ async function transformNode(node: any, editor: any, context: any): Promise<any>
       });
     }
 
+    case 'fileBlock': {
+      const src = String(node?.attrs?.src || '').trim();
+      if (!src) return null;
+      const title = String(node?.attrs?.title || node?.attrs?.fileName || 'Fichier').trim() || 'Fichier';
+      return new Paragraph({
+        children: [
+          new TextRun({
+            text: "📎 ",
+            bold: true,
+          }),
+          new ExternalHyperlink({
+            link: src,
+            children: [
+              new TextRun({
+                text: title,
+                style: "Hyperlink",
+              }),
+            ],
+          }),
+        ],
+        spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING },
+      });
+    }
+
     default:
       return null;
   }

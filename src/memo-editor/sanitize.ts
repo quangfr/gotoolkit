@@ -57,6 +57,8 @@ export const sanitizeHtml = (rawHtml: unknown) => {
       'data-fit',
       'data-file-name',
       'data-mime-type',
+      'data-href',
+      'data-size',
       'data-document-id',
       'data-collapsed',
       'playsinline',

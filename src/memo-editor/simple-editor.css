@@ -2617,3 +2617,62 @@ ul[data-type="taskList"] li p {
   font-size: 12px;
   color: var(--text-muted);
 }
+
+.memo-file-block__title-wrap {
+  min-width: 0;
+  flex: 1;
+}
+
+.memo-file-block__size {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.memo-file-search-modal {
+  width: min(560px, calc(100% - 24px));
+}
+
+.memo-file-search-modal__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.memo-file-search-modal__upload {
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  padding: 7px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.memo-file-search-item-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memo-file-search-item__ext {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--bg-surface-soft);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.memo-file-search-item__size {
+  min-width: 56px;
+  justify-content: flex-end;
+  color: var(--text-muted);
+  font-size: 11px;
+}
