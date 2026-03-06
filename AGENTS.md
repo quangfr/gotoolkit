@@ -58,6 +58,11 @@ This file is the short operational guide. Use the docs below as the canonical re
   - run memo builds only for memo-side `src/` changes
   - run draw/connect builds only for draw-side `src/` changes
 - After modifying a worker, deploy that worker with Wrangler through `scripts/with-env-local.sh`.
+- If the user asks to deploy workers, automatically deploy each modified worker with Wrangler using credentials from `.env.local`.
+  - First verify auth with `npx wrangler whoami`.
+  - Then deploy only the touched workers, for example:
+    - `./scripts/with-env-local.sh npx wrangler deploy --config workers/share-proxy/wrangler.toml`
+  - Do not deploy untouched workers by default.
 - Release flow:
   - for any request involving `bump`, `commit`, or `push`, run `npm run check:csp`
   - then run `npm run bump`

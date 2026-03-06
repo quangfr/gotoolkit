@@ -676,13 +676,19 @@
     const doc = parser.parseFromString(String(html), "text/html");
     if (!doc?.body) return html;
     sanitizeRichHtmlDocument(doc);
-    const srcNodes = Array.from(doc.querySelectorAll("img[src],video[src],audio[src],source[src]"));
+    const srcNodes = Array.from(doc.querySelectorAll("img[src],video[src],audio[src],source[src],[data-type=\"memo-file-block\"][data-href]"));
     for (const node of srcNodes) {
-      const src = String(node.getAttribute("src") || "").trim();
+      const isFileBlock = String(node.getAttribute("data-type") || "").trim() === "memo-file-block";
+      const src = String(isFileBlock ? (node.getAttribute("data-href") || "") : (node.getAttribute("src") || "")).trim();
       if (!src || !src.includes("/v1/assets/")) continue;
       const localized = await localizeRemoteAssetToMemoStore(base, src, options).catch(() => src);
       if (localized && localized !== src) {
-        node.setAttribute("src", localized);
+        node.setAttribute("data-gt-local-src", localized);
+        if (!isFileBlock) {
+          node.setAttribute("src", src);
+        } else {
+          node.setAttribute("data-href", src);
+        }
       }
     }
     return doc.body.innerHTML;
@@ -702,7 +708,8 @@
       const next = {};
       for (const [key, entry] of Object.entries(value)) {
         if (key === "src" && typeof entry === "string" && entry.includes("/v1/assets/")) {
-          next[key] = await localizeRemoteAssetToMemoStore(base, entry, options).catch(() => entry);
+          next[key] = entry;
+          next.localSrc = await localizeRemoteAssetToMemoStore(base, entry, options).catch(() => value?.localSrc || "");
           continue;
         }
         next[key] = await walk(entry);
@@ -722,11 +729,11 @@
     const doc = parser.parseFromString(String(html), "text/html");
     if (!doc?.body) return html;
     sanitizeRichHtmlDocument(doc);
-    const srcNodes = Array.from(doc.querySelectorAll("img[src],video[src],audio[src],source[src]"));
+    const srcNodes = Array.from(doc.querySelectorAll("img[src],video[src],audio[src],source[src],[data-type=\"memo-file-block\"][data-href],[data-gt-local-src]"));
     for (const node of srcNodes) {
-      const src = String(node.getAttribute("src") || "").trim();
-      if (!isMemoLocalAssetRef(src)) continue;
-      const localId = memoMediaStore.parseRef(src);
+      const localRef = String(node.getAttribute("data-gt-local-src") || node.getAttribute("src") || node.getAttribute("data-href") || "").trim();
+      if (!isMemoLocalAssetRef(localRef)) continue;
+      const localId = memoMediaStore.parseRef(localRef);
       const record = localId ? await memoMediaStore.get(localId).catch(() => null) : null;
       if (!(record?.blob instanceof Blob)) continue;
       const uploadResult = await uploadAssetWithBase(base, {
@@ -747,7 +754,13 @@
           sourceUrl: buildAssetUrl(base, assetId)
         }).catch(() => null);
       }
-      node.setAttribute("src", buildAssetUrl(base, assetId));
+      const remoteUrl = buildAssetUrl(base, assetId);
+      if (String(node.getAttribute("data-type") || "").trim() === "memo-file-block") {
+        node.setAttribute("data-href", remoteUrl);
+      } else {
+        node.setAttribute("src", remoteUrl);
+      }
+      node.setAttribute("data-gt-local-src", localRef);
       node.setAttribute("data-gt-asset-id", assetId);
     }
     return doc.body.innerHTML;
@@ -766,7 +779,7 @@
       if (!value || typeof value !== "object") return value;
       const next = {};
       for (const [key, entry] of Object.entries(value)) {
-        if (key === "src" && typeof entry === "string" && isMemoLocalAssetRef(entry)) {
+        if ((key === "src" || key === "localSrc") && typeof entry === "string" && isMemoLocalAssetRef(entry)) {
           const memoMediaStore = getMemoMediaStore();
           const localId = memoMediaStore?.parseRef?.(entry);
           const record = localId ? await memoMediaStore.get(localId).catch(() => null) : null;
@@ -788,7 +801,8 @@
                 sourceUrl: buildAssetUrl(base, assetId)
               }).catch(() => null);
             }
-            next[key] = assetId ? buildAssetUrl(base, assetId) : entry;
+            next.src = assetId ? buildAssetUrl(base, assetId) : (value?.src || entry);
+            next.localSrc = entry;
             continue;
           }
         }
