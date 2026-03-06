@@ -1013,8 +1013,11 @@
 
     function updateVoiceButtonContent() {
         if (!state.voiceButton) return;
-        // Badge is tied to the active tab recording only (never to background conversions).
-        const hasRecordingForCurrentMemo = Boolean(state.currentMemoRecordingId);
+        const activeMemo = window.GoToolkitMemoVoice?.getActiveMemo?.() || null;
+        const activeMemoRecordingId = activeMemo?.id && activeMemo.id === state.currentMemoId
+            ? String(activeMemo?.voiceRecordingId || "").trim()
+            : "";
+        const hasRecordingForCurrentMemo = Boolean(state.currentMemoRecordingId || activeMemoRecordingId);
         state.voiceButton.textContent = "";
         const appendBadge = () => {
             if (!hasRecordingForCurrentMemo) return;
@@ -1397,9 +1400,11 @@
 
     async function getRecordingForMemo(memoId) {
         if (!memoId || !RECORDINGS_STORE) return null;
+        const activeMemo = window.GoToolkitMemoVoice?.getActiveMemo?.() || null;
+        const fallbackRecordingId = activeMemo?.id === memoId ? activeMemo?.voiceRecordingId : null;
         const recordingId = window.GoToolkitMemoVoice?.getVoiceRecordingId
-            ? window.GoToolkitMemoVoice.getVoiceRecordingId(memoId)
-            : null;
+            ? (window.GoToolkitMemoVoice.getVoiceRecordingId(memoId) || fallbackRecordingId || null)
+            : (fallbackRecordingId || null);
         if (!recordingId) return null;
         try {
             return await RECORDINGS_STORE.get(recordingId);
@@ -2156,13 +2161,8 @@
         state.videoBlob = state.videoChunks.length
             ? new Blob(state.videoChunks, { type: state.videoChunks[0]?.type || "video/webm" })
             : null;
-        if (state.videoBlob && window.VoiceVideoPlayerModal) {
-            if (!state.videoModal) {
-                state.videoModal = new window.VoiceVideoPlayerModal();
-            }
-            state.videoModal.prewarmGif?.(state.videoBlob).catch(err => {
-                console.warn("GIF prewarm failed", err);
-            });
+        if (state.videoBlob && window.VoiceVideoPlayerModal && !state.videoModal) {
+            state.videoModal = new window.VoiceVideoPlayerModal();
         }
         state.audioRecorder = null;
         state.videoRecorder = null;
@@ -2708,8 +2708,11 @@
     function setCurrentMemo(memoName, memoId) {
         state.currentMemoId = memoId || null;
         state.currentMemoName = memoName || "";
-        state.currentMemoRecordingId = null;
+        const activeMemo = window.GoToolkitMemoVoice?.getActiveMemo?.() || null;
+        const activeMemoRecordingId = activeMemo?.id === memoId ? String(activeMemo?.voiceRecordingId || "").trim() : "";
+        state.currentMemoRecordingId = activeMemoRecordingId || null;
         state.currentMemoRecordingHasVideo = false;
+        updateButton();
         if (memoId) {
             getRecordingForMemo(memoId).then(recording => {
                 if (!state.currentMemoId || state.currentMemoId !== memoId) return;

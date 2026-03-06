@@ -21,6 +21,7 @@
         "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm"
     ];
     const VOICE_RECORDING_SPEED_STORAGE_KEY = "go-toolkit-voice-recording-speed";
+    const GIF_EXPORT_MAX_DURATION_SECONDS = 120;
 
     function normalizeVoiceRecordingSpeed(value) {
         const numeric = Number(value);
@@ -1212,23 +1213,22 @@
         }
 
         _getGifStatus() {
+            if (!this._isGifExportAllowed()) return "disabled";
             const cacheKey = this._getGifCacheKey();
             if (this._gifBlobCache?.size && this._gifBlobCacheKey === cacheKey) return "ready";
             if (this._gifDownloading) return "running";
-            if (this._gifPrebuildPromise && this._gifPrebuildPromiseKey === cacheKey) return "running";
             return "idle";
         }
 
         _getMp4Status() {
             const cacheKey = this._getMp4CacheKey();
             if (this._mp4BlobCache?.size && this._mp4BlobCacheKey === cacheKey) return "ready";
-            if (this._mp4PrebuildPromise && this._mp4PrebuildPromiseKey === cacheKey) return "running";
             return "idle";
         }
 
         _renderOptionWithStatus(option, status, label) {
             if (!option) return;
-            const safeStatus = status === "ready" || status === "running" ? status : "idle";
+            const safeStatus = status === "ready" || status === "running" || status === "disabled" ? status : "idle";
             const badgeClass = safeStatus === "running"
                 ? "chat-header-badge chat-header-badge--pending"
                 : (safeStatus === "idle" ? "chat-header-badge chat-header-badge--idle" : "chat-header-badge");
@@ -1241,6 +1241,8 @@
             labelEl.textContent = String(label || "");
             option.appendChild(badge);
             option.appendChild(labelEl);
+            option.disabled = safeStatus === "disabled";
+            option.hidden = safeStatus === "disabled";
         }
 
         _updateConversionBadges() {
@@ -1284,13 +1286,12 @@
                 this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 720p (${this._formatMbLabel(mp4Size)})`);
             }
             if (this.downloadGifOption) {
-                this._renderOptionWithStatus(
-                    this.downloadGifOption,
-                    gifStatus,
-                    gifSize > 0
+                const gifLabel = gifStatus === "disabled"
+                    ? "GIF indisponible (> 2 min)"
+                    : (gifSize > 0
                         ? `GIF ${gifHeight}p (${this._formatMbLabel(gifSize)})`
-                        : `GIF ${gifHeight}p (${this._formatMbLabel(this._estimateGifBytes())})`
-                );
+                        : `GIF ${gifHeight}p (${this._formatMbLabel(this._estimateGifBytes())})`);
+                this._renderOptionWithStatus(this.downloadGifOption, gifStatus, gifLabel);
             }
             this._updateConversionBadges();
         }
@@ -1319,14 +1320,7 @@
             }
         }
 
-        _scheduleGifPrebuild() {
-            this._clearGifPrebuildSchedule();
-            if (!this.videoBlobOriginal || this._gifDownloading) return;
-            this._gifPrebuildTimer = setTimeout(() => {
-                this._gifPrebuildTimer = null;
-                this._startExportPrebuildInBackground();
-            }, 1200);
-        }
+        _scheduleGifPrebuild() {}
 
         async _startExportPrebuildInBackground() {
             await this._startGifPrebuildInBackground().catch(() => null);
@@ -1335,6 +1329,7 @@
 
         async _startGifPrebuildInBackground() {
             if (!this.videoBlobOriginal || this._gifDownloading) return;
+            if (!this._isGifExportAllowed()) return;
             this._restorePersistedExportCachesForCurrentKey();
             const cacheKey = this._getGifCacheKey();
             if (!cacheKey) return;
@@ -1650,6 +1645,10 @@
         async _handleDownloadGif() {
             if (!this.videoBlobOriginal) return;
             if (this._gifDownloading) return;
+            if (!this._isGifExportAllowed()) {
+                this._showToast("Export GIF indisponible au-delà de 2 minutes", true);
+                return;
+            }
             console.info("[GoToolkit GIF] download requested");
             this._setGifDownloadLoading(true);
             try {
@@ -1692,8 +1691,26 @@
                 this._showToast("Export GIF impossible", true);
             } finally {
                 this._setGifDownloadLoading(false);
-                this._startMp4PrebuildInBackground().catch(() => null);
             }
+        }
+
+        _getCurrentExportDurationSeconds() {
+            if (this._hasCutRange()) {
+                return Math.max(0, (this.cutEnd || 0) - (this.cutStart || 0));
+            }
+            const duration = Number(this.videoEl?.duration);
+            if (Number.isFinite(duration) && duration > 0) return duration;
+            const visibleSentences = this._getVisibleSentences({ relativeToCut: false });
+            const lastSentence = visibleSentences[visibleSentences.length - 1];
+            const lastEnd = Number(lastSentence?.end);
+            if (Number.isFinite(lastEnd) && lastEnd > 0) return lastEnd;
+            return 0;
+        }
+
+        _isGifExportAllowed() {
+            const duration = this._getCurrentExportDurationSeconds();
+            if (!Number.isFinite(duration) || duration <= 0) return true;
+            return duration <= GIF_EXPORT_MAX_DURATION_SECONDS;
         }
 
         _handleSave() {
@@ -2477,7 +2494,6 @@
         async prewarmGif(videoBlob) {
             if (!videoBlob) return;
             this._applyVideoBlob(videoBlob);
-            await this._startExportPrebuildInBackground();
         }
 
         open(options = {}) {
@@ -2520,7 +2536,6 @@
             document.addEventListener("keydown", this._handleKeydown);
             this._activeSentenceIndex = -1;
             if (window.lucide) lucide.createIcons();
-            this._scheduleGifPrebuild();
             this._updateConversionBadges();
             this._refreshDropdownStatusesIfOpen();
         }
