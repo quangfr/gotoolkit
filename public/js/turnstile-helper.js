@@ -15,6 +15,7 @@
     let executeChain = Promise.resolve();
     let widgetTokenResolver = null;
     let widgetTokenRejecter = null;
+    let interactiveChallengeActive = false;
     let lastAttemptSummary = null;
     const WIDGET_CONTAINER_ID = "go-toolkit-turnstile-container";
     const INTERACTIVE_OVERLAY_ID = "go-toolkit-turnstile-overlay";
@@ -269,7 +270,18 @@
                 appearance: "interaction-only",
                 size: "normal",
                 callback: function (token) {
-                    pushDiagnostic("widget-callback", { hasToken: Boolean(String(token || "").trim()) });
+                    const normalizedToken = String(token || "").trim();
+                    if (interactiveChallengeActive) {
+                        pushDiagnostic("widget-callback-ignored-during-interactive", {
+                            hasToken: Boolean(normalizedToken)
+                        });
+                        return;
+                    }
+                    if (!normalizedToken) {
+                        pushDiagnostic("widget-callback-empty-token");
+                        return;
+                    }
+                    pushDiagnostic("widget-callback", { hasToken: true });
                     settleTokenResolver(null, token);
                 },
                 "expired-callback": function () {
@@ -332,13 +344,17 @@
                 size: "normal",
                 callback: function (token) {
                     const normalizedToken = String(token || "").trim();
+                    if (!normalizedToken) {
+                        pushDiagnostic("interactive-callback-empty-token");
+                        return;
+                    }
                     pushDiagnostic("interactive-callback", {
-                        hasToken: Boolean(normalizedToken),
+                        hasToken: true,
                         tokenLength: normalizedToken.length
                     });
                     setLastAttemptSummary({
                         stage: "interactive-token",
-                        hasToken: Boolean(normalizedToken),
+                        hasToken: true,
                         tokenLength: normalizedToken.length,
                         widgetId: String(renderedId)
                     });
@@ -378,6 +394,7 @@
             return { turnstile, widgetId: renderedId };
         }).catch(function (error) {
             interactiveWidgetId = null;
+            interactiveChallengeActive = false;
             hideInteractiveOverlay();
             pushDiagnostic("interactive-widget-error-final", { error: String(error?.message || error || "") });
             throw error;
@@ -431,6 +448,7 @@
                 function finalizeResolve(nextToken) {
                     if (settled) return;
                     settled = true;
+                    interactiveChallengeActive = false;
                     global.clearTimeout(timeoutId);
                     if (interactiveTimeoutId) {
                         global.clearTimeout(interactiveTimeoutId);
@@ -449,6 +467,7 @@
                 function finalizeReject(error) {
                     if (settled) return;
                     settled = true;
+                    interactiveChallengeActive = false;
                     global.clearTimeout(timeoutId);
                     if (interactiveTimeoutId) {
                         global.clearTimeout(interactiveTimeoutId);
@@ -468,6 +487,7 @@
                     if (settled) return;
                     if (interactiveStarted) return;
                     interactiveStarted = true;
+                    interactiveChallengeActive = true;
                     setLastAttemptSummary({
                         stage: "interactive-required",
                         host: normalizedHost,
@@ -494,6 +514,7 @@
                     }, INTERACTIVE_TIMEOUT_MS);
                     void ensureInteractiveWidget().catch(function (error) {
                         if (settled) return;
+                        interactiveChallengeActive = false;
                         setLastAttemptSummary({
                             stage: "interactive-failed",
                             host: normalizedHost,

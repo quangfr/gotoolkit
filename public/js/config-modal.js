@@ -336,6 +336,43 @@
     let categoryTabSaved = null;
     let categoryTabIconTarget = null;
     let categoryTabIconSearch = "";
+    let activeHelpTooltip = null;
+    let activeHelpTooltipButton = null;
+    let settingsHelpDismissBound = false;
+
+    function closeActiveSettingsHelpTooltip() {
+        if (activeHelpTooltip && activeHelpTooltip.parentNode) {
+            activeHelpTooltip.parentNode.removeChild(activeHelpTooltip);
+        }
+        if (activeHelpTooltipButton) {
+            activeHelpTooltipButton.setAttribute("aria-expanded", "false");
+        }
+        activeHelpTooltip = null;
+        activeHelpTooltipButton = null;
+    }
+
+    function positionSettingsHelpTooltip(button, tooltip) {
+        if (!button || !tooltip) return;
+        const rect = button.getBoundingClientRect();
+        const top = rect.bottom + 8;
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - tooltip.offsetWidth - 8));
+        tooltip.style.top = `${Math.round(top)}px`;
+        tooltip.style.left = `${Math.round(left)}px`;
+    }
+
+    function openSettingsHelpTooltip(button, message) {
+        closeActiveSettingsHelpTooltip();
+        if (!button || !message) return;
+        const tooltip = doc.createElement("div");
+        tooltip.className = "settings-help-tooltip";
+        tooltip.setAttribute("role", "tooltip");
+        tooltip.textContent = message;
+        doc.body.appendChild(tooltip);
+        positionSettingsHelpTooltip(button, tooltip);
+        activeHelpTooltip = tooltip;
+        activeHelpTooltipButton = button;
+        button.setAttribute("aria-expanded", "true");
+    }
 
     function deepClone(value) {
         try {
@@ -998,12 +1035,46 @@
 
     function bindSettingsHelp() {
         const buttons = Array.from(doc.querySelectorAll(".settings-help-btn"));
+        if (!settingsHelpDismissBound) {
+            doc.addEventListener("click", function (event) {
+                if (!activeHelpTooltip) return;
+                const target = event.target;
+                if (!(target instanceof Element)) {
+                    closeActiveSettingsHelpTooltip();
+                    return;
+                }
+                if (activeHelpTooltip.contains(target)) return;
+                if (activeHelpTooltipButton && activeHelpTooltipButton.contains(target)) return;
+                closeActiveSettingsHelpTooltip();
+            });
+            doc.addEventListener("keydown", function (event) {
+                if (event.key === "Escape") {
+                    closeActiveSettingsHelpTooltip();
+                }
+            });
+            window.addEventListener("resize", function () {
+                if (activeHelpTooltip && activeHelpTooltipButton) {
+                    positionSettingsHelpTooltip(activeHelpTooltipButton, activeHelpTooltip);
+                }
+            });
+            settingsHelpDismissBound = true;
+        }
         buttons.forEach(button => {
             if (button.dataset.helpBound === "1") return;
             const helpKey = String(button.getAttribute("data-help-key") || "").trim();
             const tooltip = SETTINGS_HELP[helpKey] || "";
             if (tooltip) {
-                button.setAttribute("title", tooltip);
+                button.removeAttribute("title");
+                button.setAttribute("aria-expanded", "false");
+                button.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (activeHelpTooltipButton === button) {
+                        closeActiveSettingsHelpTooltip();
+                        return;
+                    }
+                    openSettingsHelpTooltip(button, tooltip);
+                });
             }
             button.dataset.helpBound = "1";
         });

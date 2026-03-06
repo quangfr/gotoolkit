@@ -3034,8 +3034,23 @@
     };
 
     AssistSidebar.prototype.renderBotContent = function (message) {
+        if (this.isTypingPlaceholder(message)) {
+            return [
+                '<span class="chat-typing-indicator" aria-label="Réponse en cours">',
+                '<span class="chat-typing-dot"></span>',
+                '<span class="chat-typing-dot"></span>',
+                '<span class="chat-typing-dot"></span>',
+                "</span>"
+            ].join("");
+        }
         // SECURITY: bot markdown rendering must always go through internal markdown renderer.
         return renderBotMarkdown(message.content || "");
+    };
+
+    AssistSidebar.prototype.isTypingPlaceholder = function (message) {
+        if (!message || message.role !== "bot") return false;
+        if (!message._isStreaming) return false;
+        return String(message.content || "").trim() === "...";
     };
 
     AssistSidebar.prototype.formatReferenceTooltip = function (ref, docLabel) {
@@ -4864,14 +4879,14 @@
                     botMessage.content = partial;
                 }
             }
-            if (isActiveScope()) {
-                self.updateBotMessage(botMessage);
-                var liveEntry = self.messageNodes[botMessage.id];
-                if (liveEntry && liveEntry.contentEl) {
-                    setTrustedHtml(liveEntry.contentEl, renderBotMarkdown(botMessage.content || ""), "bot-stream");
-                    addCopyButtonsToChatContent(liveEntry.contentEl);
+                if (isActiveScope()) {
+                    self.updateBotMessage(botMessage);
+                    var liveEntry = self.messageNodes[botMessage.id];
+                    if (liveEntry && liveEntry.contentEl) {
+                        setTrustedHtml(liveEntry.contentEl, self.renderBotContent(botMessage), "bot-stream");
+                        addCopyButtonsToChatContent(liveEntry.contentEl);
+                    }
                 }
-            }
             throttledPersistScoped();
         }
 
@@ -8471,12 +8486,13 @@
         var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
         var selection = this.buildKnowledgeSelectionFromSpaces(entries);
         this.setKnowledgeModalSelection(selection);
+        await this.reindexKnowledgeSelection(entries, selection, { reindexIfUpdated: true });
         this.updateHeaderDocumentCount();
         this.setKnowledgeModalStatus("");
         this.renderMemorySpacesMenu();
     };
 
-    AssistSidebar.prototype.handleMemoryPageToggle = function (event) {
+    AssistSidebar.prototype.handleMemoryPageToggle = async function (event) {
         var target = event?.currentTarget || event?.target;
         if (!target) return;
         var spaceId = normalizeKnowledgeSpaceId(target.dataset.spaceId || "");
@@ -8508,6 +8524,7 @@
         var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
         var selection = this.buildKnowledgeSelectionFromSpaces(entries);
         this.setKnowledgeModalSelection(selection);
+        await this.reindexKnowledgeSelection(entries, selection, { reindexIfUpdated: true });
         this.updateHeaderDocumentCount();
         this.setKnowledgeModalStatus("");
         this.renderMemorySpacesMenu();
@@ -11579,12 +11596,12 @@
         }.bind(this));
         this.setupConversationScopeAutoSync();
         document.addEventListener("goToolkitSpaceSyncCompleted", function () {
-            this.syncKnowledgeFromSelectedSpaces({ force: false });
+            this.syncKnowledgeFromSelectedSpaces({ force: true });
         }.bind(this));
         document.addEventListener("goToolkitDocumentPanelRefresh", function () {
-            this.syncKnowledgeFromSelectedSpaces({ force: false });
+            this.syncKnowledgeFromSelectedSpaces({ force: true });
         }.bind(this));
-        this.syncKnowledgeFromSelectedSpaces({ force: false });
+        this.syncKnowledgeFromSelectedSpaces({ force: true });
         this.ensureKnowledgeIndexWarm();
     };
 

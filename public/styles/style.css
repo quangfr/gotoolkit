@@ -99,6 +99,21 @@
   background: var(--bg-surface-soft);
 }
 
+.settings-help-tooltip {
+  position: fixed;
+  z-index: 2147483647;
+  max-width: min(380px, calc(100vw - 16px));
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-main);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-line;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
 /* --- Theme Overrides --- */
 
 /* App Shell (Light) Theme */
@@ -2254,6 +2269,41 @@ ul.release-roadmap-text li::before {
   color: var(--text-main);
   line-height: 1.45;
   font-family: var(--font-sans);
+}
+
+.chat-typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 18px;
+}
+
+.chat-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.35;
+  animation: chat-typing-bounce 1s infinite ease-in-out;
+}
+
+.chat-typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.chat-typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes chat-typing-bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
 
 .chat-content h1,

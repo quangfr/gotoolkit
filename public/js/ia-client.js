@@ -787,10 +787,19 @@
 
     function resolveTurnstileAction(endpoint) {
         const value = String(endpoint || "").toLowerCase();
+        if (value.includes("openrouter.gotoolkit.workers.dev")) {
+            return "openrouter";
+        }
+        if (value.includes("googletts.gotoolkit.workers.dev")) {
+            return "googletts";
+        }
+        if (value.includes("assemblyai.gotoolkit.workers.dev")) {
+            return "assemblyai";
+        }
         if (value.includes("/embeddings")) {
             return "embeddings";
         }
-        return "chat";
+        return "";
     }
 
     function buildRequestDebugMetadata(payload) {

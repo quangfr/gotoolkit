@@ -166,7 +166,7 @@ FORMAT DE SORTIE (JSON strict)
             "chunkId": "reprendre le uuid exact du chunkId en CONVERSATION_ATTACHMENTS ou SPACE_PAGES",
         }
     ],
-    "suggestions": ["autre question proche de ASK et HISTORY", "autre question proche de ASK et HISTORY","autre question proche de ASK et HISTORY"]
+    "suggestions": ["autre question formulée avec un je utilisateur proche de ASK et HISTORY", "autre","autre"]
 }
 
 On justifie la réponse dans "answer", avec les éléments en "references".
@@ -257,7 +257,7 @@ FORMAT DE SORTIE (JSON strict)
             "chunkId": "reprendre le uuid exact du chunkId en CONVERSATION_ATTACHMENTS ou SPACE_PAGES",
         }
     ],
-    "suggestions": ["autre question proche de ASK et HISTORY", "autre question proche de ASK et HISTORY","autre question proche de ASK et HISTORY"]
+    "suggestions": ["autre question formulée avec un je utilisateur proche de ASK et HISTORY", "autre","autre"]
 }
 
 RÈGLES DE SORTIE
@@ -360,7 +360,7 @@ FORMAT DE SORTIE (JSON strict)
             "chunkId": "reprendre le uuid exact du chunkId en CONVERSATION_ATTACHMENTS ou SPACE_PAGES",
         }
     ],
-    "suggestions": ["autre question proche de ASK et HISTORY", "autre question proche de ASK et HISTORY","autre question proche de ASK et HISTORY"]
+    "suggestions": ["autre question formulée avec un je utilisateur proche de ASK et HISTORY", "autre","autre"]
 }
 
 RÈGLES DE SORTIE
