@@ -213,6 +213,20 @@ function parseAssetPath(request) {
   };
 }
 
+function parseAssetBatchDeletePath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 2) return null;
+  if (segments[0] !== API_VERSION) return null;
+  const rawSegment = String(segments[1] || "");
+  if (rawSegment !== `${ASSETS_SEGMENT}:batchDelete`) {
+    return null;
+  }
+  return { action: "batchDelete" };
+}
+
 function parseSpaceAuthPath(request) {
   const url = new URL(request.url);
   const segments = normalizePathname(url.pathname)
@@ -1207,6 +1221,69 @@ function mapStorageObjectToAsset(objectName, upload) {
   };
 }
 
+function isVideoAssetObjectName(objectName) {
+  const raw = String(objectName || "").trim().toLowerCase();
+  if (!raw) return false;
+  return [".mp4", ".webm", ".mov", ".m4v", ".avi", ".mkv", ".ogv"].some(ext => raw.endsWith(ext));
+}
+
+function isImageAssetObjectName(objectName) {
+  const raw = String(objectName || "").trim().toLowerCase();
+  if (!raw) return false;
+  return [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".avif"].some(ext => raw.endsWith(ext));
+}
+
+function isAudioAssetObjectName(objectName) {
+  const raw = String(objectName || "").trim().toLowerCase();
+  if (!raw) return false;
+  return [".mp3", ".wav", ".m4a", ".aac", ".ogg", ".oga", ".flac", ".webm"].some(ext => raw.endsWith(ext));
+}
+
+function matchesAssetType(type, objectName, mimeType) {
+  const normalizedType = String(type || "").trim().toLowerCase();
+  if (!normalizedType) return true;
+  const normalizedMime = String(mimeType || "").trim().toLowerCase();
+  if (normalizedType === "video") {
+    return normalizedMime.startsWith("video/") || isVideoAssetObjectName(objectName);
+  }
+  if (normalizedType === "image") {
+    return normalizedMime.startsWith("image/") || isImageAssetObjectName(objectName);
+  }
+  if (normalizedType === "audio") {
+    return normalizedMime.startsWith("audio/") || isAudioAssetObjectName(objectName);
+  }
+  return true;
+}
+
+async function listAssetsFromStorage(env, options = {}) {
+  const bucket = resolveR2MediaBucket(env);
+  const spaceId = normalizeSpaceId(options?.spaceId || "");
+  const type = String(options?.type || "").trim().toLowerCase();
+  const prefix = String(options?.prefix || "assets/").trim() || "assets/";
+  const items = [];
+  let cursor = undefined;
+  do {
+    const listed = await bucket.list({ prefix, cursor, limit: 500 });
+    const objects = Array.isArray(listed?.objects) ? listed.objects : [];
+    for (const object of objects) {
+      const objectSpaceId = normalizeSpaceId(
+        object?.customMetadata?.spaceId
+        || object?.customMetadata?.spaceid
+        || ""
+      );
+      if (spaceId && objectSpaceId !== spaceId) continue;
+      if (!matchesAssetType(type, object?.key || "", object?.httpMetadata?.contentType || "")) continue;
+      items.push(mapStorageObjectToAsset(String(object?.key || ""), {
+        mimeType: String(object?.httpMetadata?.contentType || ""),
+        size: Number(object?.size || 0),
+        spaceId: objectSpaceId
+      }));
+    }
+    cursor = listed?.truncated ? listed?.cursor : undefined;
+  } while (cursor);
+  return items;
+}
+
 async function uploadAssetToStorage(env, upload) {
   const bucket = resolveR2MediaBucket(env);
   const bytes = upload.bytes instanceof Uint8Array ? upload.bytes : decodeBase64ToBytes(upload.contentBase64);
@@ -1263,6 +1340,29 @@ async function deleteAssetFromStorage(env, assetId) {
   if (!objectName) return false;
   await bucket.delete(objectName);
   return true;
+}
+
+async function deleteAssetsFromStorage(env, assetIds, spaceId) {
+  const normalizedSpaceId = normalizeSpaceId(spaceId || "");
+  const ids = Array.isArray(assetIds)
+    ? Array.from(new Set(assetIds.map(id => String(id || "").trim()).filter(Boolean)))
+    : [];
+  const results = [];
+  for (const assetId of ids) {
+    const result = await readAssetFromStorage(env, assetId);
+    if (!result) {
+      results.push({ id: assetId, ok: false, status: 404 });
+      continue;
+    }
+    const assetSpaceId = readAssetSpaceId(result.object);
+    if (!assetSpaceId || assetSpaceId !== normalizedSpaceId) {
+      results.push({ id: assetId, ok: false, status: 403 });
+      continue;
+    }
+    await deleteAssetFromStorage(env, assetId);
+    results.push({ id: assetId, ok: true, status: 200 });
+  }
+  return results;
 }
 
 async function fetchShareDocument(env, collection, documentId) {
@@ -1606,6 +1706,7 @@ async function upsertShareDocument(env, collection, documentId, payload, request
 
 async function handleRequest(request, env) {
   const assetPath = parseAssetPath(request);
+  const assetBatchDeletePath = parseAssetBatchDeletePath(request);
   const spaceAuthPath = parseSpaceAuthPath(request);
   const allowSecretSpaceCreate = Boolean(
     request.method !== "OPTIONS"
@@ -1788,10 +1889,10 @@ async function handleRequest(request, env) {
       "Cache-Control": "no-store, max-age=0"
     });
   }
-  if (assetPath) {
+  if (assetPath || assetBatchDeletePath) {
     if (request.method === "GET") {
-      if (!assetPath.action || assetPath.action === "upload") {
-        return errorResponse("Identifiant d'asset manquant", 400, request, env);
+      if (assetBatchDeletePath) {
+        return errorResponse("Route assets batch invalide pour GET", 405, request, env);
       }
       const authHeaders = readSpaceAuthHeaders(request);
       if (!authHeaders.spaceId || !authHeaders.token) {
@@ -1800,6 +1901,24 @@ async function handleRequest(request, env) {
       const verification = await verifySpaceAuthToken(env, authHeaders.token, authHeaders.spaceId);
       if (!verification.ok) {
         return errorResponse(verification.error || "Token espace invalide", 401, request, env);
+      }
+      if (!assetPath.action) {
+        const url = new URL(request.url);
+        const view = String(url.searchParams.get("view") || "").trim().toLowerCase();
+        if (view === "list") {
+          const type = String(url.searchParams.get("type") || "").trim().toLowerCase();
+          const assets = await listAssetsFromStorage(env, {
+            spaceId: authHeaders.spaceId,
+            type
+          });
+          return jsonResponse({ ok: true, assets }, 200, request, env, {
+            "Cache-Control": "no-store, max-age=0"
+          });
+        }
+        return errorResponse("Identifiant d'asset manquant", 400, request, env);
+      }
+      if (assetPath.action === "upload") {
+        return errorResponse("Identifiant d'asset manquant", 400, request, env);
       }
       const result = await readAssetFromStorage(env, assetPath.action);
       if (!result) {
@@ -1824,6 +1943,33 @@ async function handleRequest(request, env) {
     }
 
     if (request.method === "POST") {
+      if (assetBatchDeletePath) {
+        const authHeaders = readSpaceAuthHeaders(request);
+        if (!authHeaders.spaceId || !authHeaders.token) {
+          return errorResponse("Authentification espace requise: fournir X-Space-Id et X-Space-Auth valides", 401, request, env);
+        }
+        const verification = await verifySpaceAuthToken(env, authHeaders.token, authHeaders.spaceId);
+        if (!verification.ok) {
+          return errorResponse(verification.error || "Token espace invalide", 401, request, env);
+        }
+        const rateLimitResponse = await enforceWriteRateLimit(request, env);
+        if (rateLimitResponse) {
+          return rateLimitResponse;
+        }
+        let body = {};
+        try {
+          body = await request.json();
+        } catch (err) {
+          return errorResponse("Payload JSON attendu", 400, request, env);
+        }
+        const ids = Array.isArray(body?.ids) ? body.ids : [];
+        const results = await deleteAssetsFromStorage(env, ids, authHeaders.spaceId);
+        return jsonResponse({
+          ok: true,
+          count: results.length,
+          results
+        }, 200, request, env);
+      }
       if (assetPath.action !== "upload") {
         return errorResponse("Route assets invalide: utiliser /v1/assets/upload pour l'upload ou /v1/assets/:id pour la lecture", 404, request, env);
       }
@@ -1856,6 +2002,9 @@ async function handleRequest(request, env) {
     }
 
     if (request.method === "DELETE") {
+      if (assetBatchDeletePath) {
+        return errorResponse("Route assets batch invalide pour DELETE: utiliser POST /v1/assets:batchDelete", 405, request, env);
+      }
       if (!assetPath.action || assetPath.action === "upload") {
         return errorResponse("Identifiant d'asset manquant", 400, request, env);
       }

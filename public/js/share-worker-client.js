@@ -64,6 +64,14 @@
     }
   }
 
+  function getMemoMediaStore() {
+    return window.goToolkitMemoMediaStore || null;
+  }
+
+  function isMemoLocalAssetRef(value) {
+    return Boolean(getMemoMediaStore()?.isLocalRef?.(value));
+  }
+
   function randomToken(size = 16) {
     const bytes = new Uint8Array(size);
     crypto.getRandomValues(bytes);
@@ -605,6 +613,170 @@
     return walk(payload);
   }
 
+  async function localizeRemoteAssetToMemoStore(base, assetUrl, options = {}) {
+    const memoMediaStore = getMemoMediaStore();
+    if (!memoMediaStore?.saveFile) return assetUrl;
+    const assetId = extractAssetIdFromUrl(base, assetUrl);
+    if (!assetId) return assetUrl;
+    const spaceId = String(options?.spaceId || "golive").trim().toLowerCase() || "golive";
+    const existing = (await memoMediaStore.list?.().catch(() => [])) || [];
+    const match = existing.find((entry) =>
+      String(entry?.sourceAssetId || "").trim() === assetId
+      && String(entry?.spaceId || "").trim().toLowerCase() === spaceId
+    );
+    if (match?.id && memoMediaStore.createRef) {
+      return memoMediaStore.createRef(match.id) || assetUrl;
+    }
+    let response;
+    try {
+      const headers = await withSpaceAuthHeaders(base, {
+        Accept: "*/*"
+      }, {
+        method: "GET",
+        collection: "assets",
+        spaceId
+      });
+      response = await fetchWithSyncRetry(buildAssetUrl(base, assetId), {
+        method: "GET",
+        cache: "no-store",
+        headers
+      });
+    } catch (error) {
+      throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+    }
+    if (!response.ok) return assetUrl;
+    const blob = await response.blob().catch(() => null);
+    if (!(blob instanceof Blob)) return assetUrl;
+    const contentDisposition = String(response.headers.get("content-disposition") || "").trim();
+    const fileNameMatch = contentDisposition.match(/filename\*?=(?:UTF-8''|")?([^\";]+)/i);
+    const fileName = decodeURIComponent(String(fileNameMatch?.[1] || "").replace(/"/g, "").trim() || `asset-${assetId}`);
+    const saved = await memoMediaStore.saveFile(blob, {
+      fileName,
+      mimeType: blob.type || String(response.headers.get("content-type") || "").trim() || "application/octet-stream",
+      spaceId,
+      sourceAssetId: assetId,
+      sourceUrl: buildAssetUrl(base, assetId)
+    }).catch(() => null);
+    return String(saved?.ref || "").trim() || assetUrl;
+  }
+
+  async function localizeHtmlAssetUrls(html, base, options = {}) {
+    if (typeof html !== "string" || !html.includes("/v1/assets/") || typeof DOMParser === "undefined") {
+      return html;
+    }
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(String(html), "text/html");
+    if (!doc?.body) return html;
+    sanitizeRichHtmlDocument(doc);
+    const srcNodes = Array.from(doc.querySelectorAll("img[src],video[src],audio[src],source[src]"));
+    for (const node of srcNodes) {
+      const src = String(node.getAttribute("src") || "").trim();
+      if (!src || !src.includes("/v1/assets/")) continue;
+      const localized = await localizeRemoteAssetToMemoStore(base, src, options).catch(() => src);
+      if (localized && localized !== src) {
+        node.setAttribute("src", localized);
+      }
+    }
+    return doc.body.innerHTML;
+  }
+
+  async function localizePayloadAssetUrls(payload, base, options = {}) {
+    async function walk(value) {
+      if (typeof value === "string") {
+        return localizeHtmlAssetUrls(value, base, options);
+      }
+      if (Array.isArray(value)) {
+        const out = [];
+        for (const item of value) out.push(await walk(item));
+        return out;
+      }
+      if (!value || typeof value !== "object") return value;
+      const next = {};
+      for (const [key, entry] of Object.entries(value)) {
+        if (key === "src" && typeof entry === "string" && entry.includes("/v1/assets/")) {
+          next[key] = await localizeRemoteAssetToMemoStore(base, entry, options).catch(() => entry);
+          continue;
+        }
+        next[key] = await walk(entry);
+      }
+      return next;
+    }
+    return walk(payload);
+  }
+
+  async function materializeMemoLocalHtmlAssets(html, base, options = {}) {
+    if (typeof html !== "string" || !html.includes("gtlocal://memo-media/") || typeof DOMParser === "undefined") {
+      return html;
+    }
+    const memoMediaStore = getMemoMediaStore();
+    if (!memoMediaStore?.parseRef || !memoMediaStore?.get) return html;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(String(html), "text/html");
+    if (!doc?.body) return html;
+    sanitizeRichHtmlDocument(doc);
+    const srcNodes = Array.from(doc.querySelectorAll("img[src],video[src],audio[src],source[src]"));
+    for (const node of srcNodes) {
+      const src = String(node.getAttribute("src") || "").trim();
+      if (!isMemoLocalAssetRef(src)) continue;
+      const localId = memoMediaStore.parseRef(src);
+      const record = localId ? await memoMediaStore.get(localId).catch(() => null) : null;
+      if (!(record?.blob instanceof Blob)) continue;
+      const uploadResult = await uploadAssetWithBase(base, {
+        scope: String(options.assetScope || options.scope || "pages").trim() || "pages",
+        file: record.blob,
+        fileName: String(record.fileName || "asset.bin").trim() || "asset.bin",
+        mimeType: String(record.mimeType || record.blob.type || "application/octet-stream").trim() || "application/octet-stream"
+      }, {
+        spaceId: String(options?.spaceId || record?.spaceId || "golive").trim().toLowerCase() || "golive",
+        collection: "assets"
+      });
+      const assetId = String(uploadResult?.asset?.id || "").trim();
+      if (!assetId) continue;
+      node.setAttribute("src", buildAssetUrl(base, assetId));
+      node.setAttribute("data-gt-asset-id", assetId);
+    }
+    return doc.body.innerHTML;
+  }
+
+  async function materializeMemoLocalPayloadAssets(payload, base, options = {}) {
+    async function walk(value) {
+      if (typeof value === "string") {
+        return materializeMemoLocalHtmlAssets(value, base, options);
+      }
+      if (Array.isArray(value)) {
+        const out = [];
+        for (const item of value) out.push(await walk(item));
+        return out;
+      }
+      if (!value || typeof value !== "object") return value;
+      const next = {};
+      for (const [key, entry] of Object.entries(value)) {
+        if (key === "src" && typeof entry === "string" && isMemoLocalAssetRef(entry)) {
+          const memoMediaStore = getMemoMediaStore();
+          const localId = memoMediaStore?.parseRef?.(entry);
+          const record = localId ? await memoMediaStore.get(localId).catch(() => null) : null;
+          if (record?.blob instanceof Blob) {
+            const uploadResult = await uploadAssetWithBase(base, {
+              scope: String(options.assetScope || options.scope || "pages").trim() || "pages",
+              file: record.blob,
+              fileName: String(record.fileName || "asset.bin").trim() || "asset.bin",
+              mimeType: String(record.mimeType || record.blob.type || "application/octet-stream").trim() || "application/octet-stream"
+            }, {
+              spaceId: String(options?.spaceId || record?.spaceId || "golive").trim().toLowerCase() || "golive",
+              collection: "assets"
+            });
+            const assetId = String(uploadResult?.asset?.id || "").trim();
+            next[key] = assetId ? buildAssetUrl(base, assetId) : entry;
+            continue;
+          }
+        }
+        next[key] = await walk(entry);
+      }
+      return next;
+    }
+    return walk(payload);
+  }
+
   function buildShareUrl(base, collection, token) {
     const encodedCollection = encodeURIComponent(collection);
     if (!token || token === "undefined" || token === "null") {
@@ -649,6 +821,10 @@
   function buildAssetUrl(base, assetId) {
     const encodedId = encodeURIComponent(assetId);
     return `${base}/${API_VERSION}/assets/${encodedId}`;
+  }
+
+  function buildAssetBatchDeleteUrl(base) {
+    return `${base}/${API_VERSION}/assets:batchDelete`;
   }
 
   function normalizeBase64(input) {
@@ -1254,10 +1430,7 @@
         base
       });
       const preparedWrites = [];
-      const inlineAssetsExplicit = Object.prototype.hasOwnProperty.call(options || {}, "inlineAssets");
-      const shouldInlineAssets = inlineAssetsExplicit
-        ? Boolean(options?.inlineAssets)
-        : isPageCollection(collection);
+      const shouldInlineAssets = Boolean(options?.inlineAssets);
       for (const entry of normalizedWrites) {
         const payload = entry?.payload;
         const spaceId = resolveSpaceIdForPayload(payload || {}, options);
@@ -1670,7 +1843,12 @@
     return withWorkerFallback(async base => {
       const spaceId = resolveSpaceIdForPayload(payload, options);
       const before = JSON.stringify(payload || {});
-      const processed = await processPayloadInlineAssets(payload, base, {
+      const localized = await materializeMemoLocalPayloadAssets(payload, base, {
+        assetScope: options.assetScope || collection,
+        collection,
+        spaceId
+      });
+      const processed = await processPayloadInlineAssets(localized, base, {
         assetScope: options.assetScope || collection,
         collection,
         spaceId
@@ -1753,10 +1931,7 @@
         base
       });
       const preparedWrites = [];
-      const inlineAssetsExplicit = Object.prototype.hasOwnProperty.call(options || {}, "inlineAssets");
-      const shouldInlineAssets = inlineAssetsExplicit
-        ? Boolean(options?.inlineAssets)
-        : isPageCollection(collection);
+      const shouldInlineAssets = Boolean(options?.inlineAssets);
       for (const entry of normalizedWrites) {
         const contentPayload = entry?.contentPayload;
         const spaceId = resolveSpaceIdForPayload(contentPayload || {}, options);
@@ -1918,6 +2093,83 @@
     });
   }
 
+  async function deleteAssetBatch(assetIds, options = {}) {
+    assertReady();
+    const normalizedIds = Array.isArray(assetIds)
+      ? Array.from(new Set(assetIds.map(id => String(id || "").trim()).filter(Boolean)))
+      : [];
+    if (!normalizedIds.length) {
+      return { count: 0, results: [] };
+    }
+    return withWorkerFallback(async base => {
+      const spaceId = String(options?.spaceId || "golive").trim().toLowerCase() || "golive";
+      let response;
+      try {
+        const headers = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        }), {
+          method: "POST",
+          collection: "assets",
+          spaceId
+        });
+        response = await fetchWithSyncRetry(buildAssetBatchDeleteUrl(base), {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ ids: normalizedIds })
+        });
+      } catch (error) {
+        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      }
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(body || "Suppression batch assets impossible");
+      }
+      const data = await response.json().catch(() => ({ count: normalizedIds.length, results: [] }));
+      return {
+        count: Number(data?.count || normalizedIds.length) || normalizedIds.length,
+        results: Array.isArray(data?.results) ? data.results : []
+      };
+    });
+  }
+
+  async function listAssets(options = {}) {
+    assertReady();
+    return withWorkerFallback(async base => {
+      const spaceId = String(options?.spaceId || "golive").trim().toLowerCase() || "golive";
+      const url = new URL(`${base}/${API_VERSION}/assets`);
+      url.searchParams.set("view", "list");
+      if (options?.type) {
+        url.searchParams.set("type", String(options.type).trim().toLowerCase());
+      }
+      let response;
+      try {
+        const headers = await withSpaceAuthHeaders(base, {
+          Accept: "application/json"
+        }, {
+          method: "GET",
+          collection: "assets",
+          spaceId
+        });
+        response = await fetchWithSyncRetry(url.toString(), {
+          method: "GET",
+          cache: "no-store",
+          headers
+        });
+      } catch (error) {
+        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      }
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(body || "Liste assets impossible");
+      }
+      const data = await response.json().catch(() => ({}));
+      return {
+        assets: Array.isArray(data?.assets) ? data.assets : []
+      };
+    });
+  }
+
   async function probePagePayloadJoinCode(payload, spaceId, joinCodeRaw) {
     if (!isEncryptedPagePayload(payload)) return false;
     const normalizedSpaceId = String(spaceId || payload?.spaceId || "").trim().toLowerCase();
@@ -1953,11 +2205,14 @@
     saveSharePayload,
     saveSharePayloadBatch,
     materializePayloadAssets,
+    localizePayloadAssetUrls,
     prefetchAssets,
     deleteSharePayload,
     listShares,
     listShareTree,
     uploadAsset,
+    listAssets,
+    deleteAssetBatch,
     deleteAsset,
     rotateSpaceJoinCode,
     verifySpaceCredentials,

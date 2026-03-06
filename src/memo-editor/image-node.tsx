@@ -248,8 +248,9 @@ const downloadDataUrl = (dataUrl: string, fileName: string) => {
 
 const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   const src = String(node?.attrs?.src || '');
+  const [resolvedSrc, setResolvedSrc] = React.useState(src);
   const canEdit = Boolean(editor?.isEditable);
-  const isGif = isGifSource(src);
+  const isGif = isGifSource(resolvedSrc);
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const inlineSurfaceRef = React.useRef<HTMLDivElement>(null);
   const fullscreenSurfaceRef = React.useRef<HTMLDivElement>(null);
@@ -344,8 +345,8 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
       }
     };
     img.onerror = () => setGifPoster(null);
-    img.src = src;
-    estimateGifDurationMs(src).then((duration) => {
+    img.src = resolvedSrc;
+    estimateGifDurationMs(resolvedSrc).then((duration) => {
       if (cancelled) return;
       if (typeof duration === 'number' && Number.isFinite(duration) && duration > 0) {
         setGifDurationMs(duration);
@@ -360,7 +361,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         gifPlayTimeoutRef.current = null;
       }
     };
-  }, [isGif, src]);
+  }, [isGif, resolvedSrc]);
 
   React.useEffect(() => {
     const onPointerMove = (event: PointerEvent) => {
@@ -472,16 +473,16 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   };
 
   const replaySrc = React.useMemo(() => {
-    if (!gifPlaying) return src;
-    if (!src) return src;
-    if (src.startsWith('data:')) {
-      return `${src}#gtGifReplay=${gifReplayTick}`;
+    if (!gifPlaying) return resolvedSrc;
+    if (!resolvedSrc) return resolvedSrc;
+    if (resolvedSrc.startsWith('data:')) {
+      return `${resolvedSrc}#gtGifReplay=${gifReplayTick}`;
     }
-    const sep = src.includes('?') ? '&' : '?';
-    return `${src}${sep}gtGifReplay=${gifReplayTick}`;
-  }, [gifPlaying, gifReplayTick, src]);
+    const sep = resolvedSrc.includes('?') ? '&' : '?';
+    return `${resolvedSrc}${sep}gtGifReplay=${gifReplayTick}`;
+  }, [gifPlaying, gifReplayTick, resolvedSrc]);
 
-  const imgSrc = isGif ? (gifPlaying ? replaySrc : (gifPoster || src)) : src;
+  const imgSrc = isGif ? (gifPlaying ? replaySrc : (gifPoster || resolvedSrc)) : resolvedSrc;
 
   const imageStyle: React.CSSProperties = {
     width: '100%',
@@ -1564,9 +1565,9 @@ export const CustomImage = Image.extend({
       ...this.parent?.(),
       src: {
         default: null,
-        parseHTML: element => sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data', 'blob']) || null,
+        parseHTML: element => sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data', 'blob', 'gtlocal']) || null,
         renderHTML: attributes => {
-          const src = sanitizeUrl(attributes.src, ['http', 'https', 'data', 'blob']);
+          const src = sanitizeUrl(attributes.src, ['http', 'https', 'data', 'blob', 'gtlocal']);
           return src ? { src } : {};
         },
       },
@@ -1610,3 +1611,21 @@ export const isSupportedImageFile = (file: File) => {
   if (SUPPORTED_IMAGE_MIME.has(mime)) return true;
   return SUPPORTED_IMAGE_EXT.some(ext => name.endsWith(ext));
 };
+  React.useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const memoMediaStore = (window as any).goToolkitMemoMediaStore;
+      if (!memoMediaStore?.isLocalRef?.(src) || !memoMediaStore?.resolveBlobUrl) {
+        setResolvedSrc(src);
+        return;
+      }
+      const blobUrl = await memoMediaStore.resolveBlobUrl(src).catch(() => '');
+      if (!cancelled) {
+        setResolvedSrc(String(blobUrl || src));
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);

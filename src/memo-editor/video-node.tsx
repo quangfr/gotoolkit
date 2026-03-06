@@ -54,7 +54,8 @@ const copyVideoHtml = async (attrs: Record<string, any>) => {
 };
 
 const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
-  const src = sanitizeUrl(node?.attrs?.src, ['http', 'https', 'data']) || '';
+  const src = sanitizeUrl(node?.attrs?.src, ['http', 'https', 'data', 'gtlocal']) || '';
+  const [resolvedSrc, setResolvedSrc] = React.useState(src);
   const canEdit = Boolean(editor?.isEditable);
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const frameRef = React.useRef<HTMLDivElement | null>(null);
@@ -63,6 +64,25 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
   const [aspectRatio, setAspectRatio] = React.useState(DEFAULT_VIDEO_ASPECT_RATIO);
   const widthPx = parseSizePx(node?.attrs?.width);
   const heightPx = parseSizePx(node?.attrs?.height);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const memoMediaStore = (window as any).goToolkitMemoMediaStore;
+      if (!memoMediaStore?.isLocalRef?.(src) || !memoMediaStore?.resolveBlobUrl) {
+        setResolvedSrc(src);
+        return;
+      }
+      const blobUrl = await memoMediaStore.resolveBlobUrl(src).catch(() => '');
+      if (!cancelled) {
+        setResolvedSrc(String(blobUrl || src));
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
 
   React.useEffect(() => {
     const el = videoRef.current;
@@ -95,7 +115,7 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
     return () => {
       el.removeEventListener('loadedmetadata', syncRatio);
     };
-  }, [src]);
+  }, [resolvedSrc]);
 
   React.useEffect(() => {
     if (!canEdit) return;
@@ -200,7 +220,7 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
           ref={videoRef}
           className="memo-video"
           style={videoStyle}
-          src={src}
+          src={resolvedSrc}
           playsInline
           preload="metadata"
           title={String(node?.attrs?.title || '')}
@@ -382,9 +402,9 @@ export const VideoEmbed = Node.create({
     return {
       src: {
         default: null,
-        parseHTML: element => sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data']) || null,
+        parseHTML: element => sanitizeUrl(element.getAttribute('src'), ['http', 'https', 'data', 'gtlocal']) || null,
         renderHTML: attributes => {
-          const src = sanitizeUrl(attributes.src, ['http', 'https', 'data']);
+          const src = sanitizeUrl(attributes.src, ['http', 'https', 'data', 'gtlocal']);
           return src ? { src } : {};
         },
       },

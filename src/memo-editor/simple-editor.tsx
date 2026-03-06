@@ -3297,10 +3297,12 @@ const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) 
 const isSupportedVideoFile = (file: File) => {
   const mime = String(file?.type || '').toLowerCase();
   const name = String(file?.name || '').toLowerCase();
-  return mime === 'video/mp4'
-    || mime === 'video/webm'
+  return mime.startsWith('video/')
+    || mime === 'application/octet-stream'
     || name.endsWith('.mp4')
-    || name.endsWith('.webm');
+    || name.endsWith('.webm')
+    || name.endsWith('.mov')
+    || name.endsWith('.m4v');
 };
 
 const INITIAL_NAV_DISMISSED_KEY = 'go-toolkit-memo-initial-navigation-dismissed-v1';
@@ -3530,21 +3532,32 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     const mimeType = String(file?.type || '').trim() || 'application/octet-stream';
     const fileName = String(file?.name || 'asset').trim() || 'asset';
     const spaceId = await resolveActiveMemoSpaceId();
-    const uploadResponse = await (window as any).goToolkitShareWorker?.uploadAsset?.({
-      file,
+    console.log('[SimpleEditor] media local-store:start', {
+      source: 'file-insert',
       fileName,
       mimeType,
-    }, {
-      scope: 'shared',
-      collection: 'assets',
+      size: Number(file?.size || 0),
       spaceId,
     });
-    const uploadedUrl = String(uploadResponse?.asset?.url || '').trim();
-    if (!uploadedUrl) {
-      throw new Error('Missing uploaded asset URL');
+    const saved = await (window as any).goToolkitMemoMediaStore?.saveFile?.(file, {
+      fileName,
+      mimeType,
+      spaceId,
+    });
+    const localRef = String(saved?.ref || '').trim();
+    if (!localRef) {
+      throw new Error('Missing local media ref');
     }
+    console.log('[SimpleEditor] media local-store:done', {
+      source: 'file-insert',
+      fileName,
+      mimeType,
+      size: Number(file?.size || 0),
+      spaceId,
+      localRef,
+    });
     return {
-      src: uploadedUrl,
+      src: localRef,
       fileName,
       mimeType,
     };
@@ -3554,11 +3567,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     const selected = Array.from(files || []);
     const content: Array<Record<string, any>> = [];
     for (const file of selected) {
-      if (isSupportedImageFile(file)) {
-        try {
-          const uploaded = await uploadEditorAssetFile(file);
-          content.push({
-            type: 'image',
+        if (isSupportedImageFile(file)) {
+          try {
+            console.log('[SimpleEditor] media insert:prepare', {
+              trigger: 'file-input',
+              type: 'image',
+              fileName: String(file?.name || ''),
+              mimeType: String(file?.type || ''),
+              size: Number(file?.size || 0),
+            });
+            const uploaded = await uploadEditorAssetFile(file);
+            content.push({
+              type: 'image',
             attrs: {
               src: uploaded.src,
               alt: uploaded.fileName || 'image',
@@ -3587,11 +3607,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
         continue;
       }
-      if (isSupportedVideoFile(file)) {
-        try {
-          const uploaded = await uploadEditorAssetFile(file);
-          content.push({
-            type: 'videoEmbed',
+        if (isSupportedVideoFile(file)) {
+          try {
+            console.log('[SimpleEditor] media insert:prepare', {
+              trigger: 'file-input',
+              type: 'video',
+              fileName: String(file?.name || ''),
+              mimeType: String(file?.type || ''),
+              size: Number(file?.size || 0),
+            });
+            const uploaded = await uploadEditorAssetFile(file);
+            content.push({
+              type: 'videoEmbed',
             attrs: {
               src: uploaded.src,
               title: uploaded.fileName || 'video',
@@ -4325,6 +4352,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         const droppedFiles = Array.from(event.dataTransfer?.files || []);
         const droppedMedia = droppedFiles.filter((file) => isSupportedImageFile(file) || isSupportedVideoFile(file));
         if (droppedMedia.length) {
+          console.log('[SimpleEditor] media insert:drop', droppedMedia.map((file) => ({
+            fileName: String(file?.name || ''),
+            mimeType: String(file?.type || ''),
+            size: Number(file?.size || 0),
+            type: isSupportedVideoFile(file) ? 'video' : 'image',
+          })));
           event.preventDefault();
           event.stopPropagation();
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
@@ -4409,6 +4442,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   }, [buildDroppedMediaContent, editor]);
 
   const openImagePicker = React.useCallback(() => {
+    console.log('[SimpleEditor] media picker:open', { trigger: 'slash-menu', type: 'image' });
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/png,image/jpeg,image/jpg,image/gif';
@@ -4433,6 +4467,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   const openVideoInsertDialog = React.useCallback(() => {
     if (!editor) return;
+    console.log('[SimpleEditor] media picker:open', { trigger: 'slash-menu', type: 'video' });
     const insertVideoFromSrc = (src: string, providedName?: string, providedMimeType?: string) => {
       const normalized = String(src || '').trim();
       const safeSrc = sanitizeUrl(normalized, ['http', 'https']);
@@ -4446,7 +4481,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         return file || 'video';
       })();
 
-      const mimeType = providedMimeType || (/\.mp4([?#].*)?$/i.test(safeSrc) ? 'video/mp4' : 'video/webm');
+      const mimeType = providedMimeType
+        || (/\.mp4([?#].*)?$/i.test(safeSrc)
+          ? 'video/mp4'
+          : (/\.mov([?#].*)?$/i.test(safeSrc)
+            ? 'video/quicktime'
+            : (/\.m4v([?#].*)?$/i.test(safeSrc) ? 'video/x-m4v' : 'video/webm')));
 
       editor
         .chain()
@@ -4465,7 +4505,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'video/mp4,video/webm,.mp4,.webm';
+    input.accept = 'video/*,.mp4,.webm,.mov,.m4v';
     input.style.position = 'fixed';
     input.style.left = '-9999px';
     input.style.top = '0';
@@ -4476,11 +4516,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         return;
       }
       const mimeType = String(file.type || '').toLowerCase();
-      const looksSupported =
-        mimeType === 'video/mp4'
-        || mimeType === 'video/webm'
-        || /\.mp4$/i.test(file.name)
-        || /\.webm$/i.test(file.name);
+      const looksSupported = isSupportedVideoFile(file);
       if (!looksSupported) {
         try { input.remove(); } catch (err) { /* noop */ }
         return;

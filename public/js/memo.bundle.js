@@ -1791,11 +1791,11 @@
       function base64ToBytes(str) {
         return base64.toByteArray(base64clean(str));
       }
-      function blitBuffer(src, dst, offset3, length) {
+      function blitBuffer(src2, dst, offset3, length) {
         let i;
         for (i = 0; i < length; ++i) {
-          if (i + offset3 >= dst.length || i >= src.length) break;
-          dst[i + offset3] = src[i];
+          if (i + offset3 >= dst.length || i >= src2.length) break;
+          dst[i + offset3] = src2[i];
         }
         return i;
       }
@@ -32120,10 +32120,10 @@ img.ProseMirror-separator {
       function base64ToBytes(str) {
         return base64.toByteArray(base64clean(str));
       }
-      function blitBuffer(src, dst, offset3, length) {
+      function blitBuffer(src2, dst, offset3, length) {
         for (var i = 0; i < length; ++i) {
-          if (i + offset3 >= dst.length || i >= src.length) break;
-          dst[i + offset3] = src[i];
+          if (i + offset3 >= dst.length || i >= src2.length) break;
+          dst[i + offset3] = src2[i];
         }
         return i;
       }
@@ -34400,8 +34400,8 @@ img.ProseMirror-separator {
     var _require = requireBuffer(), Buffer22 = _require.Buffer;
     var _require2 = requireUtil(), inspect = _require2.inspect;
     var custom = inspect && inspect.custom || "inspect";
-    function copyBuffer(src, target, offset3) {
-      Buffer22.prototype.copy.call(src, target, offset3);
+    function copyBuffer(src2, target, offset3) {
+      Buffer22.prototype.copy.call(src2, target, offset3);
     }
     buffer_list = /* @__PURE__ */ (function() {
       function BufferList() {
@@ -35394,9 +35394,9 @@ img.ProseMirror-separator {
     (function(module, exports) {
       var buffer2 = requireBuffer();
       var Buffer22 = buffer2.Buffer;
-      function copyProps(src, dst) {
-        for (var key in src) {
-          dst[key] = src[key];
+      function copyProps(src2, dst) {
+        for (var key in src2) {
+          dst[key] = src2[key];
         }
       }
       if (Buffer22.from && Buffer22.alloc && Buffer22.allocUnsafe && Buffer22.allocUnsafeSlow) {
@@ -36306,7 +36306,7 @@ img.ProseMirror-separator {
       errorOrDestroy(this, new ERR_METHOD_NOT_IMPLEMENTED("_read()"));
     };
     Readable.prototype.pipe = function(dest, pipeOpts) {
-      var src = this;
+      var src2 = this;
       var state2 = this._readableState;
       switch (state2.pipesCount) {
         case 0:
@@ -36324,11 +36324,11 @@ img.ProseMirror-separator {
       var doEnd = (!pipeOpts || pipeOpts.end !== false) && dest !== process$1.stdout && dest !== process$1.stderr;
       var endFn = doEnd ? onend : unpipe;
       if (state2.endEmitted) process$1.nextTick(endFn);
-      else src.once("end", endFn);
+      else src2.once("end", endFn);
       dest.on("unpipe", onunpipe);
       function onunpipe(readable, unpipeInfo) {
         debug("onunpipe");
-        if (readable === src) {
+        if (readable === src2) {
           if (unpipeInfo && unpipeInfo.hasUnpiped === false) {
             unpipeInfo.hasUnpiped = true;
             cleanup();
@@ -36339,7 +36339,7 @@ img.ProseMirror-separator {
         debug("onend");
         dest.end();
       }
-      var ondrain = pipeOnDrain(src);
+      var ondrain = pipeOnDrain(src2);
       dest.on("drain", ondrain);
       var cleanedUp = false;
       function cleanup() {
@@ -36349,13 +36349,13 @@ img.ProseMirror-separator {
         dest.removeListener("drain", ondrain);
         dest.removeListener("error", onerror);
         dest.removeListener("unpipe", onunpipe);
-        src.removeListener("end", onend);
-        src.removeListener("end", unpipe);
-        src.removeListener("data", ondata);
+        src2.removeListener("end", onend);
+        src2.removeListener("end", unpipe);
+        src2.removeListener("data", ondata);
         cleanedUp = true;
         if (state2.awaitDrain && (!dest._writableState || dest._writableState.needDrain)) ondrain();
       }
-      src.on("data", ondata);
+      src2.on("data", ondata);
       function ondata(chunk) {
         debug("ondata");
         var ret = dest.write(chunk);
@@ -36365,7 +36365,7 @@ img.ProseMirror-separator {
             debug("false write response, pause", state2.awaitDrain);
             state2.awaitDrain++;
           }
-          src.pause();
+          src2.pause();
         }
       }
       function onerror(er) {
@@ -36388,23 +36388,23 @@ img.ProseMirror-separator {
       dest.once("finish", onfinish);
       function unpipe() {
         debug("unpipe");
-        src.unpipe(dest);
+        src2.unpipe(dest);
       }
-      dest.emit("pipe", src);
+      dest.emit("pipe", src2);
       if (!state2.flowing) {
         debug("pipe resume");
-        src.resume();
+        src2.resume();
       }
       return dest;
     };
-    function pipeOnDrain(src) {
+    function pipeOnDrain(src2) {
       return function pipeOnDrainFunctionResult() {
-        var state2 = src._readableState;
+        var state2 = src2._readableState;
         debug("pipeOnDrain", state2.awaitDrain);
         if (state2.awaitDrain) state2.awaitDrain--;
-        if (state2.awaitDrain === 0 && EElistenerCount(src, "data")) {
+        if (state2.awaitDrain === 0 && EElistenerCount(src2, "data")) {
           state2.flowing = true;
-          flow(src);
+          flow(src2);
         }
       };
     }
@@ -49859,14 +49859,14 @@ img.ProseMirror-separator {
         return new Paragraph2({ text: "[Diagramme Mermaid]" });
       }
       case "image": {
-        const src = String(((_f = node == null ? void 0 : node.attrs) == null ? void 0 : _f.src) || "").trim();
-        if (!src) return null;
+        const src2 = String(((_f = node == null ? void 0 : node.attrs) == null ? void 0 : _f.src) || "").trim();
+        if (!src2) return null;
         try {
-          const data = await imageSourceToUint8Array(src);
+          const data = await imageSourceToUint8Array(src2);
           if (!data) {
             return new Paragraph2({ text: "[Image indisponible]" });
           }
-          const natural = await getImageNaturalSize(src);
+          const natural = await getImageNaturalSize(src2);
           const fallbackWidth = natural.width || 640;
           const fallbackHeight = natural.height || 360;
           const desiredWidth = parseNodePixels((_g = node == null ? void 0 : node.attrs) == null ? void 0 : _g.width) || fallbackWidth;
@@ -49893,15 +49893,15 @@ img.ProseMirror-separator {
         }
       }
       case "videoEmbed": {
-        const src = String(((_i = node == null ? void 0 : node.attrs) == null ? void 0 : _i.src) || "").trim();
-        if (!src) return null;
+        const src2 = String(((_i = node == null ? void 0 : node.attrs) == null ? void 0 : _i.src) || "").trim();
+        if (!src2) return null;
         const title = String(((_j = node == null ? void 0 : node.attrs) == null ? void 0 : _j.title) || ((_k = node == null ? void 0 : node.attrs) == null ? void 0 : _k.fileName) || "").trim() || "Vid\xE9o";
         const mimeType = String(((_l = node == null ? void 0 : node.attrs) == null ? void 0 : _l.mimeType) || "").toLowerCase();
-        const isMp4 = mimeType.includes("mp4") || /\.mp4([?#].*)?$/i.test(src);
-        const isWebm = mimeType.includes("webm") || /\.webm([?#].*)?$/i.test(src);
+        const isMp4 = mimeType.includes("mp4") || /\.mp4([?#].*)?$/i.test(src2);
+        const isWebm = mimeType.includes("webm") || /\.webm([?#].*)?$/i.test(src2);
         const labelSuffix = isMp4 ? "MP4" : isWebm ? "WebM" : "Vid\xE9o";
         const label = `${title} (${labelSuffix})`;
-        if (/^https?:\/\//i.test(src)) {
+        if (/^https?:\/\//i.test(src2)) {
           return new Paragraph2({
             children: [
               new TextRun({
@@ -49909,7 +49909,7 @@ img.ProseMirror-separator {
                 bold: true
               }),
               new ExternalHyperlink({
-                link: src,
+                link: src2,
                 children: [
                   new TextRun({
                     text: label,
@@ -49921,7 +49921,7 @@ img.ProseMirror-separator {
             spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING }
           });
         }
-        if (/^data:video\//i.test(src)) {
+        if (/^data:video\//i.test(src2)) {
           return new Paragraph2({
             children: [
               new TextRun({
@@ -49941,8 +49941,8 @@ img.ProseMirror-separator {
         });
       }
       case "externalVideoEmbed": {
-        const src = String(((_m = node == null ? void 0 : node.attrs) == null ? void 0 : _m.src) || "").trim();
-        if (!src) return null;
+        const src2 = String(((_m = node == null ? void 0 : node.attrs) == null ? void 0 : _m.src) || "").trim();
+        if (!src2) return null;
         const provider = String(((_n = node == null ? void 0 : node.attrs) == null ? void 0 : _n.provider) || "").trim().toLowerCase();
         const title = String(((_o = node == null ? void 0 : node.attrs) == null ? void 0 : _o.title) || "").trim() || "Vid\xE9o int\xE9gr\xE9e";
         const providerLabel = provider ? provider.toUpperCase() : "VIDEO";
@@ -49954,7 +49954,7 @@ img.ProseMirror-separator {
               bold: true
             }),
             new ExternalHyperlink({
-              link: src,
+              link: src2,
               children: [
                 new TextRun({
                   text: label,
@@ -50159,9 +50159,9 @@ img.ProseMirror-separator {
     if (!Number.isFinite(parsed) || parsed <= 0) return null;
     return parsed;
   }
-  async function imageSourceToUint8Array(src) {
+  async function imageSourceToUint8Array(src2) {
     try {
-      const response = await fetch(src);
+      const response = await fetch(src2);
       if (!response.ok) return null;
       const buffer2 = await response.arrayBuffer();
       return new Uint8Array(buffer2);
@@ -50169,7 +50169,7 @@ img.ProseMirror-separator {
       return null;
     }
   }
-  async function getImageNaturalSize(src) {
+  async function getImageNaturalSize(src2) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => resolve({
@@ -50177,7 +50177,7 @@ img.ProseMirror-separator {
         height: img.naturalHeight || 0
       });
       img.onerror = () => resolve({ width: 0, height: 0 });
-      img.src = src;
+      img.src = src2;
     });
   }
 
@@ -50489,10 +50489,10 @@ img.ProseMirror-separator {
     filter: "img",
     replacement: function(content, node) {
       var alt = cleanAttribute(node.getAttribute("alt"));
-      var src = node.getAttribute("src") || "";
+      var src2 = node.getAttribute("src") || "";
       var title = cleanAttribute(node.getAttribute("title"));
       var titlePart = title ? ' "' + title + '"' : "";
-      return src ? "![" + alt + "](" + src + titlePart + ")" : "";
+      return src2 ? "![" + alt + "](" + src2 + titlePart + ")" : "";
     }
   };
   function cleanAttribute(attribute) {
@@ -51238,8 +51238,8 @@ img.ProseMirror-separator {
       __publicField(this, "lexer");
       this.options = options2 || _defaults;
     }
-    space(src) {
-      const cap = this.rules.block.newline.exec(src);
+    space(src2) {
+      const cap = this.rules.block.newline.exec(src2);
       if (cap && cap[0].length > 0) {
         return {
           type: "space",
@@ -51247,8 +51247,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    code(src) {
-      const cap = this.rules.block.code.exec(src);
+    code(src2) {
+      const cap = this.rules.block.code.exec(src2);
       if (cap) {
         const text2 = cap[0].replace(/^ {1,4}/gm, "");
         return {
@@ -51259,8 +51259,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    fences(src) {
-      const cap = this.rules.block.fences.exec(src);
+    fences(src2) {
+      const cap = this.rules.block.fences.exec(src2);
       if (cap) {
         const raw = cap[0];
         const text2 = indentCodeCompensation(raw, cap[3] || "");
@@ -51272,8 +51272,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    heading(src) {
-      const cap = this.rules.block.heading.exec(src);
+    heading(src2) {
+      const cap = this.rules.block.heading.exec(src2);
       if (cap) {
         let text2 = cap[2].trim();
         if (/#$/.test(text2)) {
@@ -51293,8 +51293,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    hr(src) {
-      const cap = this.rules.block.hr.exec(src);
+    hr(src2) {
+      const cap = this.rules.block.hr.exec(src2);
       if (cap) {
         return {
           type: "hr",
@@ -51302,8 +51302,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    blockquote(src) {
-      const cap = this.rules.block.blockquote.exec(src);
+    blockquote(src2) {
+      const cap = this.rules.block.blockquote.exec(src2);
       if (cap) {
         let text2 = cap[0].replace(/\n {0,3}((?:=+|-+) *)(?=\n|$)/g, "\n    $1");
         text2 = rtrim(text2.replace(/^ *>[ \t]?/gm, ""), "\n");
@@ -51319,8 +51319,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    list(src) {
-      let cap = this.rules.block.list.exec(src);
+    list(src2) {
+      let cap = this.rules.block.list.exec(src2);
       if (cap) {
         let bull = cap[1].trim();
         const isordered = bull.length > 1;
@@ -51340,18 +51340,18 @@ img.ProseMirror-separator {
         let raw = "";
         let itemContents = "";
         let endsWithBlankLine = false;
-        while (src) {
+        while (src2) {
           let endEarly = false;
-          if (!(cap = itemRegex.exec(src))) {
+          if (!(cap = itemRegex.exec(src2))) {
             break;
           }
-          if (this.rules.block.hr.test(src)) {
+          if (this.rules.block.hr.test(src2)) {
             break;
           }
           raw = cap[0];
-          src = src.substring(raw.length);
+          src2 = src2.substring(raw.length);
           let line = cap[2].split("\n", 1)[0].replace(/^\t+/, (t) => " ".repeat(3 * t.length));
-          let nextLine = src.split("\n", 1)[0];
+          let nextLine = src2.split("\n", 1)[0];
           let indent = 0;
           if (this.options.pedantic) {
             indent = 2;
@@ -51365,7 +51365,7 @@ img.ProseMirror-separator {
           let blankLine = false;
           if (!line && /^ *$/.test(nextLine)) {
             raw += nextLine + "\n";
-            src = src.substring(nextLine.length + 1);
+            src2 = src2.substring(nextLine.length + 1);
             endEarly = true;
           }
           if (!endEarly) {
@@ -51373,8 +51373,8 @@ img.ProseMirror-separator {
             const hrRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`);
             const fencesBeginRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}(?:\`\`\`|~~~)`);
             const headingBeginRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}#`);
-            while (src) {
-              const rawLine = src.split("\n", 1)[0];
+            while (src2) {
+              const rawLine = src2.split("\n", 1)[0];
               nextLine = rawLine;
               if (this.options.pedantic) {
                 nextLine = nextLine.replace(/^ {1,4}(?=( {4})*[^ ])/g, "  ");
@@ -51388,7 +51388,7 @@ img.ProseMirror-separator {
               if (nextBulletRegex.test(nextLine)) {
                 break;
               }
-              if (hrRegex.test(src)) {
+              if (hrRegex.test(src2)) {
                 break;
               }
               if (nextLine.search(/[^ ]/) >= indent || !nextLine.trim()) {
@@ -51415,7 +51415,7 @@ img.ProseMirror-separator {
                 blankLine = true;
               }
               raw += rawLine + "\n";
-              src = src.substring(rawLine.length + 1);
+              src2 = src2.substring(rawLine.length + 1);
               line = nextLine.slice(indent);
             }
           }
@@ -51466,8 +51466,8 @@ img.ProseMirror-separator {
         return list2;
       }
     }
-    html(src) {
-      const cap = this.rules.block.html.exec(src);
+    html(src2) {
+      const cap = this.rules.block.html.exec(src2);
       if (cap) {
         const token = {
           type: "html",
@@ -51479,8 +51479,8 @@ img.ProseMirror-separator {
         return token;
       }
     }
-    def(src) {
-      const cap = this.rules.block.def.exec(src);
+    def(src2) {
+      const cap = this.rules.block.def.exec(src2);
       if (cap) {
         const tag2 = cap[1].toLowerCase().replace(/\s+/g, " ");
         const href = cap[2] ? cap[2].replace(/^<(.*)>$/, "$1").replace(this.rules.inline.anyPunctuation, "$1") : "";
@@ -51494,8 +51494,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    table(src) {
-      const cap = this.rules.block.table.exec(src);
+    table(src2) {
+      const cap = this.rules.block.table.exec(src2);
       if (!cap) {
         return;
       }
@@ -51542,8 +51542,8 @@ img.ProseMirror-separator {
       }
       return item;
     }
-    lheading(src) {
-      const cap = this.rules.block.lheading.exec(src);
+    lheading(src2) {
+      const cap = this.rules.block.lheading.exec(src2);
       if (cap) {
         return {
           type: "heading",
@@ -51554,8 +51554,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    paragraph(src) {
-      const cap = this.rules.block.paragraph.exec(src);
+    paragraph(src2) {
+      const cap = this.rules.block.paragraph.exec(src2);
       if (cap) {
         const text2 = cap[1].charAt(cap[1].length - 1) === "\n" ? cap[1].slice(0, -1) : cap[1];
         return {
@@ -51566,8 +51566,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    text(src) {
-      const cap = this.rules.block.text.exec(src);
+    text(src2) {
+      const cap = this.rules.block.text.exec(src2);
       if (cap) {
         return {
           type: "text",
@@ -51577,8 +51577,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    escape(src) {
-      const cap = this.rules.inline.escape.exec(src);
+    escape(src2) {
+      const cap = this.rules.inline.escape.exec(src2);
       if (cap) {
         return {
           type: "escape",
@@ -51587,8 +51587,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    tag(src) {
-      const cap = this.rules.inline.tag.exec(src);
+    tag(src2) {
+      const cap = this.rules.inline.tag.exec(src2);
       if (cap) {
         if (!this.lexer.state.inLink && /^<a /i.test(cap[0])) {
           this.lexer.state.inLink = true;
@@ -51610,8 +51610,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    link(src) {
-      const cap = this.rules.inline.link.exec(src);
+    link(src2) {
+      const cap = this.rules.inline.link.exec(src2);
       if (cap) {
         const trimmedUrl = cap[2].trim();
         if (!this.options.pedantic && /^</.test(trimmedUrl)) {
@@ -51657,9 +51657,9 @@ img.ProseMirror-separator {
         }, cap[0], this.lexer);
       }
     }
-    reflink(src, links) {
+    reflink(src2, links) {
       let cap;
-      if ((cap = this.rules.inline.reflink.exec(src)) || (cap = this.rules.inline.nolink.exec(src))) {
+      if ((cap = this.rules.inline.reflink.exec(src2)) || (cap = this.rules.inline.nolink.exec(src2))) {
         const linkString = (cap[2] || cap[1]).replace(/\s+/g, " ");
         const link2 = links[linkString.toLowerCase()];
         if (!link2) {
@@ -51673,8 +51673,8 @@ img.ProseMirror-separator {
         return outputLink(cap, link2, cap[0], this.lexer);
       }
     }
-    emStrong(src, maskedSrc, prevChar = "") {
-      let match = this.rules.inline.emStrongLDelim.exec(src);
+    emStrong(src2, maskedSrc, prevChar = "") {
+      let match = this.rules.inline.emStrongLDelim.exec(src2);
       if (!match)
         return;
       if (match[3] && prevChar.match(/[\p{L}\p{N}]/u))
@@ -51685,7 +51685,7 @@ img.ProseMirror-separator {
         let rDelim, rLength, delimTotal = lLength, midDelimTotal = 0;
         const endReg = match[0][0] === "*" ? this.rules.inline.emStrongRDelimAst : this.rules.inline.emStrongRDelimUnd;
         endReg.lastIndex = 0;
-        maskedSrc = maskedSrc.slice(-1 * src.length + lLength);
+        maskedSrc = maskedSrc.slice(-1 * src2.length + lLength);
         while ((match = endReg.exec(maskedSrc)) != null) {
           rDelim = match[1] || match[2] || match[3] || match[4] || match[5] || match[6];
           if (!rDelim)
@@ -51705,7 +51705,7 @@ img.ProseMirror-separator {
             continue;
           rLength = Math.min(rLength, rLength + delimTotal + midDelimTotal);
           const lastCharLength = [...match[0]][0].length;
-          const raw = src.slice(0, lLength + match.index + lastCharLength + rLength);
+          const raw = src2.slice(0, lLength + match.index + lastCharLength + rLength);
           if (Math.min(lLength, rLength) % 2) {
             const text3 = raw.slice(1, -1);
             return {
@@ -51725,8 +51725,8 @@ img.ProseMirror-separator {
         }
       }
     }
-    codespan(src) {
-      const cap = this.rules.inline.code.exec(src);
+    codespan(src2) {
+      const cap = this.rules.inline.code.exec(src2);
       if (cap) {
         let text2 = cap[2].replace(/\n/g, " ");
         const hasNonSpaceChars = /[^ ]/.test(text2);
@@ -51742,8 +51742,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    br(src) {
-      const cap = this.rules.inline.br.exec(src);
+    br(src2) {
+      const cap = this.rules.inline.br.exec(src2);
       if (cap) {
         return {
           type: "br",
@@ -51751,8 +51751,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    del(src) {
-      const cap = this.rules.inline.del.exec(src);
+    del(src2) {
+      const cap = this.rules.inline.del.exec(src2);
       if (cap) {
         return {
           type: "del",
@@ -51762,8 +51762,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    autolink(src) {
-      const cap = this.rules.inline.autolink.exec(src);
+    autolink(src2) {
+      const cap = this.rules.inline.autolink.exec(src2);
       if (cap) {
         let text2, href;
         if (cap[2] === "@") {
@@ -51788,10 +51788,10 @@ img.ProseMirror-separator {
         };
       }
     }
-    url(src) {
+    url(src2) {
       var _a, _b;
       let cap;
-      if (cap = this.rules.inline.url.exec(src)) {
+      if (cap = this.rules.inline.url.exec(src2)) {
         let text2, href;
         if (cap[2] === "@") {
           text2 = escape$1(cap[0]);
@@ -51824,8 +51824,8 @@ img.ProseMirror-separator {
         };
       }
     }
-    inlineText(src) {
-      const cap = this.rules.inline.text.exec(src);
+    inlineText(src2) {
+      const cap = this.rules.inline.text.exec(src2);
       if (cap) {
         let text2;
         if (this.lexer.state.inRawBlock) {
@@ -52008,23 +52008,23 @@ img.ProseMirror-separator {
     /**
      * Static Lex Method
      */
-    static lex(src, options2) {
+    static lex(src2, options2) {
       const lexer2 = new __Lexer(options2);
-      return lexer2.lex(src);
+      return lexer2.lex(src2);
     }
     /**
      * Static Lex Inline Method
      */
-    static lexInline(src, options2) {
+    static lexInline(src2, options2) {
       const lexer2 = new __Lexer(options2);
-      return lexer2.inlineTokens(src);
+      return lexer2.inlineTokens(src2);
     }
     /**
      * Preprocessing
      */
-    lex(src) {
-      src = src.replace(/\r\n|\r/g, "\n");
-      this.blockTokens(src, this.tokens);
+    lex(src2) {
+      src2 = src2.replace(/\r\n|\r/g, "\n");
+      this.blockTokens(src2, this.tokens);
       for (let i = 0; i < this.inlineQueue.length; i++) {
         const next2 = this.inlineQueue[i];
         this.inlineTokens(next2.src, next2.tokens);
@@ -52032,11 +52032,11 @@ img.ProseMirror-separator {
       this.inlineQueue = [];
       return this.tokens;
     }
-    blockTokens(src, tokens = []) {
+    blockTokens(src2, tokens = []) {
       if (this.options.pedantic) {
-        src = src.replace(/\t/g, "    ").replace(/^ +$/gm, "");
+        src2 = src2.replace(/\t/g, "    ").replace(/^ +$/gm, "");
       } else {
-        src = src.replace(/^( *)(\t+)/gm, (_, leading, tabs) => {
+        src2 = src2.replace(/^( *)(\t+)/gm, (_, leading, tabs) => {
           return leading + "    ".repeat(tabs.length);
         });
       }
@@ -52044,10 +52044,10 @@ img.ProseMirror-separator {
       let lastToken;
       let cutSrc;
       let lastParagraphClipped;
-      while (src) {
+      while (src2) {
         if (this.options.extensions && this.options.extensions.block && this.options.extensions.block.some((extTokenizer) => {
-          if (token = extTokenizer.call({ lexer: this }, src, tokens)) {
-            src = src.substring(token.raw.length);
+          if (token = extTokenizer.call({ lexer: this }, src2, tokens)) {
+            src2 = src2.substring(token.raw.length);
             tokens.push(token);
             return true;
           }
@@ -52055,8 +52055,8 @@ img.ProseMirror-separator {
         })) {
           continue;
         }
-        if (token = this.tokenizer.space(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.space(src2)) {
+          src2 = src2.substring(token.raw.length);
           if (token.raw.length === 1 && tokens.length > 0) {
             tokens[tokens.length - 1].raw += "\n";
           } else {
@@ -52064,8 +52064,8 @@ img.ProseMirror-separator {
           }
           continue;
         }
-        if (token = this.tokenizer.code(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.code(src2)) {
+          src2 = src2.substring(token.raw.length);
           lastToken = tokens[tokens.length - 1];
           if (lastToken && (lastToken.type === "paragraph" || lastToken.type === "text")) {
             lastToken.raw += "\n" + token.raw;
@@ -52076,38 +52076,38 @@ img.ProseMirror-separator {
           }
           continue;
         }
-        if (token = this.tokenizer.fences(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.fences(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.heading(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.heading(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.hr(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.hr(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.blockquote(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.blockquote(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.list(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.list(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.html(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.html(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.def(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.def(src2)) {
+          src2 = src2.substring(token.raw.length);
           lastToken = tokens[tokens.length - 1];
           if (lastToken && (lastToken.type === "paragraph" || lastToken.type === "text")) {
             lastToken.raw += "\n" + token.raw;
@@ -52121,20 +52121,20 @@ img.ProseMirror-separator {
           }
           continue;
         }
-        if (token = this.tokenizer.table(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.table(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.lheading(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.lheading(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        cutSrc = src;
+        cutSrc = src2;
         if (this.options.extensions && this.options.extensions.startBlock) {
           let startIndex = Infinity;
-          const tempSrc = src.slice(1);
+          const tempSrc = src2.slice(1);
           let tempStart;
           this.options.extensions.startBlock.forEach((getStartIndex) => {
             tempStart = getStartIndex.call({ lexer: this }, tempSrc);
@@ -52143,7 +52143,7 @@ img.ProseMirror-separator {
             }
           });
           if (startIndex < Infinity && startIndex >= 0) {
-            cutSrc = src.substring(0, startIndex + 1);
+            cutSrc = src2.substring(0, startIndex + 1);
           }
         }
         if (this.state.top && (token = this.tokenizer.paragraph(cutSrc))) {
@@ -52156,12 +52156,12 @@ img.ProseMirror-separator {
           } else {
             tokens.push(token);
           }
-          lastParagraphClipped = cutSrc.length !== src.length;
-          src = src.substring(token.raw.length);
+          lastParagraphClipped = cutSrc.length !== src2.length;
+          src2 = src2.substring(token.raw.length);
           continue;
         }
-        if (token = this.tokenizer.text(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.text(src2)) {
+          src2 = src2.substring(token.raw.length);
           lastToken = tokens[tokens.length - 1];
           if (lastToken && lastToken.type === "text") {
             lastToken.raw += "\n" + token.raw;
@@ -52173,8 +52173,8 @@ img.ProseMirror-separator {
           }
           continue;
         }
-        if (src) {
-          const errMsg = "Infinite loop on byte: " + src.charCodeAt(0);
+        if (src2) {
+          const errMsg = "Infinite loop on byte: " + src2.charCodeAt(0);
           if (this.options.silent) {
             console.error(errMsg);
             break;
@@ -52186,16 +52186,16 @@ img.ProseMirror-separator {
       this.state.top = true;
       return tokens;
     }
-    inline(src, tokens = []) {
-      this.inlineQueue.push({ src, tokens });
+    inline(src2, tokens = []) {
+      this.inlineQueue.push({ src: src2, tokens });
       return tokens;
     }
     /**
      * Lexing/Compiling
      */
-    inlineTokens(src, tokens = []) {
+    inlineTokens(src2, tokens = []) {
       let token, lastToken, cutSrc;
-      let maskedSrc = src;
+      let maskedSrc = src2;
       let match;
       let keepPrevChar, prevChar;
       if (this.tokens.links) {
@@ -52214,14 +52214,14 @@ img.ProseMirror-separator {
       while ((match = this.tokenizer.rules.inline.anyPunctuation.exec(maskedSrc)) != null) {
         maskedSrc = maskedSrc.slice(0, match.index) + "++" + maskedSrc.slice(this.tokenizer.rules.inline.anyPunctuation.lastIndex);
       }
-      while (src) {
+      while (src2) {
         if (!keepPrevChar) {
           prevChar = "";
         }
         keepPrevChar = false;
         if (this.options.extensions && this.options.extensions.inline && this.options.extensions.inline.some((extTokenizer) => {
-          if (token = extTokenizer.call({ lexer: this }, src, tokens)) {
-            src = src.substring(token.raw.length);
+          if (token = extTokenizer.call({ lexer: this }, src2, tokens)) {
+            src2 = src2.substring(token.raw.length);
             tokens.push(token);
             return true;
           }
@@ -52229,13 +52229,13 @@ img.ProseMirror-separator {
         })) {
           continue;
         }
-        if (token = this.tokenizer.escape(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.escape(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.tag(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.tag(src2)) {
+          src2 = src2.substring(token.raw.length);
           lastToken = tokens[tokens.length - 1];
           if (lastToken && token.type === "text" && lastToken.type === "text") {
             lastToken.raw += token.raw;
@@ -52245,13 +52245,13 @@ img.ProseMirror-separator {
           }
           continue;
         }
-        if (token = this.tokenizer.link(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.link(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.reflink(src, this.tokens.links)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.reflink(src2, this.tokens.links)) {
+          src2 = src2.substring(token.raw.length);
           lastToken = tokens[tokens.length - 1];
           if (lastToken && token.type === "text" && lastToken.type === "text") {
             lastToken.raw += token.raw;
@@ -52261,40 +52261,40 @@ img.ProseMirror-separator {
           }
           continue;
         }
-        if (token = this.tokenizer.emStrong(src, maskedSrc, prevChar)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.emStrong(src2, maskedSrc, prevChar)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.codespan(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.codespan(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.br(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.br(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.del(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.del(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (token = this.tokenizer.autolink(src)) {
-          src = src.substring(token.raw.length);
+        if (token = this.tokenizer.autolink(src2)) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        if (!this.state.inLink && (token = this.tokenizer.url(src))) {
-          src = src.substring(token.raw.length);
+        if (!this.state.inLink && (token = this.tokenizer.url(src2))) {
+          src2 = src2.substring(token.raw.length);
           tokens.push(token);
           continue;
         }
-        cutSrc = src;
+        cutSrc = src2;
         if (this.options.extensions && this.options.extensions.startInline) {
           let startIndex = Infinity;
-          const tempSrc = src.slice(1);
+          const tempSrc = src2.slice(1);
           let tempStart;
           this.options.extensions.startInline.forEach((getStartIndex) => {
             tempStart = getStartIndex.call({ lexer: this }, tempSrc);
@@ -52303,11 +52303,11 @@ img.ProseMirror-separator {
             }
           });
           if (startIndex < Infinity && startIndex >= 0) {
-            cutSrc = src.substring(0, startIndex + 1);
+            cutSrc = src2.substring(0, startIndex + 1);
           }
         }
         if (token = this.tokenizer.inlineText(cutSrc)) {
-          src = src.substring(token.raw.length);
+          src2 = src2.substring(token.raw.length);
           if (token.raw.slice(-1) !== "_") {
             prevChar = token.raw.slice(-1);
           }
@@ -52321,8 +52321,8 @@ img.ProseMirror-separator {
           }
           continue;
         }
-        if (src) {
-          const errMsg = "Infinite loop on byte: " + src.charCodeAt(0);
+        if (src2) {
+          const errMsg = "Infinite loop on byte: " + src2.charCodeAt(0);
           if (this.options.silent) {
             console.error(errMsg);
             break;
@@ -52944,8 +52944,8 @@ ${content}</tr>
       this.defaults = { ...this.defaults, ...opt };
       return this;
     }
-    lexer(src, options2) {
-      return _Lexer.lex(src, options2 != null ? options2 : this.defaults);
+    lexer(src2, options2) {
+      return _Lexer.lex(src2, options2 != null ? options2 : this.defaults);
     }
     parser(tokens, options2) {
       return _Parser.parse(tokens, options2 != null ? options2 : this.defaults);
@@ -52953,7 +52953,7 @@ ${content}</tr>
   };
   _Marked_instances = new WeakSet();
   parseMarkdown_fn = function(lexer2, parser2) {
-    return (src, options2) => {
+    return (src2, options2) => {
       const origOpt = { ...options2 };
       const opt = { ...this.defaults, ...origOpt };
       if (this.defaults.async === true && origOpt.async === false) {
@@ -52963,23 +52963,23 @@ ${content}</tr>
         opt.async = true;
       }
       const throwError = __privateMethod(this, _Marked_instances, onError_fn).call(this, !!opt.silent, !!opt.async);
-      if (typeof src === "undefined" || src === null) {
+      if (typeof src2 === "undefined" || src2 === null) {
         return throwError(new Error("marked(): input parameter is undefined or null"));
       }
-      if (typeof src !== "string") {
-        return throwError(new Error("marked(): input parameter is of type " + Object.prototype.toString.call(src) + ", string expected"));
+      if (typeof src2 !== "string") {
+        return throwError(new Error("marked(): input parameter is of type " + Object.prototype.toString.call(src2) + ", string expected"));
       }
       if (opt.hooks) {
         opt.hooks.options = opt;
       }
       if (opt.async) {
-        return Promise.resolve(opt.hooks ? opt.hooks.preprocess(src) : src).then((src2) => lexer2(src2, opt)).then((tokens) => opt.hooks ? opt.hooks.processAllTokens(tokens) : tokens).then((tokens) => opt.walkTokens ? Promise.all(this.walkTokens(tokens, opt.walkTokens)).then(() => tokens) : tokens).then((tokens) => parser2(tokens, opt)).then((html3) => opt.hooks ? opt.hooks.postprocess(html3) : html3).catch(throwError);
+        return Promise.resolve(opt.hooks ? opt.hooks.preprocess(src2) : src2).then((src3) => lexer2(src3, opt)).then((tokens) => opt.hooks ? opt.hooks.processAllTokens(tokens) : tokens).then((tokens) => opt.walkTokens ? Promise.all(this.walkTokens(tokens, opt.walkTokens)).then(() => tokens) : tokens).then((tokens) => parser2(tokens, opt)).then((html3) => opt.hooks ? opt.hooks.postprocess(html3) : html3).catch(throwError);
       }
       try {
         if (opt.hooks) {
-          src = opt.hooks.preprocess(src);
+          src2 = opt.hooks.preprocess(src2);
         }
-        let tokens = lexer2(src, opt);
+        let tokens = lexer2(src2, opt);
         if (opt.hooks) {
           tokens = opt.hooks.processAllTokens(tokens);
         }
@@ -53013,8 +53013,8 @@ ${content}</tr>
     };
   };
   var markedInstance = new Marked();
-  function marked(src, opt) {
-    return markedInstance.parse(src, opt);
+  function marked(src2, opt) {
+    return markedInstance.parse(src2, opt);
   }
   marked.options = marked.setOptions = function(options2) {
     markedInstance.setOptions(options2);
@@ -54270,8 +54270,8 @@ ${promptInput.trim()}`
           find: inputRegex8,
           type: this.type,
           getAttributes: (match) => {
-            const [, , alt, src, title] = match;
-            return { src, alt, title };
+            const [, , alt, src2, title] = match;
+            return { src: src2, alt, title };
           }
         })
       ];
@@ -54308,8 +54308,8 @@ ${promptInput.trim()}`
   };
   var TEXT_BOX_HEADER_HEIGHT = 18;
   var TEXT_BOX_PADDING = 6;
-  var isGifSource = (src) => {
-    const raw = String(src || "").trim().toLowerCase();
+  var isGifSource = (src2) => {
+    const raw = String(src2 || "").trim().toLowerCase();
     if (!raw) return false;
     if (raw.startsWith("data:image/gif")) return true;
     return /\.gif([?#].*)?$/.test(raw);
@@ -54354,8 +54354,8 @@ ${promptInput.trim()}`
       return null;
     }
   };
-  var estimateGifDurationMs = async (src) => {
-    const value = String(src || "").trim();
+  var estimateGifDurationMs = async (src2) => {
+    const value = String(src2 || "").trim();
     if (!value) return null;
     try {
       if (value.startsWith("data:image/gif")) {
@@ -54372,10 +54372,10 @@ ${promptInput.trim()}`
   };
   var copyImageHtml = async (attrs) => {
     var _a;
-    const src = String((attrs == null ? void 0 : attrs.src) || "");
-    if (!src) return;
+    const src2 = String((attrs == null ? void 0 : attrs.src) || "");
+    if (!src2) return;
     const img = document.createElement("img");
-    img.src = src;
+    img.src = src2;
     if (attrs == null ? void 0 : attrs.alt) img.alt = String(attrs.alt);
     if (attrs == null ? void 0 : attrs.title) img.title = String(attrs.title);
     if (attrs == null ? void 0 : attrs.width) img.setAttribute("width", String(attrs.width).replace(/px$/, ""));
@@ -54388,7 +54388,7 @@ ${promptInput.trim()}`
       if (((_a = navigator == null ? void 0 : navigator.clipboard) == null ? void 0 : _a.write) && typeof ClipboardItem !== "undefined") {
         const payload = new ClipboardItem({
           "text/html": new Blob([html3], { type: "text/html" }),
-          "text/plain": new Blob([src], { type: "text/plain" })
+          "text/plain": new Blob([src2], { type: "text/plain" })
         });
         await navigator.clipboard.write([payload]);
         return;
@@ -54396,7 +54396,7 @@ ${promptInput.trim()}`
     } catch (err) {
     }
     try {
-      await navigator.clipboard.writeText(src);
+      await navigator.clipboard.writeText(src2);
     } catch (err) {
     }
   };
@@ -54441,9 +54441,10 @@ ${promptInput.trim()}`
   };
   var ImageNodeView = ({ node, editor, updateAttributes: updateAttributes2, getPos }) => {
     var _a, _b, _c, _d;
-    const src = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src) || "");
+    const src2 = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src) || "");
+    const [resolvedSrc, setResolvedSrc2] = react_shim_default.useState(src2);
     const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
-    const isGif = isGifSource(src);
+    const isGif = isGifSource(resolvedSrc);
     const wrapperRef = react_shim_default.useRef(null);
     const inlineSurfaceRef = react_shim_default.useRef(null);
     const fullscreenSurfaceRef = react_shim_default.useRef(null);
@@ -54454,7 +54455,7 @@ ${promptInput.trim()}`
     const resizeStateRef = react_shim_default.useRef(null);
     const gifPlayTimeoutRef = react_shim_default.useRef(null);
     const pendingSyncRef = react_shim_default.useRef(null);
-    const historyRef = react_shim_default.useRef([src]);
+    const historyRef = react_shim_default.useRef([src2]);
     const historyIndexRef = react_shim_default.useRef(0);
     const textDragRef = react_shim_default.useRef(null);
     const textResizeRef = react_shim_default.useRef(null);
@@ -54473,7 +54474,7 @@ ${promptInput.trim()}`
     const [activeTool, setActiveTool] = react_shim_default.useState("none");
     const [sizePreset, setSizePreset] = react_shim_default.useState("M");
     const [strokeColor, setStrokeColor] = react_shim_default.useState(resolveDefaultStrokeColor);
-    const [history2, setHistory] = react_shim_default.useState([src]);
+    const [history2, setHistory] = react_shim_default.useState([src2]);
     const [historyIndex, setHistoryIndex] = react_shim_default.useState(0);
     const [drag, setDrag] = react_shim_default.useState(null);
     const [textDraft, setTextDraft] = react_shim_default.useState(null);
@@ -54486,15 +54487,15 @@ ${promptInput.trim()}`
       historyIndexRef.current = historyIndex;
     }, [history2, historyIndex]);
     react_shim_default.useEffect(() => {
-      if (pendingSyncRef.current === src) {
+      if (pendingSyncRef.current === src2) {
         pendingSyncRef.current = null;
         return;
       }
-      setHistory([src]);
+      setHistory([src2]);
       setHistoryIndex(0);
-      historyRef.current = [src];
+      historyRef.current = [src2];
       historyIndexRef.current = 0;
-    }, [src]);
+    }, [src2]);
     react_shim_default.useEffect(() => {
       if (!fullscreenOpen) return;
       setStrokeColor(resolveDefaultStrokeColor());
@@ -54526,8 +54527,8 @@ ${promptInput.trim()}`
         }
       };
       img.onerror = () => setGifPoster(null);
-      img.src = src;
-      estimateGifDurationMs(src).then((duration) => {
+      img.src = resolvedSrc;
+      estimateGifDurationMs(resolvedSrc).then((duration) => {
         if (cancelled) return;
         if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
           setGifDurationMs(duration);
@@ -54542,7 +54543,7 @@ ${promptInput.trim()}`
           gifPlayTimeoutRef.current = null;
         }
       };
-    }, [isGif, src]);
+    }, [isGif, resolvedSrc]);
     react_shim_default.useEffect(() => {
       const onPointerMove = (event) => {
         const current = resizeStateRef.current;
@@ -54609,7 +54610,7 @@ ${promptInput.trim()}`
       ctx.lineTo(drag.offsetX + drag.current.x, drag.offsetY + drag.current.y);
       ctx.stroke();
     }, [drag, sizePreset, strokeColor]);
-    const currentSource = history2[historyIndex] || src;
+    const currentSource = history2[historyIndex] || src2;
     const setNodeSource = react_shim_default.useCallback((nextSource) => {
       pendingSyncRef.current = nextSource;
       updateAttributes2({ src: nextSource, mimeType: "image/png" });
@@ -54643,15 +54644,15 @@ ${promptInput.trim()}`
       editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
     };
     const replaySrc = react_shim_default.useMemo(() => {
-      if (!gifPlaying) return src;
-      if (!src) return src;
-      if (src.startsWith("data:")) {
-        return `${src}#gtGifReplay=${gifReplayTick}`;
+      if (!gifPlaying) return resolvedSrc;
+      if (!resolvedSrc) return resolvedSrc;
+      if (resolvedSrc.startsWith("data:")) {
+        return `${resolvedSrc}#gtGifReplay=${gifReplayTick}`;
       }
-      const sep = src.includes("?") ? "&" : "?";
-      return `${src}${sep}gtGifReplay=${gifReplayTick}`;
-    }, [gifPlaying, gifReplayTick, src]);
-    const imgSrc = isGif ? gifPlaying ? replaySrc : gifPoster || src : src;
+      const sep = resolvedSrc.includes("?") ? "&" : "?";
+      return `${resolvedSrc}${sep}gtGifReplay=${gifReplayTick}`;
+    }, [gifPlaying, gifReplayTick, resolvedSrc]);
+    const imgSrc = isGif ? gifPlaying ? replaySrc : gifPoster || resolvedSrc : resolvedSrc;
     const imageStyle = {
       width: "100%",
       height: heightPx ? "100%" : "auto",
@@ -55297,7 +55298,7 @@ ${promptInput.trim()}`
               "img",
               {
                 ref: imageRef,
-                src: surface === "inline" ? imgSrc : src,
+                src: surface === "inline" ? imgSrc : src2,
                 alt: String(((_a2 = node == null ? void 0 : node.attrs) == null ? void 0 : _a2.alt) || ""),
                 title: String(((_b2 = node == null ? void 0 : node.attrs) == null ? void 0 : _b2.title) || ""),
                 className: surface === "inline" ? "memo-image" : "memo-image-fullscreen",
@@ -55674,10 +55675,10 @@ ${promptInput.trim()}`
         ...(_a = this.parent) == null ? void 0 : _a.call(this),
         src: {
           default: null,
-          parseHTML: (element) => sanitizeUrl(element.getAttribute("src"), ["http", "https", "data", "blob"]) || null,
+          parseHTML: (element) => sanitizeUrl(element.getAttribute("src"), ["http", "https", "data", "blob", "gtlocal"]) || null,
           renderHTML: (attributes) => {
-            const src = sanitizeUrl(attributes.src, ["http", "https", "data", "blob"]);
-            return src ? { src } : {};
+            const src2 = sanitizeUrl(attributes.src, ["http", "https", "data", "blob", "gtlocal"]);
+            return src2 ? { src: src2 } : {};
           }
         },
         width: {
@@ -55719,6 +55720,25 @@ ${promptInput.trim()}`
     if (SUPPORTED_IMAGE_MIME.has(mime)) return true;
     return SUPPORTED_IMAGE_EXT.some((ext) => name.endsWith(ext));
   };
+  react_shim_default.useEffect(() => {
+    let cancelled = false;
+    const run3 = async () => {
+      var _a;
+      const memoMediaStore = window.goToolkitMemoMediaStore;
+      if (!((_a = memoMediaStore == null ? void 0 : memoMediaStore.isLocalRef) == null ? void 0 : _a.call(memoMediaStore, src)) || !(memoMediaStore == null ? void 0 : memoMediaStore.resolveBlobUrl)) {
+        setResolvedSrc(src);
+        return;
+      }
+      const blobUrl = await memoMediaStore.resolveBlobUrl(src).catch(() => "");
+      if (!cancelled) {
+        setResolvedSrc(String(blobUrl || src));
+      }
+    };
+    void run3();
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
 
   // src/memo-editor/video-node.tsx
   init_define_process_env();
@@ -55733,20 +55753,20 @@ ${promptInput.trim()}`
   var DEFAULT_VIDEO_ASPECT_RATIO = 16 / 9;
   var copyVideoHtml = async (attrs) => {
     var _a;
-    const src = String((attrs == null ? void 0 : attrs.src) || "");
-    if (!src) return;
+    const src2 = String((attrs == null ? void 0 : attrs.src) || "");
+    if (!src2) return;
     const video = document.createElement("video");
     video.setAttribute("controls", "true");
     video.setAttribute("playsinline", "true");
     video.setAttribute("preload", "metadata");
-    video.src = src;
+    video.src = src2;
     if (attrs == null ? void 0 : attrs.title) video.title = String(attrs.title);
     if (attrs == null ? void 0 : attrs.width) video.setAttribute("width", String(attrs.width).replace(/px$/, ""));
     if (attrs == null ? void 0 : attrs.height) video.setAttribute("height", String(attrs.height).replace(/px$/, ""));
     if (attrs == null ? void 0 : attrs.mimeType) video.setAttribute("data-mime-type", String(attrs.mimeType));
     if (attrs == null ? void 0 : attrs.fileName) video.setAttribute("data-file-name", String(attrs.fileName));
     const source = document.createElement("source");
-    source.src = src;
+    source.src = src2;
     source.type = String((attrs == null ? void 0 : attrs.mimeType) || "");
     video.appendChild(source);
     const html3 = video.outerHTML;
@@ -55754,7 +55774,7 @@ ${promptInput.trim()}`
       if (((_a = navigator == null ? void 0 : navigator.clipboard) == null ? void 0 : _a.write) && typeof ClipboardItem !== "undefined") {
         const payload = new ClipboardItem({
           "text/html": new Blob([html3], { type: "text/html" }),
-          "text/plain": new Blob([src], { type: "text/plain" })
+          "text/plain": new Blob([src2], { type: "text/plain" })
         });
         await navigator.clipboard.write([payload]);
         return;
@@ -55762,13 +55782,14 @@ ${promptInput.trim()}`
     } catch (err) {
     }
     try {
-      await navigator.clipboard.writeText(src);
+      await navigator.clipboard.writeText(src2);
     } catch (err) {
     }
   };
   var VideoNodeView = ({ node, editor, getPos, updateAttributes: updateAttributes2 }) => {
     var _a, _b, _c, _d;
-    const src = sanitizeUrl((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src, ["http", "https", "data"]) || "";
+    const src2 = sanitizeUrl((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src, ["http", "https", "data", "gtlocal"]) || "";
+    const [resolvedSrc, setResolvedSrc2] = react_shim_default.useState(src2);
     const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
     const videoRef = react_shim_default.useRef(null);
     const frameRef = react_shim_default.useRef(null);
@@ -55777,6 +55798,25 @@ ${promptInput.trim()}`
     const [aspectRatio, setAspectRatio] = react_shim_default.useState(DEFAULT_VIDEO_ASPECT_RATIO);
     const widthPx = parseSizePx((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.width);
     const heightPx = parseSizePx((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.height);
+    react_shim_default.useEffect(() => {
+      let cancelled = false;
+      const run3 = async () => {
+        var _a2;
+        const memoMediaStore = window.goToolkitMemoMediaStore;
+        if (!((_a2 = memoMediaStore == null ? void 0 : memoMediaStore.isLocalRef) == null ? void 0 : _a2.call(memoMediaStore, src2)) || !(memoMediaStore == null ? void 0 : memoMediaStore.resolveBlobUrl)) {
+          setResolvedSrc2(src2);
+          return;
+        }
+        const blobUrl = await memoMediaStore.resolveBlobUrl(src2).catch(() => "");
+        if (!cancelled) {
+          setResolvedSrc2(String(blobUrl || src2));
+        }
+      };
+      void run3();
+      return () => {
+        cancelled = true;
+      };
+    }, [src2]);
     react_shim_default.useEffect(() => {
       const el = videoRef.current;
       if (!el) return;
@@ -55807,7 +55847,7 @@ ${promptInput.trim()}`
       return () => {
         el.removeEventListener("loadedmetadata", syncRatio);
       };
-    }, [src]);
+    }, [resolvedSrc]);
     react_shim_default.useEffect(() => {
       if (!canEdit) return;
       const onPointerMove = (event) => {
@@ -55911,7 +55951,7 @@ ${promptInput.trim()}`
           ref: videoRef,
           className: "memo-video",
           style: videoStyle,
-          src,
+          src: resolvedSrc,
           playsInline: true,
           preload: "metadata",
           title: String(((_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.title) || "")
@@ -55945,7 +55985,7 @@ ${promptInput.trim()}`
   var EmbedNodeView = ({ node, editor, getPos, updateAttributes: updateAttributes2 }) => {
     var _a, _b, _c, _d, _e;
     const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
-    const src = sanitizeUrl((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src, ["http", "https"]) || "";
+    const src2 = sanitizeUrl((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src, ["http", "https"]) || "";
     const title = String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.title) || "");
     const provider = String(((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.provider) || "").trim().toLowerCase();
     const providerLabel = provider === "youtube" ? "Youtube" : provider === "loom" ? "Loom" : "Video";
@@ -55962,9 +56002,9 @@ ${promptInput.trim()}`
     const handleCopy = async (event) => {
       event.preventDefault();
       event.stopPropagation();
-      if (!src) return;
+      if (!src2) return;
       try {
-        await navigator.clipboard.writeText(src);
+        await navigator.clipboard.writeText(src2);
       } catch (err) {
       }
     };
@@ -56044,7 +56084,7 @@ ${promptInput.trim()}`
         {
           className: "memo-embed",
           style: embedStyle,
-          src,
+          src: src2,
           title: title || "Embedded video",
           loading: "lazy",
           allow: "autoplay; fullscreen; picture-in-picture; clipboard-write",
@@ -56090,10 +56130,10 @@ ${promptInput.trim()}`
       return {
         src: {
           default: null,
-          parseHTML: (element) => sanitizeUrl(element.getAttribute("src"), ["http", "https", "data"]) || null,
+          parseHTML: (element) => sanitizeUrl(element.getAttribute("src"), ["http", "https", "data", "gtlocal"]) || null,
           renderHTML: (attributes) => {
-            const src = sanitizeUrl(attributes.src, ["http", "https", "data"]);
-            return src ? { src } : {};
+            const src2 = sanitizeUrl(attributes.src, ["http", "https", "data", "gtlocal"]);
+            return src2 ? { src: src2 } : {};
           }
         },
         title: { default: null },
@@ -56137,8 +56177,8 @@ ${promptInput.trim()}`
           default: null,
           parseHTML: (element) => sanitizeUrl(element.getAttribute("src"), ["http", "https"]) || null,
           renderHTML: (attributes) => {
-            const src = sanitizeUrl(attributes.src, ["http", "https"]);
-            return src ? { src } : {};
+            const src2 = sanitizeUrl(attributes.src, ["http", "https"]);
+            return src2 ? { src: src2 } : {};
           }
         },
         title: { default: null },
@@ -58746,7 +58786,7 @@ ${promptInput.trim()}`
   var isSupportedVideoFile = (file) => {
     const mime = String((file == null ? void 0 : file.type) || "").toLowerCase();
     const name = String((file == null ? void 0 : file.name) || "").toLowerCase();
-    return mime === "video/mp4" || mime === "video/webm" || name.endsWith(".mp4") || name.endsWith(".webm");
+    return mime.startsWith("video/") || mime === "application/octet-stream" || name.endsWith(".mp4") || name.endsWith(".webm") || name.endsWith(".mov") || name.endsWith(".m4v");
   };
   var INITIAL_NAV_DISMISSED_KEY = "go-toolkit-memo-initial-navigation-dismissed-v1";
   var parseDismissedInitialNavigation = () => {
@@ -58950,25 +58990,36 @@ ${promptInput.trim()}`
       }
     }, [activeDocumentId]);
     const uploadEditorAssetFile = react_shim_default.useCallback(async (file) => {
-      var _a2, _b2, _c2;
+      var _a2, _b2;
       const mimeType = String((file == null ? void 0 : file.type) || "").trim() || "application/octet-stream";
       const fileName = String((file == null ? void 0 : file.name) || "asset").trim() || "asset";
       const spaceId = await resolveActiveMemoSpaceId();
-      const uploadResponse = await ((_b2 = (_a2 = window.goToolkitShareWorker) == null ? void 0 : _a2.uploadAsset) == null ? void 0 : _b2.call(_a2, {
-        file,
+      console.log("[SimpleEditor] media local-store:start", {
+        source: "file-insert",
         fileName,
-        mimeType
-      }, {
-        scope: "shared",
-        collection: "assets",
+        mimeType,
+        size: Number((file == null ? void 0 : file.size) || 0),
+        spaceId
+      });
+      const saved = await ((_b2 = (_a2 = window.goToolkitMemoMediaStore) == null ? void 0 : _a2.saveFile) == null ? void 0 : _b2.call(_a2, file, {
+        fileName,
+        mimeType,
         spaceId
       }));
-      const uploadedUrl = String(((_c2 = uploadResponse == null ? void 0 : uploadResponse.asset) == null ? void 0 : _c2.url) || "").trim();
-      if (!uploadedUrl) {
-        throw new Error("Missing uploaded asset URL");
+      const localRef = String((saved == null ? void 0 : saved.ref) || "").trim();
+      if (!localRef) {
+        throw new Error("Missing local media ref");
       }
+      console.log("[SimpleEditor] media local-store:done", {
+        source: "file-insert",
+        fileName,
+        mimeType,
+        size: Number((file == null ? void 0 : file.size) || 0),
+        spaceId,
+        localRef
+      });
       return {
-        src: uploadedUrl,
+        src: localRef,
         fileName,
         mimeType
       };
@@ -58979,6 +59030,13 @@ ${promptInput.trim()}`
       for (const file of selected) {
         if (isSupportedImageFile(file)) {
           try {
+            console.log("[SimpleEditor] media insert:prepare", {
+              trigger: "file-input",
+              type: "image",
+              fileName: String((file == null ? void 0 : file.name) || ""),
+              mimeType: String((file == null ? void 0 : file.type) || ""),
+              size: Number((file == null ? void 0 : file.size) || 0)
+            });
             const uploaded = await uploadEditorAssetFile(file);
             content2.push({
               type: "image",
@@ -58992,12 +59050,12 @@ ${promptInput.trim()}`
             });
           } catch (err) {
             try {
-              const src = await readFileAsDataUrl(file);
-              if (!src) continue;
+              const src2 = await readFileAsDataUrl(file);
+              if (!src2) continue;
               content2.push({
                 type: "image",
                 attrs: {
-                  src,
+                  src: src2,
                   alt: file.name || "image",
                   title: file.name || "",
                   fileName: file.name || "",
@@ -59011,6 +59069,13 @@ ${promptInput.trim()}`
         }
         if (isSupportedVideoFile(file)) {
           try {
+            console.log("[SimpleEditor] media insert:prepare", {
+              trigger: "file-input",
+              type: "video",
+              fileName: String((file == null ? void 0 : file.name) || ""),
+              mimeType: String((file == null ? void 0 : file.type) || ""),
+              size: Number((file == null ? void 0 : file.size) || 0)
+            });
             const uploaded = await uploadEditorAssetFile(file);
             content2.push({
               type: "videoEmbed",
@@ -59672,6 +59737,12 @@ ${promptInput.trim()}`
           const droppedFiles = Array.from(((_e = event.dataTransfer) == null ? void 0 : _e.files) || []);
           const droppedMedia = droppedFiles.filter((file) => isSupportedImageFile(file) || isSupportedVideoFile(file));
           if (droppedMedia.length) {
+            console.log("[SimpleEditor] media insert:drop", droppedMedia.map((file) => ({
+              fileName: String((file == null ? void 0 : file.name) || ""),
+              mimeType: String((file == null ? void 0 : file.type) || ""),
+              size: Number((file == null ? void 0 : file.size) || 0),
+              type: isSupportedVideoFile(file) ? "video" : "image"
+            })));
             event.preventDefault();
             event.stopPropagation();
             const coords2 = view.posAtCoords({ left: event.clientX, top: event.clientY });
@@ -59747,6 +59818,7 @@ ${promptInput.trim()}`
       editor.chain().focus().insertContent(content2).run();
     }, [buildDroppedMediaContent, editor]);
     const openImagePicker = react_shim_default.useCallback(() => {
+      console.log("[SimpleEditor] media picker:open", { trigger: "slash-menu", type: "image" });
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "image/png,image/jpeg,image/jpg,image/gif";
@@ -59769,8 +59841,9 @@ ${promptInput.trim()}`
     }, [insertImageFiles]);
     const openVideoInsertDialog = react_shim_default.useCallback(() => {
       if (!editor) return;
-      const insertVideoFromSrc = (src, providedName, providedMimeType) => {
-        const normalized = String(src || "").trim();
+      console.log("[SimpleEditor] media picker:open", { trigger: "slash-menu", type: "video" });
+      const insertVideoFromSrc = (src2, providedName, providedMimeType) => {
+        const normalized = String(src2 || "").trim();
         const safeSrc = sanitizeUrl(normalized, ["http", "https"]);
         if (!safeSrc) return;
         if (!/^https?:\/\//i.test(safeSrc)) return;
@@ -59780,7 +59853,7 @@ ${promptInput.trim()}`
           const file = withoutQuery.split("/").pop() || "";
           return file || "video";
         })();
-        const mimeType = providedMimeType || (/\.mp4([?#].*)?$/i.test(safeSrc) ? "video/mp4" : "video/webm");
+        const mimeType = providedMimeType || (/\.mp4([?#].*)?$/i.test(safeSrc) ? "video/mp4" : /\.mov([?#].*)?$/i.test(safeSrc) ? "video/quicktime" : /\.m4v([?#].*)?$/i.test(safeSrc) ? "video/x-m4v" : "video/webm");
         editor.chain().focus().insertContent({
           type: "videoEmbed",
           attrs: {
@@ -59793,7 +59866,7 @@ ${promptInput.trim()}`
       };
       const input = document.createElement("input");
       input.type = "file";
-      input.accept = "video/mp4,video/webm,.mp4,.webm";
+      input.accept = "video/*,.mp4,.webm,.mov,.m4v";
       input.style.position = "fixed";
       input.style.left = "-9999px";
       input.style.top = "0";
@@ -59808,7 +59881,7 @@ ${promptInput.trim()}`
           return;
         }
         const mimeType = String(file.type || "").toLowerCase();
-        const looksSupported = mimeType === "video/mp4" || mimeType === "video/webm" || /\.mp4$/i.test(file.name) || /\.webm$/i.test(file.name);
+        const looksSupported = isSupportedVideoFile(file);
         if (!looksSupported) {
           try {
             input.remove();
@@ -60944,17 +61017,17 @@ ${innerMarkdown}
                 });
               });
               doc3.querySelectorAll("video").forEach((video) => {
-                const src = String(video.getAttribute("src") || "").trim();
+                const src2 = String(video.getAttribute("src") || "").trim();
                 const replacement = doc3.createElement("a");
-                replacement.textContent = src || "video";
-                if (src) replacement.setAttribute("href", src);
+                replacement.textContent = src2 || "video";
+                if (src2) replacement.setAttribute("href", src2);
                 video.replaceWith(replacement);
               });
               doc3.querySelectorAll('iframe[data-type="external-video-embed"], iframe').forEach((iframe) => {
-                const src = String(iframe.getAttribute("src") || "").trim();
+                const src2 = String(iframe.getAttribute("src") || "").trim();
                 const replacement = doc3.createElement("a");
-                replacement.textContent = src || "video";
-                if (src) replacement.setAttribute("href", src);
+                replacement.textContent = src2 || "video";
+                if (src2) replacement.setAttribute("href", src2);
                 iframe.replaceWith(replacement);
               });
               const tables2 = doc3.querySelectorAll("table");
@@ -61208,8 +61281,8 @@ ${innerMarkdown}
                 const h = el.getAttribute("height");
                 if (w) el.style.width = w.endsWith("%") ? w : w + "px";
                 if (h) el.style.height = h.endsWith("%") ? h : h + "px";
-                const src = String(el.getAttribute("src") || "").trim().toLowerCase();
-                const isGif = src.startsWith("data:image/gif") || /\.gif([?#].*)?$/.test(src);
+                const src2 = String(el.getAttribute("src") || "").trim().toLowerCase();
+                const isGif = src2.startsWith("data:image/gif") || /\.gif([?#].*)?$/.test(src2);
                 if (format !== "html" || !isGif || !el.parentElement) return;
                 const wrapper = doc3.createElement("div");
                 wrapper.className = "gif-replay-wrap";
@@ -61262,14 +61335,14 @@ ${innerMarkdown}
               doc3.querySelectorAll("video").forEach((video) => {
                 var _a2;
                 const el = video;
-                const src = String(el.getAttribute("src") || "").trim();
+                const src2 = String(el.getAttribute("src") || "").trim();
                 const mime = String(el.getAttribute("data-mime-type") || "").trim().toLowerCase();
-                const isMp4 = mime.includes("mp4") || /\.mp4([?#].*)?$/i.test(src);
-                const isWebm = mime.includes("webm") || /\.webm([?#].*)?$/i.test(src);
+                const isMp4 = mime.includes("mp4") || /\.mp4([?#].*)?$/i.test(src2);
+                const isWebm = mime.includes("webm") || /\.webm([?#].*)?$/i.test(src2);
                 const videoType = isMp4 ? "video/mp4" : isWebm ? "video/webm" : "";
-                if (src && !el.querySelector("source")) {
+                if (src2 && !el.querySelector("source")) {
                   const source = doc3.createElement("source");
-                  source.setAttribute("src", src);
+                  source.setAttribute("src", src2);
                   if (videoType) source.setAttribute("type", videoType);
                   el.appendChild(source);
                 }
@@ -61277,7 +61350,7 @@ ${innerMarkdown}
                   const fallback = doc3.createElement("p");
                   fallback.setAttribute("data-video-fallback", "true");
                   fallback.setAttribute("style", "font-size:12px;color:#6b7280;margin:8px 0 0 0;");
-                  fallback.textContent = src ? `Video: ${src}` : "Video";
+                  fallback.textContent = src2 ? `Video: ${src2}` : "Video";
                   (_a2 = el.parentElement) == null ? void 0 : _a2.insertBefore(fallback, el.nextSibling);
                 }
                 el.setAttribute("controls", "true");
@@ -61292,14 +61365,14 @@ ${innerMarkdown}
               });
               doc3.querySelectorAll('iframe[data-type="external-video-embed"], iframe').forEach((frame) => {
                 const el = frame;
-                const src = String(el.getAttribute("src") || "").trim();
+                const src2 = String(el.getAttribute("src") || "").trim();
                 if (format === "pdf") {
                   const wrap2 = doc3.createElement("p");
                   wrap2.setAttribute("style", "font-size:12px;color:#6b7280;margin:8px 0 20px 0;");
-                  if (src) {
+                  if (src2) {
                     const link2 = doc3.createElement("a");
-                    link2.href = src;
-                    link2.textContent = src;
+                    link2.href = src2;
+                    link2.textContent = src2;
                     link2.setAttribute("style", "color:#2563eb;text-decoration:underline;word-break:break-all;");
                     wrap2.textContent = "Video: ";
                     wrap2.appendChild(link2);
@@ -63275,3 +63348,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
+//# sourceMappingURL=memo.bundle.js.map
