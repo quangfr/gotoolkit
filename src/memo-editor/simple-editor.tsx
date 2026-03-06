@@ -3378,10 +3378,89 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [tableSelectionBox, setTableSelectionBox] = React.useState<{ top: number, left: number, width: number, height: number } | null>(null);
   const [tableSelectionResize, setTableSelectionResize] = React.useState<{ anchorPos: number, tablePos: number } | null>(null);
   const saveTimeoutRef = React.useRef<number | null>(null);
+  const saveIdleRef = React.useRef<number | null>(null);
   const blockDragMovedRef = React.useRef(false);
   const tableLayoutRafRef = React.useRef<number | null>(null);
   const isAutoLayoutRef = React.useRef(false);
+  const tocPendingRef = React.useRef<any[] | null>(null);
+  const tocLastHashRef = React.useRef<string>('');
+  const tocThrottleTimerRef = React.useRef<number | null>(null);
+  const tocIdleTimerRef = React.useRef<number | null>(null);
+  const tocLastRunAtRef = React.useRef<number>(0);
   const activeDocumentId = String(editorId || (window as any).__memoActiveDocumentId || '').trim();
+
+  const clearPendingSaveTasks = React.useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    const idleHandle = saveIdleRef.current;
+    if (idleHandle !== null) {
+      const cancelIdle = (window as any).cancelIdleCallback;
+      if (typeof cancelIdle === 'function') cancelIdle(idleHandle);
+      else window.clearTimeout(idleHandle);
+      saveIdleRef.current = null;
+    }
+  }, []);
+
+  const clearScheduledTocSync = React.useCallback(() => {
+    if (tocThrottleTimerRef.current !== null) {
+      window.clearTimeout(tocThrottleTimerRef.current);
+      tocThrottleTimerRef.current = null;
+    }
+    const idleHandle = tocIdleTimerRef.current;
+    if (idleHandle !== null) {
+      const cancelIdle = (window as any).cancelIdleCallback;
+      if (typeof cancelIdle === 'function') cancelIdle(idleHandle);
+      else window.clearTimeout(idleHandle);
+      tocIdleTimerRef.current = null;
+    }
+  }, []);
+
+  const computeTocHash = React.useCallback((rawContent: any[]) => {
+    const rows = Array.isArray(rawContent) ? rawContent : [];
+    let out = `${rows.length}|`;
+    for (let i = 0; i < rows.length; i += 1) {
+      const row = rows[i];
+      out += `${row?.id || row?.anchor || ''}#${row?.level || ''}#${row?.textContent || row?.text || ''}|`;
+    }
+    return out;
+  }, []);
+
+  const flushTocSync = React.useCallback(() => {
+    const nextContent = Array.isArray(tocPendingRef.current) ? tocPendingRef.current : [];
+    tocPendingRef.current = null;
+    tocIdleTimerRef.current = null;
+    const nextHash = computeTocHash(nextContent);
+    if (nextHash === tocLastHashRef.current) return;
+    tocLastHashRef.current = nextHash;
+    (window as any).MemoHeadings = nextContent;
+    window.dispatchEvent(new CustomEvent('memo:headings-updated', { detail: nextContent }));
+    tocLastRunAtRef.current = Date.now();
+  }, [computeTocHash]);
+
+  const scheduleTocSync = React.useCallback((nextContent: any[]) => {
+    tocPendingRef.current = Array.isArray(nextContent) ? nextContent : [];
+    if (tocThrottleTimerRef.current !== null) return;
+    const now = Date.now();
+    const elapsed = now - tocLastRunAtRef.current;
+    const delay = elapsed >= 120 ? 0 : (120 - elapsed);
+    tocThrottleTimerRef.current = window.setTimeout(() => {
+      tocThrottleTimerRef.current = null;
+      if (tocIdleTimerRef.current !== null) return;
+      const run = () => flushTocSync();
+      const requestIdle = (window as any).requestIdleCallback;
+      if (typeof requestIdle === 'function') {
+        tocIdleTimerRef.current = requestIdle(run, { timeout: 180 });
+      } else {
+        tocIdleTimerRef.current = window.setTimeout(run, 0);
+      }
+    }, delay);
+  }, [flushTocSync]);
+
+  React.useEffect(() => {
+    return () => clearScheduledTocSync();
+  }, [clearScheduledTocSync]);
 
   React.useEffect(() => {
     setEditorHtmlSnapshot(String(content || ''));
@@ -3490,14 +3569,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       CodeSuggestion,
       TableOfContents.configure({
         onUpdate(content: any[]) {
-          const start = performance.now();
-          (window as any).MemoHeadings = content;
-          // Dispatch a custom event to notify vanilla JS code
-          window.dispatchEvent(new CustomEvent('memo:headings-updated', { detail: content }));
-          const duration = Math.round(performance.now() - start);
-          if (duration > 10) {
-            console.warn(`[SimpleEditor] TOC onUpdate took ${duration}ms`);
-          }
+          scheduleTocSync(content);
         },
       }),
       Placeholder.configure({
@@ -4165,16 +4237,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       setEditorHtmlSnapshot(html);
       if (onChange) {
         // Debounce the onChange call to avoid excessive saves
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-        }
+        clearPendingSaveTasks();
         saveTimeoutRef.current = window.setTimeout(() => {
-          const innerStart = performance.now();
-          onChange(html, editorId);
           saveTimeoutRef.current = null;
-          const duration = Math.round(performance.now() - innerStart);
-          if (duration > 50) {
-             console.warn(`[SimpleEditor] debounced onChange: getHTML/onChange took ${duration}ms`);
+          const runSave = () => {
+            onChange(html, editorId);
+            saveIdleRef.current = null;
+          };
+          const requestIdle = (window as any).requestIdleCallback;
+          if (typeof requestIdle === 'function') {
+            saveIdleRef.current = requestIdle(runSave, { timeout: 250 });
+          } else {
+            saveIdleRef.current = window.setTimeout(runSave, 0);
           }
         }, 500);
       }
@@ -4187,10 +4261,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       setEditorHtmlSnapshot(editor.getHTML());
       if (onChange) {
         // Save immediately on blur
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-          saveTimeoutRef.current = null;
-        }
+        clearPendingSaveTasks();
         onChange(editor.getHTML());
       }
     },
@@ -4198,12 +4269,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   React.useEffect(() => {
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = null;
-      }
+      clearPendingSaveTasks();
     };
-  }, []);
+  }, [clearPendingSaveTasks]);
 
   React.useEffect(() => {
     if (!editor) return;

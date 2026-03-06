@@ -58760,10 +58760,83 @@ ${promptInput.trim()}`
     const [tableSelectionBox, setTableSelectionBox] = react_shim_default.useState(null);
     const [tableSelectionResize, setTableSelectionResize] = react_shim_default.useState(null);
     const saveTimeoutRef = react_shim_default.useRef(null);
+    const saveIdleRef = react_shim_default.useRef(null);
     const blockDragMovedRef = react_shim_default.useRef(false);
     const tableLayoutRafRef = react_shim_default.useRef(null);
     const isAutoLayoutRef = react_shim_default.useRef(false);
+    const tocPendingRef = react_shim_default.useRef(null);
+    const tocLastHashRef = react_shim_default.useRef("");
+    const tocThrottleTimerRef = react_shim_default.useRef(null);
+    const tocIdleTimerRef = react_shim_default.useRef(null);
+    const tocLastRunAtRef = react_shim_default.useRef(0);
     const activeDocumentId = String(editorId || window.__memoActiveDocumentId || "").trim();
+    const clearPendingSaveTasks = react_shim_default.useCallback(() => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+      const idleHandle = saveIdleRef.current;
+      if (idleHandle !== null) {
+        const cancelIdle = window.cancelIdleCallback;
+        if (typeof cancelIdle === "function") cancelIdle(idleHandle);
+        else window.clearTimeout(idleHandle);
+        saveIdleRef.current = null;
+      }
+    }, []);
+    const clearScheduledTocSync = react_shim_default.useCallback(() => {
+      if (tocThrottleTimerRef.current !== null) {
+        window.clearTimeout(tocThrottleTimerRef.current);
+        tocThrottleTimerRef.current = null;
+      }
+      const idleHandle = tocIdleTimerRef.current;
+      if (idleHandle !== null) {
+        const cancelIdle = window.cancelIdleCallback;
+        if (typeof cancelIdle === "function") cancelIdle(idleHandle);
+        else window.clearTimeout(idleHandle);
+        tocIdleTimerRef.current = null;
+      }
+    }, []);
+    const computeTocHash = react_shim_default.useCallback((rawContent) => {
+      const rows = Array.isArray(rawContent) ? rawContent : [];
+      let out = `${rows.length}|`;
+      for (let i = 0; i < rows.length; i += 1) {
+        const row = rows[i];
+        out += `${(row == null ? void 0 : row.id) || (row == null ? void 0 : row.anchor) || ""}#${(row == null ? void 0 : row.level) || ""}#${(row == null ? void 0 : row.textContent) || (row == null ? void 0 : row.text) || ""}|`;
+      }
+      return out;
+    }, []);
+    const flushTocSync = react_shim_default.useCallback(() => {
+      const nextContent = Array.isArray(tocPendingRef.current) ? tocPendingRef.current : [];
+      tocPendingRef.current = null;
+      tocIdleTimerRef.current = null;
+      const nextHash = computeTocHash(nextContent);
+      if (nextHash === tocLastHashRef.current) return;
+      tocLastHashRef.current = nextHash;
+      window.MemoHeadings = nextContent;
+      window.dispatchEvent(new CustomEvent("memo:headings-updated", { detail: nextContent }));
+      tocLastRunAtRef.current = Date.now();
+    }, [computeTocHash]);
+    const scheduleTocSync = react_shim_default.useCallback((nextContent) => {
+      tocPendingRef.current = Array.isArray(nextContent) ? nextContent : [];
+      if (tocThrottleTimerRef.current !== null) return;
+      const now = Date.now();
+      const elapsed = now - tocLastRunAtRef.current;
+      const delay = elapsed >= 120 ? 0 : 120 - elapsed;
+      tocThrottleTimerRef.current = window.setTimeout(() => {
+        tocThrottleTimerRef.current = null;
+        if (tocIdleTimerRef.current !== null) return;
+        const run3 = () => flushTocSync();
+        const requestIdle = window.requestIdleCallback;
+        if (typeof requestIdle === "function") {
+          tocIdleTimerRef.current = requestIdle(run3, { timeout: 180 });
+        } else {
+          tocIdleTimerRef.current = window.setTimeout(run3, 0);
+        }
+      }, delay);
+    }, [flushTocSync]);
+    react_shim_default.useEffect(() => {
+      return () => clearScheduledTocSync();
+    }, [clearScheduledTocSync]);
     react_shim_default.useEffect(() => {
       setEditorHtmlSnapshot(String(content || ""));
     }, [content, editorId]);
@@ -58867,13 +58940,7 @@ ${promptInput.trim()}`
         CodeSuggestion,
         TableOfContents.configure({
           onUpdate(content2) {
-            const start = performance.now();
-            window.MemoHeadings = content2;
-            window.dispatchEvent(new CustomEvent("memo:headings-updated", { detail: content2 }));
-            const duration = Math.round(performance.now() - start);
-            if (duration > 10) {
-              console.warn(`[SimpleEditor] TOC onUpdate took ${duration}ms`);
-            }
+            scheduleTocSync(content2);
           }
         }),
         Placeholder.configure({
@@ -59468,16 +59535,18 @@ ${promptInput.trim()}`
         const html3 = editor2.getHTML();
         setEditorHtmlSnapshot(html3);
         if (onChange) {
-          if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-          }
+          clearPendingSaveTasks();
           saveTimeoutRef.current = window.setTimeout(() => {
-            const innerStart = performance.now();
-            onChange(html3, editorId);
             saveTimeoutRef.current = null;
-            const duration = Math.round(performance.now() - innerStart);
-            if (duration > 50) {
-              console.warn(`[SimpleEditor] debounced onChange: getHTML/onChange took ${duration}ms`);
+            const runSave = () => {
+              onChange(html3, editorId);
+              saveIdleRef.current = null;
+            };
+            const requestIdle = window.requestIdleCallback;
+            if (typeof requestIdle === "function") {
+              saveIdleRef.current = requestIdle(runSave, { timeout: 250 });
+            } else {
+              saveIdleRef.current = window.setTimeout(runSave, 0);
             }
           }, 500);
         }
@@ -59488,22 +59557,16 @@ ${promptInput.trim()}`
       onBlur: ({ editor: editor2 }) => {
         setEditorHtmlSnapshot(editor2.getHTML());
         if (onChange) {
-          if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-            saveTimeoutRef.current = null;
-          }
+          clearPendingSaveTasks();
           onChange(editor2.getHTML());
         }
       }
     });
     react_shim_default.useEffect(() => {
       return () => {
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-          saveTimeoutRef.current = null;
-        }
+        clearPendingSaveTasks();
       };
-    }, []);
+    }, [clearPendingSaveTasks]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       const syncSpellcheck = () => {

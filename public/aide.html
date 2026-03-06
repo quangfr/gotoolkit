@@ -7,11 +7,11 @@
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>Aide | GoToolkit</title>
-    <script src="js/bootstrap-theme.js?v=2026.03.06.10"></script>
+    <script src="js/bootstrap-theme.js?v=2026.03.06.11"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
-    <script src="js/help.js?v=2026.03.06.10" defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.03.06.10">
+    <script src="js/help.js?v=2026.03.06.11" defer></script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.03.06.11">
     <style>
         .legal-page {
             max-width: 920px;
@@ -182,51 +182,43 @@
         <nav class="question-toc" aria-label="Sommaire des questions">
             <h2>Sommaire des questions</h2>
             <ul id="helpQuestionToc" class="question-toc-list question-toc-list--plain">
-                <li><a href="#q-1">1. Faut-il créer un compte pour utiliser GoToolkit ?</a></li>
-                <li><a href="#q-2">2. Est-ce que l’application est sécurisée et adaptée à un usage professionnel ?</a>
-                </li>
-                <li><a href="#q-3">3. À quoi peut servir GoToolkit ?</a></li>
-                <li><a href="#q-4">4. Puis-je utiliser GoToolkit sur mobile ?</a></li>
-                <li><a href="#q-5">5. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire
-                        ?</a></li>
-                <li><a href="#q-6">6. Comment créer ou organiser des pages ?</a></li>
-                <li><a href="#q-7">7. Comment personnaliser une page ?</a></li>
-                <li><a href="#q-8">8. Comment importer un fichier dans une page ?</a></li>
-                <li><a href="#q-9">9. Comment exporter ou envoyer une page ?</a></li>
-                <li><a href="#q-10">10. Comment supprimer une page ?</a></li>
-                <li><a href="#q-11">11. Comment fonctionne l’Assistant (conversation par page, références,
-                        approfondissement et actions d’édition) ?</a></li>
-                <li><a href="#q-12">12. Quelles sont les mises en forme proposées ?</a></li>
-                <li><a href="#q-13">13. À quoi sert l’enregistrement vocal avec partage d’écran et transcription ?</a>
-                </li>
-                <li><a href="#q-14">14. Comment éditer rapidement avec les blocs disponibles ?</a></li>
-                <li><a href="#q-15">15. Comment fonctionnent la sauvegarde locale, Annuler et Rétablir ?</a></li>
-                <li><a href="#q-16">16. Comment insérer un diagramme ?</a></li>
-                <li><a href="#q-17">17. Comment insérer une image, une vidéo ou une vidéo embarquée ?</a></li>
-                <li><a href="#q-18">18. À quoi servent les blocs Lien, Sommaire et Navigation ?</a></li>
-                <li><a href="#q-19">19. Comment utiliser un tableau ?</a></li>
-                <li><a href="#q-20">20. Quels types de citation existent ?</a></li>
-                <li><a href="#q-21">21. À quoi sert le libellé ?</a></li>
-                <li><a href="#q-22">22. Comment ajouter un fichier à la base de connaissance et à quoi ça sert ?</a>
-                </li>
-                <li><a href="#q-23">23. Quelle est la différence entre joindre un fichier à l’IA en contexte et importer
-                        un fichier dans la page en base de connaissance ?</a></li>
-                <li><a href="#q-24">24. Les réponses de l’IA remplacent-elles automatiquement mon texte ?</a></li>
-                <li><a href="#q-25">25. Puis-je envoyer du contexte sans modifier la page ?</a></li>
-                <li><a href="#q-26">26. Puis-je personnaliser les instructions envoyées à l’IA ?</a></li>
-                <li><a href="#q-27">27. Quelles informations sont partagées avec l’IA et les services externes ?</a>
-                </li>
-                <li><a href="#q-28">28. Quels sont les autres services tiers proposés et à quoi servent-ils ?</a></li>
-                <li><a href="#q-29">29. À quoi servent les raccourcis de prompt ?</a></li>
-                <li><a href="#q-30">30. Peut-on gérer les catégories de page et les éditer ?</a></li>
-                <li><a href="#q-31">31. Y a-t-il des limites de requêtes pour l’IA et les autres services externes ?</a>
-                </li>
-                <li><a href="#q-32">32. Puis-je lancer des commandes à la voix ?</a></li>
+                <li><a href="#q-1">1. Comment démarrer avec GoToolkit sans créer de compte ?</a></li>
+                <li><a href="#q-2">2. Est-ce adapté à un usage pro et à des données sensibles ?</a></li>
+                <li><a href="#q-3">3. Dans quels cas utiliser GoToolkit au quotidien ?</a></li>
+                <li><a href="#q-4">4. Puis-je utiliser GoToolkit sur mobile facilement ?</a></li>
+                <li><a href="#q-5">5. Que faire si quelque chose bloque malgré plusieurs essais ?</a></li>
+                <li><a href="#q-6">6. Comment créer, organiser et déplacer mes pages ?</a></li>
+                <li><a href="#q-7">7. Comment retrouver vite une page dans un espace chargé ?</a></li>
+                <li><a href="#q-8">8. Comment importer un document dans une page ?</a></li>
+                <li><a href="#q-9">9. Comment sauvegarder et exporter une page ?</a></li>
+                <li><a href="#q-10">10. Comment supprimer ou archiver une page ?</a></li>
+                <li><a href="#q-11">11. Comment utiliser l’Assistant pour discuter, explorer et éditer ?</a></li>
+                <li><a href="#q-12">12. Quelles mises en forme puis-je appliquer rapidement ?</a></li>
+                <li><a href="#q-13">13. À quoi sert l’enregistrement vocal avec partage d’écran ?</a></li>
+                <li><a href="#q-14">14. Comment éditer plus vite avec les blocs ?</a></li>
+                <li><a href="#q-15">15. Comment fonctionnent sauvegarde auto, Annuler et Rétablir ?</a></li>
+                <li><a href="#q-16">16. Comment créer un diagramme dans une page ?</a></li>
+                <li><a href="#q-17">17. Comment insérer image, vidéo ou vidéo intégrée ?</a></li>
+                <li><a href="#q-18">18. Quand utiliser les blocs Lien, Sommaire et Navigation ?</a></li>
+                <li><a href="#q-19">19. Comment créer et modifier un tableau ?</a></li>
+                <li><a href="#q-20">20. Quels styles de citation puis-je utiliser ?</a></li>
+                <li><a href="#q-21">21. À quoi sert un libellé dans une page ?</a></li>
+                <li><a href="#q-22">22. Comment ajouter un fichier à la base de connaissance ?</a></li>
+                <li><a href="#q-23">23. Fichier en contexte IA ou import dans la page : que choisir ?</a></li>
+                <li><a href="#q-24">24. L’IA modifie-t-elle ma page automatiquement ?</a></li>
+                <li><a href="#q-25">25. Puis-je fournir du contexte à l’IA sans modifier ma page ?</a></li>
+                <li><a href="#q-26">26. Comment personnaliser les instructions envoyées à l’IA ?</a></li>
+                <li><a href="#q-27">27. Quelles données partent vers l’IA et les services externes ?</a></li>
+                <li><a href="#q-28">28. Quels services tiers sont disponibles et pour quoi faire ?</a></li>
+                <li><a href="#q-29">29. Comment gagner du temps avec les raccourcis de prompt ?</a></li>
+                <li><a href="#q-30">30. Comment gérer et modifier les catégories de page ?</a></li>
+                <li><a href="#q-31">31. Y a-t-il des limites de requêtes côté IA/services externes ?</a></li>
+                <li><a href="#q-32">32. Puis-je piloter certaines actions à la voix ?</a></li>
                 <li><a href="#q-33">33. Comment publier une page ou partager un lien ?</a></li>
-                <li><a href="#q-34">34. Comment accéder aux espaces partagés ?</a></li>
+                <li><a href="#q-34">34. Comment rejoindre et utiliser un espace partagé ?</a></li>
                 <li><a href="#q-35">35. Les données cloud sont-elles chiffrées ?</a></li>
-                <li><a href="#q-36">36. Comment fonctionne la stratégie de synchronisation cloud ?</a></li>
-                <li><a href="#q-37">37. Peut-on déplacer des pages par glisser-déposer entre privé et cloud ?</a></li>
+                <li><a href="#q-36">36. Comment fonctionne la synchronisation cloud ?</a></li>
+                <li><a href="#q-37">37. Peut-on déplacer des pages entre privé et cloud ?</a></li>
                 <li><a href="#q-38">38. Que faire si la synchronisation semble bloquée ?</a></li>
             </ul>
         </nav>
@@ -236,13 +228,13 @@
             <p>Pour bien commencer, voici l’essentiel: compte, sécurité, usages, mobile et dépannage.</p>
             <div class="help-list">
                 <div id="q-1">
-                    <strong>1. Faut-il créer un compte pour utiliser GoToolkit ?</strong>
+                    <strong>1. Comment démarrer avec GoToolkit sans créer de compte ?</strong>
                     <p>Non. GoToolkit fonctionne sans compte. Tes pages privés restent d’abord en local dans ton
                         navigateur. Les connexions à des services tiers sont optionnelles et limitées à l’action que
                         tu déclenches.</p>
                 </div>
                 <div id="q-2">
-                    <strong>2. Est-ce que l’application est sécurisée et adaptée à un usage professionnel ?</strong>
+                    <strong>2. Est-ce adapté à un usage pro et à des données sensibles ?</strong>
                     <p>Oui. Les pages privés restent d’abord en local, l’accès aux espaces partagés est contrôlé,
                         et les contenus cloud protégés s’appuient sur le chiffrement et les droits d’accès.
                         Comme toujours, cela complète (sans remplacer) les règles internes de ton organisation.
@@ -251,7 +243,7 @@
                     </p>
                 </div>
                 <div id="q-3">
-                    <strong>3. À quoi peut servir GoToolkit ?</strong>
+                    <strong>3. Dans quels cas utiliser GoToolkit au quotidien ?</strong>
                     <p>GoToolkit réunit édition, IA et collaboration dans un même espace pour t’aider à passer plus
                         vite de l’idée à l’action. Voici les usages les plus fréquents :</p>
                     <ul>
@@ -288,7 +280,7 @@
                     </ul>
                 </div>
                 <div id="q-4">
-                    <strong>4. Puis-je utiliser GoToolkit sur mobile ?</strong>
+                    <strong>4. Puis-je utiliser GoToolkit sur mobile facilement ?</strong>
                     <p>Oui. Si tu travailles en déplacement, la version mobile te permet de faire l’essentiel sans
                         perdre le fil.</p>
                     <p>L’application peut rediriger directement vers <code>mobile.html</code>.</p>
@@ -308,7 +300,7 @@
                     </ul>
                 </div>
                 <div id="q-5">
-                    <strong>5. J’ai un problème persistant ou bloquant et j’ai tout essayé, que dois-je faire ?</strong>
+                    <strong>5. Que faire si quelque chose bloque malgré plusieurs essais ?</strong>
                     <p>Quand un souci bloque vraiment, l’objectif est d’aller du plus simple au plus efficace, sans
                         perdre tes données.</p>
                     <ul>
@@ -337,7 +329,7 @@
             <p>Cette section couvre le cycle de vie d’une page: créer, organiser, importer, exporter et supprimer.</p>
             <div class="help-list">
                 <div id="q-6">
-                    <strong>6. Comment créer ou organiser des pages ?</strong>
+                    <strong>6. Comment créer, organiser et déplacer mes pages ?</strong>
                     <p>Tu peux structurer ton espace très vite avec quelques actions de base, puis affiner ensuite.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="panel-left"></i></span> Ouvre le panneau de
@@ -361,7 +353,7 @@
                     </ul>
                 </div>
                 <div id="q-7">
-                    <strong>7. Comment retrouver rapidement une page dans un espace chargé ?</strong>
+                    <strong>7. Comment retrouver vite une page dans un espace chargé ?</strong>
                     <p>Tu peux combiner plusieurs méthodes selon le niveau de précision recherché :</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="search"></i> Recherche titre (instantanée)</span> :
@@ -380,7 +372,7 @@
                     </ul>
                 </div>
                 <div id="q-8">
-                    <strong>8. Comment importer un fichier dans une page ?</strong>
+                    <strong>8. Comment importer un document dans une page ?</strong>
                     <p>Ouvre <span class="help-icon"><i data-lucide="file-text"></i> Page</span>, puis clique
                         sur <span class="help-icon"><i data-lucide="file-down"></i> Importer</span>. L’import lit le
                         contenu du fichier et l’insère dans ta page pour le transformer en contenu éditable.
@@ -426,7 +418,7 @@
                     </ul>
                 </div>
                 <div id="q-10">
-                    <strong>10. Comment supprimer une page ?</strong>
+                    <strong>10. Comment supprimer ou archiver une page ?</strong>
                     <p>Ouvre le menu page, puis choisis <span class="help-icon"><i data-lucide="trash-2"></i>
                             Supprimer</span>.
                         Vérifie bien la page active avant de confirmer: la suppression est irréversible.
@@ -443,8 +435,7 @@
             </p>
             <div class="help-list">
                 <div id="q-11">
-                    <strong>11. Comment fonctionne l’Assistant (conversation par page, références, approfondissement
-                        et actions d’édition) ?</strong>
+                    <strong>11. Comment utiliser l’Assistant pour discuter, explorer et éditer ?</strong>
                     <p>L’Assistant combine conversation, relecture et actions d’édition pour t’aider à avancer sans
                         sortir de la page.</p>
                     <ul>
@@ -488,7 +479,7 @@
                     </ul>
                 </div>
                 <div id="q-12">
-                    <strong>12. Quelles sont les mises en forme proposées ?</strong>
+                    <strong>12. Quelles mises en forme puis-je appliquer rapidement ?</strong>
                     <p>Tu peux appliquer ces mises en forme avec la barre d’édition, le menu contextuel, ou en
                         tapant directement les raccourcis Markdown acceptés :</p>
                     <ul>
@@ -545,7 +536,7 @@
                     </ul>
                 </div>
                 <div id="q-13">
-                    <strong>13. À quoi sert l’enregistrement vocal avec partage d’écran et transcription ?</strong>
+                    <strong>13. À quoi sert l’enregistrement vocal avec partage d’écran ?</strong>
                     <p>Cette fonction sert à transformer une réunion, une démo ou un point oral en contenu réutilisable
                         rapidement.</p>
                     <ul>
@@ -564,14 +555,14 @@
                     </ul>
                 </div>
                 <div id="q-14">
-                    <strong>14. Comment éditer rapidement avec les blocs disponibles ?</strong>
+                    <strong>14. Comment éditer plus vite avec les blocs ?</strong>
                     <p>Accès rapide via slash menu : tape <code>/</code>, puis choisis le bloc voulu.</p>
                     <p>Tu peux aussi passer par les menus contextuels pour insérer des blocs :
                         texte, titres, listes, tâches, liens, libellés, citations, tableaux, diagrammes, images,
                         vidéos, navigation et sommaire.</p>
                 </div>
                 <div id="q-15">
-                    <strong>15. Comment fonctionnent la sauvegarde locale, Annuler et Rétablir ?</strong>
+                    <strong>15. Comment fonctionnent sauvegarde auto, Annuler et Rétablir ?</strong>
                     <p>GoToolkit sauvegarde automatiquement tes modifications en local au fil de la saisie, sans action
                         manuelle de ton part. Si tu fais une erreur, tu peux revenir en arrière avec
                         <span class="help-icon"><i data-lucide="undo-2"></i></span> <strong>Annuler</strong>, puis
@@ -581,7 +572,7 @@
                     </p>
                 </div>
                 <div id="q-16">
-                    <strong>16. Comment insérer un diagramme ?</strong>
+                    <strong>16. Comment créer un diagramme dans une page ?</strong>
                     <p>Accès rapide via slash menu : tape <code>/diagramme</code> (ou <code>/mermaid</code>).</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="shapes"></i> Diagramme</span> : insère un schéma
@@ -606,7 +597,7 @@
                     </ul>
                 </div>
                 <div id="q-17">
-                    <strong>17. Comment insérer une image, une vidéo ou une vidéo embarquée ?</strong>
+                    <strong>17. Comment insérer image, vidéo ou vidéo intégrée ?</strong>
                     <p>Utilise <span class="help-icon"><i data-lucide="image"></i> Image</span> pour un média local,
                         <span class="help-icon"><i data-lucide="clapperboard"></i> Vidéo</span> pour une vidéo dans le
                         page, et les liens de vidéo embarquée pour des contenus externes affichés comme blocs
@@ -615,7 +606,7 @@
                     <p>Accès rapide via slash menu : tape <code>/image</code> ou <code>/video</code>.</p>
                 </div>
                 <div id="q-18">
-                    <strong>18. À quoi servent les blocs Lien, Sommaire et Navigation ?</strong>
+                    <strong>18. Quand utiliser les blocs Lien, Sommaire et Navigation ?</strong>
                     <p>Ces blocs t’aident à rendre tes pages plus faciles à parcourir et à partager.</p>
                     <ul>
                         <li><span class="help-icon"><i data-lucide="link"></i> Lien</span> : crée un accès cliquable
@@ -632,7 +623,7 @@
                     </p>
                 </div>
                 <div id="q-19">
-                    <strong>19. Comment utiliser un tableau ?</strong>
+                    <strong>19. Comment créer et modifier un tableau ?</strong>
                     <p>Le tableau est utile dès que tu veux comparer, organiser ou suivre des informations de manière
                         lisible.</p>
                     <p>Accès rapide via slash menu : tape <code>/tableau</code>.</p>
@@ -652,7 +643,7 @@
                     </ul>
                 </div>
                 <div id="q-20">
-                    <strong>20. Quels types de citation existent ?</strong>
+                    <strong>20. Quels styles de citation puis-je utiliser ?</strong>
                     <p>Tu peux utiliser plusieurs styles selon l’objectif: mise en avant, référence ou note de contexte.
                     </p>
                     <p>Le bloc <span class="help-icon"><i data-lucide="quote"></i> Citation</span> met en évidence un
@@ -684,7 +675,7 @@
                     </ul>
                 </div>
                 <div id="q-21">
-                    <strong>21. À quoi sert le libellé ?</strong>
+                    <strong>21. À quoi sert un libellé dans une page ?</strong>
                     <p>Le bloc <span class="help-icon"><i data-lucide="tag"></i> Libellé</span> sert à créer un tag
                         inline dans le texte pour marquer un thème, un mot-clé ou un repère métier. L’autocomplétion
                         propose les libellés déjà utilisés afin d’harmoniser ton vocabulaire dans la page.</p>
@@ -701,7 +692,7 @@
                 contrôle.</p>
             <div class="help-list">
                 <div id="q-22">
-                    <strong>22. Comment ajouter un fichier à la base de connaissance et à quoi ça sert ?</strong>
+                    <strong>22. Comment ajouter un fichier à la base de connaissance ?</strong>
                     <p>Accès rapide via slash menu : tape <code>/base</code> pour ouvrir rapidement les options liées
                         au contexte IA, puis choisis les sources utiles.</p>
                     <p>Dans l’assistant, clique sur <span class="help-icon"><i data-lucide="brain"></i></span> pour
@@ -724,9 +715,7 @@
                     </ul>
                 </div>
                 <div id="q-23">
-                    <strong>23. Quelle est la différence entre joindre un fichier à l’IA en contexte et importer un
-                        fichier dans le
-                        page en base de connaissance ?</strong>
+                    <strong>23. Fichier en contexte IA ou import dans la page : que choisir ?</strong>
                     <p>La différence principale tient à la durée d’usage: temporaire pour une demande ponctuelle,
                         durable pour capitaliser dans tes pages.</p>
                     <ul>
@@ -742,7 +731,7 @@
                     </ul>
                 </div>
                 <div id="q-24">
-                    <strong>24. Les réponses de l’IA remplacent-elles automatiquement mon texte ?</strong>
+                    <strong>24. L’IA modifie-t-elle ma page automatiquement ?</strong>
                     <p>Pas toujours: le comportement dépend du mode et de la sélection active au moment de la demande.
                     </p>
                     <ul>
@@ -755,19 +744,19 @@
                     </ul>
                 </div>
                 <div id="q-25">
-                    <strong>25. Puis-je envoyer du contexte sans modifier la page ?</strong>
+                    <strong>25. Puis-je fournir du contexte à l’IA sans modifier ma page ?</strong>
                     <p>Oui. Tu peux joindre des fichiers, choisir des sources mémoire et utiliser
                         <strong>Explorer</strong> pour travailler en lecture seule.
                     </p>
                 </div>
                 <div id="q-26">
-                    <strong>26. Puis-je personnaliser les instructions envoyées à l’IA ?</strong>
+                    <strong>26. Comment personnaliser les instructions envoyées à l’IA ?</strong>
                     <p>Oui. Ouvre le panneau <span class="help-icon"><i data-lucide="settings"></i> Paramètres</span>,
                         puis va dans l’onglet <strong>Instructions</strong> pour modifier les consignes envoyées à
                         l’IA selon ton usage.</p>
                 </div>
                 <div id="q-27">
-                    <strong>27. Quelles informations sont partagées avec l’IA et les services externes ?</strong>
+                    <strong>27. Quelles données partent vers l’IA et les services externes ?</strong>
                     <p><span class="help-icon"><i data-lucide="lock"></i> Local par défaut</span> : plusieurs actions
                         restent sur ton appareil, notamment l’enregistrement audio/vidéo tant que tu ne lances pas
                         la transcription, l’édition et la mise en forme du texte, les diagrammes/tableaux/blocs
@@ -783,7 +772,7 @@
                     </p>
                 </div>
                 <div id="q-28">
-                    <strong>28. Quels sont les autres services tiers proposés et à quoi servent-ils ?</strong>
+                    <strong>28. Quels services tiers sont disponibles et pour quoi faire ?</strong>
                     <p>Ces services complètent GoToolkit pour des besoins précis (IA, voix, publication,
                         authentification).</p>
                     <ul>
@@ -814,7 +803,7 @@
                         que quand tu lances explicitement une action distante.</p>
                 </div>
                 <div id="q-29">
-                    <strong>29. À quoi servent les raccourcis de prompt ?</strong>
+                    <strong>29. Comment gagner du temps avec les raccourcis de prompt ?</strong>
                     <p>Les raccourcis permettent de lancer des consignes prêtes à l’emploi, classées par catégories :
                     </p>
                     <ul>
@@ -835,7 +824,7 @@
                     </ul>
                 </div>
                 <div id="q-30">
-                    <strong>30. Peut-on gérer les catégories de page et les éditer ?</strong>
+                    <strong>30. Comment gérer et modifier les catégories de page ?</strong>
                     <p>Oui. Les catégories de page (aussi appelées superpouvoirs) sont configurables, et la liste par
                         défaut est définie dans <code>category.json</code>.</p>
                     <ul>
@@ -907,7 +896,7 @@
                     </table>
                 </div>
                 <div id="q-31">
-                    <strong>31. Y a-t-il des limites de requêtes pour l’IA et les autres services externes ?</strong>
+                    <strong>31. Y a-t-il des limites de requêtes côté IA/services externes ?</strong>
                     <p>Oui. Des limites de requêtes existent pour éviter les abus, protéger les secrets serveur et
                         maintenir une bonne disponibilité des services (IA, transcription, synthèse vocale, etc.).</p>
                     <p>Si tu enchaînes beaucoup de demandes en peu de temps, tu peux voir un refus temporaire, un
@@ -915,7 +904,7 @@
                         varier selon le service et le contexte d’utilisation (local, session active, cloud).</p>
                 </div>
                 <div id="q-32">
-                    <strong>32. Puis-je lancer des commandes à la voix ?</strong>
+                    <strong>32. Puis-je piloter certaines actions à la voix ?</strong>
                     <p>Oui. Il est possible de discuter avec l’Assistant
                         <span class="help-icon"><i data-lucide="bot"></i></span> en cliquant sur
                         <span class="help-icon"><i data-lucide="mic"></i></span>. Toutes les paroles prononcées sont
@@ -954,7 +943,7 @@
                     <p>Pour les règles d’accès des espaces GO LIVE et SAFRAN, voir la question suivante.</p>
                 </div>
                 <div id="q-34">
-                    <strong>34. Comment accéder aux espaces partagés ?</strong>
+                    <strong>34. Comment rejoindre et utiliser un espace partagé ?</strong>
                     <p>L’accès aux espaces partagés se fait via SSO professionnel, avec deux options selon ton
                         organisation : <span class="help-icon"><i data-lucide="lock-open"></i> Microsoft SSO</span>
                         ou <span class="help-icon"><i data-lucide="lock-open"></i> Google SSO</span>. L’espace
@@ -975,7 +964,7 @@
                         pour consulter ou modifier une page.</p>
                 </div>
                 <div id="q-36">
-                    <strong>36. Comment fonctionne la stratégie de synchronisation cloud ?</strong>
+                    <strong>36. Comment fonctionne la synchronisation cloud ?</strong>
                     <p>GoToolkit garde d’abord les opérations en attente en local, puis les envoie vers le cloud dès
                         que la synchronisation est possible.</p>
                     <p>En cas de divergence, la résolution suit une logique <strong>LWW</strong> (Last Write Wins) :
@@ -983,7 +972,7 @@
                         reprendre localement avant l’envoi.</p>
                 </div>
                 <div id="q-37">
-                    <strong>37. Peut-on déplacer des pages par glisser-déposer entre privé et cloud ?</strong>
+                    <strong>37. Peut-on déplacer des pages entre privé et cloud ?</strong>
                     <p>Oui. Tu peux réorganiser des pages dans ton espace privé, dans un espace cloud, et selon le
                         contexte déplacer par glisser-déposer entre privé et cloud. À l’intérieur des pages cloud,
                         le glisser-déposer permet aussi de changer la hiérarchie entre pages et sous-pages.</p>

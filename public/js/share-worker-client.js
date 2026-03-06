@@ -48,11 +48,7 @@
   }
 
   function logFirestoreMutation(kind, details) {
-    try {
-      console.log("[GoToolkitFirestore]", kind, details || {});
-    } catch (err) {
-      // ignore
-    }
+    // Intentionally no-op in production to avoid noisy console logs.
   }
 
   function payloadLikelyHasVideo(payload) {

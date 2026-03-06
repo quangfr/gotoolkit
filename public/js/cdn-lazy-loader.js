@@ -15,9 +15,8 @@
             key: "excalidraw",
             test: () => Boolean(global.ExcalidrawLib),
             beforeLoad: () => {
-                if (!global.EXCALIDRAW_ASSET_PATH) {
-                    global.EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/";
-                }
+                // Serve Excalidraw fonts locally to avoid relative-path/CDN failures.
+                global.EXCALIDRAW_ASSET_PATH = "/styles/";
             },
             src: "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js",
             integrity: "sha384-2RnaDBiRrWXqT5k4HtP4X4gh/ukRFg9zn1Sjt+JeYQOUWSYYnN1tKE4FL9QA3Wdl"
