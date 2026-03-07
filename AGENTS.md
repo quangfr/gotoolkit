@@ -65,6 +65,7 @@ This file is the short operational guide. Use the docs below as the canonical re
 - Release flow:
   - for any request involving `bump`, `commit`, or `push`, run `npm run check:csp`
   - then run `npm run bump`
+  - after `npm run bump`, include the versioned static entry files updated by the bump in the same commit/push (for example `public/index.html`, `public/grid.html`, `public/mobile.html`, `public/aide.html`, `public/legal.html`, and similar version-string rewrites)
   - then commit and push (do not deploy Firebase Hosting directly from this workflow)
 
 ## CSP hash workflow (inline scripts)

@@ -20,6 +20,9 @@
 
     var OPENROUTER_MODELS = [
         "openai/gpt-oss-120b",
+        "qwen/qwen3.5-35b-a3b",
+        "qwen/qwen3.5-397b-a17b",
+        "xiaomi/mimo-v2-flash",
     ];
 
     var OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
@@ -80,11 +83,14 @@
             if (!model) {
                 model = DEFAULTS.OPENROUTER_MODEL;
             }
+            if (OPENROUTER_MODELS.indexOf(model) === -1) {
+                model = DEFAULTS.OPENROUTER_MODEL;
+            }
             return model;
         },
         setOpenRouterModel: function (value) {
             var normalized = (value || "").trim();
-            if (!normalized) {
+            if (!normalized || OPENROUTER_MODELS.indexOf(normalized) === -1) {
                 normalized = DEFAULTS.OPENROUTER_MODEL;
             }
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.MODEL, normalized);

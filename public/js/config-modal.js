@@ -88,7 +88,12 @@
                                             <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
                                         </button>
                                     </span>
-                                    <input id="openrouterModelInput" type="text" placeholder="@preset/gotoolkit ou openai/gpt-oss-120b" />
+                                    <select id="openrouterModelInput">
+                                        <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
+                                        <option value="qwen/qwen3.5-35b-a3b">qwen/qwen3.5-35b-a3b</option>
+                                        <option value="qwen/qwen3.5-397b-a17b">qwen/qwen3.5-397b-a17b</option>
+                                        <option value="xiaomi/mimo-v2-flash">xiaomi/mimo-v2-flash</option>
+                                    </select>
                                 </label>
                             </div>
                             <div class="field-row" id="openrouterOcrModelRow">
@@ -556,13 +561,19 @@
     function populateOpenrouterModelInput() {
         const input = doc.getElementById("openrouterModelInput");
         if (!input) return;
+        const allowedModels = Array.isArray(global.GoToolkitIAConfig?.OPENROUTER_MODELS)
+            ? global.GoToolkitIAConfig.OPENROUTER_MODELS
+            : [];
         const stored = (
             (global.GoToolkitIAConfig && typeof global.GoToolkitIAConfig.getOpenRouterModel === "function"
                 ? global.GoToolkitIAConfig.getOpenRouterModel()
                 : "") ||
             (global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "")
         );
-        if (stored) input.value = stored;
+        const value = allowedModels.includes(stored)
+            ? stored
+            : (global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "openai/gpt-oss-120b");
+        if (value) input.value = value;
     }
 
     function populateAssemblyAiInput() {
