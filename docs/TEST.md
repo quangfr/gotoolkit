@@ -201,8 +201,11 @@ Current practical guidance from repo debugging:
 
 - prefer the repo-local Playwright runtime (`./node_modules/.bin/playwright` or `require("playwright")`) over the bundled Playwright CLI wrapper when working from this machine
 - the bundled Playwright CLI wrapper currently tries to launch the `chrome` channel and fails here because the Chrome channel is not installed
-- for one-off repros, use a short Node script with `require("playwright")` instead of writing a full spec first
+- prefer a real Playwright spec under `tests/` over an ad hoc Node script as soon as the repro involves more than a trivial one-command sanity check
+- use ad hoc Node scripts only for throwaway smoke checks; for iterative debugging, logging, screenshots, and reruns, move immediately to a spec file so the harness itself does not need to be rewritten every run
 - when reproducing UI issues, attach listeners for `console`, `pageerror`, `request`, and `response` before navigation so transient failures are captured
+- for local repros where Turnstile is not the subject of the test, stub or disable Turnstile before navigation with `page.addInitScript(...)` or an equivalent test-only bootstrap so anti-bot failures do not mask the UI bug
+- before rewriting a failing Playwright repro, instrument the intended UI path with explicit `console.log` step markers and read those logs back from Playwright first; prefer isolating the exact failing step over repeated edit-and-rerun loops
 
 Recommended readiness pattern:
 
@@ -222,6 +225,7 @@ Recommended assertion pattern for UI debugging:
 - capture the user-visible message or DOM state
 - also capture any relevant client diagnostics, for example `window.GoToolkitTurnstile.getDiagnostics()`
 - distinguish between “browser never sent the request” and “worker rejected the request” by inspecting network events
+- when a scenario has multiple UI steps, emit one `console.log` marker per step before the interaction and keep a final marker after the expected state change; this gives you a stable breadcrumb trail in Playwright output and usually removes the need to rewrite the test just to learn where it stopped
 
 This distinction matters in this repo because anti-bot and auth flows can fail before the worker is ever reached.
 
