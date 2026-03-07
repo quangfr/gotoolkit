@@ -80,22 +80,6 @@
                                     <input id="openrouterApiKeyInput" type="text" placeholder="or-..." />
                                 </label>
                             </div>
-                            <div class="field-row">
-                                <label style="width:100%">
-                                    <span class="settings-label-row">
-                                        <span class="label-title">Modèle OpenRouter</span>
-                                        <button class="settings-help-btn" type="button" data-help-key="openRouterModel" aria-label="Aide Modèle OpenRouter">
-                                            <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
-                                        </button>
-                                    </span>
-                                    <select id="openrouterModelInput">
-                                        <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
-                                        <option value="qwen/qwen3.5-35b-a3b">qwen/qwen3.5-35b-a3b</option>
-                                        <option value="qwen/qwen3.5-397b-a17b">qwen/qwen3.5-397b-a17b</option>
-                                        <option value="xiaomi/mimo-v2-flash">xiaomi/mimo-v2-flash</option>
-                                    </select>
-                                </label>
-                            </div>
                             <div class="field-row" id="openrouterOcrModelRow">
                                 <label style="width:100%">
                                     <span class="settings-label-row">
@@ -261,6 +245,22 @@
                         </div>
                     </div>
                     <div class="settings-tab-panel" data-panel="promptTab" hidden>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <span class="settings-label-row">
+                                    <span class="label-title">Moteur IA</span>
+                                    <button class="settings-help-btn" type="button" data-help-key="openRouterModel" aria-label="Aide Moteur IA">
+                                        <i data-lucide="circle-help" style="width:14px;height:14px;"></i>
+                                    </button>
+                                </span>
+                                <select id="openrouterModelInput">
+                                    <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
+                                    <option value="qwen/qwen3.5-35b-a3b">qwen/qwen3.5-35b-a3b</option>
+                                    <option value="qwen/qwen3.5-397b-a17b">qwen/qwen3.5-397b-a17b</option>
+                                    <option value="xiaomi/mimo-v2-flash">xiaomi/mimo-v2-flash</option>
+                                </select>
+                            </label>
+                        </div>
                         <div class="field-row">
                             <label style="width:100%">
                                 <span class="settings-label-row">
