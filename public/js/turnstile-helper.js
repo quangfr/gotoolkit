@@ -235,7 +235,36 @@
         const overlay = document.getElementById(INTERACTIVE_OVERLAY_ID);
         if (overlay) {
             overlay.style.display = "none";
+            overlay.setAttribute("aria-hidden", "true");
             pushDiagnostic("interactive-overlay-hidden");
+        }
+    }
+
+    function closeInteractiveChallenge(reason) {
+        interactiveChallengeActive = false;
+        hideInteractiveOverlay();
+        const activeElement = document.activeElement;
+        if (activeElement && typeof activeElement.blur === "function") {
+            try {
+                activeElement.blur();
+            } catch (err) {
+                // ignore blur failures
+            }
+        }
+        if (interactiveWidgetId !== null && interactiveWidgetId !== undefined && global.turnstile && typeof global.turnstile.reset === "function") {
+            try {
+                global.turnstile.reset(interactiveWidgetId);
+                pushDiagnostic("interactive-widget-closed", {
+                    widgetId: String(interactiveWidgetId),
+                    reason: String(reason || "unknown")
+                });
+            } catch (error) {
+                pushDiagnostic("interactive-widget-close-error", {
+                    widgetId: String(interactiveWidgetId),
+                    reason: String(reason || "unknown"),
+                    error: String(error?.message || error || "")
+                });
+            }
         }
     }
 
@@ -358,7 +387,7 @@
                         tokenLength: normalizedToken.length,
                         widgetId: String(renderedId)
                     });
-                    hideInteractiveOverlay();
+                    closeInteractiveChallenge("interactive-token");
                     settleTokenResolver(null, token);
                 },
                 "expired-callback": function () {
@@ -375,7 +404,7 @@
                         error: "TURNSTILE_INTERACTIVE_FAILED",
                         widgetId: String(renderedId)
                     });
-                    hideInteractiveOverlay();
+                    closeInteractiveChallenge("interactive-error");
                     settleTokenResolver(new Error("TURNSTILE_INTERACTIVE_FAILED"));
                 },
                 "timeout-callback": function () {
@@ -433,8 +462,7 @@
             });
         }).catch(function (error) {
             interactiveWidgetId = null;
-            interactiveChallengeActive = false;
-            hideInteractiveOverlay();
+            closeInteractiveChallenge("interactive-widget-error-final");
             pushDiagnostic("interactive-widget-error-final", { error: String(error?.message || error || "") });
             throw error;
         }).finally(function () {
@@ -487,13 +515,12 @@
                 function finalizeResolve(nextToken) {
                     if (settled) return;
                     settled = true;
-                    interactiveChallengeActive = false;
                     global.clearTimeout(timeoutId);
                     if (interactiveTimeoutId) {
                         global.clearTimeout(interactiveTimeoutId);
                         interactiveTimeoutId = 0;
                     }
-                    hideInteractiveOverlay();
+                    closeInteractiveChallenge("finalize-resolve");
                     setLastAttemptSummary({
                         stage: "token",
                         host: normalizedHost,
@@ -506,13 +533,12 @@
                 function finalizeReject(error) {
                     if (settled) return;
                     settled = true;
-                    interactiveChallengeActive = false;
                     global.clearTimeout(timeoutId);
                     if (interactiveTimeoutId) {
                         global.clearTimeout(interactiveTimeoutId);
                         interactiveTimeoutId = 0;
                     }
-                    hideInteractiveOverlay();
+                    closeInteractiveChallenge("finalize-reject");
                     setLastAttemptSummary({
                         stage: "reject",
                         host: normalizedHost,
@@ -548,12 +574,11 @@
                             widgetId: String(rendered.widgetId),
                             error: "TURNSTILE_EXECUTE_TIMEOUT"
                         });
-                        hideInteractiveOverlay();
+                        closeInteractiveChallenge("interactive-timeout");
                         settleTokenResolver(new Error("TURNSTILE_EXECUTE_TIMEOUT"));
                     }, INTERACTIVE_TIMEOUT_MS);
                     void ensureInteractiveWidget().catch(function (error) {
                         if (settled) return;
-                        interactiveChallengeActive = false;
                         setLastAttemptSummary({
                             stage: "interactive-failed",
                             host: normalizedHost,
@@ -565,7 +590,7 @@
                             global.clearTimeout(interactiveTimeoutId);
                             interactiveTimeoutId = 0;
                         }
-                        hideInteractiveOverlay();
+                        closeInteractiveChallenge("interactive-failed");
                         settleTokenResolver(error);
                     });
                 }, INTERACTIVE_TRIGGER_DELAY_MS);
