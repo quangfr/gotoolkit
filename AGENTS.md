@@ -2,8 +2,7 @@
 
 This file is the short operational guide. Use the docs below as the canonical references when you need deeper detail:
 
-- Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- Data model and storage: [`docs/DATA.md`](docs/DATA.md)
+- Architecture and data/storage model: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Automation and Playwright: [`docs/TEST.md`](docs/TEST.md)
 - Security and space auth: [`docs/SECURITY.MD`](docs/SECURITY.MD)
 
@@ -96,6 +95,16 @@ This file is the short operational guide. Use the docs below as the canonical re
 - Shared content uses `pages`; shared tree/meta uses `pages-meta`.
 - Authenticate protected spaces through `POST /v1/spaces/auth`.
 - Reuse returned `X-Space-Auth`, `X-Space-Id`, and `contentKey` for protected operations.
+- Protected worker routes also require the sync anti-replay headers:
+  - `X-Sync-Session`
+  - `X-Sync-JTI`
+  - `X-Sync-TS`
+- When calling protected worker routes manually, send both the space auth headers and the sync headers:
+  - `X-Space-Id`
+  - `X-Space-Auth`
+  - `X-Sync-Session`
+  - `X-Sync-JTI`
+  - `X-Sync-TS`
 - For cloud reads, the safe fetch order is: auth -> tree -> `pages-meta` -> `pages`.
 - For managed-space `spaceCode` issues, verify both the worker secret and D1 `space_code_hashes` alignment.
 - Asset downloads and cleanup now also depend on `.env.local` values loaded through `scripts/with-env-local.sh`:
@@ -110,7 +119,6 @@ This file is the short operational guide. Use the docs below as the canonical re
 - `curl -i -H 'Content-Type: application/json' -d '{"spaceId":"<id>","spaceCode":"<code>"}' https://share.gotoolkit.workers.dev/v1/spaces/auth`
 
 ## When to open the reference docs
-- Open [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module boundaries, sync architecture, and app responsibilities.
-- Open [`docs/DATA.md`](docs/DATA.md) for IndexedDB stores, cloud drafts, share-history, and payload structure.
+- Open [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module boundaries, sync architecture, app responsibilities, IndexedDB stores, cloud drafts, share-history, and payload structure.
 - Open [`docs/TEST.md`](docs/TEST.md) for Playwright strategy, `spaceCode` bootstrap, and CI guidance.
 - Open [`docs/SECURITY.MD`](docs/SECURITY.MD) for CSP, OAuth, managed spaces, `contentKey`, and auth headers.

@@ -424,6 +424,15 @@ function sanitizeAssetName(fileName, fallbackExt) {
   return base;
 }
 
+function stripLegacyEncryptedSuffix(fileName, mimeType = "") {
+  const rawName = String(fileName || "").trim();
+  if (!rawName) return "";
+  if (!/\.gtke$/i.test(rawName)) return rawName;
+  const withoutSuffix = rawName.replace(/\.gtke$/i, "");
+  const fallbackExt = detectAssetExtension(String(mimeType || "").trim().toLowerCase(), withoutSuffix);
+  return sanitizeAssetName(withoutSuffix, fallbackExt);
+}
+
 function parseDataUrl(dataUrl) {
   const raw = String(dataUrl || "").trim();
   const match = raw.match(/^data:([^;,]+);base64,(.+)$/i);
@@ -2027,9 +2036,10 @@ async function handleRequest(request, env) {
     const object = result.object;
     const contentType = String(object.httpMetadata?.contentType || "application/octet-stream").trim() || "application/octet-stream";
     const objectName = String(result.objectName || "").trim();
-    const fileName = objectName.split("/").pop()?.replace(/^[a-f0-9]{64}-/i, "") || "asset.bin";
+    const fallbackFileName = objectName.split("/").pop()?.replace(/^[a-f0-9]{64}-/i, "") || "asset.bin";
     let body = object.body;
     let responseContentType = contentType;
+    let responseFileName = fallbackFileName;
     if (contentType === "application/x-gotoolkit-e2ee+json") {
       const rawBytes = new Uint8Array(await object.arrayBuffer());
       try {
@@ -2037,6 +2047,7 @@ async function handleRequest(request, env) {
         if (decrypted?.bytes?.length) {
           body = decrypted.bytes;
           responseContentType = decrypted.mimeType;
+          responseFileName = stripLegacyEncryptedSuffix(decrypted.fileName || fallbackFileName, decrypted.mimeType) || fallbackFileName;
         }
       } catch (err) {
         return errorResponse("Déchiffrement asset impossible", 500, request, env);
@@ -2047,7 +2058,7 @@ async function handleRequest(request, env) {
       status: 200,
       headers: Object.assign({}, corsHeaders(request, env), {
         "Content-Type": responseContentType,
-        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Content-Disposition": `attachment; filename="${responseFileName}"`,
         "Cache-Control": "no-store, max-age=0"
       })
     });
@@ -2261,6 +2272,8 @@ async function handleRequest(request, env) {
       const contentType = result.object.httpMetadata?.contentType || "application/octet-stream";
       let body = result.object.body;
       let responseContentType = contentType;
+      const fallbackFileName = String(result.objectName || "").split("/").pop()?.replace(/^[a-f0-9]{64}-/i, "") || "asset.bin";
+      let responseFileName = fallbackFileName;
       if (String(contentType).trim().toLowerCase() === "application/x-gotoolkit-e2ee+json") {
         try {
           const rawBytes = new Uint8Array(await result.object.arrayBuffer());
@@ -2268,6 +2281,7 @@ async function handleRequest(request, env) {
           if (decrypted?.bytes?.length) {
             body = decrypted.bytes;
             responseContentType = decrypted.mimeType;
+            responseFileName = stripLegacyEncryptedSuffix(decrypted.fileName || fallbackFileName, decrypted.mimeType) || fallbackFileName;
           }
         } catch (err) {
           return errorResponse("Déchiffrement asset impossible", 500, request, env);
@@ -2275,6 +2289,7 @@ async function handleRequest(request, env) {
       }
       const streamHeaders = Object.assign({}, corsHeaders(request, env), {
         "Content-Type": responseContentType,
+        "Content-Disposition": `attachment; filename="${responseFileName}"`,
         "Cache-Control": "public, max-age=31536000, immutable"
       });
       await touchAssetLastUsed(env, result).catch(() => null);
