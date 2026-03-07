@@ -34,7 +34,6 @@
     }
 
     function debugLog(event, details) {
-        if (!global.GO_TOOLKIT_TURNSTILE_DEBUG) return;
         try {
             if (details && typeof details === "object") {
                 console.log("[GoToolkitTurnstile]", event, details);
@@ -104,7 +103,7 @@
     }
 
     function startInteractiveDomSnapshots(label, container) {
-        if (!global.GO_TOOLKIT_TURNSTILE_DEBUG || !container) return;
+        if (!container) return;
         [0, 250, 1000, 2000, 5000].forEach(function (delay) {
             global.setTimeout(function () {
                 debugLog(label + "-dom-" + delay + "ms", {
@@ -115,7 +114,6 @@
     }
 
     function wrapTurnstileForDebug(turnstile) {
-        if (!global.GO_TOOLKIT_TURNSTILE_DEBUG) return turnstile;
         if (!turnstile || typeof turnstile !== "object") return turnstile;
         if (turnstileWrappedForDebug || turnstile.__goToolkitWrapped) return turnstile;
 
