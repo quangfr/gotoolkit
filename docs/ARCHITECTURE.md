@@ -209,6 +209,13 @@ Important details from current code:
 - read/delete require `X-Space-Id` and `X-Space-Auth`
 - worker rejects assets outside the authenticated space scope
 - assets can be referenced inside page payloads and then prefetched locally after sync
+- public download links use `/assets/{id}`
+- the worker can serve those public asset links and decrypt asset payloads before download
+- asset metadata carries lifecycle fields such as `createdAt` and `lastUsed`
+- assets are no longer deleted at the same time as pages
+- asset reuse is driven by `contentHash` to avoid needless reupload
+- asset encryption uses a worker-side global assets secret, independent from space page encryption
+- legacy assets encrypted with space content keys can be migrated manually through the worker
 
 Cloud sync has explicit asset phases:
 
@@ -216,6 +223,14 @@ Cloud sync has explicit asset phases:
 - download-assets
 
 The UI sync button reflects these phases.
+
+Manual asset cleanup:
+
+- asset cleanup is a worker-side manual action, not an automatic background job
+- cleanup must keep any asset still referenced by a cloud page payload, including archived pages
+- cleanup may delete only unreferenced assets whose `lastUsed` is older than the retention window
+- current retention target is 28 days
+- legacy asset migration is also a manual worker action
 
 ## 7. Encrypted asset and page payload handling
 

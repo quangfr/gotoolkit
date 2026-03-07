@@ -45,6 +45,7 @@ const LOCAL_SYNC_JTI_CACHE_TTL_MS = 2 * 60 * 1000;
 const LOCAL_SYNC_CACHE_MAX_ENTRIES = 5000;
 const OAUTH_IDENTITY_TOKEN_TTL_MS = 5 * 60 * 1000;
 const SPACE_CONTENT_KEY_BYTES = 32;
+const ASSET_GLOBAL_KEY_BYTES = 32;
 let serviceAccountConfig = null;
 let signingKeyPromise = null;
 let accessTokenCache = { token: null, expiresAt: 0 };
@@ -52,6 +53,7 @@ const syncSessionRevokedCache = new Map();
 const syncReplayLocalCache = new Map();
 
 const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
 
 function normalizePathname(pathname) {
   return pathname.replace(/\/+/g, "/").replace(/\/\/$/, "");
@@ -240,6 +242,40 @@ function parseAssetBatchDeletePath(request) {
   return { action: "batchDelete" };
 }
 
+function parseAssetCleanupPath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 2) return null;
+  if (segments[0] !== API_VERSION) return null;
+  if (String(segments[1] || "") !== `${ASSETS_SEGMENT}:cleanup`) return null;
+  return { action: "cleanup" };
+}
+
+function parseAssetMigratePath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 2) return null;
+  if (segments[0] !== API_VERSION) return null;
+  if (String(segments[1] || "") !== `${ASSETS_SEGMENT}:migrate`) return null;
+  return { action: "migrate" };
+}
+
+function parsePublicAssetPath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 2) return null;
+  if (segments[0] !== ASSETS_SEGMENT) return null;
+  return {
+    assetId: decodeURIComponent(segments[1] || "")
+  };
+}
+
 function parseSpaceAuthPath(request) {
   const url = new URL(request.url);
   const segments = normalizePathname(url.pathname)
@@ -405,13 +441,14 @@ function parseAssetUploadBody(body) {
   const contentBase64 = String(payload.contentBase64 || inline?.contentBase64 || "").replace(/\s+/g, "");
   const fileName = String(payload.fileName || "").trim();
   const scope = safeAssetScope(payload.scope || payload.documentId || payload.collection || "shared");
+  const encryptionMode = String(payload.encryptionMode || "direct").trim().toLowerCase();
   if (!isAllowedAssetMime(mimeType) && !isAllowedAssetFileName(fileName)) {
     throw new Error("Type de fichier non autorisé");
   }
   if (!contentBase64) {
     throw new Error("Fichier base64 manquant");
   }
-  return { mimeType, contentBase64, fileName, scope };
+  return { mimeType, contentBase64, fileName, scope, encryptionMode };
 }
 
 async function parseAssetUploadRequest(request) {
@@ -422,6 +459,7 @@ async function parseAssetUploadRequest(request) {
     const scope = safeAssetScope(form.get("scope") || form.get("documentId") || form.get("collection") || "shared");
     const requestedMimeType = String(form.get("mimeType") || "").trim().toLowerCase();
     const requestedFileName = String(form.get("fileName") || "").trim();
+    const encryptionMode = String(form.get("encryptionMode") || "direct").trim().toLowerCase();
     if (!(file instanceof File)) {
       throw new Error("Fichier manquant");
     }
@@ -437,7 +475,8 @@ async function parseAssetUploadRequest(request) {
       mimeType,
       fileName: requestedFileName || file.name || "asset.bin",
       scope,
-      bytes
+      bytes,
+      encryptionMode
     };
   }
   let body = null;
@@ -447,14 +486,6 @@ async function parseAssetUploadRequest(request) {
     throw new Error("Payload JSON ou multipart attendu");
   }
   return parseAssetUploadBody(body);
-}
-
-function readAssetSpaceId(object) {
-  return normalizeSpaceId(
-    object?.customMetadata?.spaceId
-    || object?.customMetadata?.spaceid
-    || ""
-  );
 }
 
 function decodeBase64ToBytes(base64) {
@@ -469,6 +500,13 @@ function decodeBase64ToBytes(base64) {
   return bytes;
 }
 
+function bytesToBase64(bytes) {
+  let binary = "";
+  const source = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
+  for (let i = 0; i < source.length; i += 1) binary += String.fromCharCode(source[i]);
+  return btoa(binary);
+}
+
 function bytesToHex(bytes) {
   return Array.from(bytes).map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
@@ -476,6 +514,68 @@ function bytesToHex(bytes) {
 async function sha256Hex(bytes) {
   const hash = await crypto.subtle.digest("SHA-256", bytes);
   return bytesToHex(new Uint8Array(hash));
+}
+
+async function getAssetsGlobalCryptoKey(env) {
+  const raw = String(env?.ASSETS_R2_CODE || "").trim();
+  if (!raw) throw new Error("ASSETS_R2_CODE manquant");
+  const digest = await crypto.subtle.digest("SHA-256", textEncoder.encode(raw));
+  return crypto.subtle.importKey("raw", new Uint8Array(digest).slice(0, ASSET_GLOBAL_KEY_BYTES), { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+
+async function encryptAssetBytesForStorage(env, bytes, mimeType, fileName, contentHash) {
+  const key = await getAssetsGlobalCryptoKey(env);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const cipherBuffer = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, bytes);
+  const wrapper = {
+    gtke: 2,
+    scope: "asset-global-v1",
+    alg: "AES-256-GCM",
+    iv: bytesToBase64(iv),
+    ciphertext: bytesToBase64(new Uint8Array(cipherBuffer)),
+    mimeType: String(mimeType || "application/octet-stream").trim() || "application/octet-stream",
+    fileName: String(fileName || "asset.bin").trim() || "asset.bin",
+    contentHash: String(contentHash || "").trim().toLowerCase()
+  };
+  return {
+    bytes: textEncoder.encode(JSON.stringify(wrapper)),
+    mimeType: "application/x-gotoolkit-e2ee+json"
+  };
+}
+
+async function decryptAssetEnvelopeForWorker(env, bytes, fallbackSpaceId = "") {
+  let wrapper = null;
+  try {
+    wrapper = JSON.parse(textDecoder.decode(bytes));
+  } catch {
+    return null;
+  }
+  if (!wrapper || Number(wrapper.gtke) !== 1 && Number(wrapper.gtke) !== 2) return null;
+  if (Number(wrapper.gtke) === 2 || String(wrapper.scope || "").trim() === "asset-global-v1") {
+    const key = await getAssetsGlobalCryptoKey(env);
+    const iv = decodeBase64ToBytes(String(wrapper.iv || ""));
+    const ciphertext = decodeBase64ToBytes(String(wrapper.ciphertext || ""));
+    const plainBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+    return {
+      bytes: new Uint8Array(plainBuffer),
+      mimeType: String(wrapper.mimeType || "application/octet-stream").trim() || "application/octet-stream",
+      fileName: String(wrapper.fileName || "asset.bin").trim() || "asset.bin",
+      wrapper
+    };
+  }
+  const effectiveSpaceId = normalizeSpaceId(fallbackSpaceId || wrapper.spaceId || "");
+  const contentKeyRaw = await readSpaceContentKey(env, effectiveSpaceId);
+  if (!contentKeyRaw) throw new Error("Clé de déchiffrement asset indisponible");
+  const cryptoKey = await crypto.subtle.importKey("raw", decodeBase64ToBytes(contentKeyRaw), { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const iv = decodeBase64ToBytes(String(wrapper.iv || ""));
+  const ciphertext = decodeBase64ToBytes(String(wrapper.ciphertext || ""));
+  const plainBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, cryptoKey, ciphertext);
+  return {
+    bytes: new Uint8Array(plainBuffer),
+    mimeType: String(wrapper.mimeType || "application/octet-stream").trim() || "application/octet-stream",
+    fileName: String(wrapper.fileName || "asset.bin").trim() || "asset.bin",
+    wrapper
+  };
 }
 
 function normalizeOriginValue(value) {
@@ -1252,8 +1352,18 @@ function mapStorageObjectToAsset(objectName, upload) {
     mimeType: String(upload?.mimeType || ""),
     size: Number(upload?.size || 0),
     spaceId: normalizeSpaceId(upload?.spaceId || ""),
+    createdAt: String(upload?.createdAt || "").trim(),
+    lastUsed: String(upload?.lastUsed || upload?.createdAt || "").trim(),
     generation: ""
   };
+}
+
+function readAssetMetaValue(object, key) {
+  return String(object?.customMetadata?.[key] || object?.customMetadata?.[String(key || "").toLowerCase()] || "").trim();
+}
+
+function readAssetSpaceId(object) {
+  return normalizeSpaceId(readAssetMetaValue(object, "spaceId"));
 }
 
 function isVideoAssetObjectName(objectName) {
@@ -1301,17 +1411,15 @@ async function listAssetsFromStorage(env, options = {}) {
     const listed = await bucket.list({ prefix, cursor, limit: 500 });
     const objects = Array.isArray(listed?.objects) ? listed.objects : [];
     for (const object of objects) {
-      const objectSpaceId = normalizeSpaceId(
-        object?.customMetadata?.spaceId
-        || object?.customMetadata?.spaceid
-        || ""
-      );
+      const objectSpaceId = readAssetSpaceId(object);
       if (spaceId && objectSpaceId !== spaceId) continue;
       if (!matchesAssetType(type, object?.key || "", object?.httpMetadata?.contentType || "")) continue;
       items.push(mapStorageObjectToAsset(String(object?.key || ""), {
         mimeType: String(object?.httpMetadata?.contentType || ""),
         size: Number(object?.size || 0),
-        spaceId: objectSpaceId
+        spaceId: objectSpaceId,
+        createdAt: readAssetMetaValue(object, "createdAt"),
+        lastUsed: readAssetMetaValue(object, "lastUsed") || readAssetMetaValue(object, "createdAt")
       }));
     }
     cursor = listed?.truncated ? listed?.cursor : undefined;
@@ -1321,31 +1429,44 @@ async function listAssetsFromStorage(env, options = {}) {
 
 async function uploadAssetToStorage(env, upload) {
   const bucket = resolveR2MediaBucket(env);
-  const bytes = upload.bytes instanceof Uint8Array ? upload.bytes : decodeBase64ToBytes(upload.contentBase64);
+  const plainBytes = upload.bytes instanceof Uint8Array ? upload.bytes : decodeBase64ToBytes(upload.contentBase64);
+  let bytes = plainBytes;
+  let storedMimeType = String(upload.mimeType || "application/octet-stream").trim() || "application/octet-stream";
   if (!bytes.length) {
     throw new Error("Fichier vide");
   }
   if (bytes.length > MAX_ASSET_BYTES) {
     throw new Error("Fichier trop volumineux");
   }
-  const hash = await sha256Hex(bytes);
-  const ext = detectAssetExtension(upload.mimeType, upload.fileName);
+  const hash = await sha256Hex(plainBytes);
+  if (String(upload.encryptionMode || "").trim().toLowerCase() === "download") {
+    const encrypted = await encryptAssetBytesForStorage(env, plainBytes, upload.mimeType, upload.fileName, hash);
+    bytes = encrypted.bytes;
+    storedMimeType = encrypted.mimeType;
+  }
+  const ext = detectAssetExtension(storedMimeType, upload.fileName);
   const baseFileName = sanitizeAssetName(upload.fileName, ext);
   const objectName = `assets/${upload.scope}/${hash}-${baseFileName}`;
+  const now = new Date().toISOString();
   await bucket.put(objectName, bytes, {
     httpMetadata: {
-      contentType: upload.mimeType
+      contentType: storedMimeType
     },
     customMetadata: {
-      spaceId: normalizeSpaceId(upload.spaceId || "")
+      spaceId: normalizeSpaceId(upload.spaceId || ""),
+      createdAt: String(upload.createdAt || now).trim() || now,
+      lastUsed: String(upload.lastUsed || upload.createdAt || now).trim() || now,
+      contentHash: hash
     }
   });
   return {
     hash,
     asset: mapStorageObjectToAsset(objectName, {
-      mimeType: upload.mimeType,
-      size: bytes.length,
-      spaceId: upload.spaceId
+      mimeType: storedMimeType,
+      size: plainBytes.length,
+      spaceId: upload.spaceId,
+      createdAt: String(upload.createdAt || now).trim() || now,
+      lastUsed: String(upload.lastUsed || upload.createdAt || now).trim() || now
     })
   };
 }
@@ -1398,6 +1519,140 @@ async function deleteAssetsFromStorage(env, assetIds, spaceId) {
     results.push({ id: assetId, ok: true, status: 200 });
   }
   return results;
+}
+
+async function touchAssetLastUsed(env, result) {
+  const bucket = resolveR2MediaBucket(env);
+  const objectName = String(result?.objectName || "").trim();
+  const object = result?.object;
+  if (!objectName || !object?.body) return;
+  const bytes = await object.arrayBuffer();
+  const createdAt = readAssetMetaValue(object, "createdAt") || new Date().toISOString();
+  const now = new Date().toISOString();
+  await bucket.put(objectName, bytes, {
+    httpMetadata: {
+      contentType: String(object.httpMetadata?.contentType || "application/octet-stream")
+    },
+    customMetadata: {
+      spaceId: readAssetSpaceId(object),
+      createdAt,
+      lastUsed: now
+    }
+  });
+}
+
+function collectAssetIdsFromPayload(payload) {
+  const ids = new Set();
+  const walk = (value) => {
+    if (typeof value === "string") {
+      for (const m of value.matchAll(/\/v1\/assets\/([A-Za-z0-9_-]+)/g)) ids.add(m[1]);
+      for (const m of value.matchAll(/\/assets\/([A-Za-z0-9_-]+)/g)) ids.add(m[1]);
+      for (const m of value.matchAll(/data-gt-asset-id=["']([A-Za-z0-9_-]+)["']/g)) ids.add(m[1]);
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+      return;
+    }
+    if (value && typeof value === "object") {
+      Object.values(value).forEach(walk);
+    }
+  };
+  walk(payload);
+  return ids;
+}
+
+async function collectReferencedAssetIdsFromPages(env) {
+  const documents = await listShareDocuments(env, "pages");
+  const ids = new Set();
+  for (const doc of Array.isArray(documents) ? documents : []) {
+    collectAssetIdsFromPayload(doc?.payload || null).forEach((id) => ids.add(id));
+  }
+  return ids;
+}
+
+async function cleanupUnusedAssets(env, options = {}) {
+  const now = Date.now();
+  const maxAgeMs = Math.max(1, Number(options?.maxAgeDays || 28)) * 24 * 60 * 60 * 1000;
+  const referencedIds = await collectReferencedAssetIdsFromPages(env);
+  const assets = await listAssetsFromStorage(env, { prefix: "assets/" });
+  const results = [];
+  for (const asset of assets) {
+    const assetId = String(asset?.id || "").trim();
+    if (!assetId) continue;
+    if (referencedIds.has(assetId)) {
+      results.push({ id: assetId, status: "kept-referenced" });
+      continue;
+    }
+    const lastUsedRaw = String(asset?.lastUsed || asset?.createdAt || "").trim();
+    const lastUsedTs = Date.parse(lastUsedRaw);
+    if (!Number.isFinite(lastUsedTs) || now - lastUsedTs <= maxAgeMs) {
+      results.push({ id: assetId, status: "kept-recent" });
+      continue;
+    }
+    await deleteAssetFromStorage(env, assetId);
+    results.push({ id: assetId, status: "deleted" });
+  }
+  return {
+    scanned: assets.length,
+    referenced: referencedIds.size,
+    deleted: results.filter(item => item.status === "deleted").length,
+    results
+  };
+}
+
+async function migrateLegacyEncryptedAssets(env, options = {}) {
+  const assets = await listAssetsFromStorage(env, { prefix: "assets/" });
+  const bucket = resolveR2MediaBucket(env);
+  const limit = Math.max(1, Number(options?.limit || 100) || 100);
+  const results = [];
+  for (const asset of assets.slice(0, limit)) {
+    const assetId = String(asset?.id || "").trim();
+    if (!assetId) continue;
+    const result = await readAssetFromStorage(env, assetId);
+    if (!result?.object) continue;
+    const contentType = String(result.object.httpMetadata?.contentType || "").trim().toLowerCase();
+    if (contentType !== "application/x-gotoolkit-e2ee+json") {
+      results.push({ id: assetId, status: "skipped-plain" });
+      continue;
+    }
+    const rawBytes = new Uint8Array(await result.object.arrayBuffer());
+    let wrapper = null;
+    try {
+      wrapper = JSON.parse(textDecoder.decode(rawBytes));
+    } catch {
+      results.push({ id: assetId, status: "skipped-invalid" });
+      continue;
+    }
+    if (!wrapper || Number(wrapper.gtke) !== 1) {
+      results.push({ id: assetId, status: "skipped-current" });
+      continue;
+    }
+    const decrypted = await decryptAssetEnvelopeForWorker(env, rawBytes, readAssetSpaceId(result.object));
+    if (!decrypted?.bytes?.length) {
+      results.push({ id: assetId, status: "skipped-undecipherable" });
+      continue;
+    }
+    const contentHash = String(readAssetMetaValue(result.object, "contentHash") || await sha256Hex(decrypted.bytes)).trim().toLowerCase();
+    const encrypted = await encryptAssetBytesForStorage(env, decrypted.bytes, decrypted.mimeType, decrypted.fileName, contentHash);
+    await bucket.put(result.objectName, encrypted.bytes, {
+      httpMetadata: {
+        contentType: encrypted.mimeType
+      },
+      customMetadata: {
+        spaceId: readAssetSpaceId(result.object),
+        createdAt: readAssetMetaValue(result.object, "createdAt") || new Date().toISOString(),
+        lastUsed: readAssetMetaValue(result.object, "lastUsed") || readAssetMetaValue(result.object, "createdAt") || new Date().toISOString(),
+        contentHash
+      }
+    });
+    results.push({ id: assetId, status: "migrated" });
+  }
+  return {
+    scanned: Math.min(assets.length, limit),
+    migrated: results.filter(item => item.status === "migrated").length,
+    results
+  };
 }
 
 async function fetchShareDocument(env, collection, documentId) {
@@ -1740,8 +1995,11 @@ async function upsertShareDocument(env, collection, documentId, payload, request
 }
 
 async function handleRequest(request, env) {
+  const publicAssetPath = parsePublicAssetPath(request);
   const assetPath = parseAssetPath(request);
   const assetBatchDeletePath = parseAssetBatchDeletePath(request);
+  const assetCleanupPath = parseAssetCleanupPath(request);
+  const assetMigratePath = parseAssetMigratePath(request);
   const spaceAuthPath = parseSpaceAuthPath(request);
   const allowSecretSpaceCreate = Boolean(
     request.method !== "OPTIONS"
@@ -1756,6 +2014,43 @@ async function handleRequest(request, env) {
       return errorResponse("Origin non autorisee", 403, request, env);
     }
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+  }
+
+  if (publicAssetPath?.assetId) {
+    if (request.method !== "GET") {
+      return errorResponse("Méthode non autorisée", 405, request, env);
+    }
+    const result = await readAssetFromStorage(env, publicAssetPath.assetId);
+    if (!result) {
+      return notFoundResponse(request, env);
+    }
+    const object = result.object;
+    const contentType = String(object.httpMetadata?.contentType || "application/octet-stream").trim() || "application/octet-stream";
+    const objectName = String(result.objectName || "").trim();
+    const fileName = objectName.split("/").pop()?.replace(/^[a-f0-9]{64}-/i, "") || "asset.bin";
+    let body = object.body;
+    let responseContentType = contentType;
+    if (contentType === "application/x-gotoolkit-e2ee+json") {
+      const rawBytes = new Uint8Array(await object.arrayBuffer());
+      try {
+        const decrypted = await decryptAssetEnvelopeForWorker(env, rawBytes, readAssetSpaceId(object));
+        if (decrypted?.bytes?.length) {
+          body = decrypted.bytes;
+          responseContentType = decrypted.mimeType;
+        }
+      } catch (err) {
+        return errorResponse("Déchiffrement asset impossible", 500, request, env);
+      }
+    }
+    await touchAssetLastUsed(env, result).catch(() => null);
+    return new Response(body, {
+      status: 200,
+      headers: Object.assign({}, corsHeaders(request, env), {
+        "Content-Type": responseContentType,
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Cache-Control": "no-store, max-age=0"
+      })
+    });
   }
 
   if (spaceAuthPath) {
@@ -1924,7 +2219,7 @@ async function handleRequest(request, env) {
       "Cache-Control": "no-store, max-age=0"
     });
   }
-  if (assetPath || assetBatchDeletePath) {
+  if (assetPath || assetBatchDeletePath || assetCleanupPath || assetMigratePath) {
     if (request.method === "GET") {
       if (assetBatchDeletePath) {
         return errorResponse("Route assets batch invalide pour GET", 405, request, env);
@@ -1964,20 +2259,60 @@ async function handleRequest(request, env) {
         return errorResponse("Asset hors scope: l'asset demandé n'appartient pas au X-Space-Id fourni", 403, request, env);
       }
       const contentType = result.object.httpMetadata?.contentType || "application/octet-stream";
+      let body = result.object.body;
+      let responseContentType = contentType;
+      if (String(contentType).trim().toLowerCase() === "application/x-gotoolkit-e2ee+json") {
+        try {
+          const rawBytes = new Uint8Array(await result.object.arrayBuffer());
+          const decrypted = await decryptAssetEnvelopeForWorker(env, rawBytes, assetSpaceId);
+          if (decrypted?.bytes?.length) {
+            body = decrypted.bytes;
+            responseContentType = decrypted.mimeType;
+          }
+        } catch (err) {
+          return errorResponse("Déchiffrement asset impossible", 500, request, env);
+        }
+      }
       const streamHeaders = Object.assign({}, corsHeaders(request, env), {
-        "Content-Type": contentType,
+        "Content-Type": responseContentType,
         "Cache-Control": "public, max-age=31536000, immutable"
       });
-      if (typeof result.object.size === "number") {
-        streamHeaders["Content-Length"] = String(result.object.size);
-      }
-      return new Response(result.object.body, {
+      await touchAssetLastUsed(env, result).catch(() => null);
+      return new Response(body, {
         status: 200,
         headers: streamHeaders
       });
     }
 
     if (request.method === "POST") {
+      if (assetMigratePath) {
+        const adminSecret = String(request.headers.get("X-Assets-Cleanup-Secret") || "").trim();
+        if (!adminSecret || adminSecret !== String(env?.ASSETS_CLEANUP_SECRET || "").trim()) {
+          return errorResponse("Secret migration invalide", 403, request, env);
+        }
+        let body = {};
+        try {
+          body = await request.json();
+        } catch (err) {
+          body = {};
+        }
+        const result = await migrateLegacyEncryptedAssets(env, { limit: Number(body?.limit || 100) || 100 });
+        return jsonResponse({ ok: true, ...result }, 200, request, env);
+      }
+      if (assetCleanupPath) {
+        const adminSecret = String(request.headers.get("X-Assets-Cleanup-Secret") || "").trim();
+        if (!adminSecret || adminSecret !== String(env?.ASSETS_CLEANUP_SECRET || "").trim()) {
+          return errorResponse("Secret cleanup invalide", 403, request, env);
+        }
+        let body = {};
+        try {
+          body = await request.json();
+        } catch (err) {
+          body = {};
+        }
+        const result = await cleanupUnusedAssets(env, { maxAgeDays: Number(body?.maxAgeDays || 28) || 28 });
+        return jsonResponse({ ok: true, ...result }, 200, request, env);
+      }
       if (assetBatchDeletePath) {
         const authHeaders = readSpaceAuthHeaders(request);
         if (!authHeaders.spaceId || !authHeaders.token) {

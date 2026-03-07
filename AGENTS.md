@@ -98,6 +98,9 @@ This file is the short operational guide. Use the docs below as the canonical re
 - Reuse returned `X-Space-Auth`, `X-Space-Id`, and `contentKey` for protected operations.
 - For cloud reads, the safe fetch order is: auth -> tree -> `pages-meta` -> `pages`.
 - For managed-space `spaceCode` issues, verify both the worker secret and D1 `space_code_hashes` alignment.
+- Asset downloads and cleanup now also depend on `.env.local` values loaded through `scripts/with-env-local.sh`:
+  - `ASSETS_R2_CODE` for the global R2 asset encryption key
+  - `ASSETS_CLEANUP_SECRET` for manual asset admin routes such as cleanup/migration
 
 ## Quick diagnostics
 - `git status --short`

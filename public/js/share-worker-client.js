@@ -939,28 +939,15 @@
     const scope = String(options.assetScope || options.scope || "pages-payload").trim() || "pages-payload";
     const spaceId = resolveSpaceIdForPayload(payload, options);
     const fileName = `page-payload-${Date.now()}.json`;
-    const shouldEncrypt = shouldEncryptMedia(collection, spaceId);
-    const uploadPayload = shouldEncrypt
-      ? await encryptAssetPayload(
-        base,
-        encoded.base64,
-        "application/json",
-        fileName,
-        spaceId
-      )
-      : {
-        mimeType: "application/json",
-        contentBase64: encoded.base64,
-        fileName
-      };
     const uploadResult = await uploadAssetWithBase(base, {
       scope,
-      fileName: uploadPayload.fileName,
-      mimeType: uploadPayload.mimeType,
-      contentBase64: uploadPayload.contentBase64
+      fileName,
+      mimeType: "application/json",
+      contentBase64: encoded.base64
     }, {
       spaceId,
-      collection: "assets"
+      collection: "assets",
+      mediaPublishMode: shouldEncryptMedia(collection, spaceId) ? "download" : "direct"
     });
     const assetId = String(uploadResult?.asset?.id || "").trim();
     if (!assetId) return payload;
@@ -1173,10 +1160,16 @@
       form.append("scope", String(uploadPayload?.scope || "shared"));
       form.append("mimeType", String(uploadPayload?.mimeType || fileBlob?.type || "application/octet-stream"));
       form.append("fileName", String(uploadPayload?.fileName || uploadPayload?.file?.name || "asset.bin"));
+      form.append("encryptionMode", String(options?.mediaPublishMode || "direct").trim().toLowerCase() === "download" ? "download" : "direct");
+      if (uploadPayload?.contentHash) {
+        form.append("contentHash", String(uploadPayload.contentHash).trim().toLowerCase());
+      }
       body = form;
     } else {
       headers["Content-Type"] = "application/json";
-      body = JSON.stringify(uploadPayload || {});
+      body = JSON.stringify(Object.assign({}, uploadPayload || {}, {
+        encryptionMode: String(options?.mediaPublishMode || "direct").trim().toLowerCase() === "download" ? "download" : "direct"
+      }));
     }
     const response = await fetchWithSyncRetry(url, {
       method: "POST",
@@ -1221,24 +1214,15 @@
       const fileNameAttr = String(img.getAttribute("data-file-name") || img.getAttribute("title") || "").trim();
       const ext = mimeType === "image/png" ? "png" : mimeType === "image/gif" ? "gif" : "jpg";
       const fileName = fileNameAttr || `image.${ext}`;
-      const shouldEncrypt = shouldEncryptMedia(options?.collection || "", options?.spaceId);
-      const encryptedAsset = shouldEncrypt
-        ? await encryptAssetPayload(
-          base,
-          parsed.contentBase64,
-          mimeType,
-          fileName,
-          options?.spaceId
-        )
-        : { mimeType, contentBase64: parsed.contentBase64, fileName };
       const uploadResult = await uploadAssetWithBase(base, {
         scope,
-        fileName: encryptedAsset.fileName,
-        mimeType: encryptedAsset.mimeType,
-        contentBase64: encryptedAsset.contentBase64
+        fileName,
+        mimeType,
+        contentBase64: parsed.contentBase64
       }, {
         spaceId: options?.spaceId || "",
-        collection: "assets"
+        collection: "assets",
+        mediaPublishMode: shouldEncryptMedia(options?.collection || "", options?.spaceId) ? "download" : "direct"
       });
       const assetId = String(uploadResult?.asset?.id || "").trim();
       if (!assetId) continue;
@@ -2065,34 +2049,10 @@
       const binaryBlob = payload?.blob instanceof Blob
         ? payload.blob
         : (payload?.file instanceof File ? payload.file : null);
-      if (shouldEncryptMedia(String(options?.collection || "pages"), spaceId)) {
-        if (binaryBlob) {
-          finalPayload = {
-            scope,
-            mimeType: E2EE_ASSET_MIME,
-            fileName: `${String(payload?.fileName || payload?.file?.name || "asset.bin").trim() || "asset.bin"}.gtke`,
-            blob: await encryptAssetBlob(
-              base,
-              binaryBlob,
-              String(payload?.mimeType || binaryBlob.type || "application/octet-stream"),
-              String(payload?.fileName || payload?.file?.name || "asset.bin"),
-              spaceId
-            )
-          };
-        } else {
-          const encryptedAsset = await encryptAssetPayload(
-            base,
-            String(payload?.contentBase64 || ""),
-            String(payload?.mimeType || "application/octet-stream"),
-            String(payload?.fileName || "asset.bin"),
-            spaceId
-          );
-          finalPayload = Object.assign({}, finalPayload, encryptedAsset);
-        }
-      }
       const data = await uploadAssetWithBase(base, finalPayload, {
         spaceId,
-        collection: "assets"
+        collection: "assets",
+        mediaPublishMode: shouldEncryptMedia(String(options?.collection || "pages"), spaceId) ? "download" : "direct"
       });
       if (data?.asset?.id) {
         data.asset.url = buildAssetUrl(base, data.asset.id);

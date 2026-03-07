@@ -6282,6 +6282,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
 
       const getEditorMarkdown = () => {
+        const resolvePublicAssetUrl = (rawUrl: string) => {
+          const candidate = String(rawUrl || '').trim();
+          if (!candidate) return '';
+          const shareWorker = (window as any).goToolkitShareWorker;
+          const assetId = String(shareWorker?.extractAssetIdFromAnyUrl?.(candidate) || '').trim();
+          if (!assetId) return candidate;
+          return String(shareWorker?.buildPublicAssetUrl?.(assetId) || candidate).trim() || candidate;
+        };
         try {
           if (typeof editor.getHTML === 'function') {
             const html = editor.getHTML();
@@ -6317,19 +6325,29 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
             // 4. For markdown/mail/text flows, represent media embeds as URL text.
             doc.querySelectorAll('video').forEach(video => {
-              const src = String(video.getAttribute('src') || '').trim();
+              const src = resolvePublicAssetUrl(String(video.getAttribute('src') || '').trim());
+              const label = String(video.getAttribute('data-file-name') || video.getAttribute('title') || 'Vidéo').trim() || 'Vidéo';
               const replacement = doc.createElement('a');
-              replacement.textContent = src || 'video';
+              replacement.textContent = `${label} : ${src || 'link'}`;
               if (src) replacement.setAttribute('href', src);
               video.replaceWith(replacement);
             });
             doc.querySelectorAll('div[data-type="memo-file-block"]').forEach(fileBlock => {
-              const href = String(fileBlock.getAttribute('data-href') || '').trim();
+              const href = resolvePublicAssetUrl(String(fileBlock.getAttribute('data-href') || '').trim());
               const title = String(fileBlock.getAttribute('data-file-name') || fileBlock.textContent || 'Fichier').trim() || 'Fichier';
               const replacement = doc.createElement('a');
-              replacement.textContent = title;
+              replacement.textContent = `${title} : ${href || 'link'}`;
               if (href) replacement.setAttribute('href', href);
               fileBlock.replaceWith(replacement);
+            });
+            doc.querySelectorAll('img').forEach(img => {
+              const src = resolvePublicAssetUrl(String(img.getAttribute('src') || '').trim());
+              if (!src) return;
+              const label = String(img.getAttribute('data-file-name') || img.getAttribute('alt') || 'Image').trim() || 'Image';
+              const replacement = doc.createElement('a');
+              replacement.textContent = `${label} : ${src}`;
+              replacement.setAttribute('href', src);
+              img.replaceWith(replacement);
             });
             doc.querySelectorAll('iframe[data-type="external-video-embed"], iframe').forEach(iframe => {
               const src = String(iframe.getAttribute('src') || '').trim();
@@ -6375,6 +6393,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       const getMemoEditorSource = (format: 'markdown' | 'html' | 'json' | 'text' | 'pdf') => {
         if (!editor) return '';
         try {
+          const resolvePublicAssetUrl = (rawUrl: string) => {
+            const candidate = String(rawUrl || '').trim();
+            if (!candidate) return '';
+            const shareWorker = (window as any).goToolkitShareWorker;
+            const assetId = String(shareWorker?.extractAssetIdFromAnyUrl?.(candidate) || '').trim();
+            if (!assetId) return candidate;
+            return String(shareWorker?.buildPublicAssetUrl?.(assetId) || candidate).trim() || candidate;
+          };
           if (format === 'html' || format === 'pdf') {
             const editorHtml = editor.getHTML();
             if (!editorHtml) return '';
@@ -6639,76 +6665,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               wrapper.appendChild(replayBtn);
             });
 
-            if (format === 'html') {
-              // Turn direct .webm/.mp4 links into embedded videos for richer HTML exports.
-              doc.querySelectorAll('a[href]').forEach(anchor => {
-                const el = anchor as HTMLAnchorElement;
-                const href = String(el.getAttribute('href') || '').trim();
-                const isWebm = /\.webm([?#].*)?$/i.test(href);
-                const isMp4 = /\.mp4([?#].*)?$/i.test(href);
-                if (!isWebm && !isMp4) return;
-
-                const video = doc.createElement('video');
-                video.setAttribute('controls', 'true');
-                video.setAttribute('playsinline', 'true');
-                video.setAttribute('preload', 'metadata');
-                video.setAttribute('src', href);
-                video.setAttribute('style', 'display:block;max-width:100%;margin:20px auto;border-radius:10px;background:#000;');
-
-                const source = doc.createElement('source');
-                source.setAttribute('src', href);
-                source.setAttribute('type', isMp4 ? 'video/mp4' : 'video/webm');
-                video.appendChild(source);
-
-                const fallback = doc.createElement('p');
-                fallback.textContent = `Video: ${href}`;
-                fallback.setAttribute('style', 'font-size:12px;color:#6b7280;margin:8px 0 0 0;');
-
-                const wrap = doc.createElement('div');
-                wrap.appendChild(video);
-                wrap.appendChild(fallback);
-
-                el.parentNode?.replaceChild(wrap, el);
-              });
-            }
-
             doc.querySelectorAll('video').forEach(video => {
               const el = video as HTMLVideoElement;
-              const src = String(el.getAttribute('src') || '').trim();
-              const mime = String(el.getAttribute('data-mime-type') || '').trim().toLowerCase();
-              const isMp4 = mime.includes('mp4') || /\.mp4([?#].*)?$/i.test(src);
-              const isWebm = mime.includes('webm') || /\.webm([?#].*)?$/i.test(src);
-              const videoType = isMp4 ? 'video/mp4' : (isWebm ? 'video/webm' : '');
-
-              if (src && !el.querySelector('source')) {
-                const source = doc.createElement('source');
-                source.setAttribute('src', src);
-                if (videoType) source.setAttribute('type', videoType);
-                el.appendChild(source);
-              }
-
-              if (!el.querySelector('[data-video-fallback="true"]')) {
-                const fallback = doc.createElement('p');
-                fallback.setAttribute('data-video-fallback', 'true');
-                fallback.setAttribute('style', 'font-size:12px;color:#6b7280;margin:8px 0 0 0;');
-                fallback.textContent = src ? `Video: ${src}` : 'Video';
-                el.parentElement?.insertBefore(fallback, el.nextSibling);
-              }
-
-              el.setAttribute('controls', 'true');
-              el.setAttribute('playsinline', 'true');
-              el.setAttribute('preload', 'metadata');
-              const style = el.style;
-              style.display = 'block';
-              style.maxWidth = '100%';
-              style.margin = '20px auto';
-              style.borderRadius = '10px';
-              style.background = '#000';
+              const src = resolvePublicAssetUrl(String(el.getAttribute('src') || '').trim());
+              const label = String(el.getAttribute('data-file-name') || el.getAttribute('title') || 'Vidéo').trim() || 'Vidéo';
+              const link = doc.createElement('a');
+              if (src) link.href = src;
+              link.textContent = label;
+              link.setAttribute('style', 'color:#2563eb;text-decoration:underline;word-break:break-all;');
+              el.replaceWith(link);
             });
 
             doc.querySelectorAll('div[data-type="memo-file-block"]').forEach(block => {
               const el = block as HTMLElement;
-              const href = String(el.getAttribute('data-href') || '').trim();
+              const href = resolvePublicAssetUrl(String(el.getAttribute('data-href') || '').trim());
               const title = String(el.getAttribute('data-file-name') || el.textContent || 'Fichier').trim() || 'Fichier';
               const link = doc.createElement('a');
               if (href) link.href = href;

@@ -62043,6 +62043,15 @@ ${innerMarkdown}
         }
         const getEditorMarkdown = () => {
           var _a2;
+          const resolvePublicAssetUrl = (rawUrl) => {
+            var _a3, _b2;
+            const candidate = String(rawUrl || "").trim();
+            if (!candidate) return "";
+            const shareWorker = window.goToolkitShareWorker;
+            const assetId = String(((_a3 = shareWorker == null ? void 0 : shareWorker.extractAssetIdFromAnyUrl) == null ? void 0 : _a3.call(shareWorker, candidate)) || "").trim();
+            if (!assetId) return candidate;
+            return String(((_b2 = shareWorker == null ? void 0 : shareWorker.buildPublicAssetUrl) == null ? void 0 : _b2.call(shareWorker, assetId)) || candidate).trim() || candidate;
+          };
           try {
             if (typeof editor.getHTML === "function") {
               const html3 = editor.getHTML();
@@ -62067,19 +62076,29 @@ ${innerMarkdown}
                 });
               });
               doc3.querySelectorAll("video").forEach((video) => {
-                const src = String(video.getAttribute("src") || "").trim();
+                const src = resolvePublicAssetUrl(String(video.getAttribute("src") || "").trim());
+                const label = String(video.getAttribute("data-file-name") || video.getAttribute("title") || "Vid\xE9o").trim() || "Vid\xE9o";
                 const replacement = doc3.createElement("a");
-                replacement.textContent = src || "video";
+                replacement.textContent = `${label} : ${src || "link"}`;
                 if (src) replacement.setAttribute("href", src);
                 video.replaceWith(replacement);
               });
               doc3.querySelectorAll('div[data-type="memo-file-block"]').forEach((fileBlock) => {
-                const href = String(fileBlock.getAttribute("data-href") || "").trim();
+                const href = resolvePublicAssetUrl(String(fileBlock.getAttribute("data-href") || "").trim());
                 const title = String(fileBlock.getAttribute("data-file-name") || fileBlock.textContent || "Fichier").trim() || "Fichier";
                 const replacement = doc3.createElement("a");
-                replacement.textContent = title;
+                replacement.textContent = `${title} : ${href || "link"}`;
                 if (href) replacement.setAttribute("href", href);
                 fileBlock.replaceWith(replacement);
+              });
+              doc3.querySelectorAll("img").forEach((img) => {
+                const src = resolvePublicAssetUrl(String(img.getAttribute("src") || "").trim());
+                if (!src) return;
+                const label = String(img.getAttribute("data-file-name") || img.getAttribute("alt") || "Image").trim() || "Image";
+                const replacement = doc3.createElement("a");
+                replacement.textContent = `${label} : ${src}`;
+                replacement.setAttribute("href", src);
+                img.replaceWith(replacement);
               });
               doc3.querySelectorAll('iframe[data-type="external-video-embed"], iframe').forEach((iframe) => {
                 const src = String(iframe.getAttribute("src") || "").trim();
@@ -62117,6 +62136,15 @@ ${innerMarkdown}
         const getMemoEditorSource = (format) => {
           if (!editor) return "";
           try {
+            const resolvePublicAssetUrl = (rawUrl) => {
+              var _a2, _b2;
+              const candidate = String(rawUrl || "").trim();
+              if (!candidate) return "";
+              const shareWorker = window.goToolkitShareWorker;
+              const assetId = String(((_a2 = shareWorker == null ? void 0 : shareWorker.extractAssetIdFromAnyUrl) == null ? void 0 : _a2.call(shareWorker, candidate)) || "").trim();
+              if (!assetId) return candidate;
+              return String(((_b2 = shareWorker == null ? void 0 : shareWorker.buildPublicAssetUrl) == null ? void 0 : _b2.call(shareWorker, assetId)) || candidate).trim() || candidate;
+            };
             if (format === "html" || format === "pdf") {
               const editorHtml = editor.getHTML();
               if (!editorHtml) return "";
@@ -62363,67 +62391,19 @@ ${innerMarkdown}
                 wrapper.appendChild(el);
                 wrapper.appendChild(replayBtn);
               });
-              if (format === "html") {
-                doc3.querySelectorAll("a[href]").forEach((anchor) => {
-                  var _a2;
-                  const el = anchor;
-                  const href = String(el.getAttribute("href") || "").trim();
-                  const isWebm = /\.webm([?#].*)?$/i.test(href);
-                  const isMp4 = /\.mp4([?#].*)?$/i.test(href);
-                  if (!isWebm && !isMp4) return;
-                  const video = doc3.createElement("video");
-                  video.setAttribute("controls", "true");
-                  video.setAttribute("playsinline", "true");
-                  video.setAttribute("preload", "metadata");
-                  video.setAttribute("src", href);
-                  video.setAttribute("style", "display:block;max-width:100%;margin:20px auto;border-radius:10px;background:#000;");
-                  const source = doc3.createElement("source");
-                  source.setAttribute("src", href);
-                  source.setAttribute("type", isMp4 ? "video/mp4" : "video/webm");
-                  video.appendChild(source);
-                  const fallback = doc3.createElement("p");
-                  fallback.textContent = `Video: ${href}`;
-                  fallback.setAttribute("style", "font-size:12px;color:#6b7280;margin:8px 0 0 0;");
-                  const wrap2 = doc3.createElement("div");
-                  wrap2.appendChild(video);
-                  wrap2.appendChild(fallback);
-                  (_a2 = el.parentNode) == null ? void 0 : _a2.replaceChild(wrap2, el);
-                });
-              }
               doc3.querySelectorAll("video").forEach((video) => {
-                var _a2;
                 const el = video;
-                const src = String(el.getAttribute("src") || "").trim();
-                const mime = String(el.getAttribute("data-mime-type") || "").trim().toLowerCase();
-                const isMp4 = mime.includes("mp4") || /\.mp4([?#].*)?$/i.test(src);
-                const isWebm = mime.includes("webm") || /\.webm([?#].*)?$/i.test(src);
-                const videoType = isMp4 ? "video/mp4" : isWebm ? "video/webm" : "";
-                if (src && !el.querySelector("source")) {
-                  const source = doc3.createElement("source");
-                  source.setAttribute("src", src);
-                  if (videoType) source.setAttribute("type", videoType);
-                  el.appendChild(source);
-                }
-                if (!el.querySelector('[data-video-fallback="true"]')) {
-                  const fallback = doc3.createElement("p");
-                  fallback.setAttribute("data-video-fallback", "true");
-                  fallback.setAttribute("style", "font-size:12px;color:#6b7280;margin:8px 0 0 0;");
-                  fallback.textContent = src ? `Video: ${src}` : "Video";
-                  (_a2 = el.parentElement) == null ? void 0 : _a2.insertBefore(fallback, el.nextSibling);
-                }
-                el.setAttribute("controls", "true");
-                el.setAttribute("playsinline", "true");
-                el.setAttribute("preload", "metadata");
-                const style2 = el.style;
-                style2.display = "block";
-                style2.maxWidth = "100%";
-                style2.margin = "20px auto";
-                style2.borderRadius = "10px";
-                style2.background = "#000";
+                const src = resolvePublicAssetUrl(String(el.getAttribute("src") || "").trim());
+                const label = String(el.getAttribute("data-file-name") || el.getAttribute("title") || "Vid\xE9o").trim() || "Vid\xE9o";
+                const link2 = doc3.createElement("a");
+                if (src) link2.href = src;
+                link2.textContent = label;
+                link2.setAttribute("style", "color:#2563eb;text-decoration:underline;word-break:break-all;");
+                el.replaceWith(link2);
               });
               doc3.querySelectorAll('div[data-type="memo-file-block"]').forEach((block2) => {
                 const el = block2;
-                const href = String(el.getAttribute("data-href") || "").trim();
+                const href = resolvePublicAssetUrl(String(el.getAttribute("data-href") || "").trim());
                 const title = String(el.getAttribute("data-file-name") || el.textContent || "Fichier").trim() || "Fichier";
                 const link2 = doc3.createElement("a");
                 if (href) link2.href = href;
