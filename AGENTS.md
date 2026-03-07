@@ -82,7 +82,7 @@ This file is the short operational guide. Use the docs below as the canonical re
 - Before running Playwright, ensure the test server is running on `:5000`; if not, start it with `npm run start:test`.
 - When a request explicitly asks for Playwright/browser automation, use the `playwright` Codex skill workflow first, then adapt to the repo constraints in this section.
 - On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails because Chrome is not installed here.
-- On WSL, do not run Playwright from `/mnt/c/...`; mirror the repo to a native Linux path first, then run the repo-local Playwright package from there.
+- On WSL, do not run Playwright from `/mnt/c/...`; use `npm run playwright:linux:mirror` to refresh the persistent Linux mirror, or `npm run playwright:linux:test -- ...` to refresh and run in one step.
 - During local Playwright iteration, do not run `npm run check:csp` on every loop. If you changed an inline script inside the CSP scope, you still must run `npm run csp:inline:sync` before browser repros, because the app CSP is enforced by HTML `<meta>` tags in test too. Reserve `npm run check:csp` for merge/release, bump, commit, and push workflows.
 - Follow [`docs/TEST.md`](docs/TEST.md) for the canonical Playwright workflow, including:
   - repo-local Playwright command line

@@ -19,6 +19,13 @@ test.describe("Cloud sync persistency", () => {
       childEdit: `PW_SYNC_CHILD_EDIT_${ts}`,
       existingEdit: `PW_SYNC_EXISTING_EDIT_${ts}`
     };
+    const logStep = (label: string, details?: unknown) => {
+      if (typeof details === "undefined") {
+        console.log(`[cloud-sync-persist] ${label}`);
+        return;
+      }
+      console.log(`[cloud-sync-persist] ${label}`, details);
+    };
 
     const clickDoc = async (docId: string) => {
       const item = page.locator(`.document-explorer__item[data-document-id="${docId}"]`).first();
@@ -68,15 +75,19 @@ test.describe("Cloud sync persistency", () => {
     };
 
     try {
+      logStep("connect-space:start", { spaceId: PW_TEST_SPACE_ID });
       await ensureCloudConnectedWithSpaceCode(page, baseUrl);
+      logStep("connect-space:done");
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 45_000 });
       await page.waitForSelector(".ProseMirror:visible", { timeout: 45_000 });
       page.on("dialog", async dialog => {
+        logStep("dialog:auto-accept", { message: dialog.message() });
         await dialog.accept();
       });
 
+      logStep("seed-cloud-docs:start", { prefix });
       const seeded = await page.evaluate(async seed => {
         const { state, spaceId, spaceCode } = seed as any;
         const worker = (window as any).goToolkitShareWorker;
@@ -141,16 +152,24 @@ test.describe("Cloud sync persistency", () => {
         return [state.existingToken, state.rootToken, state.parentToken, state.childToken];
       }, { state, spaceId: PW_TEST_SPACE_ID, spaceCode: PW_TEST_SPACE_CODE });
       createdTokens.push(...seeded);
+      logStep("seed-cloud-docs:done", { createdTokens });
 
+      logStep("edit-root:start", { docId: `share:${state.rootToken}` });
       await clickDoc(`share:${state.rootToken}`);
       await typeIntoEditor(state.rootEdit);
+      logStep("edit-root:done");
 
+      logStep("edit-child:start", { docId: `share:${state.childToken}` });
       await clickDoc(`share:${state.childToken}`);
       await typeIntoEditor(state.childEdit);
+      logStep("edit-child:done");
 
+      logStep("edit-existing:start", { docId: `share:${state.existingToken}` });
       await clickDoc(`share:${state.existingToken}`);
       await typeIntoEditor(state.existingEdit);
+      logStep("edit-existing:done");
 
+      logStep("rename-parent:start", { docId: `share:${state.parentToken}`, title: state.renamedParentTitle });
       await clickDoc(`share:${state.parentToken}`);
       const parentItemForRename = page.locator(`.document-explorer__item[data-document-id="share:${state.parentToken}"]`).first();
       await expect(parentItemForRename).toBeVisible({ timeout: 30_000 });
@@ -198,10 +217,13 @@ test.describe("Cloud sync persistency", () => {
           updatedAt: new Date().toISOString()
         });
       }, { token: state.parentToken, title: state.renamedParentTitle, spaceId: PW_TEST_SPACE_ID });
+      logStep("rename-parent:done");
 
+      logStep("expand-parent:start");
       await page.evaluate(async parentId => {
         await (window as any).GoToolkitMemoDocumentExplorer?.expandItem?.(`share:${parentId}`);
       }, state.parentToken);
+      logStep("expand-parent:done");
 
       const rootItem = page.locator(`.document-explorer__item[data-document-id="share:${state.rootToken}"]`).first();
       const childItem = page.locator(`.document-explorer__item[data-document-id="share:${state.childToken}"]`).first();
@@ -210,6 +232,7 @@ test.describe("Cloud sync persistency", () => {
       await expect(childItem).toBeVisible({ timeout: 30_000 });
       await expect(parentItem).toBeVisible({ timeout: 30_000 });
 
+      logStep("move-root-under-parent:start");
       await rootItem.dragTo(parentItem);
 
       await expect.poll(
@@ -219,6 +242,7 @@ test.describe("Cloud sync persistency", () => {
         }, state.parentToken),
         { timeout: 20_000 }
       ).toContain(`share:${state.rootToken}`);
+      logStep("move-root-under-parent:done");
 
       const beforeSecondDrag = await page.evaluate(({ parentToken, rootToken, childToken }) => {
         const list = (window as any).GoToolkitMemoDocumentExplorer?.getChildrenOf?.(`share:${parentToken}`) || [];
@@ -230,6 +254,7 @@ test.describe("Cloud sync persistency", () => {
         };
       }, state);
 
+      logStep("move-child-under-root:start");
       await childItem.dragTo(rootItem);
 
       await expect.poll(
@@ -244,23 +269,33 @@ test.describe("Cloud sync persistency", () => {
         }, { parentToken: state.parentToken, rootToken: state.rootToken, childToken: state.childToken, before: beforeSecondDrag }),
         { timeout: 20_000 }
       ).toBe(true);
+      logStep("move-child-under-root:done");
 
+      logStep("delete-existing:start");
       await clickDoc(`share:${state.existingToken}`);
       await page.click("#fileMenuBtn");
       await page.click("#deleteDocumentBtn");
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.existingToken}"]`)).toHaveCount(0, { timeout: 20_000 });
+      logStep("delete-existing:done");
 
+      logStep("delete-child:start");
       await clickDoc(`share:${state.childToken}`);
       await page.click("#fileMenuBtn");
       await page.click("#deleteDocumentBtn");
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.childToken}"]`)).toHaveCount(0, { timeout: 20_000 });
+      logStep("delete-child:done");
 
+      logStep("delete-root:start");
       await clickDoc(`share:${state.rootToken}`);
       await page.click("#fileMenuBtn");
       await page.click("#deleteDocumentBtn");
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.rootToken}"]`)).toHaveCount(0, { timeout: 20_000 });
+      logStep("delete-root:done");
 
+      logStep("sync:start");
       await syncGolive();
+      logStep("sync:done");
+      logStep("remote-delete-check:start");
       await expect.poll(
         async () => page.evaluate(async ({ existingToken, rootToken, childToken }) => {
           const worker = (window as any).goToolkitShareWorker;
@@ -280,17 +315,21 @@ test.describe("Cloud sync persistency", () => {
         }, state),
         { timeout: 60_000, intervals: [1200, 2400, 4000] }
       ).toEqual({
-        existing: { metaStatus: "deleted", contentMissing: true },
-        root: { metaStatus: "deleted", contentMissing: true },
-        child: { metaStatus: "deleted", contentMissing: true }
+        existing: { metaStatus: "archived", contentMissing: true },
+        root: { metaStatus: "archived", contentMissing: true },
+        child: { metaStatus: "archived", contentMissing: true }
       });
+      logStep("remote-delete-check:done");
 
+      logStep("reload:start");
       await page.reload({ waitUntil: "commit", timeout: 20_000 });
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.evaluate(async () => {
         await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
       });
+      logStep("reload:done");
 
+      logStep("remote-state-check:start");
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.parentToken}"]`)).toContainText(state.renamedParentTitle, { timeout: 20_000 });
 
       const remoteCheck = await page.evaluate(async ({ parentToken, renamedParentTitle, existingToken, rootToken, childToken }) => {
@@ -304,9 +343,9 @@ test.describe("Cloud sync persistency", () => {
         const childContent = await worker.fetchSharePayload("pages", childToken);
         return {
           parentTitle: String(parentMeta?.payload?.title || ""),
-          existingDeleted: String(existingMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
-          rootDeleted: String(rootMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
-          childDeleted: String(childMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
+          existingArchived: String(existingMeta?.payload?.status || "").trim().toLowerCase() === "archived",
+          rootArchived: String(rootMeta?.payload?.status || "").trim().toLowerCase() === "archived",
+          childArchived: String(childMeta?.payload?.status || "").trim().toLowerCase() === "archived",
           existingContentMissing: !existingContent?.payload,
           rootContentMissing: !rootContent?.payload,
           childContentMissing: !childContent?.payload,
@@ -314,14 +353,17 @@ test.describe("Cloud sync persistency", () => {
         };
       }, state);
 
+      logStep("remote-state-check:result", remoteCheck);
       expect(remoteCheck.parentTitle).toContain(remoteCheck.expectedTitle);
-      expect(remoteCheck.existingDeleted).toBe(true);
-      expect(remoteCheck.rootDeleted).toBe(true);
-      expect(remoteCheck.childDeleted).toBe(true);
+      expect(remoteCheck.existingArchived).toBe(true);
+      expect(remoteCheck.rootArchived).toBe(true);
+      expect(remoteCheck.childArchived).toBe(true);
       expect(remoteCheck.existingContentMissing).toBe(true);
       expect(remoteCheck.rootContentMissing).toBe(true);
       expect(remoteCheck.childContentMissing).toBe(true);
+      logStep("remote-state-check:done");
     } finally {
+      logStep("teardown:start", { tokenCount: createdTokens.length });
       try {
         await page.evaluate(async ({ tokens }) => {
           try {
@@ -344,6 +386,7 @@ test.describe("Cloud sync persistency", () => {
       } catch (err) {
         // Ignore teardown failures to avoid masking assertion outcomes.
       }
+      logStep("teardown:done");
     }
   });
 });

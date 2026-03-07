@@ -192,16 +192,41 @@ Practical reliability notes for this repo:
 Use this exact workflow for local UI debugging and repros on this repo:
 
 1. start the app with `npm run start:test`
-2. if you are on WSL, mirror the repo to a native Linux path first; do not run Playwright from `/mnt/c/...`
+2. if you are on WSL, create or refresh the persistent Linux mirror with `npm run playwright:linux:mirror`; do not run Playwright from `/mnt/c/...`
 3. write or reuse a real spec under `tests/`
 4. attach listeners for `console`, `pageerror`, `request`, and `response` before navigation
 5. add explicit `console.log` step markers before every intended UI interaction
 6. suppress the docs tour unless the tour itself is under test
 7. stub or disable Turnstile unless Turnstile itself is the subject of the test
-8. run the repo-local binary: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`
+8. run the repo-local binary from the Linux mirror: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`, or use `npm run playwright:linux:test -- ...`
 9. keep the instrumentation in place until the failing stage is isolated; do not keep rewriting the harness blindly between runs
 
 This is the minimum standard for non-trivial UI debugging. A one-off Node script is acceptable only for a tiny smoke check, not for an iterative repro.
+
+Persistent Linux mirror details:
+
+- `npm run playwright:linux:mirror` syncs the current repo into `~/.cache/gotoolkit-playwright` by default
+- override the location with `PW_LINUX_MIRROR_DIR=/path/to/mirror`
+- the script keeps the mirror between runs, performs one full sync on first use, then switches to incremental sync based on the Git worktree
+- force a clean resync with `PW_LINUX_MIRROR_FULL_SYNC=1 npm run playwright:linux:mirror`
+- the script only re-runs `npm ci` when `package-lock.json` changed or `node_modules/` is missing
+- `test-results/`, `playwright-report/`, `.tmp/`, and `tmp/` stay local to each side and are not copied into the mirror
+- after the sync, change into the printed mirror path and run Playwright there
+- `npm run playwright:linux:test -- tests/foo.spec.ts --workers=1 --reporter=line` refreshes the mirror and runs Playwright from it in one command
+
+Generic step-logging pattern:
+
+- define one small helper near the top of the spec, for example `const logStep = (label, details) => console.log("[spec-name] " + label, details ?? "");`
+- emit one log before each meaningful UI step and one after each state-changing phase completes
+- keep labels stable and action-oriented, for example `connect-space:start`, `connect-space:done`, `delete-root:start`, `delete-root:done`
+- log the final remote or storage snapshot before assertions when the scenario depends on async sync behavior
+- attach Playwright listeners before navigation and print them in a compact format:
+  - `page.on("console", msg => console.log("[browser:console]", msg.type(), msg.text()))`
+  - `page.on("pageerror", err => console.log("[browser:pageerror]", err.message))`
+  - `page.on("request", req => ...)` and `page.on("response", res => ...)` when network ordering matters
+- keep this instrumentation in the spec until the failing stage is isolated; remove or reduce it only after the repro is stable
+
+The goal is to learn exactly where the scenario stopped without rewriting the test harness on every rerun.
 
 Important CSP constraint:
 
@@ -225,7 +250,7 @@ Current practical guidance from repo debugging:
 
 - prefer the repo-local Playwright runtime (`./node_modules/.bin/playwright` or `require("playwright")`) over the bundled Playwright CLI wrapper when working from this machine
 - the bundled Playwright CLI wrapper currently tries to launch the `chrome` channel and fails here because the Chrome channel is not installed
-- on WSL, `require("playwright")` and `require("playwright-core")` may hang when the repo is executed from `/mnt/c/...`; if that happens, copy or mirror the repo to a native Linux path and run the same command there
+- on WSL, `require("playwright")` and `require("playwright-core")` may hang when the repo is executed from `/mnt/c/...`; use `npm run playwright:linux:mirror` and run the same command from that Linux mirror instead
 - prefer a real Playwright spec under `tests/` over an ad hoc Node script as soon as the repro involves more than a trivial one-command sanity check
 - use ad hoc Node scripts only for throwaway smoke checks; for iterative debugging, logging, screenshots, and reruns, move immediately to a spec file so the harness itself does not need to be rewritten every run
 - when reproducing UI issues, attach listeners for `console`, `pageerror`, `request`, and `response` before navigation so transient failures are captured
