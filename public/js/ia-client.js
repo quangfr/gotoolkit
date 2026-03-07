@@ -563,9 +563,7 @@
             const endpoint = String(backend?.endpoint || "").toLowerCase();
             const isEmbeddingsEndpoint = endpoint.includes("/embeddings");
             const defaultProxyModel = isEmbeddingsEndpoint ? (configuredModel || requestedModel || "@preset/gotoolkit") : "@preset/gotoolkit";
-            const proxyModel = /^@preset\//i.test(requestedModel)
-                ? requestedModel
-                : (/^@preset\//i.test(configuredModel) ? configuredModel : defaultProxyModel);
+            const proxyModel = requestedModel || configuredModel || defaultProxyModel;
             const proxyPayload = {
                 model: proxyModel,
                 messages: buildOpenRouterMessages(source)

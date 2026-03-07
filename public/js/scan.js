@@ -2281,6 +2281,25 @@
         return;
       }
 
+      if (activeSettingsTab === "categoryTab") {
+        Promise.resolve(window.GoToolkitSettingsModal?.saveCategorySettingsDraft?.("settingsModal"))
+          .then(() => {
+            settingsModalApi?.close?.();
+            setStatus("Réglages sauvegardés");
+          })
+          .catch(() => {
+            setStatus("Sauvegarde des réglages impossible");
+          });
+        return;
+      }
+
+      try {
+        window.GoToolkitSettingsModal?.persistModalAiSettings?.();
+      } catch (err) {
+        setStatus("Sauvegarde des réglages impossible");
+        return;
+      }
+
       settingsModalApi?.close?.();
       setStatus("Réglages sauvegardés");
     });

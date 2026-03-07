@@ -1421,6 +1421,7 @@
     global.GoToolkitSettingsModal = {
         bind,
         performFullReset,
+        persistModalAiSettings,
         populateAssemblyAiInput,
         populateGoogleTtsInput,
         populateOpenrouterModelInput,
