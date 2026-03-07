@@ -29,26 +29,8 @@ This file is the short operational guide. Use the docs below as the canonical re
 - Only `public/js` should attach application globals to `window`.
 - Do not edit `public/content/index_releases.md` or `public/content/index_roadmap.md` unless explicitly asked.
 
-## Frontend security (DOM rendering)
-- Treat `innerHTML` as unsafe by default.
-- Prefer:
-  - `textContent` for user/content text
-  - `document.createElement(...)` + `appendChild(...)` for UI structure
-  - explicit `setAttribute(...)` for attributes (including icon names)
-- For icon-only buttons, prefer helper functions that create `<i data-lucide="...">` nodes from normalized icon names (allow `[a-z0-9-]` only, fallback otherwise).
-- If line breaks are needed for plain text, build `<br>` nodes instead of `innerHTML = escapedText.replace(...)`.
-- Only allow HTML injection when all of the following are true:
-  - rich HTML rendering is required (markdown/preview/editor use case)
-  - content is sanitized by a trusted sanitizer first
-  - the reason is documented in code comments near the sink
-- For rich HTML parse/transform/serialize paths (for example `DOMParser` -> modify nodes -> `doc.body.innerHTML`):
-  - run a dedicated sanitizer pass on the parsed document before serialization
-  - remove active/unsafe nodes (`script`, `iframe`, `object`, `embed`, `template`, form controls)
-  - strip unsafe attributes (`on*`, `srcdoc`) and block `javascript:` URLs
-  - enforce protocol allowlists per attribute context (`href`, `src`, `xlink:href`, `poster`)
-  - add `rel="noopener noreferrer"` on `<a>` nodes
-  - centralize this in one helper per module instead of duplicating ad hoc filtering
-- Safe resets like `el.innerHTML = ""` are acceptable for clearing containers.
+## Frontend security
+- Follow [`docs/SECURITY.MD`](docs/SECURITY.MD) for DOM rendering, sanitization, CSP, and share auth rules.
 - Before merging frontend changes, run:
   - `rg -n "\\binnerHTML\\b" public -S -g '!**/*.map'`
   - `node --check <touched-js-file>`
@@ -60,70 +42,35 @@ This file is the short operational guide. Use the docs below as the canonical re
 - Use targeted builds when possible:
   - run memo builds only for memo-side `src/` changes
   - run draw/connect builds only for draw-side `src/` changes
-- After modifying a worker, deploy that worker with Wrangler through `scripts/with-env-local.sh`.
 - If the user asks to deploy workers, automatically deploy each modified worker with Wrangler using credentials from `.env.local`.
   - First verify auth with `npx wrangler whoami`.
-  - Then deploy only the touched workers, for example:
-    - `./scripts/with-env-local.sh npx wrangler deploy --config workers/share-proxy/wrangler.toml`
+  - Then deploy only the touched workers through `scripts/with-env-local.sh`.
   - Do not deploy untouched workers by default.
 - Release flow:
-  - for any request involving `bump`, `commit`, or `push`, run `npm run check:csp`
-  - then run `npm run bump`
-  - after `npm run bump`, include the versioned static entry files updated by the bump in the same commit/push (for example `public/index.html`, `public/grid.html`, `public/mobile.html`, `public/aide.html`, `public/legal.html`, and similar version-string rewrites)
-  - then commit and push (do not deploy Firebase Hosting directly from this workflow)
+  - run `npm run check:csp`
+  - then `npm run bump`
+  - include the versioned static entry files updated by the bump
+  - then commit and push
+  - do not deploy Firebase Hosting directly from this workflow
 
 ## CSP hash workflow (inline scripts)
-- Scope: inline `<script>` changes in `public/index.html`, `public/grid.html`, or `public/mobile.html`.
-- Step 1: run `npm run csp:inline:sync` (recompute + apply `sha256-...` hashes).
-- Treat `scripts/csp-common.js` as canonical; keep CSP in HTML meta tags and `firebase.json` in sync with it.
-- Apply the same hash list to all app CSP mirrors (`public/index.html`, `public/grid.html`, `public/mobile.html`, and both Hosting CSP headers in `firebase.json`).
-- Step 2: run `npm run check:csp` before merge/push.
-  - this now verifies both mirror alignment and inline hash coverage
-- After inline script edits in `public/index.html`, run a quick runtime smoke check and confirm there are no console `ReferenceError` failures before push.
-- If an inline block uses helpers defined in another script block, either expose the helper on `window` intentionally or provide a local fallback in the dependent block.
+- For inline `<script>` changes in `public/index.html`, `public/grid.html`, or `public/mobile.html`, run `npm run csp:inline:sync`.
+- Treat `scripts/csp-common.js` as canonical and keep CSP mirrors aligned.
+- After inline script edits, do a quick runtime smoke check for console `ReferenceError`s before push.
 
 ## Testing defaults
 - Before running Playwright, ensure the test server is running on `:5000`; if not, start it with `npm run start:test`.
-- When a request explicitly asks for Playwright/browser automation, use the `playwright` Codex skill workflow first, then adapt to the repo constraints in this section.
-- On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails because Chrome is not installed here.
-- On WSL, do not run Playwright from `/mnt/c/...`; use `npm run playwright:linux:mirror` to refresh the persistent Linux mirror, or `npm run playwright:linux:test -- ...` to refresh and run in one step.
-- During local Playwright iteration, do not run `npm run check:csp` on every loop. If you changed an inline script inside the CSP scope, you still must run `npm run csp:inline:sync` before browser repros, because the app CSP is enforced by HTML `<meta>` tags in test too. Reserve `npm run check:csp` for merge/release, bump, commit, and push workflows.
-- Follow [`docs/TESTING.md`](docs/TESTING.md) for the canonical Playwright workflow, including:
-  - repo-local Playwright command line
-  - true `tests/*.spec.ts` repros instead of ad hoc scripts
-  - tour dismissal, Turnstile stubbing, and step-by-step UI logging
-  - network/console instrumentation, artifact naming, `spaceCode` bootstrap, and `page.evaluate(...)` rules
+- When a request explicitly asks for Playwright/browser automation, use the `playwright` Codex skill workflow first, then adapt to the repo constraints.
+- On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails here.
+- On WSL, do not run Playwright from `/mnt/c/...`; use `npm run playwright:linux:mirror` or `npm run playwright:linux:test -- ...`.
+- During local Playwright iteration, skip `npm run check:csp`; if you changed an inline script in CSP scope, run `npm run csp:inline:sync` before browser repros.
+- Follow [`docs/TESTING.md`](docs/TESTING.md) for the full Playwright workflow, logging pattern, Turnstile/tour handling, artifact naming, and `spaceCode` bootstrap rules.
 
 ## Cloud/share essentials
-- `public/js/share-worker-client.js` is the main browser client for cloud shares.
-- `workers/share-proxy` is the main worker for shared pages/assets.
-- Shared content uses `pages`; shared tree/meta uses `pages-meta`.
-- Authenticate protected spaces through `POST /v1/spaces/auth`.
-- Reuse returned `X-Space-Auth`, `X-Space-Id`, and `contentKey` for protected operations.
-- Protected worker routes also require the sync anti-replay headers:
-  - `X-Sync-Session`
-  - `X-Sync-JTI`
-  - `X-Sync-TS`
-- When calling protected worker routes manually, send both the space auth headers and the sync headers:
-  - `X-Space-Id`
-  - `X-Space-Auth`
-  - `X-Sync-Session`
-  - `X-Sync-JTI`
-  - `X-Sync-TS`
-- For cloud reads, the safe fetch order is: auth -> tree -> `pages-meta` -> `pages`.
-- For managed-space `spaceCode` issues, verify both the worker secret and D1 `space_code_hashes` alignment.
-- Asset downloads and cleanup now also depend on `.env.local` values loaded through `scripts/with-env-local.sh`:
-  - `ASSETS_R2_CODE` for the global R2 asset encryption key
-  - `ASSETS_CLEANUP_SECRET` for manual asset admin routes such as cleanup/migration
+- For the full share model, routes, storage split, and auth details, follow [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/SECURITY.MD`](docs/SECURITY.MD).
 
 ## Quick diagnostics
 - `git status --short`
 - `rg -n "<feature|error|token>" public workers -S`
 - `node --check <touched-js-file>`
 - `npm run check:csp`
-- `curl -i -H 'Content-Type: application/json' -d '{"spaceId":"<id>","spaceCode":"<code>"}' https://share.gotoolkit.workers.dev/v1/spaces/auth`
-
-## When to open the reference docs
-- Open [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module boundaries, sync architecture, app responsibilities, IndexedDB stores, cloud drafts, share-history, and payload structure.
-- Open [`docs/TESTING.md`](docs/TESTING.md) for Playwright strategy, `spaceCode` bootstrap, and CI guidance.
-- Open [`docs/SECURITY.MD`](docs/SECURITY.MD) for CSP, OAuth, managed spaces, `contentKey`, and auth headers.
