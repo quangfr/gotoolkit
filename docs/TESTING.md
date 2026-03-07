@@ -4,22 +4,53 @@ Date: 2026-03-01
 Purpose: describe how to automate testing, cloud document manipulation, browser-session reuse, worker verification, deployment checks, and CI regression coverage in the current repo
 Audience: coding agents and maintainers working from the repo and terminal
 
+## 0. When to use this doc
+
+Open this file when you need to answer questions like:
+
+- how to reproduce a UI bug quickly on this machine
+- how to bootstrap a cloud/share test without full OAuth UI
+- how Playwright should be run under WSL
+- which spec or helper should cover a regression
+
+## 0. Fast paths
+
+Use these as the default entry points before reading the full guide.
+
+- UI repro on this machine
+  - `npm run start:test`
+  - `npm run playwright:linux:test -- tests/<spec>.spec.ts --workers=1 --reporter=line --config=playwright.config.ts`
+
+- Cloud/share repro
+  - bootstrap with `spaceCode` first
+  - prefer direct worker setup + focused Playwright verification
+
+- Worker auth or share-route repro
+  - verify the route directly with `curl` or `fetch`
+  - then run one focused Playwright spec only if UI confirmation matters
+
+- Iterating on inline-script UI bugs
+  - run `npm run csp:inline:sync`
+  - do not run `npm run check:csp` on every local repro loop
+
+## 0.1 Core rules
+
+- Prefer a real spec under `tests/` over ad hoc scripts for any non-trivial repro.
+- On WSL, run Playwright from the Linux mirror, not `/mnt/c/...`.
+- Stub Turnstile and dismiss the docs tour unless they are the subject of the test.
+- Add step logs plus `console`, `pageerror`, `request`, and `response` listeners before rewriting a repro.
+- Use `spaceCode` bootstrap first for cloud coverage; fall back to OAuth UI only when the auth UX itself is under test.
+
 ## 1. Main automation surfaces
 
-The current codebase already allows automation at four levels:
+The repo already supports four automation layers:
 
 - browser automation with Playwright
-- direct API automation against `share-proxy` and other workers
-- local browser-state automation through persistent Playwright profiles and storage state
-- deploy/smoke automation for Cloudflare Workers through Wrangler and `.env.local`
+- direct API automation against workers
+- persistent browser/session state reuse
+- deploy/smoke automation through Wrangler and `.env.local`
 
-In practice, most useful test flows are combinations of these layers:
-
-- bootstrap auth or cloud access through API
-- reuse the resulting browser/session state in Playwright
-- manipulate local and cloud documents
-- verify worker behavior directly with API calls
-- deploy changed workers and run smoke checks
+Most useful flows combine them: bootstrap through API, reuse state in Playwright, verify with UI plus worker/storage assertions.
 
 ## 2. What is already available
 
@@ -97,15 +128,13 @@ Shared test helpers:
 
 ## 3. Recommended automation model
 
-For this repo, the most productive model is:
+For this repo, the default model is:
 
 1. bootstrap or bypass auth once
 2. persist browser/session state locally
-3. reuse the same browser state across many Playwright runs
-4. call cloud APIs directly for setup and verification
-5. keep UI tests focused on real user behavior, not repetitive login/setup
-
-That avoids paying the cost of OAuth flows and browser cold starts in every test.
+3. reuse that state across runs
+4. do setup and verification through APIs when possible
+5. keep UI tests focused on real user behavior
 
 ## 4. Bypassing OAuth for cloud document automation
 
@@ -119,13 +148,13 @@ Current code already supports managed-space auth through OAuth-derived identity 
 - `public/js/share-worker-client.js` listens to `go-toolkit:microsoft-oauth-success`
 - `workers/share-proxy/index.js` accepts `identityToken` in `POST /v1/spaces/auth` when `spaceCode` is omitted
 
-This means browser automation does not need to click through full Microsoft OAuth every time.
+This means browser automation does not need full Microsoft OAuth every run.
 
-Productive automation options:
+Preferred options:
 
 - capture a valid browser session once and reuse it
-- inject a synthetic `go-toolkit:microsoft-oauth-success` event in a controlled test environment if a valid `identityToken` is already available
-- call `POST /v1/spaces/auth` directly with a valid `identityToken` to obtain `X-Space-Auth` and `contentKey`
+- inject a synthetic `go-toolkit:microsoft-oauth-success` event when a valid `identityToken` is already available
+- call `POST /v1/spaces/auth` directly with a valid `identityToken`
 
 ### 4.2 Direct path for non-managed or test spaces: use `spaceCode`
 
@@ -147,15 +176,14 @@ Preferred usage:
 
 This is the cleanest way to manipulate cloud documents programmatically without UI login.
 
-Operational note from current tests:
+Operational note:
 
-- in Playwright, the most reliable readiness gate for this path is the minimum bootstrap state:
-  `goToolkitShareWorker.isReady` and `GoToolkitSpaces.upsertSpace`
+- in Playwright, the most reliable readiness gate is the minimum bootstrap state: `goToolkitShareWorker.isReady` and `GoToolkitSpaces.upsertSpace`
 - do not block on broader app readiness if the test only needs cloud auth/bootstrap
 
 ## 5. Programmatic cloud document manipulation
 
-The recommended API order is already established in `AGENTS.md` and should be preserved:
+Preserve this API order:
 
 1. `POST /v1/spaces/auth`
 2. `GET /v1/shares/pages?view=tree&spaceId=...`
@@ -174,17 +202,11 @@ Required sync headers for protected write flows:
 - `X-Sync-JTI`
 - `X-Sync-TS`
 
-Important current constraint:
+Important constraints:
 
 - payloads may be encrypted and require `contentKey`
 - some large payloads may be offloaded by reference
 - assets are space-scoped and enforced server-side
-
-So API-based automation must not assume:
-
-- plaintext page JSON
-- inline payload only
-- asset access without `spaceId` scope
 
 ## 6. Browser automation with persistent local sessions
 
@@ -198,38 +220,9 @@ Recommended usage:
 
 - keep a persistent profile in `.tmp/playwright-profile`
 - keep reusable auth state in `.tmp/playwright-storage-state.json`
-- reuse that state across iterative test runs
-
-Best use cases:
-
-- cloud document debugging
-- managed-space UI flows
-- long-running local persistence tests
-- reproducing regressions without relogging
-
-Current performance tips that should stay standard:
-
+- use `./node_modules/.bin/playwright ... --workers=1`
+- prefer `waitUntil: "commit"` or `domcontentloaded` on `index.html`
 - prestart the server with `npm run start:test`
-- run `./node_modules/.bin/playwright ...` instead of `npx`
-- use `--workers=1` when reusing a persistent profile
-- use persistent context for local debugging
-- use `storageState` for login reuse
-- navigate directly to target pages
-
-Additional improvements worth adopting:
-
-- keep separate profiles per suite type, for example:
-  - `.tmp/playwright-profile-cloud`
-  - `.tmp/playwright-profile-local`
-- add a small helper to clear only app IndexedDB stores without destroying login state
-- split auth bootstrap from content bootstrap so tests can reuse auth while resetting data
-- capture and reuse a pre-authenticated cloud space state file per environment
-
-Practical reliability notes for this repo:
-
-- `index.html` is heavy; avoid `page.goto(..., { waitUntil: "load" })` and `page.reload(..., { waitUntil: "load" })` in cloud flows
-- prefer `waitUntil: "commit"` or `domcontentloaded`, then wait explicitly for the app primitive you need
-- when running many cloud specs in one command, prefer a prestarted server (`npm run start:test`) over relying on Playwright-managed `webServer`
 
 ### 6.0 Canonical local Playwright workflow
 
@@ -245,7 +238,7 @@ Use this exact workflow for local UI debugging and repros on this repo:
 8. run the repo-local binary from the Linux mirror: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`, or use `npm run playwright:linux:test -- ...`
 9. keep the instrumentation in place until the failing stage is isolated; do not keep rewriting the harness blindly between runs
 
-This is the minimum standard for non-trivial UI debugging. A one-off Node script is acceptable only for a tiny smoke check, not for an iterative repro.
+This is the minimum standard for non-trivial UI debugging.
 
 Persistent Linux mirror details:
 
@@ -282,46 +275,24 @@ Important CSP constraint:
 
 ### 6.1 UI testing workflow for local/private pages
 
-For fast UI debugging on private pages, use a lightweight local-only workflow:
+For fast local/private UI debugging:
 
-1. prestart the static app with `npm run start:test`
-2. navigate to `http://127.0.0.1:5000/index` (not `index.html`, which redirects)
+1. prestart with `npm run start:test`
+2. navigate to `http://127.0.0.1:5000/index`
 3. use `waitUntil: "commit"` or `domcontentloaded`
-4. wait for the exact mounted feature you need, not full-page readiness
-5. keep the test focused on the private/local path unless cloud behavior is the target
+4. wait for the exact mounted feature you need
+5. keep the test local-only unless cloud behavior is the target
 
-Current practical guidance from repo debugging:
+Practical guidance:
 
-- prefer the repo-local Playwright runtime (`./node_modules/.bin/playwright` or `require("playwright")`) over the bundled Playwright CLI wrapper when working from this machine
-- the bundled Playwright CLI wrapper currently tries to launch the `chrome` channel and fails here because the Chrome channel is not installed
-- on WSL, `require("playwright")` and `require("playwright-core")` may hang when the repo is executed from `/mnt/c/...`; use `npm run playwright:linux:mirror` and run the same command from that Linux mirror instead
-- prefer a real Playwright spec under `tests/` over an ad hoc Node script as soon as the repro involves more than a trivial one-command sanity check
-- use ad hoc Node scripts only for throwaway smoke checks; for iterative debugging, logging, screenshots, and reruns, move immediately to a spec file so the harness itself does not need to be rewritten every run
-- when reproducing UI issues, attach listeners for `console`, `pageerror`, `request`, and `response` before navigation so transient failures are captured
-- for local repros where Turnstile is not the subject of the test, stub or disable Turnstile before navigation with `page.addInitScript(...)` or an equivalent test-only bootstrap so anti-bot failures do not mask the UI bug
-- before rewriting a failing Playwright repro, instrument the intended UI path with explicit `console.log` step markers and read those logs back from Playwright first; prefer isolating the exact failing step over repeated edit-and-rerun loops
-
-Recommended readiness pattern:
-
-- wait for feature APIs like `window.GoToolkitAssistInstance`
-- if needed, open panels programmatically after mount, for example `window.GoToolkitAssistInstance?.open?.()`
-- query visible controls explicitly, for example `textarea.chat-input:visible` and `button.chat-send-btn:visible`
-- avoid broad selectors like plain `textarea` on complex screens because hidden modals and editors can match first
-
-Recommended local-state setup:
-
-- if the guided tour is not under test, suppress it before navigation with `localStorage.setItem("go-toolkit-docs-tour-seen.v1", "1")`
-- when a repro only concerns private pages, do not spend time authenticating cloud spaces or bootstrapping OAuth state
-- if a feature depends on a specific prompt preset or panel mode, set that state directly after mount before interacting
-
-Recommended assertion pattern for UI debugging:
-
-- capture the user-visible message or DOM state
-- also capture any relevant client diagnostics, for example `window.GoToolkitTurnstile.getDiagnostics()`
-- distinguish between “browser never sent the request” and “worker rejected the request” by inspecting network events
-- when a scenario has multiple UI steps, emit one `console.log` marker per step before the interaction and keep a final marker after the expected state change; this gives you a stable breadcrumb trail in Playwright output and usually removes the need to rewrite the test just to learn where it stopped
-
-This distinction matters in this repo because anti-bot and auth flows can fail before the worker is ever reached.
+- prefer the repo-local Playwright runtime over the bundled Codex wrapper
+- on WSL, use the Linux mirror
+- prefer a real spec under `tests/` over an ad hoc script
+- attach listeners before navigation
+- stub Turnstile when it is not under test
+- use explicit readiness selectors such as visible controls or feature APIs
+- suppress the docs tour and set local state directly when the repro allows it
+- distinguish “browser never sent the request” from “worker rejected it” through network events
 
 ### 6.2 Visual capture workflow (video + step screenshots)
 
@@ -347,12 +318,12 @@ Programmatic automation options:
 
 - Playwright `page.evaluate(...)` for localStorage/sessionStorage reads/writes
 - Playwright page scripts to inspect IndexedDB contents
-- a repo-local Node helper that opens a page and dumps selected IndexedDB stores for assertions
+- a repo-local Node helper for selected store dumps
 
-Important Playwright rule:
+Important rule:
 
 - never rely on imported Node constants directly inside `page.evaluate(...)`
-- always pass values (for example `spaceId`, `spaceCode`, tokens, markers) as explicit `page.evaluate(arg => ..., arg)` arguments
+- always pass values as explicit arguments
 
 High-value stores for automation:
 
@@ -384,32 +355,12 @@ The most reliable pattern is:
 
 ## 9. Worker development automation
 
-The repo already defines the expected deployment path:
-
-- run Wrangler through `scripts/with-env-local.sh`
-- deploy the specific modified worker only
-
-Examples:
-
-```bash
-scripts/with-env-local.sh npx wrangler deploy --config workers/share-proxy/wrangler.jsonc
-scripts/with-env-local.sh npx wrangler deploy --config workers/ms-proxy/wrangler.toml
-```
-
-Recommended worker automation sequence after changes:
+Worker automation sequence after changes:
 
 1. syntax check or local targeted verification
-2. deploy changed worker only
-3. smoke the worker with `curl`
-4. run one UI or API regression that touches the changed path
-
-Per `AGENTS.md`, smoke checks should cover:
-
-- endpoint responsiveness
-- CORS
-- auth or env-sensitive behavior
-- rate limiting behavior when relevant
-- storage binding read/write when relevant
+2. deploy the changed worker only through `scripts/with-env-local.sh`
+3. smoke it with `curl`
+4. run one focused UI or API regression on the changed path
 
 ## 10. Worker verification patterns
 
@@ -447,53 +398,11 @@ Automate these checks:
 
 Current repo guidance is already good. The next useful improvements are:
 
-### 11.1 Suite segmentation
-
-Split tests into:
-
-- pure local persistence
-- cloud sync
-- worker/API verification
-- OAuth/session flows
-
-This keeps the expensive tests out of the fast path.
-
-### 11.2 API-first setup
-
-Before opening UI:
-
-- authenticate space
-- seed or clean remote pages
-- set browser state directly when appropriate
-
-This removes a lot of UI setup cost.
-
-### 11.3 Persistent test fixtures
-
-Add fixtures for:
-
-- authenticated cloud context
-- seeded test space
-- clean local IndexedDB state
-- preloaded memo data
-
-### 11.4 Trace policy
-
-Run traces/screenshots/videos only:
-
-- on failure in CI
-- on-demand locally
-
-Avoid paying that cost on every passing run.
-
-### 11.5 Native Linux path on WSL
-
-When running many tests repeatedly:
-
-- mirror repo to Linux FS
-- run Playwright from Linux FS, not `/mnt/c/...`
-
-That remains one of the highest-impact practical improvements.
+- segment suites into local persistence, cloud sync, worker/API verification, and OAuth/session flows
+- do API-first setup before UI when possible: authenticate space, seed or clean remote data, then open the browser
+- keep reusable fixtures for authenticated cloud context, seeded test space, and clean local IndexedDB state
+- collect traces/screenshots/videos on failure in CI and on-demand locally, not on every passing run
+- keep running Playwright from the Linux mirror on WSL instead of `/mnt/c/...`
 
 ## 12. Good CI candidates
 
@@ -539,83 +448,22 @@ If `workers/openrouter-proxy/**`, `workers/googletts-proxy/**`, or `workers/asse
 
 The repo already has cloud/private persistence coverage. The best additions would be:
 
-### 13.1 Managed-space auth bootstrap tests
-
-Goal:
-
-- verify that a valid `identityToken` can bootstrap space auth without manual OAuth UI
-
-### 13.2 IndexedDB assertion helpers
-
-Goal:
-
-- assert `document-api`, `cloud-drafts`, `voice-recordings`, and RAG stores directly from Playwright
-
-### 13.3 Stable shared-server cloud suite
-
-Goal:
-
-- run the cloud persistence specs against a prestarted `npm run start:test` server instead of relying on Playwright to repeatedly manage the server lifecycle
-
-Rationale:
-
-- the current cloud specs are more stable individually than in one large grouped run when the built-in `webServer` is under load
-
-### 13.3 Cloud asset round-trip test
-
-Goal:
-
-- attach media
-- sync upload
-- reload
-- verify prefetch/download and rendering
-
-### 13.4 Worker contract tests
-
-Goal:
-
-- validate status codes, headers, and minimal response shapes for key worker routes
-
-### 13.5 Space auth rotation regression
-
-Goal:
-
-- verify `spaceCode` rotation path and D1 hash alignment for managed spaces
+- managed-space auth bootstrap tests using `identityToken` without full OAuth UI
+- IndexedDB assertion helpers for `document-api`, `cloud-drafts`, `voice-recordings`, and RAG stores
+- a stable shared-server cloud suite against a prestarted `npm run start:test` server
+- a cloud asset round-trip test covering upload, reload, prefetch/download, and rendering
+- worker contract tests for key status codes, headers, and minimal response shapes
+- space auth rotation regression for managed-space D1 hash alignment
 
 ## 14. Possible implementation helpers
 
-These would materially improve automation productivity.
+These would materially improve automation productivity:
 
-### Option 1: `scripts/cloud-auth.mjs`
-
-Purpose:
-
-- authenticate a space once
-- print/export `token`, `contentKey`, and reusable headers
-
-### Option 2: `scripts/cloud-seed.mjs`
-
-Purpose:
-
-- create, update, archive, or clean remote test documents in a known test space
-
-### Option 3: `tests/helpers/indexeddb.ts`
-
-Purpose:
-
-- expose helper functions to inspect `go-toolkit` and `gotoolkit-documents` stores from Playwright
-
-### Option 4: `tests/helpers/oauth-bootstrap.ts`
-
-Purpose:
-
-- capture or inject reusable OAuth identity state for managed-space tests
-
-### Option 5: `scripts/worker-smoke.mjs`
-
-Purpose:
-
-- run standardized smoke checks against changed workers after deploy
+- `scripts/cloud-auth.mjs` to authenticate a space once and print/export reusable headers
+- `scripts/cloud-seed.mjs` to create, update, archive, or clean remote test documents
+- `tests/helpers/indexeddb.ts` to inspect `go-toolkit` and `gotoolkit-documents` stores from Playwright
+- `tests/helpers/oauth-bootstrap.ts` to capture or inject reusable managed-space OAuth identity state
+- `scripts/worker-smoke.mjs` to run standardized post-deploy worker smoke checks
 
 ## 15. Practical defaults for agents
 
@@ -628,15 +476,3 @@ When automating work in this repo:
 - verify both UI result and underlying storage/API result
 - deploy only changed workers
 - run one focused regression after each worker or sync change
-
-## 16. Bottom line
-
-The current repo already supports a strong automation strategy without inventing new infrastructure:
-
-- use `spaceCode` or existing OAuth-derived `identityToken` to bootstrap cloud access
-- reuse persistent browser sessions for Playwright
-- inspect IndexedDB and worker APIs directly for assertions
-- deploy workers via `scripts/with-env-local.sh`
-- keep CI focused on small, high-signal regressions around sync, auth, assets, and worker contracts
-
-That is the most productive path for reliable automation here.

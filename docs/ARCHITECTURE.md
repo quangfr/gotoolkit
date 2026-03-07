@@ -4,6 +4,31 @@ Date: 2026-03-01
 Purpose: describe how app data is structured, stored, synced, ingested, and processed so coding agents can modify the right layer without guessing
 Scope: `public/`, `workers/share-proxy`, browser storage, cloud storage
 
+## 0. When to use this doc
+
+Open this file when you need to answer questions like:
+
+- where a piece of data really lives
+- which layer owns a behavior
+- how local storage, IndexedDB, and cloud share state connect
+- which share record or asset path a change should target
+
+## 0. Do not assume
+
+- `pages` and `pages-meta` are separate remote records with different responsibilities.
+- `spaceCode` is not `X-Space-Auth`; it is used to obtain it.
+- Shared payloads are not always plaintext inline JSON; some are encrypted or offloaded by reference.
+- Deleting cloud content may archive metadata instead of removing every remote record immediately.
+- Asset lifecycle is separate from page lifecycle.
+
+## 0.1 Fast map
+
+- Private docs and most editor state are local.
+- Shared pages and shared assets go through `workers/share-proxy`.
+- `pages` stores content; `pages-meta` stores tree and lifecycle metadata.
+- Protected share access starts with `/v1/spaces/auth`, then uses `X-Space-Auth` plus sync headers for writes.
+- Large or protected payloads may be encrypted or offloaded by reference.
+
 ## 1. Data layers
 
 GoToolkit uses three main data layers:
@@ -60,12 +85,10 @@ Current stores:
 - `templates`
 - `cloud-drafts`
 
-Important naming note:
+Naming note:
 
-- `templates` is legacy naming still present in storage/code
-- treat it as a historical label for reusable/shared memo payloads, not as the primary current product concept
-- current user-facing persistence should be reasoned about first through cloud shares and shared pages
-- `knowledge-*` is also internal naming that mostly refers to pages/docs selected and ingested for AI retrieval, not a separate business data domain
+- `templates` is legacy storage naming for reusable/shared memo payloads.
+- `knowledge-*` mostly refers to pages/docs selected and ingested for AI retrieval.
 
 RAG DB in `public/js/document-rag.js`:
 
@@ -131,7 +154,7 @@ Structure:
 - grouped by app
 - then by share `token`
 
-Typical record role:
+Role:
 
 - remember previously shared records
 - keep cloud-facing identifiers and ordering metadata for the UI
@@ -145,8 +168,6 @@ Role:
 
 - queue pending cloud operations before sync
 - current operations include create/edit/move/archive/delete
-
-This queue is central to offline-first or delayed-sync behavior.
 
 ## 5. Shared/cloud page model
 
@@ -171,18 +192,16 @@ Collection families also used elsewhere by sharing:
 
 Naming note:
 
-- `template-memos` is still used in some functions and storage paths
-- this is legacy naming and should be read as a share-backed memo variant, not as a separate modern persistence model
+- `template-memos` is legacy naming and should be read as a share-backed memo variant.
 
 Current separation of concerns:
 
 - `pages`: content payload
 - `pages-meta`: title, tree, hierarchy, status, sharing metadata
 
-For cloud pages, agents should assume:
+Cloud page rule:
 
-- content and tree metadata are not stored in the same remote record
-- sync logic may need to reconcile both layers
+- content and tree metadata are not stored in the same remote record, so sync logic may need to reconcile both layers.
 
 ## 6. Shared assets
 
@@ -198,11 +217,6 @@ Asset routes:
 - read: `/v1/assets/:id`
 - delete: `/v1/assets/:id`
 
-Browser-side handling exists in:
-
-- `public/js/share-worker-client.js`
-- sync/orchestration in `public/index.html`
-
 Important details from current code:
 
 - asset scope is tied to a `spaceId`
@@ -217,12 +231,7 @@ Important details from current code:
 - asset encryption uses a worker-side global assets secret, independent from space page encryption
 - legacy assets encrypted with space content keys can be migrated manually through the worker
 
-Cloud sync has explicit asset phases:
-
-- upload-assets
-- download-assets
-
-The UI sync button reflects these phases.
+Cloud sync has explicit `upload-assets` and `download-assets` phases.
 
 Manual asset cleanup:
 
@@ -317,7 +326,7 @@ Functional behavior:
   - removes both the space access-code hash and the stored `contentKey`
   - is intended for administrative cleanup and test-space teardown
 
-Current server-side state used by those routes:
+Server-side state used by those routes:
 
 - `space_code_hashes` in D1 for the access-code hash
 - KV content key entry per space, stored separately from the access-code hash
@@ -332,7 +341,7 @@ Managed OAuth behavior:
 
 ### 8.2 Shared page routes
 
-Current page/tree surfaces are built around these logical collections:
+Page/tree surfaces are built around these logical collections:
 
 - `pages`
 - `pages-meta`
@@ -352,13 +361,13 @@ Functional separation:
   - status
   - share-facing structure used by the explorer
 
-Current read/write behavior:
+Read/write behavior:
 
 - tree and list views resolve mainly from `pages-meta`
 - document content fetch resolves from `pages`
 - worker-side access checks ensure `spaceId` in the request matches the document scope
 
-Important current delete/archive behavior:
+Delete/archive behavior:
 
 - deletion of cloud docs does not remove the meta row immediately
 - the worker writes an archived meta payload with:
@@ -370,7 +379,7 @@ Important current delete/archive behavior:
 
 ### 8.3 Asset routes
 
-Current asset routes:
+Asset routes:
 
 - `POST /v1/assets/upload`
 - `GET /v1/assets/:id`
@@ -409,13 +418,13 @@ This is why page writes and asset writes are not authenticated only by `spaceCod
 
 Main sync behavior is orchestrated in `public/index.html` and worker calls are made through `share-worker-client.js`.
 
-Current sync model:
+Sync model:
 
 - tree/content reconciliation first
 - then asset upload phase
 - then asset prefetch/download phase
 
-Current sync headers on protected write paths:
+Sync headers on protected write paths:
 
 - `X-Sync-Session`
 - `X-Sync-JTI`
@@ -426,18 +435,23 @@ Share auth headers:
 - `X-Space-Id`
 - `X-Space-Auth`
 
-Current browser sync behavior:
+Browser sync behavior:
 
 - sync session id is generated client-side and reused during TTL
 - each request gets a fresh JTI
 - response `Date` header can adjust client clock offset
 - one retry is performed on invalid sync timestamp errors
 
-Current delete semantics:
+Delete semantics:
 
 - cloud deletion currently archives meta in `pages-meta.status = "archived"`
 - legacy flows may still refer to `deleted` in older tests or old drafts
 - UI sync should treat both `archived` and legacy `deleted` statuses as removed from the active tree
+
+This section complements `8.4`:
+
+- `8.4` describes what the worker enforces on each protected write
+- `9` describes how the browser orchestrates sync phases and interprets delete status
 
 ## 10. Private vs cloud moves
 

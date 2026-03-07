@@ -6,6 +6,11 @@ This file is the short operational guide. Use the docs below as the canonical re
 - Automation and Playwright: [`docs/TESTING.md`](docs/TESTING.md)
 - Security and space auth: [`docs/SECURITY.MD`](docs/SECURITY.MD)
 
+## Decision rules
+- If the task touches storage, sync, cloud data flow, or worker responsibilities, open [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+- If the task touches DOM injection, CSP, OAuth, auth headers, or protected-space rules, open [`docs/SECURITY.MD`](docs/SECURITY.MD).
+- If the task touches Playwright, repros, browser automation, or test coverage, open [`docs/TESTING.md`](docs/TESTING.md).
+
 ## Core layout
 - Static app entry points live in `public/`.
 - Workers live in `workers/`.

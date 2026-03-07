@@ -4,6 +4,30 @@ Date: 2026-03-05
 Purpose: short technical map of how security works in the current codebase
 Scope: `public/`, `workers/`, `firebase.json`
 
+## 0. When to use this doc
+
+Open this file when you need to answer questions like:
+
+- which auth material is trusted and which is not
+- how CSP is enforced and updated
+- what headers or secrets protect a worker route
+- what security property must not regress during a refactor
+
+## 0. Security invariants
+
+- No protected share read/write should rely on raw `spaceCode`; use `X-Space-Auth`.
+- No sync-protected write should bypass `X-Sync-Session`, `X-Sync-JTI`, and `X-Sync-TS`.
+- No rich HTML should be inserted without sanitization.
+- No CSP-affecting inline script change should ship without `npm run csp:inline:sync` and a runtime smoke check.
+- No managed-space assumption should bypass worker-side authorization and secret checks.
+
+## 0.1 Fast map
+
+- CSP lives in app HTML meta tags and must stay aligned with `firebase.json`.
+- Share protection is split between `X-Space-Auth`, `contentKey`, and sync anti-replay headers.
+- `spaceCode` obtains access; it does not act as the bearer token.
+- Worker secrets such as `X-Space-Create-Secret` are for privileged admin/bootstrap routes only.
+
 ## 1. Security layers
 
 GoToolkit security is split across four layers:
@@ -209,31 +233,12 @@ Route-specific authorization model:
   - removes both the stored access-code hash and the stored `contentKey`
   - is intended for administrative cleanup and automated test teardown
 
-### Signed space tokens
+Auth material model:
 
-`X-Space-Auth` is not a raw `spaceCode`.
-
-Current worker behavior in `workers/share-proxy/index.js`:
-
-- `spaceCode` (or verified managed-space OAuth identity) is only used to obtain an auth token
-- the worker signs an auth payload with HMAC-SHA256
-- the token payload includes:
-  - `typ` (`space-auth`)
-  - `spaceId`
-  - `iat`
-  - `exp`
-- the worker verifies:
-  - token format
-  - HMAC signature
-  - JSON payload validity
-  - `spaceId` scope match against `X-Space-Id`
-  - expiration time
-
-So the effective protection is:
-
-- scoped bearer token
-- tamper detection
-- expiration-based replay reduction for stale tokens
+- `spaceCode` is used only to obtain access, never as the bearer token for protected routes.
+- `X-Space-Auth` is a signed scoped token (`typ`, `spaceId`, `iat`, `exp`) with HMAC verification and expiration checks.
+- `contentKey` is separate from both `spaceCode` and `X-Space-Auth`, and is used for protected content encryption/decryption.
+- `POST /v1/spaces/auth/rotate` changes the access-code hash only; it does not rotate the `contentKey`.
 
 ### Sync protection
 
@@ -252,13 +257,13 @@ Current server-side checks include:
 - `X-Sync-Session` can be revoked server-side
 - non-read operations treat `X-Sync-JTI` as single-use per session
 
-Replay protection is enforced with two layers:
+Replay protection uses two layers:
 
 - KV-backed replay keys:
   - `sync:replay:${X-Sync-Session}:${X-Sync-JTI}`
 - in-worker local caches to short-circuit repeated replays without extra KV reads
 
-Revocation also has two layers:
+Revocation also uses two layers:
 
 - KV-backed revoked-session keys:
   - `sync:revoked:${X-Sync-Session}`
@@ -268,26 +273,6 @@ Practical consequence:
 
 - a captured write request cannot simply be replayed with the same `X-Sync-Session` + `X-Sync-JTI`
 - a revoked sync session is denied even if the bearer token is otherwise still valid
-
-### Content key
-
-`share-proxy` returns a per-space `contentKey` after successful auth.
-
-Current client behavior:
-
-- cache the `contentKey`
-- import/use it for local encryption/decryption of some shared content flows
-
-The `contentKey` is stored server-side in KV and is separate from:
-
-- the `spaceCode`
-- the signed `X-Space-Auth` token
-
-So current responsibilities are split:
-
-- `spaceCode`: secret used to obtain access
-- `X-Space-Auth`: signed scoped access token
-- `contentKey`: encryption/decryption material for protected content flows
 
 ## 5. SSO / OAuth
 
@@ -324,7 +309,7 @@ Current behavior:
 - the browser/provider round-trip returns a signed/encoded `state`
 - the callback consumes the stored nonce exactly once
 
-So the effective protection is:
+Effective protection:
 
 - CSRF protection for OAuth callbacks
 - one-time-use state
@@ -334,16 +319,16 @@ So the effective protection is:
 
 Microsoft SSO is handled by `workers/ms-proxy/index.js`.
 
-Current behavior:
+Behavior:
 
 - allowed origins are restricted to GoToolkit origins plus localhost for development
 - OAuth uses Microsoft authorize/token endpoints
 - session cookie name is `gt_ms_sid`
-- session state is stored in D1 table `oauth_sessions` through `env.OAUTH_DB`
-- OAuth transient state is stored with short TTL
+- session state is stored in `oauth_sessions` through `env.OAUTH_DB`
+- OAuth transient state is short-lived
 - worker can create a signed short-lived identity token using `SHARE_OAUTH_IDENTITY_SECRET`
 
-This identity token is then used by the share system when a managed space is accessed without a manual `spaceCode`.
+That identity token is then used by the share system when a managed space is accessed without a manual `spaceCode`.
 
 ## 7. Per-email-domain permissions for managed spaces
 
@@ -362,7 +347,7 @@ Frontend helper:
 
 - `getAuthorizedManagedSpaceIdsForEmail(emailRaw)`
 
-Current frontend behavior:
+Frontend behavior:
 
 - resolve connected identity
 - extract email domain
@@ -374,7 +359,7 @@ Worker-side enforcement:
 - `workers/share-proxy/index.js`
 - `resolveAllowedSpacesForEmail(emailRaw)`
 
-Current worker behavior for managed space auth:
+Worker behavior for managed space auth:
 
 - if no `spaceCode` is provided, `share-proxy` expects `identityToken`
 - worker verifies the OAuth identity token
@@ -383,7 +368,7 @@ Current worker behavior for managed space auth:
 - worker only grants access if the requested `spaceId` is in that allowed set
 - worker then loads the managed `spaceCode` server-side and issues normal `X-Space-Auth`
 
-So the effective rule is:
+Effective rule:
 
 - UI visibility is derived from the connected identity email
 - real authorization is enforced by `share-proxy` using the verified identity email
@@ -430,7 +415,7 @@ Workers expect headers such as:
 - `X-Turnstile-Token`
 - `CF-Turnstile-Response`
 
-Current server-side Turnstile behavior:
+Server-side Turnstile behavior:
 
 - workers verify the token against Cloudflare `siteverify`
 - `remoteip` is forwarded from `CF-Connecting-IP` / `X-Forwarded-For`
@@ -442,7 +427,7 @@ Current server-side Turnstile behavior:
   - `openrouter-proxy` returns `500 MISSING_ENV`
   - `googletts-proxy` / `assemblyai-proxy` allow localhost but fail non-local traffic with `500 MISSING_ENV`
 
-Current client-side Turnstile behavior:
+Client-side Turnstile behavior:
 
 - the browser requests Turnstile only for protected worker hosts
 - the helper first tries a background/off-screen execution
@@ -450,7 +435,7 @@ Current client-side Turnstile behavior:
 - the client records diagnostics and last-attempt summaries for debugging
 - AI debug capture stores request/response metadata (not full bodies) in `sessionStorage`
 
-This means Turnstile failures can occur in two distinct places:
+Turnstile failures can occur in two distinct places:
 
 - client-side before any worker request is sent
 - worker-side after a request is sent but Cloudflare rejects the token
@@ -459,7 +444,7 @@ This means Turnstile failures can occur in two distinct places:
 
 The proxy workers do not accept arbitrary browser origins.
 
-Current behavior:
+Behavior:
 
 - workers normalize and compare `Origin`
 - production origins are explicitly allowlisted
@@ -472,7 +457,7 @@ This is an important control in addition to bearer headers because it reduces cr
 
 Rate limiting is implemented in multiple worker paths through `env.MY_RATE_LIMITER`.
 
-Current behavior:
+Behavior:
 
 - keying is based on client IP (`CF-Connecting-IP` or forwarded equivalent)
 - rate-limited requests return `429 RATE_LIMIT_EXCEEDED`
@@ -486,7 +471,7 @@ This is separate from:
 
 ### Input and request hardening
 
-Other current request-hardening mechanisms that are easy to miss:
+Other request-hardening mechanisms:
 
 - `openrouter-proxy` enforces a maximum request body size before forwarding upstream
 - sync protection is stricter on writes than reads
