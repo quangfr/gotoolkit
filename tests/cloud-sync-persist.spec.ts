@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
 import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
+import { clickMemoDoc, refreshMemoExplorer, syncGolive, typeIntoVisibleEditor, waitForMemoReady } from "./helpers/memo-ui";
 
 test.describe("Cloud sync persistency", () => {
   test("persists cloud create/edit/rename/move/reorder/delete operations and cleans up", async ({ page }) => {
@@ -27,53 +28,6 @@ test.describe("Cloud sync persistency", () => {
       console.log(`[cloud-sync-persist] ${label}`, details);
     };
 
-    const clickDoc = async (docId: string) => {
-      const item = page.locator(`.document-explorer__item[data-document-id="${docId}"]`).first();
-      const hasVisibleRow = await item.isVisible().catch(() => false);
-      if (hasVisibleRow) {
-        await item.click();
-      } else {
-        await page.evaluate(async id => {
-          await (window as any).GoToolkitMemoOpenDocumentByLink?.(id);
-        }, docId);
-      }
-      await page.waitForFunction(
-        expectedId => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "") === String(expectedId || ""),
-        docId,
-        { timeout: 30_000 }
-      );
-    };
-
-    const typeIntoEditor = async (text: string) => {
-      const editor = page.locator(".ProseMirror:visible").first();
-      await expect(editor).toBeVisible({ timeout: 30_000 });
-      await editor.click();
-      await page.keyboard.type(` ${text}`);
-      await expect.poll(
-        async () => page.evaluate(() => String((window as any).GoToolkitMemoInstance?.getValue?.() || "")),
-        { timeout: 15_000 }
-      ).toContain(text);
-    };
-
-    const syncGolive = async () => {
-      const syncBtn = page.locator(`.document-explorer__item-action--sync-refresh[data-space-id="${PW_TEST_SPACE_ID}"]`).first();
-      await expect(syncBtn).toBeVisible({ timeout: 30_000 });
-      const prev = await page.evaluate(() => String((window as any).__goToolkitLastCloudSyncTiming?.startedAt || ""));
-      await syncBtn.click();
-      try {
-        await page.waitForFunction(
-          previous => {
-            const timing = (window as any).__goToolkitLastCloudSyncTiming;
-            return Boolean(timing && typeof timing.totalMs === "number" && String(timing.startedAt || "") !== String(previous || ""));
-          },
-          prev,
-          { timeout: 45_000 }
-        );
-      } catch (err) {
-        await page.waitForTimeout(1500);
-      }
-    };
-
     try {
       logStep("connect-space:start", { spaceId: PW_TEST_SPACE_ID });
       await ensureCloudConnectedWithSpaceCode(page, baseUrl);
@@ -81,7 +35,7 @@ test.describe("Cloud sync persistency", () => {
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 45_000 });
-      await page.waitForSelector(".ProseMirror:visible", { timeout: 45_000 });
+      await waitForMemoReady(page);
       page.on("dialog", async dialog => {
         logStep("dialog:auto-accept", { message: dialog.message() });
         await dialog.accept();
@@ -155,22 +109,22 @@ test.describe("Cloud sync persistency", () => {
       logStep("seed-cloud-docs:done", { createdTokens });
 
       logStep("edit-root:start", { docId: `share:${state.rootToken}` });
-      await clickDoc(`share:${state.rootToken}`);
-      await typeIntoEditor(state.rootEdit);
+      await clickMemoDoc(page, `share:${state.rootToken}`);
+      await typeIntoVisibleEditor(page, ` ${state.rootEdit}`);
       logStep("edit-root:done");
 
       logStep("edit-child:start", { docId: `share:${state.childToken}` });
-      await clickDoc(`share:${state.childToken}`);
-      await typeIntoEditor(state.childEdit);
+      await clickMemoDoc(page, `share:${state.childToken}`);
+      await typeIntoVisibleEditor(page, ` ${state.childEdit}`);
       logStep("edit-child:done");
 
       logStep("edit-existing:start", { docId: `share:${state.existingToken}` });
-      await clickDoc(`share:${state.existingToken}`);
-      await typeIntoEditor(state.existingEdit);
+      await clickMemoDoc(page, `share:${state.existingToken}`);
+      await typeIntoVisibleEditor(page, ` ${state.existingEdit}`);
       logStep("edit-existing:done");
 
       logStep("rename-parent:start", { docId: `share:${state.parentToken}`, title: state.renamedParentTitle });
-      await clickDoc(`share:${state.parentToken}`);
+      await clickMemoDoc(page, `share:${state.parentToken}`);
       const parentItemForRename = page.locator(`.document-explorer__item[data-document-id="share:${state.parentToken}"]`).first();
       await expect(parentItemForRename).toBeVisible({ timeout: 30_000 });
       await parentItemForRename.dblclick();
@@ -272,28 +226,28 @@ test.describe("Cloud sync persistency", () => {
       logStep("move-child-under-root:done");
 
       logStep("delete-existing:start");
-      await clickDoc(`share:${state.existingToken}`);
+      await clickMemoDoc(page, `share:${state.existingToken}`);
       await page.click("#fileMenuBtn");
       await page.click("#deleteDocumentBtn");
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.existingToken}"]`)).toHaveCount(0, { timeout: 20_000 });
       logStep("delete-existing:done");
 
       logStep("delete-child:start");
-      await clickDoc(`share:${state.childToken}`);
+      await clickMemoDoc(page, `share:${state.childToken}`);
       await page.click("#fileMenuBtn");
       await page.click("#deleteDocumentBtn");
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.childToken}"]`)).toHaveCount(0, { timeout: 20_000 });
       logStep("delete-child:done");
 
       logStep("delete-root:start");
-      await clickDoc(`share:${state.rootToken}`);
+      await clickMemoDoc(page, `share:${state.rootToken}`);
       await page.click("#fileMenuBtn");
       await page.click("#deleteDocumentBtn");
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.rootToken}"]`)).toHaveCount(0, { timeout: 20_000 });
       logStep("delete-root:done");
 
       logStep("sync:start");
-      await syncGolive();
+      await syncGolive(page, PW_TEST_SPACE_ID, 45_000);
       logStep("sync:done");
       logStep("remote-delete-check:start");
       await expect.poll(
@@ -323,10 +277,7 @@ test.describe("Cloud sync persistency", () => {
 
       logStep("reload:start");
       await page.reload({ waitUntil: "commit", timeout: 20_000 });
-      await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
-      await page.evaluate(async () => {
-        await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
-      });
+      await refreshMemoExplorer(page);
       logStep("reload:done");
 
       logStep("remote-state-check:start");

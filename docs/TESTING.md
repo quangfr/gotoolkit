@@ -32,7 +32,6 @@ Current built-in automation hooks in the repo:
 - `npm run playwright:persist:headed`
 - `scripts/playwright-auth-bootstrap.mjs`
 - `scripts/playwright-persist.sh`
-- `tests/playwright-search-ui-scenario.mjs`
 - `tests/cloud-sync-persist.spec.ts`
 - `tests/cloud-private-transfer-sync.spec.ts`
 - `tests/cloud-switch-persist.spec.ts`
@@ -50,6 +49,51 @@ Current useful worker/API surfaces:
 - `POST /v1/assets/upload`
 - `GET /v1/assets/:id`
 - `DELETE /v1/assets/:id`
+
+### 2.1 Current test inventory
+
+Functional intent of the tests currently present in `tests/`:
+
+- `index-ai-model-selection.spec.ts`
+  - verifies that changing the AI model from the `index.html` settings modal persists the selected value and that Assist sends the chosen model in the OpenRouter payload
+
+- `private-switch-persist.spec.ts`
+  - verifies that edits on private documents survive document switching and a full page reload
+
+- `cloud-sync-persist.spec.ts`
+  - end-to-end cloud persistence scenario covering create, edit, rename, move, reorder, delete, sync, reload, and remote state verification
+
+- `cloud-switch-persist.spec.ts`
+  - verifies that edits on cloud documents survive switching between cloud pages and remain present after reload
+
+- `cloud-private-transfer-sync.spec.ts`
+  - verifies two transfer paths: copying a cloud document to private storage and promoting a private document to cloud storage, with sync persistence checks
+
+- `cloud-spacecode-bootstrap.spec.ts`
+  - verifies space access bootstrap with `spaceCode` without OAuth UI, and verifies that cloud drafts persist across reload and flush correctly on sync
+
+- `cloud-archive-retry.spec.ts`
+  - verifies that an archive operation remains queued after a transient failure and is retried successfully on the next sync
+
+- `cloud-draft-archive-ops.spec.ts`
+  - verifies local draft semantics: archive and delete drafts remain terminal operations and are not overwritten by later non-terminal updates
+
+- `space-code-rotate.spec.ts`
+  - verifies protected-space lifecycle around create/rotate/delete: create a protected space, write a cloud document, rotate the space code, confirm the old code is rejected, confirm the document remains readable with the new code across reload and sync, then delete the protected space with the admin create secret
+
+- `microsoft-oauth-proxy.spec.ts`
+  - covers Microsoft OAuth integration in four layers: contract-level popup handshake through `ms-proxy`, real Microsoft login and managed space loading, auth state capture for reuse, and interactive headed popup debugging
+
+Shared test helpers:
+
+- `helpers/cloud-auth.ts`
+  - opens `index.html`, bootstraps cloud access, and authenticates with `spaceCode`
+
+- `helpers/share-test-space.ts`
+  - exposes the configured Playwright test space ID and code from the environment
+
+- `helpers/memo-ui.ts`
+  - provides common memo UI operations used by Playwright specs: waiting for the editor, opening a document, typing into the visible editor, refreshing the explorer, dismissing the docs tour, and triggering cloud sync
 
 ## 3. Recommended automation model
 

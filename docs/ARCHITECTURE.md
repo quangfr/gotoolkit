@@ -266,7 +266,146 @@ Agents should not assume:
 
 - all shared payloads are plain JSON directly stored inline in Firestore
 
-## 8. Sync model
+## 8. `share-proxy` worker functions
+
+Main worker:
+
+- `workers/share-proxy/index.js`
+
+The worker is responsible for four distinct jobs:
+
+- protected space authentication and code rotation
+- shared page and tree persistence
+- shared asset upload/read/delete
+- sync-side enforcement such as replay protection and space scoping
+
+### 8.1 Space auth and lifecycle routes
+
+Current protected-space routes:
+
+- `POST /v1/spaces/auth`
+- `POST /v1/spaces/auth/create`
+- `POST /v1/spaces/auth/rotate`
+- `POST /v1/spaces/auth/delete`
+
+Functional behavior:
+
+- `POST /v1/spaces/auth`
+  - validates a `spaceCode`, or a managed-space `identityToken`
+  - checks the stored hash for `spaceId`
+  - returns:
+    - `token` to use as `X-Space-Auth`
+    - `spaceId`
+    - `expiresAt`
+    - `contentKey`
+    - `contentKeyVersion`
+
+- `POST /v1/spaces/auth/create`
+  - creates a new protected space by storing the initial `spaceCode` hash
+  - requires `X-Space-Create-Secret` or bearer auth with the same secret
+  - returns the same auth bootstrap material as `/v1/spaces/auth`
+
+- `POST /v1/spaces/auth/rotate`
+  - rotates a protected space from `currentSpaceCode` to `nextSpaceCode`
+  - requires a valid current `X-Space-Auth`
+  - keeps the same encrypted content readable because the `contentKey` is per-space and not rederived from the human `spaceCode`
+  - returns a fresh auth token and the current `contentKey`
+
+- `POST /v1/spaces/auth/delete`
+  - deletes the stored auth material for a protected space
+  - requires `X-Space-Create-Secret`
+  - removes both the space access-code hash and the stored `contentKey`
+  - is intended for administrative cleanup and test-space teardown
+
+Current server-side state used by those routes:
+
+- `space_code_hashes` in D1 for the access-code hash
+- KV content key entry per space, stored separately from the access-code hash
+- signed `X-Space-Auth` tokens produced from `SHARE_SPACE_AUTH_SECRET`
+
+Managed OAuth behavior:
+
+- if `spaceCode` is omitted, `/v1/spaces/auth` can accept `identityToken`
+- the worker verifies the signed OAuth identity token
+- authorization is then derived from the email/provider policy in the worker
+- for managed spaces such as `golive`, `safran`, and `epiconcept`, the worker resolves the managed `spaceCode` server-side and issues a normal `X-Space-Auth`
+
+### 8.2 Shared page routes
+
+Current page/tree surfaces are built around these logical collections:
+
+- `pages`
+- `pages-meta`
+
+Functional separation:
+
+- `pages`
+  - stores the document payload
+  - may inline the content or store an encrypted/offloaded payload reference
+
+- `pages-meta`
+  - stores tree placement and metadata
+  - title
+  - parentId
+  - position
+  - icon
+  - status
+  - share-facing structure used by the explorer
+
+Current read/write behavior:
+
+- tree and list views resolve mainly from `pages-meta`
+- document content fetch resolves from `pages`
+- worker-side access checks ensure `spaceId` in the request matches the document scope
+
+Important current delete/archive behavior:
+
+- deletion of cloud docs does not remove the meta row immediately
+- the worker writes an archived meta payload with:
+  - `status = "archived"`
+  - `archivedAt`
+  - `archivedReason`
+- content payload can be removed while meta remains archived
+- clients should treat archived page meta as removed from the active tree unless explicitly requesting archived items
+
+### 8.3 Asset routes
+
+Current asset routes:
+
+- `POST /v1/assets/upload`
+- `GET /v1/assets/:id`
+- `DELETE /v1/assets/:id`
+- `POST /v1/assets:batchDelete`
+
+Functional behavior:
+
+- upload stores encrypted or plaintext-normalized assets in R2
+- public asset URLs can be served by the worker
+- protected asset operations require:
+  - `X-Space-Id`
+  - `X-Space-Auth`
+- worker enforces asset scope against the authenticated `spaceId`
+- the worker can decrypt legacy or current encrypted assets before returning bytes
+
+### 8.4 Sync enforcement
+
+Protected write paths also require sync headers:
+
+- `X-Sync-Session`
+- `X-Sync-JTI`
+- `X-Sync-TS`
+
+Worker responsibilities on sync requests:
+
+- verify `X-Space-Auth`
+- verify request `spaceId` scope
+- reject replayed `X-Sync-Session` + `X-Sync-JTI`
+- reject revoked sync sessions
+- validate request timestamp tolerance
+
+This is why page writes and asset writes are not authenticated only by `spaceCode` or `X-Space-Auth`.
+
+## 9. Sync model
 
 Main sync behavior is orchestrated in `public/index.html` and worker calls are made through `share-worker-client.js`.
 
@@ -296,11 +435,11 @@ Current browser sync behavior:
 
 Current delete semantics:
 
-- cloud deletion writes `pages-meta.status = "deleted"`
-- legacy records may still appear as `archived`
-- UI sync treats both as removed
+- cloud deletion currently archives meta in `pages-meta.status = "archived"`
+- legacy flows may still refer to `deleted` in older tests or old drafts
+- UI sync should treat both `archived` and legacy `deleted` statuses as removed from the active tree
 
-## 9. Private vs cloud moves
+## 10. Private vs cloud moves
 
 Private -> Cloud:
 
@@ -315,7 +454,7 @@ Cloud -> Private:
 
 Asset handling follows the same sync pipeline after the structural move.
 
-## 10. Voice recordings
+## 11. Voice recordings
 
 Main file:
 

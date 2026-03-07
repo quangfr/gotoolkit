@@ -4,6 +4,14 @@ import path from "node:path";
 
 const MS_AUTH_STATE_PATH = path.resolve("playwright/.auth/ms.json");
 
+function logStep(label: string, details?: unknown) {
+  if (typeof details === "undefined") {
+    console.log(`[ms-oauth] ${label}`);
+    return;
+  }
+  console.log(`[ms-oauth] ${label}`, details);
+}
+
 async function runMicrosoftPopupLogin(page: any, context: any, loginEmail: string, loginPassword: string, options: { debugArtifacts?: boolean } = {}) {
   const artifactsDir = path.resolve("test-results/ms-oauth-debug");
   const writeDebug = (name: string, details: Record<string, unknown> = {}) => {
@@ -13,8 +21,45 @@ async function runMicrosoftPopupLogin(page: any, context: any, loginEmail: strin
   };
 
   const popupPromise = context.waitForEvent("page", { timeout: 60_000 });
+  logStep("popup-flow:start");
+  const preClickState = await page.evaluate(async () => {
+    const publisher = (window as any).GoToolkitMicrosoftPublish;
+    const status = await publisher?.getAuthStatus?.().catch(() => null);
+    const menu = document.getElementById("connectionProviderMenu");
+    return {
+      connectionBtnExists: Boolean(document.getElementById("memoConnectionBtn")),
+      menuExists: Boolean(menu),
+      menuOpen: Boolean(menu?.classList.contains("open")),
+      statusConnected: Boolean(status?.connected),
+      statusAccountEmail: String(status?.accountEmail || "").trim().toLowerCase()
+    };
+  });
+  logStep("popup-flow:pre-click-state", preClickState);
   await page.locator("#memoConnectionBtn").click();
+  logStep("popup-flow:clicked-connection-btn");
+  await page.waitForSelector("#connectionProviderMenu.open", { timeout: 10_000 }).catch(() => null);
+  const menuStateAfterClick = await page.evaluate(() => {
+    const menu = document.getElementById("connectionProviderMenu");
+    const items = Array.from(menu?.querySelectorAll('[role="menuitem"]') || []).map(node => ({
+      text: String((node as HTMLElement).innerText || node.textContent || "").trim(),
+      ariaLabel: String((node as HTMLElement).getAttribute("aria-label") || "").trim()
+    }));
+    return {
+      menuOpen: Boolean(menu?.classList.contains("open")),
+      items
+    };
+  });
+  logStep("popup-flow:menu-state-after-click", menuStateAfterClick);
+  const microsoftItem = page.locator('#connectionProviderMenu.open [role="menuitem"]').filter({ hasText: /microsoft/i }).first();
+  const microsoftVisible = await microsoftItem.isVisible({ timeout: 5_000 }).catch(() => false);
+  logStep("popup-flow:microsoft-menuitem-visible", { visible: microsoftVisible });
+  if (microsoftVisible) {
+    await microsoftItem.click();
+    writeDebug("clicked_microsoft_provider");
+    logStep("popup-flow:clicked-microsoft-provider");
+  }
   const popup = await popupPromise;
+  logStep("popup-flow:popup-opened", { url: popup.url() });
   writeDebug("popup_opened", { url: popup.url() });
 
   await popup.waitForLoadState("domcontentloaded", { timeout: 60_000 }).catch(() => null);
@@ -37,13 +82,26 @@ async function runMicrosoftPopupLogin(page: any, context: any, loginEmail: strin
   }
 
   const passwordInput = popup.locator('input[type="password"], input[name="passwd"]').first();
-  await passwordInput.waitFor({ state: "visible", timeout: 30_000 });
-  await passwordInput.fill(loginPassword);
-  if (options.debugArtifacts) {
-    await popup.screenshot({ path: path.join(artifactsDir, "02-password-screen.png"), fullPage: true }).catch(() => null);
+  const passwordNeeded = await Promise.race([
+    passwordInput.waitFor({ state: "visible", timeout: 30_000 }).then(() => "password").catch(() => null),
+    popup.waitForURL(/ms\.gotoolkit\.workers\.dev\/oauth\/callback/i, { timeout: 30_000 }).then(() => "callback").catch(() => null),
+    popup.waitForEvent("close", { timeout: 30_000 }).then(() => "closed").catch(() => null),
+    page.waitForFunction(async () => {
+      const status = await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
+      return Boolean(status?.connected);
+    }, null, { timeout: 30_000 }).then(() => "connected").catch(() => null)
+  ]);
+  logStep("popup-flow:post-email-state", { state: passwordNeeded, popupUrl: popup.url() });
+  if (passwordNeeded === "password") {
+    await passwordInput.fill(loginPassword);
+    if (options.debugArtifacts) {
+      await popup.screenshot({ path: path.join(artifactsDir, "02-password-screen.png"), fullPage: true }).catch(() => null);
+    }
+    await popup.locator('input[type="submit"], button[type="submit"], #idSIButton9').first().click();
+    writeDebug("submitted_password", { url: popup.url() });
+  } else {
+    writeDebug("password_not_required", { state: String(passwordNeeded || "unknown"), url: popup.url() });
   }
-  await popup.locator('input[type="submit"], button[type="submit"], #idSIButton9').first().click();
-  writeDebug("submitted_password", { url: popup.url() });
 
   const staySignedInNo = popup.locator("#idBtn_Back").first();
   if (await staySignedInNo.isVisible({ timeout: 10_000 }).catch(() => false)) {
@@ -165,17 +223,42 @@ test.describe("Microsoft OAuth proxy flow", () => {
     await page.goto("http://127.0.0.1:5000/index.html", { waitUntil: "commit", timeout: 20_000 });
     await page.waitForFunction(() => Boolean((window as any).GoToolkitMicrosoftPublish?.getAuthStatus), null, { timeout: 120_000 });
 
+    page.on("pageerror", err => {
+      console.log(`[ms-oauth:pageerror] ${err.message}`);
+    });
     page.on("console", msg => {
       const text = msg.text();
-      if (text.includes("[SSO Debug]")) {
-        // eslint-disable-next-line no-console
-        console.log(`[BROWSER:${msg.type()}] ${text}`);
+      if (text.includes("[SSO Debug]") || text.includes("Popup") || text.includes("OAuth")) {
+        console.log(`[ms-oauth:console:${msg.type()}] ${text}`);
       }
+    });
+    page.on("request", request => {
+      const url = request.url();
+      if (!url.includes("ms.gotoolkit.workers.dev")) return;
+      console.log(`[ms-oauth:request] ${request.method()} ${url}`);
+    });
+    page.on("response", response => {
+      const url = response.url();
+      if (!url.includes("ms.gotoolkit.workers.dev")) return;
+      console.log(`[ms-oauth:response] ${response.status()} ${url}`);
+    });
+
+    await page.addInitScript(() => {
+      const originalOpen = window.open.bind(window);
+      window.open = function (...args) {
+        try {
+          console.log("[PW MS DEBUG] window.open called", String(args?.[0] || ""), String(args?.[1] || ""));
+        } catch {
+          // ignore
+        }
+        return originalOpen(...args);
+      };
     });
 
     const preStatus = await page.evaluate(async () => {
       return await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
     });
+    logStep("managed-spaces:pre-status", preStatus);
 
     if (!preStatus?.connected) {
       await runMicrosoftPopupLogin(page, context, loginEmail, loginPassword);
@@ -235,6 +318,17 @@ test.describe("Microsoft OAuth proxy flow", () => {
     const loginEmail = String(process.env.PW_MICROSOFT_LOGIN_EMAIL || "").trim();
     const loginPassword = String(process.env.PW_MICROSOFT_LOGIN_PASSWORD || "").trim();
     test.skip(!loginEmail || !loginPassword, "PW_MICROSOFT_LOGIN_EMAIL/PW_MICROSOFT_LOGIN_PASSWORD are required");
+    logStep("auth-state-capture:start", { hasEmail: Boolean(loginEmail), statePath: MS_AUTH_STATE_PATH });
+
+    page.on("pageerror", err => {
+      console.log(`[ms-oauth:capture:pageerror] ${err.message}`);
+    });
+    page.on("console", msg => {
+      const text = msg.text();
+      if (text.includes("[SSO Debug]") || text.includes("Popup") || text.includes("OAuth")) {
+        console.log(`[ms-oauth:capture:console:${msg.type()}] ${text}`);
+      }
+    });
 
     await page.goto("http://127.0.0.1:5000/index.html", { waitUntil: "commit", timeout: 20_000 });
     await page.waitForFunction(() => Boolean((window as any).GoToolkitMicrosoftPublish?.getAuthStatus), null, { timeout: 120_000 });
@@ -242,6 +336,7 @@ test.describe("Microsoft OAuth proxy flow", () => {
     const preStatus = await page.evaluate(async () => {
       return await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
     });
+    logStep("auth-state-capture:pre-status", preStatus);
 
     if (!preStatus?.connected) {
       await runMicrosoftPopupLogin(page, context, loginEmail, loginPassword, { debugArtifacts: true });
@@ -254,6 +349,7 @@ test.describe("Microsoft OAuth proxy flow", () => {
 
     fs.mkdirSync(path.dirname(MS_AUTH_STATE_PATH), { recursive: true });
     await context.storageState({ path: MS_AUTH_STATE_PATH });
+    logStep("auth-state-capture:done", { exists: fs.existsSync(MS_AUTH_STATE_PATH) });
     expect(fs.existsSync(MS_AUTH_STATE_PATH)).toBeTruthy();
   });
 
@@ -264,9 +360,24 @@ test.describe("Microsoft OAuth proxy flow", () => {
     const loginEmail = String(process.env.PW_MICROSOFT_LOGIN_EMAIL || "").trim();
     const loginPassword = String(process.env.PW_MICROSOFT_LOGIN_PASSWORD || "").trim();
     test.skip(!loginEmail || !loginPassword, "PW_MICROSOFT_LOGIN_EMAIL/PW_MICROSOFT_LOGIN_PASSWORD are required");
+    logStep("oauth-debug:start", { headed: true, hasEmail: Boolean(loginEmail) });
+
+    page.on("pageerror", err => {
+      console.log(`[ms-oauth:debug:pageerror] ${err.message}`);
+    });
+    page.on("console", msg => {
+      const text = msg.text();
+      if (text.includes("[SSO Debug]") || text.includes("Popup") || text.includes("OAuth")) {
+        console.log(`[ms-oauth:debug:console:${msg.type()}] ${text}`);
+      }
+    });
 
     await page.goto("http://127.0.0.1:5000/index.html", { waitUntil: "commit", timeout: 20_000 });
     await page.waitForFunction(() => Boolean((window as any).GoToolkitMicrosoftPublish?.getAuthStatus), null, { timeout: 120_000 });
+    const preStatus = await page.evaluate(async () => {
+      return await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
+    });
+    logStep("oauth-debug:pre-status", preStatus);
     await runMicrosoftPopupLogin(page, context, loginEmail, loginPassword, { debugArtifacts: true });
   });
 });

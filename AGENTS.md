@@ -3,7 +3,7 @@
 This file is the short operational guide. Use the docs below as the canonical references when you need deeper detail:
 
 - Architecture and data/storage model: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- Automation and Playwright: [`docs/TEST.md`](docs/TEST.md)
+- Automation and Playwright: [`docs/TESTING.md`](docs/TESTING.md)
 - Security and space auth: [`docs/SECURITY.MD`](docs/SECURITY.MD)
 
 ## Core layout
@@ -14,6 +14,10 @@ This file is the short operational guide. Use the docs below as the canonical re
 
 ## High-value rules
 - Bump the version only when the user asks for a `bump`, `commit`, or `push`.
+- If the user request changes architecture, security, cloud/share auth, or testing workflow/coverage, update the matching reference docs in the same task as needed:
+  - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+  - [`docs/SECURITY.MD`](docs/SECURITY.MD)
+  - [`docs/TESTING.md`](docs/TESTING.md)
 - After any HTML/CSS edit in the CSP scope (`public/index.html`, `public/grid.html`, `public/mobile.html`, `public/styles/*`, and CSP mirror/config files), run:
   - `npm run csp:inline:sync`
 - For any request involving `bump`, `commit`, or `push`, run:
@@ -84,7 +88,7 @@ This file is the short operational guide. Use the docs below as the canonical re
 - On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails because Chrome is not installed here.
 - On WSL, do not run Playwright from `/mnt/c/...`; use `npm run playwright:linux:mirror` to refresh the persistent Linux mirror, or `npm run playwright:linux:test -- ...` to refresh and run in one step.
 - During local Playwright iteration, do not run `npm run check:csp` on every loop. If you changed an inline script inside the CSP scope, you still must run `npm run csp:inline:sync` before browser repros, because the app CSP is enforced by HTML `<meta>` tags in test too. Reserve `npm run check:csp` for merge/release, bump, commit, and push workflows.
-- Follow [`docs/TEST.md`](docs/TEST.md) for the canonical Playwright workflow, including:
+- Follow [`docs/TESTING.md`](docs/TESTING.md) for the canonical Playwright workflow, including:
   - repo-local Playwright command line
   - true `tests/*.spec.ts` repros instead of ad hoc scripts
   - tour dismissal, Turnstile stubbing, and step-by-step UI logging
@@ -121,5 +125,5 @@ This file is the short operational guide. Use the docs below as the canonical re
 
 ## When to open the reference docs
 - Open [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module boundaries, sync architecture, app responsibilities, IndexedDB stores, cloud drafts, share-history, and payload structure.
-- Open [`docs/TEST.md`](docs/TEST.md) for Playwright strategy, `spaceCode` bootstrap, and CI guidance.
+- Open [`docs/TESTING.md`](docs/TESTING.md) for Playwright strategy, `spaceCode` bootstrap, and CI guidance.
 - Open [`docs/SECURITY.MD`](docs/SECURITY.MD) for CSP, OAuth, managed spaces, `contentKey`, and auth headers.

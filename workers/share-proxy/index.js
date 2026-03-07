@@ -289,7 +289,7 @@ function parseSpaceAuthPath(request) {
   if (action !== "auth") return null;
   const operation = String(segments[3] || "").trim().toLowerCase();
   if (!operation) return { action, operation: "issue" };
-  if (operation !== "rotate" && operation !== "create") return null;
+  if (operation !== "rotate" && operation !== "create" && operation !== "delete") return null;
   return { action, operation };
 }
 
@@ -794,6 +794,50 @@ async function writeSpaceContentKey(env, spaceId, contentKey) {
   if (!kv) throw new Error("Stockage clé contenu espace indisponible");
   const storeKey = `space:contentkey:${normalizedSpaceId}`;
   await kv.put(storeKey, normalizedKey);
+}
+
+async function deleteSpaceCodeHash(env, spaceId) {
+  const normalizedSpaceId = normalizeSpaceId(spaceId);
+  if (!normalizedSpaceId) return;
+  const db = getSpaceAuthDb(env);
+  if (db) {
+    try {
+      await db
+        .prepare("DELETE FROM space_code_hashes WHERE space_id = ?1")
+        .bind(normalizedSpaceId)
+        .run();
+      return;
+    } catch (err) {
+      console.warn("space auth d1 delete failed", err);
+      throw new Error("Suppression auth espace indisponible");
+    }
+  }
+  const kv = getSpaceAuthStore(env);
+  if (!kv) throw new Error("Suppression auth espace indisponible");
+  const hashKey = `space:codehash:${normalizedSpaceId}`;
+  await kv.delete(hashKey);
+}
+
+async function deleteSpaceContentKey(env, spaceId) {
+  const normalizedSpaceId = normalizeSpaceId(spaceId);
+  if (!normalizedSpaceId) return;
+  const db = getSpaceAuthDb(env);
+  if (db) {
+    try {
+      await db
+        .prepare("DELETE FROM space_content_keys WHERE space_id = ?1")
+        .bind(normalizedSpaceId)
+        .run();
+      return;
+    } catch (err) {
+      console.warn("space content key d1 delete failed", err);
+      throw new Error("Suppression clé contenu espace indisponible");
+    }
+  }
+  const kv = getSpaceAuthStore(env);
+  if (!kv) throw new Error("Suppression clé contenu espace indisponible");
+  const storeKey = `space:contentkey:${normalizedSpaceId}`;
+  await kv.delete(storeKey);
 }
 
 function generateSpaceContentKey() {
@@ -2012,7 +2056,7 @@ async function handleRequest(request, env) {
   const spaceAuthPath = parseSpaceAuthPath(request);
   const allowSecretSpaceCreate = Boolean(
     request.method !== "OPTIONS"
-    && spaceAuthPath?.operation === "create"
+    && (spaceAuthPath?.operation === "create" || spaceAuthPath?.operation === "delete")
     && hasValidSpaceCreateSecret(request, env)
   );
   if (request.method !== "OPTIONS" && !isOriginAllowed(request, env) && !allowSecretSpaceCreate) {
@@ -2108,6 +2152,16 @@ async function handleRequest(request, env) {
       if (!token) return errorResponse("Impossible de signer le jeton X-Space-Auth à partir du code d'accès de l'espace", 500, request, env);
       const contentKey = await getOrCreateSpaceContentKey(env, spaceId);
       return jsonResponse({ ok: true, created: true, token, spaceId, expiresAt, contentKey, contentKeyVersion: 1 }, 200, request, env, {
+        "Cache-Control": "no-store, max-age=0"
+      });
+    }
+    if (spaceAuthPath.operation === "delete") {
+      if (!hasValidSpaceCreateSecret(request, env)) {
+        return errorResponse("Secret creation espace invalide", 403, request, env);
+      }
+      await deleteSpaceCodeHash(env, spaceId);
+      await deleteSpaceContentKey(env, spaceId);
+      return jsonResponse({ ok: true, deleted: true, spaceId }, 200, request, env, {
         "Cache-Control": "no-store, max-age=0"
       });
     }

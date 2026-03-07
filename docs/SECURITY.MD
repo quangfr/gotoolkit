@@ -165,7 +165,12 @@ Main collections and records:
 
 ### Space auth
 
-Protected spaces are accessed through `POST /v1/spaces/auth`.
+Protected space lifecycle currently uses:
+
+- `POST /v1/spaces/auth`
+- `POST /v1/spaces/auth/create`
+- `POST /v1/spaces/auth/rotate`
+- `POST /v1/spaces/auth/delete`
 
 Successful auth returns:
 
@@ -181,6 +186,28 @@ The browser then uses:
 - `X-Space-Auth`
 
 for protected share routes.
+
+Route-specific authorization model:
+
+- `POST /v1/spaces/auth`
+  - accepts a user-provided `spaceCode`, or a verified managed-space `identityToken`
+  - returns a signed `X-Space-Auth` token plus the per-space `contentKey`
+
+- `POST /v1/spaces/auth/create`
+  - requires `X-Space-Create-Secret`
+  - stores the initial `spaceCode` hash for a new protected space
+  - returns the same bootstrap material as `/v1/spaces/auth`
+
+- `POST /v1/spaces/auth/rotate`
+  - requires the current valid `X-Space-Auth`
+  - validates the current `spaceCode`
+  - updates only the access-code hash
+  - does not rotate the `contentKey`, so existing encrypted content remains readable
+
+- `POST /v1/spaces/auth/delete`
+  - requires `X-Space-Create-Secret`
+  - removes both the stored access-code hash and the stored `contentKey`
+  - is intended for administrative cleanup and automated test teardown
 
 ### Signed space tokens
 

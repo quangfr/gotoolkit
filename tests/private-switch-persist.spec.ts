@@ -1,14 +1,14 @@
 import { expect, test } from "@playwright/test";
+import { clickMemoDoc, getMemoEditorHtml, refreshMemoExplorer, typeIntoVisibleEditor, waitForMemoReady } from "./helpers/memo-ui";
 
 test.describe("Private page switching persistency", () => {
   test("keeps private edits across panel switches and reload", async ({ page }) => {
     test.setTimeout(120_000);
     const baseUrl = "http://127.0.0.1:5000";
 
-    await page.goto(`${baseUrl}/index.html`, { waitUntil: "load" });
+    await page.goto(`${baseUrl}/index.html`, { waitUntil: "commit", timeout: 20_000 });
     await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoCreateDocument), null, { timeout: 30_000 });
-    await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 30_000 });
-    await page.waitForSelector(".ProseMirror:visible", { timeout: 30_000 });
+    await waitForMemoReady(page, 30_000);
 
     const seed = await page.evaluate(async () => {
       const ts = Date.now();
@@ -28,48 +28,24 @@ test.describe("Private page switching persistency", () => {
       };
     });
 
-    const clickDoc = async (docId: string) => {
-      const item = page.locator(`.document-explorer__item[data-document-id="${docId}"]`).first();
-      await expect(item).toBeVisible({ timeout: 30_000 });
-      await item.click();
-      await page.waitForFunction(
-        (expectedId) => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "") === String(expectedId || ""),
-        docId,
-        { timeout: 30_000 }
-      );
-    };
+    await clickMemoDoc(page, seed.privateAId, { allowProgrammaticOpen: false });
+    await typeIntoVisibleEditor(page, ` ${seed.privateEdit}`);
+    await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.privateEdit);
 
-    const getEditorHtml = async () =>
-      page.evaluate(() => String((window as any).GoToolkitMemoInstance?.getValue?.() || ""));
-
-    const appendByTyping = async (text: string) => {
-      const editor = page.locator(".ProseMirror:visible").first();
-      await expect(editor).toBeVisible({ timeout: 30_000 });
-      await editor.click();
-      await page.keyboard.type(text);
-    };
-
-    await clickDoc(seed.privateAId);
-    await appendByTyping(` ${seed.privateEdit}`);
-    await expect.poll(getEditorHtml, { timeout: 15_000 }).toContain(seed.privateEdit);
-
-    await clickDoc(seed.privateBId);
+    await clickMemoDoc(page, seed.privateBId, { allowProgrammaticOpen: false });
     await page.waitForFunction(
       (expectedId) => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "") === String(expectedId || ""),
       seed.privateBId,
       { timeout: 15_000 }
     );
 
-    await clickDoc(seed.privateAId);
-    await expect.poll(getEditorHtml, { timeout: 15_000 }).toContain(seed.privateEdit);
+    await clickMemoDoc(page, seed.privateAId, { allowProgrammaticOpen: false });
+    await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.privateEdit);
 
-    await page.reload({ waitUntil: "load" });
-    await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 30_000 });
-    await page.evaluate(async () => {
-      await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
-    });
+    await page.reload({ waitUntil: "commit", timeout: 20_000 });
+    await refreshMemoExplorer(page, 30_000);
 
-    await clickDoc(seed.privateAId);
-    await expect.poll(getEditorHtml, { timeout: 20_000 }).toContain(seed.privateEdit);
+    await clickMemoDoc(page, seed.privateAId, { allowProgrammaticOpen: false });
+    await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(seed.privateEdit);
   });
 });

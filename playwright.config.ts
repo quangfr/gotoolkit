@@ -38,9 +38,33 @@ const playwrightSpaceCode = String(
   || readEnvLocalValue("PW_TEST_SPACE_CODE")
   || "gotoolkit"
 ).trim().toLowerCase() || "gotoolkit";
+const playwrightMicrosoftLoginEmail = String(
+  process.env.PW_MICROSOFT_LOGIN_EMAIL
+  || readEnvLocalValue("PW_MICROSOFT_LOGIN_EMAIL")
+  || ""
+).trim();
+const playwrightMicrosoftLoginPassword = String(
+  process.env.PW_MICROSOFT_LOGIN_PASSWORD
+  || readEnvLocalValue("PW_MICROSOFT_LOGIN_PASSWORD")
+  || ""
+).trim();
+const shareSpaceCreateSecret = String(
+  process.env.SHARE_SPACE_CREATE_SECRET
+  || readEnvLocalValue("SHARE_SPACE_CREATE_SECRET")
+  || ""
+).trim();
 
 process.env.PW_TEST_SPACE_ID = playwrightSpaceId;
 process.env.PW_TEST_SPACE_CODE = playwrightSpaceCode;
+if (playwrightMicrosoftLoginEmail) {
+  process.env.PW_MICROSOFT_LOGIN_EMAIL = playwrightMicrosoftLoginEmail;
+}
+if (playwrightMicrosoftLoginPassword) {
+  process.env.PW_MICROSOFT_LOGIN_PASSWORD = playwrightMicrosoftLoginPassword;
+}
+if (shareSpaceCreateSecret) {
+  process.env.SHARE_SPACE_CREATE_SECRET = shareSpaceCreateSecret;
+}
 
 export default defineConfig({
   testDir: "tests",

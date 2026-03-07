@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
 import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
+import { clickMemoDoc, dismissDocsTour, refreshMemoExplorer, syncGolive } from "./helpers/memo-ui";
 
 test.describe("Cloud/private transfer sync", () => {
   test("copies cloud doc to private and promotes private doc to cloud with sync persist", async ({ page }) => {
@@ -20,68 +21,9 @@ test.describe("Cloud/private transfer sync", () => {
     const cloudMarker = `PW_TRANSFER_CLOUD_${ts}`;
     const privateMarker = `PW_TRANSFER_PRIVATE_${ts}`;
 
-    const syncGolive = async () => {
-      const syncBtn = page.locator(`.document-explorer__item-action--sync-refresh[data-space-id="${PW_TEST_SPACE_ID}"]`).first();
-      await expect(syncBtn).toBeVisible({ timeout: 30_000 });
-      const prev = await page.evaluate(() => String((window as any).__goToolkitLastCloudSyncTiming?.startedAt || ""));
-      await syncBtn.click();
-      try {
-        await page.waitForFunction(
-          previous => {
-            const timing = (window as any).__goToolkitLastCloudSyncTiming;
-            return Boolean(timing && typeof timing.totalMs === "number" && String(timing.startedAt || "") !== String(previous || ""));
-          },
-          prev,
-          { timeout: 60_000 }
-        );
-      } catch {
-        await page.waitForTimeout(1500);
-      }
-    };
-
-    const clickDoc = async (docId: string) => {
-      const item = page.locator(`.document-explorer__item[data-document-id="${docId}"]`).first();
-      const visible = await item.isVisible().catch(() => false);
-      if (visible) {
-        await item.click();
-      } else {
-        await page.evaluate(async id => {
-          await (window as any).GoToolkitMemoOpenDocumentByLink?.(id);
-        }, docId);
-      }
-      await page.waitForFunction(
-        expectedId => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "") === String(expectedId || ""),
-        docId,
-        { timeout: 30_000 }
-      );
-    };
-
-    const dismissUiBlockers = async () => {
-      await page.evaluate(() => {
-        try {
-          localStorage.setItem("go-toolkit-docs-tour-seen.v1", "1");
-        } catch {
-          // ignore
-        }
-        try {
-          const cleanup = (window as any).__goToolkitDocsTourCleanup;
-          if (typeof cleanup === "function") cleanup();
-        } catch {
-          // ignore
-        }
-        document.querySelectorAll(".docs-tour-overlay, .docs-tour-highlight, .docs-tour-card").forEach(el => {
-          try { (el as HTMLElement).remove(); } catch { /* ignore */ }
-        });
-        document.querySelectorAll("[data-tour-forced-visible='1']").forEach(el => {
-          const node = el as HTMLElement;
-          node.style.pointerEvents = "none";
-        });
-      });
-    };
-
     try {
       await ensureCloudConnectedWithSpaceCode(page, baseUrl);
-      await dismissUiBlockers();
+      await dismissDocsTour(page);
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitCloudDrafts?.set), null, { timeout: 45_000 });
@@ -137,7 +79,7 @@ test.describe("Cloud/private transfer sync", () => {
     const privateSectionHeader = page.locator('.document-explorer__section-header[data-section="private"]').first();
     await expect(cloudRow).toBeVisible({ timeout: 30_000 });
     await expect(privateSectionHeader).toBeVisible({ timeout: 30_000 });
-    await dismissUiBlockers();
+    await dismissDocsTour(page);
     await cloudRow.dragTo(privateSectionHeader);
     await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(1, { timeout: 20_000 });
 
@@ -212,7 +154,7 @@ test.describe("Cloud/private transfer sync", () => {
       await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
       }, { privateId: seeded.privateId, promotedToken, spaceId: PW_TEST_SPACE_ID });
 
-      await syncGolive();
+      await syncGolive(page, PW_TEST_SPACE_ID);
 
       const promoteState = await page.evaluate(async ({ promotedToken, privateMarker, privateId }) => {
       const history = (window as any).goToolkitShareHistory;
@@ -240,15 +182,12 @@ test.describe("Cloud/private transfer sync", () => {
       expect(promoteState.remoteHasMarker).toBe(true);
 
       await page.reload({ waitUntil: "commit", timeout: 20_000 });
-      await dismissUiBlockers();
-      await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
-      await page.evaluate(async () => {
-        await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
-      });
+      await dismissDocsTour(page);
+      await refreshMemoExplorer(page);
 
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(1, { timeout: 20_000 });
 
-      await clickDoc(`share:${promotedToken}`);
+      await clickMemoDoc(page, `share:${promotedToken}`);
       await expect
         .poll(async () => page.evaluate(() => String((window as any).GoToolkitMemoInstance?.getValue?.() || "")), { timeout: 20_000 })
         .toContain(privateMarker);

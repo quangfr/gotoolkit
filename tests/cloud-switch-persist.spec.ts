@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
 import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
+import { clickMemoDoc, getMemoEditorHtml, refreshMemoExplorer, typeIntoVisibleEditor, waitForMemoReady } from "./helpers/memo-ui";
 
 test.describe("Cloud page switching persistency", () => {
   test("keeps cloud edits across cloud page switches and reload", async ({ page }) => {
@@ -11,7 +12,7 @@ test.describe("Cloud page switching persistency", () => {
     await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 30_000 });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 30_000 });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 30_000 });
-    await page.waitForSelector(".ProseMirror:visible", { timeout: 30_000 });
+    await waitForMemoReady(page, 30_000);
 
     const seed = await page.evaluate(async ({ spaceId, spaceCode }) => {
       const ts = Date.now();
@@ -105,36 +106,18 @@ test.describe("Cloud page switching persistency", () => {
       return { cloudAId, cloudBId, cloudAEdit };
     }, { spaceId: PW_TEST_SPACE_ID, spaceCode: PW_TEST_SPACE_CODE });
 
-    const clickDoc = async (docId: string) => {
-      const item = page.locator(`.document-explorer__item[data-document-id="${docId}"]`).first();
-      await expect(item).toBeVisible({ timeout: 30_000 });
-      await item.click();
-      await page.waitForFunction(
-        expectedId => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "") === String(expectedId || ""),
-        docId,
-        { timeout: 30_000 }
-      );
-    };
+    await clickMemoDoc(page, seed.cloudAId, { allowProgrammaticOpen: false });
+    await typeIntoVisibleEditor(page, ` ${seed.cloudAEdit}`);
+    await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.cloudAEdit);
 
-    const getEditorHtml = async () => page.evaluate(() => String((window as any).GoToolkitMemoInstance?.getValue?.() || ""));
-
-    await clickDoc(seed.cloudAId);
-    const editor = page.locator(".ProseMirror:visible").first();
-    await editor.click();
-    await page.keyboard.type(` ${seed.cloudAEdit}`);
-    await expect.poll(getEditorHtml, { timeout: 15_000 }).toContain(seed.cloudAEdit);
-
-    await clickDoc(seed.cloudBId);
-    await clickDoc(seed.cloudAId);
-    await expect.poll(getEditorHtml, { timeout: 15_000 }).toContain(seed.cloudAEdit);
+    await clickMemoDoc(page, seed.cloudBId, { allowProgrammaticOpen: false });
+    await clickMemoDoc(page, seed.cloudAId, { allowProgrammaticOpen: false });
+    await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.cloudAEdit);
 
     await page.reload({ waitUntil: "commit", timeout: 20_000 });
-    await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 30_000 });
-    await page.evaluate(async () => {
-      await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
-    });
+    await refreshMemoExplorer(page, 30_000);
 
-    await clickDoc(seed.cloudAId);
-    await expect.poll(getEditorHtml, { timeout: 20_000 }).toContain(seed.cloudAEdit);
+    await clickMemoDoc(page, seed.cloudAId, { allowProgrammaticOpen: false });
+    await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(seed.cloudAEdit);
   });
 });

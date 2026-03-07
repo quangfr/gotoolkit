@@ -6,6 +6,7 @@ DEFAULT_MIRROR_DIR="${HOME}/.cache/gotoolkit-playwright"
 MIRROR_DIR="${PW_LINUX_MIRROR_DIR:-${DEFAULT_MIRROR_DIR}}"
 MARKER_FILE=".pw-package-lock.sha256"
 FULL_SYNC_MARKER=".pw-full-sync-done"
+LOCK_FILE=".pw-sync.lock"
 
 should_skip_path() {
   local rel="$1"
@@ -107,6 +108,9 @@ if [[ "$(uname -s)" != "Linux" ]]; then
 fi
 
 mkdir -p "${MIRROR_DIR}"
+
+exec 9>"${MIRROR_DIR}/${LOCK_FILE}"
+flock 9
 
 if [[ ! -f "${MIRROR_DIR}/${FULL_SYNC_MARKER}" || "${PW_LINUX_MIRROR_FULL_SYNC:-0}" == "1" ]]; then
   full_sync
