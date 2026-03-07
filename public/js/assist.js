@@ -2344,6 +2344,14 @@
         if (!message || message.role !== "bot") return "";
         var stats = message.techStats;
         var parts = [];
+        var model = String(message?.aiMeta?.model || "").trim();
+        var effort = String(message?.aiMeta?.effort || "").trim().toLowerCase();
+        if (model) {
+            parts.push("Modèle: " + model);
+        }
+        if (effort) {
+            parts.push("Effort: " + effort);
+        }
         if (stats && Number.isFinite(stats.responseMs)) {
             parts.push("Temps réponse: " + stats.responseMs + " ms");
         }
@@ -2497,6 +2505,12 @@
         if (!details || typeof details !== "object") return "";
         var maxLength = 1800;
         var payload = {};
+        if (typeof details.model === "string" && details.model.trim()) {
+            payload.model = details.model.trim();
+        }
+        if (typeof details.effort === "string" && details.effort.trim()) {
+            payload.effort = details.effort.trim().toLowerCase();
+        }
         if (details.usage && typeof details.usage === "object") {
             payload.usage = details.usage;
         }
@@ -4703,6 +4717,10 @@
         var aiInUserMessagesTooltip = this.buildAIInUserMessagesTooltip(payload);
         userMessage.aiInPayloadTooltip = this.buildAIInTooltip(payload);
         botMessage.aiInPayloadTooltip = aiInUserMessagesTooltip;
+        botMessage.aiMeta = {
+            model: String(payload?.model || "").trim(),
+            effort: String(global.GoToolkitIAConfig?.getOpenRouterReasoningEffort?.() || global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_REASONING_EFFORT || "low").trim().toLowerCase()
+        };
         var self = this;
         var conversationRef = this.conversation;
         var conversationId = conversationRef?.id || null;
@@ -4917,6 +4935,8 @@
                 parsedResponse: parsed
             }, conversationId);
             botMessage.aiOutPayloadTooltip = this.buildAIOutTooltip({
+                model: botMessage.aiMeta?.model || "",
+                effort: botMessage.aiMeta?.effort || "",
                 responseText: resultText,
                 usage: resultUsage,
                 parsedResponse: parsed

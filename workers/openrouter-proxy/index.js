@@ -5,6 +5,14 @@ const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
 ]);
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
+function buildRequestId() {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `req-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+  }
+}
+
 function normalizeOriginValue(value) {
   const candidate = String(value || "").trim();
   if (!candidate) return "";
@@ -95,14 +103,21 @@ function getTurnstileToken(request) {
   ).trim();
 }
 
-async function enforceTurnstile(request, env, corsOrigin, action) {
+async function enforceTurnstile(request, env, corsOrigin, action, requestId) {
   const secret = getTurnstileSecret(env);
   if (!secret) {
-    return jsonError(corsOrigin, 500, "MISSING_ENV", "Turnstile secret missing.");
+    return jsonError(corsOrigin, 500, "MISSING_ENV", "Turnstile secret missing.", requestId);
   }
   const token = getTurnstileToken(request);
   if (!token) {
-    return jsonError(corsOrigin, 403, "TURNSTILE_REQUIRED", "Turnstile token required.");
+    return jsonError(corsOrigin, 403, "TURNSTILE_REQUIRED", "Turnstile token required.", requestId, {
+      turnstile: {
+        requestId,
+        expectedAction: String(action || "").trim().toLowerCase(),
+        hasToken: false,
+        origin: normalizeOriginValue(request.headers.get("Origin"))
+      }
+    });
   }
   let response;
   try {
@@ -119,42 +134,81 @@ async function enforceTurnstile(request, env, corsOrigin, action) {
       })
     });
   } catch (error) {
-    console.error("Turnstile verification failed", error);
-    return jsonError(corsOrigin, 502, "TURNSTILE_UNAVAILABLE", "Turnstile verification unavailable.");
+    console.error("Turnstile verification failed", { requestId, action, error: String(error?.message || error || "") });
+    return jsonError(corsOrigin, 502, "TURNSTILE_UNAVAILABLE", "Turnstile verification unavailable.", requestId);
   }
   const result = await response.json().catch(() => null);
   if (!response.ok || !result?.success) {
     console.warn("Turnstile rejected request", {
+      requestId,
       action,
       status: response.status,
-      errors: result?.["error-codes"] || []
+      errors: result?.["error-codes"] || [],
+      hostname: String(result?.hostname || "").trim().toLowerCase() || null,
+      verifiedAction: String(result?.action || "").trim().toLowerCase() || null,
+      tokenLength: token.length
     });
-    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
+    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.", requestId, {
+      turnstile: {
+        requestId,
+        expectedAction: String(action || "").trim().toLowerCase(),
+        verifiedAction: String(result?.action || "").trim().toLowerCase() || null,
+        hostname: String(result?.hostname || "").trim().toLowerCase() || null,
+        errors: result?.["error-codes"] || [],
+        hasToken: true,
+        tokenLength: token.length,
+        origin: normalizeOriginValue(request.headers.get("Origin"))
+      }
+    });
   }
   const allowedHostnames = parseTurnstileAllowedHostnames(env, parseAllowedOrigins(env));
   const verifiedHostname = String(result?.hostname || "").trim().toLowerCase();
   if (allowedHostnames.size > 0 && (!verifiedHostname || !allowedHostnames.has(verifiedHostname))) {
     console.warn("Turnstile hostname mismatch", {
+      requestId,
       action,
       verifiedHostname,
       allowedHostnames: Array.from(allowedHostnames)
     });
-    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
+    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.", requestId, {
+      turnstile: {
+        requestId,
+        expectedAction: String(action || "").trim().toLowerCase(),
+        verifiedAction: String(result?.action || "").trim().toLowerCase() || null,
+        hostname: verifiedHostname || null,
+        allowedHostnames: Array.from(allowedHostnames),
+        hasToken: true,
+        tokenLength: token.length,
+        origin: normalizeOriginValue(request.headers.get("Origin"))
+      }
+    });
   }
   const expectedAction = String(action || "").trim().toLowerCase();
   const verifiedAction = String(result?.action || "").trim().toLowerCase();
   if (!isCompatibleTurnstileAction(expectedAction, verifiedAction)) {
     console.warn("Turnstile action mismatch", {
+      requestId,
       expectedAction,
       verifiedAction: verifiedAction || null
     });
-    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
+    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.", requestId, {
+      turnstile: {
+        requestId,
+        expectedAction,
+        verifiedAction: verifiedAction || null,
+        hostname: verifiedHostname || null,
+        hasToken: true,
+        tokenLength: token.length,
+        origin: normalizeOriginValue(request.headers.get("Origin"))
+      }
+    });
   }
   return null;
 }
 
 export default {
   async fetch(request, env) {
+    const requestId = String(request.headers.get("X-Debug-Request-Id") || "").trim() || buildRequestId();
     const requestUrl = new URL(request.url);
     const isEmbeddingsRoute = requestUrl.pathname.includes("/embeddings");
     const corsMeta = resolveCors(request, env);
@@ -165,6 +219,7 @@ export default {
         status: 403,
         headers: {
           "Access-Control-Allow-Origin": corsOrigin,
+          "X-Debug-Request-Id": requestId,
           "Vary": "Origin"
         }
       });
@@ -179,6 +234,7 @@ export default {
           "Access-Control-Allow-Headers": requestedHeaders && requestedHeaders.trim()
             ? requestedHeaders
             : "Content-Type, x-app-token, x-client-id",
+          "X-Debug-Request-Id": requestId,
           "Vary": "Origin"
         }
       });
@@ -195,6 +251,7 @@ export default {
           "Access-Control-Allow-Origin": corsOrigin,
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, x-app-token, x-client-id",
+          "X-Debug-Request-Id": requestId,
           Allow: "GET, POST, OPTIONS",
           Vary: "Origin"
         }
@@ -202,7 +259,7 @@ export default {
     }
 
     if (!corsMeta.allowLocal) {
-      const turnstileResponse = await enforceTurnstile(request, env, corsOrigin, isEmbeddingsRoute ? "embeddings" : "chat");
+      const turnstileResponse = await enforceTurnstile(request, env, corsOrigin, isEmbeddingsRoute ? "embeddings" : "chat", requestId);
       if (turnstileResponse) {
         return turnstileResponse;
       }
@@ -216,32 +273,34 @@ export default {
           corsOrigin,
           429,
           "RATE_LIMIT_EXCEEDED",
-          "Too many requests, please wait a bit."
+          "Too many requests, please wait a bit.",
+          requestId
         );
       }
     }
 
-    return forwardToOpenRouter(request, env, corsOrigin, { embeddings: isEmbeddingsRoute });
+    return forwardToOpenRouter(request, env, corsOrigin, { embeddings: isEmbeddingsRoute, requestId });
   }
 };
 
 async function forwardToOpenRouter(request, env, corsOrigin, options = {}) {
+  const requestId = String(options?.requestId || "").trim() || buildRequestId();
   const raw = await request.text();
   const maxBytes = 2_500_000;
 
   if (raw.length > maxBytes) {
-    return jsonError(corsOrigin, 413, "PAYLOAD_TOO_LARGE", "Payload too large.");
+    return jsonError(corsOrigin, 413, "PAYLOAD_TOO_LARGE", "Payload too large.", requestId);
   }
 
   let payload = {};
   try {
     payload = raw ? JSON.parse(raw) : {};
   } catch (e) {
-    return jsonError(corsOrigin, 400, "BAD_JSON", "Invalid JSON payload.");
+    return jsonError(corsOrigin, 400, "BAD_JSON", "Invalid JSON payload.", requestId);
   }
 
   if (!env.OPENROUTER_API_KEY) {
-    return jsonError(corsOrigin, 500, "MISSING_ENV", "OpenRouter API key missing.");
+    return jsonError(corsOrigin, 500, "MISSING_ENV", "OpenRouter API key missing.", requestId);
   }
 
   let upstreamResponse;
@@ -265,18 +324,20 @@ async function forwardToOpenRouter(request, env, corsOrigin, options = {}) {
       body: JSON.stringify(payload)
     });
   } catch (error) {
-    console.error("OpenRouter fetch failed", error);
+    console.error("OpenRouter fetch failed", { requestId, error: String(error?.message || error || "") });
     return jsonError(
       corsOrigin,
       502,
       "UPSTREAM_UNAVAILABLE",
-      "OpenRouter upstream unavailable."
+      "OpenRouter upstream unavailable.",
+      requestId
     );
   }
 
   const headers = new Headers(upstreamResponse.headers);
   headers.set("Access-Control-Allow-Origin", corsOrigin);
   headers.set("Cache-Control", "no-store");
+  headers.set("X-Debug-Request-Id", requestId);
   headers.set("Vary", "Origin");
 
   return new Response(upstreamResponse.body, {
@@ -286,8 +347,9 @@ async function forwardToOpenRouter(request, env, corsOrigin, options = {}) {
 }
 
 async function forwardToOpenRouterModelsUser(request, env, corsOrigin) {
+  const requestId = String(request.headers.get("X-Debug-Request-Id") || "").trim() || buildRequestId();
   if (!env.OPENROUTER_API_KEY) {
-    return jsonError(corsOrigin, 500, "MISSING_ENV", "OpenRouter API key missing.");
+    return jsonError(corsOrigin, 500, "MISSING_ENV", "OpenRouter API key missing.", requestId);
   }
   let upstreamResponse;
   try {
@@ -298,17 +360,19 @@ async function forwardToOpenRouterModelsUser(request, env, corsOrigin) {
       }
     });
   } catch (error) {
-    console.error("OpenRouter models fetch failed", error);
+    console.error("OpenRouter models fetch failed", { requestId, error: String(error?.message || error || "") });
     return jsonError(
       corsOrigin,
       502,
       "UPSTREAM_UNAVAILABLE",
-      "OpenRouter upstream unavailable."
+      "OpenRouter upstream unavailable.",
+      requestId
     );
   }
   const headers = new Headers(upstreamResponse.headers);
   headers.set("Access-Control-Allow-Origin", corsOrigin);
   headers.set("Cache-Control", "no-store");
+  headers.set("X-Debug-Request-Id", requestId);
   headers.set("Vary", "Origin");
   return new Response(upstreamResponse.body, {
     status: upstreamResponse.status,
@@ -316,13 +380,17 @@ async function forwardToOpenRouterModelsUser(request, env, corsOrigin) {
   });
 }
 
-function jsonError(origin, status, code, message) {
-  const body = JSON.stringify({ error: { code, message } });
+function jsonError(origin, status, code, message, requestId = "", extra = null) {
+  const body = JSON.stringify(Object.assign({
+    error: { code, message },
+    requestId: requestId || undefined
+  }, extra && typeof extra === "object" ? extra : {}));
   return new Response(body, {
     status,
     headers: {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": origin,
+      "X-Debug-Request-Id": requestId || "",
       Vary: "Origin"
     }
   });

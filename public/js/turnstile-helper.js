@@ -277,17 +277,18 @@
                 size: "normal",
                 callback: function (token) {
                     const normalizedToken = String(token || "").trim();
-                    if (interactiveChallengeActive) {
-                        pushDiagnostic("widget-callback-ignored-during-interactive", {
-                            hasToken: Boolean(normalizedToken)
-                        });
-                        return;
-                    }
                     if (!normalizedToken) {
                         pushDiagnostic("widget-callback-empty-token");
                         return;
                     }
-                    pushDiagnostic("widget-callback", { hasToken: true });
+                    if (interactiveChallengeActive) {
+                        pushDiagnostic("widget-callback-used-during-interactive", {
+                            hasToken: true,
+                            tokenLength: normalizedToken.length
+                        });
+                    } else {
+                        pushDiagnostic("widget-callback", { hasToken: true });
+                    }
                     settleTokenResolver(null, token);
                 },
                 "expired-callback": function () {
@@ -407,6 +408,14 @@
         }
 
         if (interactiveWidgetId !== null && interactiveWidgetId !== undefined) {
+            try {
+                if (typeof turnstile.reset === "function") {
+                    pushDiagnostic("interactive-reset", { widgetId: String(interactiveWidgetId) });
+                    turnstile.reset(interactiveWidgetId);
+                }
+            } catch (error) {
+                pushDiagnostic("interactive-reset-error", { error: String(error?.message || error || "") });
+            }
             pushDiagnostic("interactive-widget-reused", { widgetId: String(interactiveWidgetId) });
             return { turnstile, widgetId: interactiveWidgetId };
         }
