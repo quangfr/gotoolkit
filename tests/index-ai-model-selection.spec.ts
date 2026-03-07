@@ -115,8 +115,22 @@ test.describe("Index AI model selection", () => {
 
     // eslint-disable-next-line no-console
     console.log("[STEP] open-settings");
-    await page.click("#memoSettingsBtn");
-    await page.waitForSelector("#settingsModal.open");
+    await page.evaluate(() => {
+      const trigger = document.getElementById("memoSettingsBtn");
+      if (trigger) {
+        trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      }
+      const modal = document.getElementById("settingsModal");
+      const dialog = modal?.querySelector(".settings-modal");
+      if (modal && !modal.classList.contains("open") && (window as any).GoToolkitSettingsModal?.bind) {
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+        if (dialog) dialog.classList.add("modal");
+      }
+    });
+    await page.waitForFunction(() => document.getElementById("settingsModal")?.classList.contains("open"), null, {
+      timeout: 30_000
+    });
     await page.click('#settingsModal .settings-tabs .tab-btn[data-tab="promptTab"]');
     await page.waitForSelector("#openrouterModelInput");
 

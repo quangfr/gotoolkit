@@ -79,19 +79,16 @@ This file is the short operational guide. Use the docs below as the canonical re
 - If an inline block uses helpers defined in another script block, either expose the helper on `window` intentionally or provide a local fallback in the dependent block.
 
 ## Testing defaults
-- On app launch for tests, always click to close the onboarding/tour overlay (`docs-tour-overlay`) before interacting with the UI.
 - Before running Playwright, ensure the test server is running on `:5000`; if not, start it with `npm run start:test`.
-- Prefer the local Playwright binary: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`.
 - When a request explicitly asks for Playwright/browser automation, use the `playwright` Codex skill workflow first, then adapt to the repo constraints in this section.
-- For recording artifacts, follow `docs/TEST.md` naming: write videos under `test-recordings/` with `test-name` + timestamp, and screenshots under `test-screenshots/` with `step-XX-step-name` + `test-name` + timestamp.
-- On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails because Chrome is not installed here. Use the repo-local `playwright` package (`./node_modules/.bin/playwright ...`) and prefer a real `tests/*.spec.ts` repro over ad hoc Node scripts so the scenario can be rerun, instrumented, and fixed without rewriting the harness.
-- Prestart the server when possible; grouped cloud suites are more stable against a prestarted `start:test` server than Playwright-managed `webServer` restarts.
-- For cloud/test-space coverage, prefer `spaceCode` bootstrap over repeated OAuth UI.
-- In Playwright, avoid `waitUntil: "load"` on `index.html`; prefer `commit` or `domcontentloaded`, then wait for the exact app primitive you need.
-- Inside `page.evaluate(...)`, do not rely on imported Node constants; pass values explicitly as arguments.
-- For local Playwright repros that hit protected worker routes, disable or stub Turnstile first in the test environment before debugging the feature itself. Do this with `page.addInitScript(...)` or an equivalent test-only bootstrap so Turnstile is not the variable under test.
-- Before trying to fix or rewrite a flaky Playwright repro, add explicit `console.log` markers for each intended UI step and attach listeners for `console`, `pageerror`, `request`, and `response` before navigation. Keep those step logs in place until the failing stage is isolated, so you do not need to repeatedly rewrite and relaunch the test blindly.
-- For any non-trivial browser repro or debugging task, create or reuse a dedicated Playwright spec file under `tests/` and keep the instrumentation in that spec until the failing stage is understood. A disposable script is acceptable only for a one-command sanity check, not for iterative UI debugging.
+- On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails because Chrome is not installed here.
+- On WSL, do not run Playwright from `/mnt/c/...`; mirror the repo to a native Linux path first, then run the repo-local Playwright package from there.
+- During local Playwright iteration, do not run `npm run check:csp` on every loop. If you changed an inline script inside the CSP scope, you still must run `npm run csp:inline:sync` before browser repros, because the app CSP is enforced by HTML `<meta>` tags in test too. Reserve `npm run check:csp` for merge/release, bump, commit, and push workflows.
+- Follow [`docs/TEST.md`](docs/TEST.md) for the canonical Playwright workflow, including:
+  - repo-local Playwright command line
+  - true `tests/*.spec.ts` repros instead of ad hoc scripts
+  - tour dismissal, Turnstile stubbing, and step-by-step UI logging
+  - network/console instrumentation, artifact naming, `spaceCode` bootstrap, and `page.evaluate(...)` rules
 
 ## Cloud/share essentials
 - `public/js/share-worker-client.js` is the main browser client for cloud shares.

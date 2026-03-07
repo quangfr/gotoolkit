@@ -187,6 +187,30 @@ Practical reliability notes for this repo:
 - prefer `waitUntil: "commit"` or `domcontentloaded`, then wait explicitly for the app primitive you need
 - when running many cloud specs in one command, prefer a prestarted server (`npm run start:test`) over relying on Playwright-managed `webServer`
 
+### 6.0 Canonical local Playwright workflow
+
+Use this exact workflow for local UI debugging and repros on this repo:
+
+1. start the app with `npm run start:test`
+2. if you are on WSL, mirror the repo to a native Linux path first; do not run Playwright from `/mnt/c/...`
+3. write or reuse a real spec under `tests/`
+4. attach listeners for `console`, `pageerror`, `request`, and `response` before navigation
+5. add explicit `console.log` step markers before every intended UI interaction
+6. suppress the docs tour unless the tour itself is under test
+7. stub or disable Turnstile unless Turnstile itself is the subject of the test
+8. run the repo-local binary: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`
+9. keep the instrumentation in place until the failing stage is isolated; do not keep rewriting the harness blindly between runs
+
+This is the minimum standard for non-trivial UI debugging. A one-off Node script is acceptable only for a tiny smoke check, not for an iterative repro.
+
+Important CSP constraint:
+
+- `npm run start:test` does not disable CSP
+- this app enforces CSP through HTML `<meta http-equiv="Content-Security-Policy">` tags
+- because of that, a permissive test server header is not enough to bypass a broken inline-script hash
+- if you changed an inline script in `public/index.html`, `public/grid.html`, or `public/mobile.html`, run `npm run csp:inline:sync` before local browser repros
+- reserve `npm run check:csp` for merge/release validation and for any `bump` / `commit` / `push` request; it should not be part of every Playwright iteration loop
+
 ### 6.1 UI testing workflow for local/private pages
 
 For fast UI debugging on private pages, use a lightweight local-only workflow:
@@ -201,6 +225,7 @@ Current practical guidance from repo debugging:
 
 - prefer the repo-local Playwright runtime (`./node_modules/.bin/playwright` or `require("playwright")`) over the bundled Playwright CLI wrapper when working from this machine
 - the bundled Playwright CLI wrapper currently tries to launch the `chrome` channel and fails here because the Chrome channel is not installed
+- on WSL, `require("playwright")` and `require("playwright-core")` may hang when the repo is executed from `/mnt/c/...`; if that happens, copy or mirror the repo to a native Linux path and run the same command there
 - prefer a real Playwright spec under `tests/` over an ad hoc Node script as soon as the repro involves more than a trivial one-command sanity check
 - use ad hoc Node scripts only for throwaway smoke checks; for iterative debugging, logging, screenshots, and reruns, move immediately to a spec file so the harness itself does not need to be rewritten every run
 - when reproducing UI issues, attach listeners for `console`, `pageerror`, `request`, and `response` before navigation so transient failures are captured
