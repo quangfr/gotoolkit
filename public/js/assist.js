@@ -3898,6 +3898,10 @@
         return false;
     };
 
+    AssistSidebar.prototype.getConfiguredChatModel = function () {
+        return global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b";
+    };
+
     AssistSidebar.prototype.resolveModelForChatRequest = function (userMessage) {
         var attachmentNames = [];
         if (Array.isArray(userMessage?.attachments)) {
@@ -3909,10 +3913,7 @@
         if (this.hasVisionAttachments(attachmentNames)) {
             return CHAT_VISION_MODEL;
         }
-        if (!this.isVisionPreset(this.promptPresetId)) {
-            return global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b";
-        }
-        return global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b";
+        return this.getConfiguredChatModel();
     };
 
     AssistSidebar.prototype.formatEntriesForPayload = function (entries) {
@@ -6800,7 +6801,7 @@
                                     }
                                 ],
                                 stream: false,
-                                model: global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b"
+                                model: this.getConfiguredChatModel()
                             };
                             this.sendAIRequest(payload);
                         }
@@ -7114,7 +7115,7 @@
                     }
                 ],
                 stream: false,
-                model: global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b"
+                model: this.getConfiguredChatModel()
             };
 
             // Create user message in chat
@@ -10524,7 +10525,7 @@
                     }
                 ],
                 stream: false,
-                model: global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b"
+                model: self.getConfiguredChatModel()
             };
 
             // Fermer le panel
@@ -10634,6 +10635,9 @@
         }
         requestPayload.messages = requestMessages;
         delete requestPayload.system;
+        if (requestPayload.model !== CHAT_VISION_MODEL) {
+            requestPayload.model = this.getConfiguredChatModel();
+        }
 
         // Appeler l'IA
         if (!window.GoToolkitIA || !window.GoToolkitIA.chatCompletion) {
