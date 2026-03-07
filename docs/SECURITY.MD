@@ -431,7 +431,9 @@ Client-side Turnstile behavior:
 
 - the browser requests Turnstile only for protected worker hosts
 - the helper first tries a background/off-screen execution
-- if that times out, it can escalate to a visible interactive challenge
+- if that times out, it can escalate to a visible interactive challenge rendered on demand
+- client action selection is route-specific; OpenRouter chat and embeddings must not share the same Turnstile action
+- after a client-side Turnstile failure, the helper applies a short cooldown to avoid request storms against Cloudflare challenge endpoints
 - the client records diagnostics and last-attempt summaries for debugging
 - AI debug capture stores request/response metadata (not full bodies) in `sessionStorage`
 

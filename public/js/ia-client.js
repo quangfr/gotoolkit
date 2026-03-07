@@ -715,7 +715,7 @@
         const contentType = response.headers.get("content-type") || "";
         const isStream = wantsStream && !!response.body && contentType.includes("text/event-stream");
         if (isStream) {
-            return consumeStream(response, stopCondition, signal, onChunk);
+            return consumeStream(response, stopCondition, onChunk);
         }
         return parseJsonResponse(response);
     }
@@ -785,6 +785,9 @@
 
     function resolveTurnstileAction(endpoint) {
         const value = String(endpoint || "").toLowerCase();
+        if (value.includes("/embeddings")) {
+            return "embeddings";
+        }
         if (value.includes("openrouter.gotoolkit.workers.dev")) {
             return "openrouter";
         }
@@ -793,9 +796,6 @@
         }
         if (value.includes("assemblyai.gotoolkit.workers.dev")) {
             return "assemblyai";
-        }
-        if (value.includes("/embeddings")) {
-            return "embeddings";
         }
         return "";
     }

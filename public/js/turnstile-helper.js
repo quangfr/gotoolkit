@@ -21,9 +21,148 @@
     const INTERACTIVE_OVERLAY_ID = "go-toolkit-turnstile-overlay";
     const INTERACTIVE_CONTAINER_ID = "go-toolkit-turnstile-interactive";
     const DIAGNOSTIC_LIMIT = 50;
-    const INTERACTIVE_TRIGGER_DELAY_MS = 600;
+    const INTERACTIVE_TRIGGER_DELAY_MS = 1800;
     const INTERACTIVE_TIMEOUT_MS = 120000;
     let interactiveWidgetPrewarmPromise = null;
+    const FAILURE_COOLDOWN_MS = 8000;
+    let failureCooldownUntil = 0;
+    let failureCooldownReason = "";
+    let turnstileWrappedForDebug = false;
+
+    function shouldForceInteractiveChallenge() {
+        return Boolean(global.GO_TOOLKIT_FORCE_INTERACTIVE_TURNSTILE);
+    }
+
+    function debugLog(event, details) {
+        if (!global.GO_TOOLKIT_TURNSTILE_DEBUG) return;
+        try {
+            if (details && typeof details === "object") {
+                console.log("[GoToolkitTurnstile]", event, details);
+            } else {
+                console.log("[GoToolkitTurnstile]", event);
+            }
+        } catch (err) {
+            // ignore debug console failures
+        }
+    }
+
+    function traceStage(stage, details) {
+        const payload = details && typeof details === "object" ? details : {};
+        pushDiagnostic("trace-" + String(stage || "unknown"), payload);
+    }
+
+    function collectContainerDomSnapshot(container) {
+        try {
+            if (!container) {
+                return { present: false };
+            }
+            const iframes = Array.from(container.querySelectorAll("iframe")).map(function (iframe) {
+                const style = global.getComputedStyle ? global.getComputedStyle(iframe) : null;
+                return {
+                    src: String(iframe.getAttribute("src") || iframe.src || ""),
+                    title: String(iframe.getAttribute("title") || ""),
+                    width: style ? style.width : "",
+                    height: style ? style.height : "",
+                    display: style ? style.display : "",
+                    visibility: style ? style.visibility : ""
+                };
+            });
+            return {
+                present: true,
+                childCount: container.childElementCount,
+                innerHtmlLength: String(container.innerHTML || "").length,
+                iframeCount: iframes.length,
+                iframes: iframes
+            };
+        } catch (error) {
+            return {
+                present: Boolean(container),
+                error: String(error?.message || error || "")
+            };
+        }
+    }
+
+    function collectTurnstileApiSnapshot(turnstile) {
+        try {
+            if (!turnstile || typeof turnstile !== "object") {
+                return { present: false };
+            }
+            return {
+                present: true,
+                hasRender: typeof turnstile.render === "function",
+                hasExecute: typeof turnstile.execute === "function",
+                hasReset: typeof turnstile.reset === "function",
+                hasRemove: typeof turnstile.remove === "function",
+                keys: Object.keys(turnstile).slice(0, 20)
+            };
+        } catch (error) {
+            return {
+                present: Boolean(turnstile),
+                error: String(error?.message || error || "")
+            };
+        }
+    }
+
+    function startInteractiveDomSnapshots(label, container) {
+        if (!global.GO_TOOLKIT_TURNSTILE_DEBUG || !container) return;
+        [0, 250, 1000, 2000, 5000].forEach(function (delay) {
+            global.setTimeout(function () {
+                debugLog(label + "-dom-" + delay + "ms", {
+                    container: collectContainerDomSnapshot(container)
+                });
+            }, delay);
+        });
+    }
+
+    function wrapTurnstileForDebug(turnstile) {
+        if (!global.GO_TOOLKIT_TURNSTILE_DEBUG) return turnstile;
+        if (!turnstile || typeof turnstile !== "object") return turnstile;
+        if (turnstileWrappedForDebug || turnstile.__goToolkitWrapped) return turnstile;
+
+        ["render", "execute", "reset", "remove"].forEach(function (methodName) {
+            const original = turnstile[methodName];
+            if (typeof original !== "function") return;
+            turnstile[methodName] = function () {
+                const args = Array.prototype.slice.call(arguments);
+                debugLog("api-" + methodName + "-call", {
+                    args: args.map(function (arg) {
+                        if (arg && typeof arg === "object" && arg.nodeType === 1) {
+                            return {
+                                nodeName: String(arg.nodeName || ""),
+                                id: String(arg.id || ""),
+                                className: String(arg.className || "")
+                            };
+                        }
+                        if (arg && typeof arg === "object") {
+                            try {
+                                return JSON.parse(JSON.stringify(arg));
+                            } catch (err) {
+                                return { type: Object.prototype.toString.call(arg) };
+                            }
+                        }
+                        return arg;
+                    })
+                });
+                try {
+                    const result = original.apply(this, args);
+                    debugLog("api-" + methodName + "-return", {
+                        result: result == null ? result : String(result)
+                    });
+                    return result;
+                } catch (error) {
+                    debugLog("api-" + methodName + "-throw", {
+                        error: String(error?.message || error || "")
+                    });
+                    throw error;
+                }
+            };
+        });
+
+        turnstile.__goToolkitWrapped = true;
+        turnstileWrappedForDebug = true;
+        debugLog("api-wrapped", collectTurnstileApiSnapshot(turnstile));
+        return turnstile;
+    }
 
     function pushDiagnostic(event, details) {
         try {
@@ -39,6 +178,7 @@
             if (global.__goToolkitTurnstileDiagnostics.length > DIAGNOSTIC_LIMIT) {
                 global.__goToolkitTurnstileDiagnostics.splice(0, global.__goToolkitTurnstileDiagnostics.length - DIAGNOSTIC_LIMIT);
             }
+            debugLog(event, entry.details);
         } catch (err) {
             // ignore diagnostics failures
         }
@@ -75,7 +215,7 @@
         const url = normalizeUrl(input);
         if (!url) return false;
         const pageOrigin = normalizeUrl(global.location?.href || "");
-        if (pageOrigin && isLocalOrigin(pageOrigin.origin)) {
+        if (!shouldForceInteractiveChallenge() && pageOrigin && isLocalOrigin(pageOrigin.origin)) {
             return false;
         }
         return PROTECTED_HOSTS.has(String(url.hostname || "").trim().toLowerCase());
@@ -91,6 +231,8 @@
         const fallback = String(fallbackAction || "").trim().toLowerCase();
         if (fallback) return fallback.replace(/[^a-z0-9_-]/g, "").slice(0, 32) || "request";
         const url = normalizeUrl(input);
+        const path = String(url?.pathname || "").toLowerCase();
+        if (path.includes("/embeddings")) return "embeddings";
         const host = String(url?.hostname || "").toLowerCase();
         if (host === "openrouter.gotoolkit.workers.dev") return "openrouter";
         if (host === "googletts.gotoolkit.workers.dev") return "googletts";
@@ -100,7 +242,7 @@
 
     function waitForTurnstileReady(resolve, reject, startTime) {
         if (global.turnstile && typeof global.turnstile.execute === "function") {
-            resolve(global.turnstile);
+            resolve(wrapTurnstileForDebug(global.turnstile));
             return;
         }
         if (Date.now() - startTime > 15000) {
@@ -117,7 +259,7 @@
         loadPromise = new Promise(function (resolve, reject) {
             if (global.turnstile && typeof global.turnstile.execute === "function") {
                 pushDiagnostic("script-already-ready");
-                resolve(global.turnstile);
+                resolve(wrapTurnstileForDebug(global.turnstile));
                 return;
             }
             const existing = document.querySelector('script[data-go-toolkit-turnstile="1"]');
@@ -227,6 +369,11 @@
         if (parts?.overlay) {
             parts.overlay.style.display = "flex";
             pushDiagnostic("interactive-overlay-shown");
+            debugLog("interactive-overlay-dom", {
+                overlayVisible: parts.overlay.style.display,
+                container: collectContainerDomSnapshot(parts.container)
+            });
+            startInteractiveDomSnapshots("interactive-overlay", parts.container);
         }
         return parts;
     }
@@ -279,12 +426,16 @@
         widgetTokenResolver = null;
         widgetTokenRejecter = null;
         if (error) {
+            failureCooldownUntil = Date.now() + FAILURE_COOLDOWN_MS;
+            failureCooldownReason = String(error?.message || error || "TURNSTILE_FAILED");
             pushDiagnostic("token-rejected", { error: String(error?.message || error || "") });
             if (typeof reject === "function") {
                 reject(error);
             }
             return;
         }
+        failureCooldownUntil = 0;
+        failureCooldownReason = "";
         pushDiagnostic("token-resolved", { hasToken: Boolean(String(token || "").trim()) });
         if (typeof resolve === "function") {
             resolve(String(token || "").trim());
@@ -338,9 +489,6 @@
                 widgetId: String(renderedId),
                 siteKey: getSiteKey().slice(0, 8)
             });
-            void prewarmInteractiveWidget().catch(function () {
-                // ignore prewarm failures; interactive path can still render on demand
-            });
             return { turnstile, widgetId: renderedId };
         }).catch(function (error) {
             widgetPromise = null;
@@ -352,22 +500,48 @@
     }
 
     async function prewarmInteractiveWidget() {
+        traceStage("prewarm-enter", {
+            hasInteractiveWidgetId: interactiveWidgetId !== null && interactiveWidgetId !== undefined,
+            hasInteractiveWidgetPromise: Boolean(interactiveWidgetPromise),
+            hasInteractiveWidgetPrewarmPromise: Boolean(interactiveWidgetPrewarmPromise)
+        });
         if (interactiveWidgetId !== null && interactiveWidgetId !== undefined) {
+            traceStage("prewarm-return-existing-id", {
+                widgetId: String(interactiveWidgetId)
+            });
             return interactiveWidgetId;
-        }
-        if (interactiveWidgetPromise) {
-            const existing = await interactiveWidgetPromise;
-            return existing?.widgetId || null;
         }
         if (interactiveWidgetPrewarmPromise) return interactiveWidgetPrewarmPromise;
         interactiveWidgetPrewarmPromise = ensureTurnstileLoaded().then(function (turnstile) {
+            traceStage("prewarm-after-load", {
+                turnstile: collectTurnstileApiSnapshot(turnstile)
+            });
             const parts = ensureInteractiveElements();
             const container = parts?.container;
-            if (!container) return null;
+            debugLog("interactive-prewarm-start", {
+                turnstile: collectTurnstileApiSnapshot(turnstile),
+                container: collectContainerDomSnapshot(container)
+            });
+            if (!container) {
+                traceStage("prewarm-missing-container");
+                return null;
+            }
             if (interactiveWidgetId !== null && interactiveWidgetId !== undefined) {
+                traceStage("prewarm-return-existing-id-after-load", {
+                    widgetId: String(interactiveWidgetId)
+                });
                 return interactiveWidgetId;
             }
-            const renderedId = turnstile.render(container, {
+            let renderedId = null;
+            try {
+                traceStage("prewarm-before-render", {
+                    container: collectContainerDomSnapshot(container)
+                });
+                debugLog("interactive-render-attempt", {
+                    turnstile: collectTurnstileApiSnapshot(turnstile),
+                    container: collectContainerDomSnapshot(container)
+                });
+                renderedId = turnstile.render(container, {
                 sitekey: getSiteKey(),
                 appearance: "always",
                 size: "normal",
@@ -415,28 +589,82 @@
                     });
                 }
             });
+                traceStage("prewarm-after-render", {
+                    widgetId: renderedId == null ? null : String(renderedId)
+                });
+            } catch (error) {
+                pushDiagnostic("interactive-render-threw", {
+                    error: String(error?.message || error || "")
+                });
+                debugLog("interactive-render-threw", {
+                    error: String(error?.message || error || ""),
+                    turnstile: collectTurnstileApiSnapshot(turnstile),
+                    container: collectContainerDomSnapshot(container)
+                });
+                traceStage("prewarm-render-threw", {
+                    error: String(error?.message || error || "")
+                });
+                throw error;
+            }
             interactiveWidgetId = renderedId;
             pushDiagnostic("interactive-widget-rendered", {
                 widgetId: String(renderedId),
                 siteKey: getSiteKey().slice(0, 8),
                 prewarmed: true
             });
+            debugLog("interactive-render-returned", {
+                widgetId: String(renderedId),
+                turnstile: collectTurnstileApiSnapshot(turnstile),
+                container: collectContainerDomSnapshot(container)
+            });
+            debugLog("interactive-widget-dom-after-render", {
+                widgetId: String(renderedId),
+                container: collectContainerDomSnapshot(container)
+            });
+            startInteractiveDomSnapshots("interactive-widget", container);
+            global.setTimeout(function () {
+                debugLog("interactive-widget-dom-after-render-delayed", {
+                    widgetId: String(renderedId),
+                    container: collectContainerDomSnapshot(container)
+                });
+            }, 500);
+            global.setTimeout(function () {
+                debugLog("interactive-widget-dom-after-render-2s", {
+                    widgetId: String(renderedId),
+                    container: collectContainerDomSnapshot(container)
+                });
+            }, 2000);
             return renderedId;
         }).finally(function () {
+            traceStage("prewarm-finally", {
+                widgetId: interactiveWidgetId == null ? null : String(interactiveWidgetId)
+            });
             interactiveWidgetPrewarmPromise = null;
         });
         return interactiveWidgetPrewarmPromise;
     }
 
     async function ensureInteractiveWidget() {
+        traceStage("ensure-interactive-enter", {
+            hasInteractiveWidgetId: interactiveWidgetId !== null && interactiveWidgetId !== undefined,
+            hasInteractiveWidgetPromise: Boolean(interactiveWidgetPromise),
+            hasInteractiveWidgetPrewarmPromise: Boolean(interactiveWidgetPrewarmPromise)
+        });
         const turnstile = await ensureTurnstileLoaded();
+        traceStage("ensure-interactive-after-load", {
+            turnstile: collectTurnstileApiSnapshot(turnstile)
+        });
         const parts = showInteractiveOverlay();
         const container = parts?.container;
         if (!container) {
+            traceStage("ensure-interactive-missing-container");
             throw new Error("TURNSTILE_INTERACTIVE_CONTAINER_MISSING");
         }
 
         if (interactiveWidgetId !== null && interactiveWidgetId !== undefined) {
+            traceStage("ensure-interactive-reuse-existing-id", {
+                widgetId: String(interactiveWidgetId)
+            });
             try {
                 if (typeof turnstile.reset === "function") {
                     pushDiagnostic("interactive-reset", { widgetId: String(interactiveWidgetId) });
@@ -450,37 +678,142 @@
         }
 
         if (interactiveWidgetPromise) {
+            traceStage("ensure-interactive-return-existing-promise");
             return interactiveWidgetPromise;
         }
 
         interactiveWidgetPromise = Promise.resolve().then(function () {
+            traceStage("ensure-interactive-before-prewarm");
             return prewarmInteractiveWidget().then(function (renderedId) {
+                traceStage("ensure-interactive-after-prewarm", {
+                    widgetId: renderedId == null ? null : String(renderedId)
+                });
                 if (renderedId === null || renderedId === undefined) {
                     throw new Error("TURNSTILE_INTERACTIVE_CONTAINER_MISSING");
                 }
                 return { turnstile, widgetId: renderedId };
             });
         }).catch(function (error) {
+            traceStage("ensure-interactive-catch", {
+                error: String(error?.message || error || "")
+            });
             interactiveWidgetId = null;
             closeInteractiveChallenge("interactive-widget-error-final");
             pushDiagnostic("interactive-widget-error-final", { error: String(error?.message || error || "") });
             throw error;
         }).finally(function () {
+            traceStage("ensure-interactive-finally", {
+                widgetId: interactiveWidgetId == null ? null : String(interactiveWidgetId)
+            });
             interactiveWidgetPromise = null;
         });
 
         return interactiveWidgetPromise;
     }
 
+    async function getInteractiveTokenForUrl(input, action) {
+        const normalizedHost = String(normalizeUrl(input)?.hostname || "");
+        const actionName = deriveAction(input, action);
+        traceStage("interactive-token-enter", {
+            host: normalizedHost,
+            action: actionName
+        });
+        interactiveChallengeActive = true;
+        setLastAttemptSummary({
+            stage: "force-interactive",
+            host: normalizedHost,
+            action: actionName
+        });
+        pushDiagnostic("force-interactive", {
+            host: normalizedHost,
+            action: actionName
+        });
+
+        traceStage("interactive-token-before-ensure-widget", {
+            host: normalizedHost,
+            action: actionName
+        });
+        await ensureInteractiveWidget();
+        traceStage("interactive-token-after-ensure-widget", {
+            host: normalizedHost,
+            action: actionName,
+            widgetId: interactiveWidgetId == null ? null : String(interactiveWidgetId)
+        });
+        debugLog("interactive-widget-ready", {
+            host: normalizedHost,
+            action: actionName,
+            overlay: collectContainerDomSnapshot(ensureInteractiveElements()?.container)
+        });
+        return await new Promise(function (resolve, reject) {
+            let settled = false;
+            let timeoutId = 0;
+
+            function finalizeResolve(token) {
+                if (settled) return;
+                settled = true;
+                if (timeoutId) {
+                    global.clearTimeout(timeoutId);
+                    timeoutId = 0;
+                }
+                setLastAttemptSummary({
+                    stage: "interactive-token",
+                    host: normalizedHost,
+                    action: actionName,
+                    hasToken: Boolean(String(token || "").trim())
+                });
+                resolve(String(token || "").trim());
+            }
+
+            function finalizeReject(error) {
+                if (settled) return;
+                settled = true;
+                if (timeoutId) {
+                    global.clearTimeout(timeoutId);
+                    timeoutId = 0;
+                }
+                closeInteractiveChallenge("force-interactive-reject");
+                setLastAttemptSummary({
+                    stage: "interactive-failed",
+                    host: normalizedHost,
+                    action: actionName,
+                    error: String(error?.message || error || "")
+                });
+                reject(error);
+            }
+
+            if (widgetTokenResolver || widgetTokenRejecter) {
+                settleTokenResolver(new Error("TURNSTILE_EXECUTE_CANCELLED"));
+            }
+            widgetTokenResolver = finalizeResolve;
+            widgetTokenRejecter = finalizeReject;
+            timeoutId = global.setTimeout(function () {
+                finalizeReject(new Error("TURNSTILE_INTERACTIVE_TIMEOUT"));
+            }, INTERACTIVE_TIMEOUT_MS);
+        });
+    }
+
     async function getTokenForUrl(input, action) {
         const siteKey = getSiteKey();
         if (!siteKey || !shouldProtectUrl(input)) return "";
+        if (failureCooldownUntil > Date.now()) {
+            const cooldownError = new Error(failureCooldownReason || "TURNSTILE_COOLDOWN_ACTIVE");
+            setLastAttemptSummary({
+                stage: "cooldown",
+                host: String(normalizeUrl(input)?.hostname || ""),
+                action: deriveAction(input, action),
+                error: String(cooldownError.message || "TURNSTILE_COOLDOWN_ACTIVE")
+            });
+            throw cooldownError;
+        }
         setLastAttemptSummary({
             stage: "start",
             host: String(normalizeUrl(input)?.hostname || ""),
             action: deriveAction(input, action),
             siteKeyConfigured: Boolean(siteKey)
         });
+        if (shouldForceInteractiveChallenge()) {
+            return getInteractiveTokenForUrl(input, action);
+        }
         const rendered = await ensureWidget();
         const runExecute = async function () {
             const normalizedHost = String(normalizeUrl(input)?.hostname || "");

@@ -1481,6 +1481,20 @@
         return "";
     }
 
+    function getInfoPrompt() {
+        var persisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.info");
+        if (persisted) return persisted;
+        var prompt = global.GoToolkitChatPrompt?.INFO_PROMPT;
+        if (prompt && typeof prompt === "string") {
+            return prompt;
+        }
+        var fallback = global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT;
+        if (fallback && typeof fallback === "string") {
+            return fallback;
+        }
+        return getSystemPrompt();
+    }
+
     function createKnowledgeManifestStore() {
         var factory = global.goToolkitStorageService?.createStore;
         if (typeof factory !== "function") {
@@ -3218,7 +3232,7 @@
         var storePresets = global.GoToolkitChatPrompt?.PRESETS || {};
         var allowed = getAllowedPromptPresetIds();
 
-        var advicePrompt = getSystemPrompt();
+        var advicePrompt = getInfoPrompt();
 
         var editPersisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.edit");
         var editPrompt = editPersisted
@@ -3576,12 +3590,8 @@
 
     AssistSidebar.prototype.getActiveSystemPrompt = function () {
         var prompt = "";
-        if (this.promptPresetId === "ask") {
-            var persisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.info");
-            if (persisted) prompt = persisted;
-            else prompt = global.GoToolkitChatPrompt?.INFO_PROMPT
-                || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT
-                || "";
+        if (this.promptPresetId === "ask" || this.promptPresetId === "advice") {
+            prompt = getInfoPrompt();
         }
         if (!prompt && this.promptPresetId === "suggest") {
             var persistedSuggest = getPersistedPromptOrEmpty("goToolkit.chat.prompt.suggest");
@@ -10438,12 +10448,38 @@
         if (typeof html !== "string" || !html.trim()) return false;
         try {
             this.clearPreviewIframe();
+            var previewHtml = html;
+            try {
+                var parsed = new DOMParser().parseFromString(html, "text/html");
+                if (parsed) {
+                    Array.from(parsed.querySelectorAll("script, iframe, object, embed, base")).forEach(function (node) {
+                        node.remove();
+                    });
+                    Array.from(parsed.querySelectorAll("meta[http-equiv], link[rel]")).forEach(function (node) {
+                        var tagName = String(node.tagName || "").toLowerCase();
+                        if (tagName === "meta") {
+                            var httpEquiv = String(node.getAttribute("http-equiv") || "").trim().toLowerCase();
+                            if (httpEquiv === "content-security-policy" || httpEquiv === "refresh") {
+                                node.remove();
+                            }
+                            return;
+                        }
+                        var rel = String(node.getAttribute("rel") || "").trim().toLowerCase();
+                        if (/^(preload|modulepreload|prefetch|preconnect|dns-prefetch)$/.test(rel)) {
+                            node.remove();
+                        }
+                    });
+                    previewHtml = parsed.documentElement?.outerHTML || parsed.body?.innerHTML || html;
+                }
+            } catch (sanitizeErr) {
+                previewHtml = html;
+            }
             var iframe = document.createElement("iframe");
             iframe.className = "chat-doc-preview__iframe";
             iframe.setAttribute("loading", "lazy");
             iframe.setAttribute("referrerpolicy", "no-referrer");
             iframe.setAttribute("sandbox", "");
-            iframe.srcdoc = html;
+            iframe.srcdoc = previewHtml;
             this.previewBodyEl.style.display = "none";
             this.previewPanel.appendChild(iframe);
             this.previewIframeEl = iframe;

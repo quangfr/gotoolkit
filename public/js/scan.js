@@ -1590,7 +1590,6 @@
     }
     setCaptureStep(2);
     setCaptureTitle("audio");
-    setLoaderActive(true, "audio");
     let transcriptId = "";
     let storedTranscript = false;
     const key = transcriptApi.getAssemblyApiKey?.() || "";
@@ -1599,6 +1598,7 @@
     try {
       const uploadUrl = await transcriptApi.uploadAudioToAssembly(file, key);
       const payload = transcriptApi.buildAssemblyTranscriptPayload(uploadUrl, 0);
+      setLoaderActive(true, "audio");
       transcriptId = await transcriptApi.requestAssemblyTranscript(payload, key);
       const result = await transcriptApi.pollAssemblyTranscript(transcriptId, key);
       const transcript =
