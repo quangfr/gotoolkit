@@ -453,6 +453,8 @@ Browser sync behavior:
 - each request gets a fresh JTI
 - response `Date` header can adjust client clock offset
 - one retry is performed on invalid sync timestamp errors
+- cloud content writes for `pages` and tree writes for `pages-meta` carry `clientUpdatedAt`
+- the worker treats `clientUpdatedAt` as the stale-write guard for cloud memos and ignores older writes that arrive late
 
 Delete semantics:
 

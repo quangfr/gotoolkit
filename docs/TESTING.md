@@ -66,7 +66,9 @@ Current built-in automation hooks in the repo:
 - `tests/cloud-sync-persist.spec.ts`
 - `tests/cloud-private-transfer-sync.spec.ts`
 - `tests/cloud-switch-persist.spec.ts`
+- `tests/cloud-rapid-switch-large.spec.ts`
 - `tests/private-switch-persist.spec.ts`
+- `tests/private-switch-rapid-repro.spec.ts`
 - `tests/space-code-rotate.spec.ts`
 - `scripts/with-env-local.sh`
 
@@ -91,11 +93,17 @@ Functional intent of the tests currently present in `tests/`:
 - `private-switch-persist.spec.ts`
   - verifies that edits on private documents survive document switching and a full page reload
 
+- `private-switch-rapid-repro.spec.ts`
+  - stress repro for rapid private-page switching while typing, followed by a reload check on both pages
+
 - `cloud-sync-persist.spec.ts`
   - end-to-end cloud persistence scenario covering create, edit, rename, move, reorder, delete, sync, reload, and remote state verification
 
 - `cloud-switch-persist.spec.ts`
   - verifies that edits on cloud documents survive switching between cloud pages and remain present after reload
+
+- `cloud-rapid-switch-large.spec.ts`
+  - stress repro for 3 cloud pages seeded with large content, then 12 rapid edit/switch operations with refresh, sync, and reload validation
 
 - `cloud-private-transfer-sync.spec.ts`
   - verifies two transfer paths: copying a cloud document to private storage and promoting a private document to cloud storage, with sync persistence checks

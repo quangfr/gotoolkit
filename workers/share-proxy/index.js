@@ -1372,6 +1372,34 @@ function extractMeta(doc) {
   return convertFields(metaField);
 }
 
+function parseIsoMs(value) {
+  const parsed = Date.parse(String(value || "").trim());
+  return Number.isFinite(parsed) ? parsed : -1;
+}
+
+function getPayloadClientUpdatedAt(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  return String(payload.clientUpdatedAt || payload.updatedAt || "").trim();
+}
+
+function isCollectionWithClientLww(collection) {
+  const normalized = String(collection || "").trim().toLowerCase();
+  return normalized === "pages" || normalized === "pages-meta";
+}
+
+async function verifyStoredClientUpdatedAt(env, collection, documentId, expectedClientUpdatedAt) {
+  const expected = String(expectedClientUpdatedAt || "").trim();
+  if (!expected || !isCollectionWithClientLww(collection)) return { ok: true, skipped: true };
+  const stored = await fetchShareDocument(env, collection, documentId).catch(() => null);
+  const storedPayload = stored?.payload && typeof stored.payload === "object" ? stored.payload : null;
+  const storedClientUpdatedAt = getPayloadClientUpdatedAt(storedPayload);
+  return {
+    ok: storedClientUpdatedAt === expected,
+    storedClientUpdatedAt,
+    expectedClientUpdatedAt: expected
+  };
+}
+
 function buildShareSummary(entry) {
   const payload = entry?.payload && typeof entry.payload === "object" ? entry.payload : {};
   const firstTab = Array.isArray(payload?.tabs) ? payload.tabs[0] : null;
@@ -2024,6 +2052,25 @@ async function reconcileMemosConsistency(env, request, options = {}) {
 }
 
 async function upsertShareDocument(env, collection, documentId, payload, request) {
+  if (isCollectionWithClientLww(collection)) {
+    const incomingClientUpdatedAt = getPayloadClientUpdatedAt(payload);
+    const incomingClientUpdatedMs = parseIsoMs(incomingClientUpdatedAt);
+    if (incomingClientUpdatedMs > 0) {
+      const existing = await fetchShareDocument(env, collection, documentId).catch(() => null);
+      const existingPayload = existing?.payload && typeof existing.payload === "object" ? existing.payload : null;
+      const existingClientUpdatedMs = parseIsoMs(getPayloadClientUpdatedAt(existingPayload));
+      if (existingClientUpdatedMs > incomingClientUpdatedMs) {
+        return {
+          payload: existingPayload || payload,
+          meta: {
+            updatedAt: String(existing?.meta?.updatedAt || new Date().toISOString()).trim() || new Date().toISOString(),
+            skipped: true,
+            reason: "stale-client-write"
+          }
+        };
+      }
+    }
+  }
   const url = getDocumentUrl(env, collection, documentId);
   const now = new Date().toISOString();
   const response = await fetch(url, {
@@ -2603,7 +2650,16 @@ async function handleRequest(request, env) {
           return errorResponse(`Scope espace invalide pour ${id}`, 403, request, env);
         }
       }
-      const result = await upsertShareDocument(env, batchPath.collection, id, entry.payload, request);
+      let result = await upsertShareDocument(env, batchPath.collection, id, entry.payload, request);
+      const expectedClientUpdatedAt = getPayloadClientUpdatedAt(entry?.payload);
+      const verification = await verifyStoredClientUpdatedAt(env, batchPath.collection, id, expectedClientUpdatedAt);
+      if (!verification.ok) {
+        result = await upsertShareDocument(env, batchPath.collection, id, entry.payload, request);
+        const retryVerification = await verifyStoredClientUpdatedAt(env, batchPath.collection, id, expectedClientUpdatedAt);
+        if (!retryVerification.ok) {
+          return errorResponse(`Verification ecriture impossible pour ${id}`, 409, request, env);
+        }
+      }
       results.push({
         id,
         meta: result?.meta || { updatedAt: new Date().toISOString() }

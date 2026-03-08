@@ -43,10 +43,18 @@ export async function clickMemoDoc(page: Page, docId: string, options: { allowPr
   }
 }
 
-export async function typeIntoVisibleEditor(page: Page, text: string, timeout = 30_000) {
+export async function typeIntoVisibleEditor(
+  page: Page,
+  text: string,
+  timeout = 30_000,
+  options: { clickBeforeType?: boolean } = {}
+) {
+  const { clickBeforeType = true } = options;
   const editor = page.locator(".ProseMirror:visible").first();
   await expect(editor).toBeVisible({ timeout });
-  await editor.click();
+  if (clickBeforeType) {
+    await editor.click();
+  }
   await page.keyboard.type(text);
 }
 
