@@ -3,6 +3,11 @@ import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./share-test-space";
 
 async function gotoIndex(page: Page, baseUrl: string) {
   const targetUrl = `${baseUrl}/index.html`;
+  await page.addInitScript(() => {
+    (window as any).GO_TOOLKIT_FORCE_INTERACTIVE_TURNSTILE = false;
+    (window as any).GO_TOOLKIT_TURNSTILE_DEBUG = false;
+    (window as any).GO_TOOLKIT_DISABLE_TURNSTILE_FOR_LOCAL_TESTS = true;
+  });
   try {
     await page.goto(targetUrl, { waitUntil: "commit", timeout: 20_000 });
     return;

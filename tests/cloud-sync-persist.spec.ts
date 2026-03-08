@@ -32,7 +32,6 @@ test.describe("Cloud sync persistency", () => {
       logStep("connect-space:start", { spaceId: PW_TEST_SPACE_ID });
       await ensureCloudConnectedWithSpaceCode(page, baseUrl);
       logStep("connect-space:done");
-      await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 45_000 });
       await waitForMemoReady(page);
@@ -251,11 +250,11 @@ test.describe("Cloud sync persistency", () => {
       logStep("sync:done");
       logStep("remote-delete-check:start");
       await expect.poll(
-        async () => page.evaluate(async ({ existingToken, rootToken, childToken }) => {
+        async () => page.evaluate(async ({ existingToken, rootToken, childToken, spaceId }) => {
           const worker = (window as any).goToolkitShareWorker;
           const read = async (token: string) => {
-            const meta = await worker.fetchSharePayload("pages-meta", token);
-            const content = await worker.fetchSharePayload("pages", token);
+            const meta = await worker.fetchSharePayload("pages-meta", token, { spaceId });
+            const content = await worker.fetchSharePayload("pages", token, { spaceId });
             return {
               metaStatus: String(meta?.payload?.status || "").trim().toLowerCase(),
               contentMissing: !content?.payload
@@ -266,12 +265,12 @@ test.describe("Cloud sync persistency", () => {
             root: await read(rootToken),
             child: await read(childToken)
           };
-        }, state),
+        }, { ...state, spaceId: PW_TEST_SPACE_ID }),
         { timeout: 60_000, intervals: [1200, 2400, 4000] }
       ).toEqual({
-        existing: { metaStatus: "archived", contentMissing: true },
-        root: { metaStatus: "archived", contentMissing: true },
-        child: { metaStatus: "archived", contentMissing: true }
+        existing: { metaStatus: "deleted", contentMissing: true },
+        root: { metaStatus: "deleted", contentMissing: true },
+        child: { metaStatus: "deleted", contentMissing: true }
       });
       logStep("remote-delete-check:done");
 
@@ -283,26 +282,26 @@ test.describe("Cloud sync persistency", () => {
       logStep("remote-state-check:start");
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.parentToken}"]`)).toContainText(state.renamedParentTitle, { timeout: 20_000 });
 
-      const remoteCheck = await page.evaluate(async ({ parentToken, renamedParentTitle, existingToken, rootToken, childToken }) => {
+      const remoteCheck = await page.evaluate(async ({ parentToken, renamedParentTitle, existingToken, rootToken, childToken, spaceId }) => {
         const worker = (window as any).goToolkitShareWorker;
-        const parentMeta = await worker.fetchSharePayload("pages-meta", parentToken);
-        const existingMeta = await worker.fetchSharePayload("pages-meta", existingToken);
-        const rootMeta = await worker.fetchSharePayload("pages-meta", rootToken);
-        const childMeta = await worker.fetchSharePayload("pages-meta", childToken);
-        const existingContent = await worker.fetchSharePayload("pages", existingToken);
-        const rootContent = await worker.fetchSharePayload("pages", rootToken);
-        const childContent = await worker.fetchSharePayload("pages", childToken);
+        const parentMeta = await worker.fetchSharePayload("pages-meta", parentToken, { spaceId });
+        const existingMeta = await worker.fetchSharePayload("pages-meta", existingToken, { spaceId });
+        const rootMeta = await worker.fetchSharePayload("pages-meta", rootToken, { spaceId });
+        const childMeta = await worker.fetchSharePayload("pages-meta", childToken, { spaceId });
+        const existingContent = await worker.fetchSharePayload("pages", existingToken, { spaceId });
+        const rootContent = await worker.fetchSharePayload("pages", rootToken, { spaceId });
+        const childContent = await worker.fetchSharePayload("pages", childToken, { spaceId });
         return {
           parentTitle: String(parentMeta?.payload?.title || ""),
-          existingArchived: String(existingMeta?.payload?.status || "").trim().toLowerCase() === "archived",
-          rootArchived: String(rootMeta?.payload?.status || "").trim().toLowerCase() === "archived",
-          childArchived: String(childMeta?.payload?.status || "").trim().toLowerCase() === "archived",
+          existingArchived: String(existingMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
+          rootArchived: String(rootMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
+          childArchived: String(childMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
           existingContentMissing: !existingContent?.payload,
           rootContentMissing: !rootContent?.payload,
           childContentMissing: !childContent?.payload,
           expectedTitle: renamedParentTitle
         };
-      }, state);
+      }, { ...state, spaceId: PW_TEST_SPACE_ID });
 
       logStep("remote-state-check:result", remoteCheck);
       expect(remoteCheck.parentTitle).toContain(remoteCheck.expectedTitle);

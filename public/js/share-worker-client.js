@@ -1293,6 +1293,11 @@
           spaceId: String(resolvedPayload?.spaceId || decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
         })
         : resolvedPayload;
+      rememberTokenSpaceId(
+        collection,
+        token,
+        options?.spaceId || hydratedPayload?.spaceId || resolvedPayload?.spaceId || decryptedPayload?.spaceId || payload?.spaceId || ""
+      );
       return {
         payload: hydratedPayload,
         meta: data.meta || null
@@ -1516,31 +1521,45 @@
       return { count: 0, documents: [] };
     }
     return withWorkerFallback(async base => {
-      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
-        "Content-Type": "application/json",
-        Accept: "application/json"
-      }), {
-        method: "POST",
-        collection,
-        spaceId: resolveRequestSpaceId(collection, "", options)
-      });
       const docs = [];
-      for (const chunkIds of chunkArray(normalizedIds, BATCH_IDS_CHUNK_SIZE)) {
-        const response = await fetchWithSyncRetry(buildShareBatchGetUrl(base, collection), {
+      const groupsBySpaceId = new Map();
+      const fallbackSpaceId = resolveRequestSpaceId(collection, "", options);
+      for (const id of normalizedIds) {
+        const resolvedSpaceId = resolveKnownRequestSpaceId(collection, id, options) || fallbackSpaceId;
+        const groupKey = resolvedSpaceId || "__no_space__";
+        if (!groupsBySpaceId.has(groupKey)) {
+          groupsBySpaceId.set(groupKey, []);
+        }
+        groupsBySpaceId.get(groupKey).push(id);
+      }
+      for (const [groupSpaceId, groupIds] of groupsBySpaceId.entries()) {
+        const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        }), {
           method: "POST",
-          headers: authHeaders,
-          body: JSON.stringify({ ids: chunkIds })
+          collection,
+          spaceId: groupSpaceId === "__no_space__" ? "" : groupSpaceId
         });
-        if (!response.ok) {
-          const body = await response.text().catch(() => "");
-          throw new Error(body || "Impossible de récupérer le lot");
+        for (const chunkIds of chunkArray(groupIds, BATCH_IDS_CHUNK_SIZE)) {
+          const response = await fetchWithSyncRetry(buildShareBatchGetUrl(base, collection), {
+            method: "POST",
+            headers: authHeaders,
+            body: JSON.stringify({ ids: chunkIds })
+          });
+          if (!response.ok) {
+            const body = await response.text().catch(() => "");
+            throw new Error(body || "Impossible de récupérer le lot");
+          }
+          const data = await response.json().catch(() => ({ documents: [] }));
+          const chunkDocs = Array.isArray(data?.documents) ? data.documents : [];
+          for (const item of chunkDocs) {
+            rememberTokenSpaceId(collection, item?.id, groupSpaceId === "__no_space__"
+              ? (options?.spaceId || item?.payload?.spaceId || "golive")
+              : groupSpaceId);
+          }
+          docs.push(...chunkDocs);
         }
-        const data = await response.json().catch(() => ({ documents: [] }));
-        const chunkDocs = Array.isArray(data?.documents) ? data.documents : [];
-        for (const item of chunkDocs) {
-          rememberTokenSpaceId(collection, item?.id, options?.spaceId || item?.payload?.spaceId || "golive");
-        }
-        docs.push(...chunkDocs);
       }
       const shouldHydrateAssets = options?.hydrateAssets !== false;
       const hydratedDocs = await Promise.all(docs.map(async doc => {
@@ -1580,7 +1599,7 @@
     tokenSpaceIdCache.set(`${normalizedCollection}:${normalizedToken}`, normalizedSpaceId);
   }
 
-  function resolveRequestSpaceId(collection, token, options = {}) {
+  function resolveKnownRequestSpaceId(collection, token, options = {}) {
     const explicit = normalizeSpaceId(options?.spaceId || "");
     if (explicit) return explicit;
     const normalizedCollection = String(collection || "").trim().toLowerCase();
@@ -1588,7 +1607,29 @@
     if (normalizedCollection && normalizedToken) {
       const cached = normalizeSpaceId(tokenSpaceIdCache.get(`${normalizedCollection}:${normalizedToken}`) || "");
       if (cached) return cached;
+      const resolver = window.GoToolkitResolveShareSpaceId;
+      if (typeof resolver === "function") {
+        try {
+          const resolved = normalizeSpaceId(resolver({
+            collection: normalizedCollection,
+            token: normalizedToken
+          }) || "");
+          if (resolved) {
+            rememberTokenSpaceId(normalizedCollection, normalizedToken, resolved);
+            return resolved;
+          }
+        } catch (err) {
+          // ignore app-specific resolver failures
+        }
+      }
     }
+    return "";
+  }
+
+  function resolveRequestSpaceId(collection, token, options = {}) {
+    const known = resolveKnownRequestSpaceId(collection, token, options);
+    if (known) return known;
+    const normalizedCollection = String(collection || "").trim().toLowerCase();
     if (normalizedCollection === "pages" || normalizedCollection === "pages-meta") {
       const spacesApi = window.GoToolkitSpaces;
       const allSpaces = typeof spacesApi?.readSpaces === "function" ? spacesApi.readSpaces() : [];
@@ -1601,11 +1642,7 @@
         .map(item => normalizeSpaceId(item?.id || ""));
       if (withCode.length === 1) return withCode[0];
       if (withCode.includes("golive")) return "golive";
-      if (withCode.length > 1) {
-        const nonDefault = withCode.find(id => id !== "golive");
-        if (nonDefault) return nonDefault;
-      }
-      return "golive";
+      return "";
     }
     return "";
   }
@@ -1886,7 +1923,7 @@
     });
   }
 
-  async function deleteSharePayloadBatch(collection, ids) {
+  async function deleteSharePayloadBatch(collection, ids, options = {}) {
     assertReady();
     const normalizedIds = Array.isArray(ids)
       ? ids.map(id => String(id || "").trim()).filter(Boolean)
@@ -1901,28 +1938,40 @@
         ids: normalizedIds,
         base
       });
-      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
-        "Content-Type": "application/json",
-        Accept: "application/json"
-      }), {
-        method: "POST",
-        collection,
-        spaceId: resolveRequestSpaceId(collection, "", {})
-      });
       const results = [];
-      for (const chunkIds of chunkArray(normalizedIds, BATCH_IDS_CHUNK_SIZE)) {
-        const response = await fetchWithSyncRetry(buildShareBatchDeleteUrl(base, collection), {
-          method: "POST",
-          headers: authHeaders,
-          body: JSON.stringify({ ids: chunkIds })
-        });
-        if (!response.ok) {
-          const body = await response.text().catch(() => "");
-          throw new Error(body || "Impossible de supprimer le lot");
+      const groupsBySpaceId = new Map();
+      const fallbackSpaceId = resolveRequestSpaceId(collection, "", options);
+      for (const id of normalizedIds) {
+        const resolvedSpaceId = resolveKnownRequestSpaceId(collection, id, options) || fallbackSpaceId;
+        const groupKey = resolvedSpaceId || "__no_space__";
+        if (!groupsBySpaceId.has(groupKey)) {
+          groupsBySpaceId.set(groupKey, []);
         }
-        const data = await response.json().catch(() => ({ count: chunkIds.length, results: [] }));
-        if (Array.isArray(data?.results)) {
-          results.push(...data.results);
+        groupsBySpaceId.get(groupKey).push(id);
+      }
+      for (const [groupSpaceId, groupIds] of groupsBySpaceId.entries()) {
+        const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        }), {
+          method: "POST",
+          collection,
+          spaceId: groupSpaceId === "__no_space__" ? "" : groupSpaceId
+        });
+        for (const chunkIds of chunkArray(groupIds, BATCH_IDS_CHUNK_SIZE)) {
+          const response = await fetchWithSyncRetry(buildShareBatchDeleteUrl(base, collection), {
+            method: "POST",
+            headers: authHeaders,
+            body: JSON.stringify({ ids: chunkIds })
+          });
+          if (!response.ok) {
+            const body = await response.text().catch(() => "");
+            throw new Error(body || "Impossible de supprimer le lot");
+          }
+          const data = await response.json().catch(() => ({ count: chunkIds.length, results: [] }));
+          if (Array.isArray(data?.results)) {
+            results.push(...data.results);
+          }
         }
       }
       return { count: normalizedIds.length, results };
@@ -2000,6 +2049,17 @@
         const data = await response.json().catch(() => ({ count: chunkWrites.length, results: [] }));
         if (Array.isArray(data?.results)) {
           results.push(...data.results);
+        }
+      }
+      const pairedMetaCollection = String(collection || "").trim().toLowerCase() === "pages"
+        ? "pages-meta"
+        : "";
+      for (const entry of preparedWrites) {
+        const token = String(entry?.id || "").trim();
+        const spaceId = resolveSpaceIdForPayload(entry?.contentPayload || entry?.metaPayload || {}, options);
+        rememberTokenSpaceId(collection, token, spaceId);
+        if (pairedMetaCollection) {
+          rememberTokenSpaceId(pairedMetaCollection, token, spaceId);
         }
       }
       return { count: preparedWrites.length, results };

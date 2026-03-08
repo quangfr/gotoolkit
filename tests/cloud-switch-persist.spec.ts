@@ -9,7 +9,6 @@ test.describe("Cloud page switching persistency", () => {
     const baseUrl = "http://127.0.0.1:5000";
 
     await ensureCloudConnectedWithSpaceCode(page, baseUrl);
-    await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 30_000 });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 30_000 });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 30_000 });
     await waitForMemoReady(page, 30_000);

@@ -213,6 +213,9 @@
         const url = normalizeUrl(input);
         if (!url) return false;
         const pageOrigin = normalizeUrl(global.location?.href || "");
+        if (!shouldForceInteractiveChallenge() && global.GO_TOOLKIT_DISABLE_TURNSTILE_FOR_LOCAL_TESTS === true) {
+            return false;
+        }
         if (!shouldForceInteractiveChallenge() && pageOrigin && isLocalOrigin(pageOrigin.origin)) {
             return false;
         }

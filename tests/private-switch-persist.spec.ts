@@ -7,18 +7,32 @@ test.describe("Private page switching persistency", () => {
     const baseUrl = "http://127.0.0.1:5000";
 
     await page.goto(`${baseUrl}/index.html`, { waitUntil: "commit", timeout: 20_000 });
-    await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoCreateDocument), null, { timeout: 30_000 });
     await waitForMemoReady(page, 30_000);
 
     const seed = await page.evaluate(async () => {
       const ts = Date.now();
-      const privateAId = await (window as any).GoToolkitMemoCreateDocument({
-        name: `PW Private A ${ts}`,
-        initialContent: `<p>PRIVATE_A_BASE_${ts}</p>`,
+      const docApi = (window as any).goToolkitDocumentApi;
+      const privateAId = docApi?.generateId?.() || `private-a-${ts}`;
+      const privateBId = docApi?.generateId?.() || `private-b-${ts}`;
+      await docApi?.upsertRecord?.({
+        id: privateAId,
+        app: "memo",
+        title: `PW Private A ${ts}`,
+        payload: {
+          tabs: [{ id: `tab-${privateAId}`, title: `PW Private A ${ts}`, description: "", superpowers: [], content: `<p>PRIVATE_A_BASE_${ts}</p>` }],
+          activeTabId: `tab-${privateAId}`
+        },
+        updatedAt: new Date().toISOString()
       });
-      const privateBId = await (window as any).GoToolkitMemoCreateDocument({
-        name: `PW Private B ${ts}`,
-        initialContent: `<p>PRIVATE_B_BASE_${ts}</p>`,
+      await docApi?.upsertRecord?.({
+        id: privateBId,
+        app: "memo",
+        title: `PW Private B ${ts}`,
+        payload: {
+          tabs: [{ id: `tab-${privateBId}`, title: `PW Private B ${ts}`, description: "", superpowers: [], content: `<p>PRIVATE_B_BASE_${ts}</p>` }],
+          activeTabId: `tab-${privateBId}`
+        },
+        updatedAt: new Date().toISOString()
       });
       await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
       return {

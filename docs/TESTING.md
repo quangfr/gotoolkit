@@ -38,6 +38,7 @@ Use these as the default entry points before reading the full guide.
 - Prefer a real spec under `tests/` over ad hoc scripts for any non-trivial repro.
 - On WSL, run Playwright from the Linux mirror, not `/mnt/c/...`.
 - Stub Turnstile and dismiss the docs tour unless they are the subject of the test.
+- For local Playwright and local browser repros, Turnstile must stay disabled by default for API-worker calls; only enable it when an explicit debug flag such as `turnstileDebug=1` is part of the repro.
 - Add step logs plus `console`, `pageerror`, `request`, and `response` listeners before rewriting a repro.
 - Use `spaceCode` bootstrap first for cloud coverage; fall back to OAuth UI only when the auth UX itself is under test.
 
@@ -234,7 +235,7 @@ Use this exact workflow for local UI debugging and repros on this repo:
 4. attach listeners for `console`, `pageerror`, `request`, and `response` before navigation
 5. add explicit `console.log` step markers before every intended UI interaction
 6. suppress the docs tour unless the tour itself is under test
-7. stub or disable Turnstile unless Turnstile itself is the subject of the test
+7. keep Turnstile disabled for local runs unless the repro explicitly uses a Turnstile debug flag such as `turnstileDebug=1`
 8. run the repo-local binary from the Linux mirror: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`, or use `npm run playwright:linux:test -- ...`
 9. keep the instrumentation in place until the failing stage is isolated; do not keep rewriting the harness blindly between runs
 

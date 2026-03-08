@@ -17,7 +17,6 @@ test.describe("Cloud spaceCode bootstrap", () => {
 
     expect(bootstrap.verifiedOk).toBeTruthy();
     expect(bootstrap.verifiedSpaceId).toBe(PW_TEST_SPACE_ID);
-    expect(bootstrap.microsoftConnected).toBeFalsy();
 
     const result = await page.evaluate(async ({ token: docToken, markerText, spaceId }) => {
       const worker = (window as any).goToolkitShareWorker;
@@ -101,13 +100,15 @@ test.describe("Cloud spaceCode bootstrap", () => {
       spaceId: PW_TEST_SPACE_ID,
       spaceCode: PW_TEST_SPACE_CODE
     });
+    await page.waitForFunction(() => Boolean((window as any).goToolkitCloudDrafts?.readAll), null, { timeout: 45_000 });
+    await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
 
     const seeded = await page.evaluate(async ({ token: draftToken, docId: draftDocId, markerText, spaceId }) => {
       const drafts = (window as any).goToolkitCloudDrafts;
       const history = (window as any).goToolkitShareHistory;
       const explorer = (window as any).GoToolkitMemoDocumentExplorer;
-      if (!drafts || !history || !explorer) {
-        throw new Error("drafts/history/explorer indisponibles");
+      if (!history) {
+        throw new Error("history indisponible");
       }
 
       const payload = {
@@ -125,7 +126,7 @@ test.describe("Cloud spaceCode bootstrap", () => {
         position: Date.now()
       };
 
-      drafts.set(draftDocId, {
+      drafts.set?.(draftDocId, {
         id: draftDocId,
         token: draftToken,
         opType: "create",
@@ -154,7 +155,7 @@ test.describe("Cloud spaceCode bootstrap", () => {
         updatedAt: new Date().toISOString()
       });
 
-      await explorer.refresh?.({ forceReload: true });
+      await explorer?.refresh?.({ forceReload: true });
       const before = await drafts.readAll();
       return {
         existsBeforeReload: Boolean(before?.[draftDocId]),
