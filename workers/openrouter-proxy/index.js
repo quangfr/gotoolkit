@@ -3,7 +3,6 @@ const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
   "https://www.gotoolkit.fr",
   "https://gotoolkit.workers.dev"
 ]);
-const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
 function buildRequestId() {
   try {
@@ -45,29 +44,6 @@ function parseAllowedOrigins(env) {
   return Array.from(merged);
 }
 
-function parseTurnstileAllowedHostnames(env, allowedOrigins = []) {
-  const fromEnv = String(env?.TURNSTILE_ALLOWED_HOSTNAMES || "")
-    .split(",")
-    .map(host => String(host || "").trim().toLowerCase())
-    .filter(Boolean);
-  const fromOrigins = Array.isArray(allowedOrigins)
-    ? allowedOrigins
-      .map(origin => getHostnameFromOrigin(origin))
-      .filter(Boolean)
-    : [];
-  return new Set([...fromOrigins, ...fromEnv]);
-}
-
-function isCompatibleTurnstileAction(expectedAction, verifiedAction) {
-  const expected = String(expectedAction || "").trim().toLowerCase();
-  const verified = String(verifiedAction || "").trim().toLowerCase();
-  if (!expected) return true;
-  if (verified === expected) return true;
-  // Backward compatibility: old clients used "openrouter" for chat completions.
-  if (expected === "chat" && verified === "openrouter") return true;
-  return false;
-}
-
 function isLocalAllowedOrigin(origin) {
   if (!origin) return false;
   return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?$/i.test(origin);
@@ -81,129 +57,6 @@ function resolveCors(request, env) {
   const allowed = allowLocal || allowListed;
   const corsOrigin = allowed ? origin : "null";
   return { origin, corsOrigin, allowed, allowLocal, allowedOrigins };
-}
-
-function getClientIp(request) {
-  return (
-    request.headers.get("CF-Connecting-IP")
-    || request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim()
-    || ""
-  );
-}
-
-function getTurnstileSecret(env) {
-  return String(env?.TURNSTILE_SECRET_KEY || env?.CF_TURNSTILE_SECRET_KEY || "").trim();
-}
-
-function getTurnstileToken(request) {
-  return String(
-    request.headers.get("X-Turnstile-Token")
-    || request.headers.get("CF-Turnstile-Response")
-    || ""
-  ).trim();
-}
-
-async function enforceTurnstile(request, env, corsOrigin, action, requestId) {
-  const secret = getTurnstileSecret(env);
-  if (!secret) {
-    return jsonError(corsOrigin, 500, "MISSING_ENV", "Turnstile secret missing.", requestId);
-  }
-  const token = getTurnstileToken(request);
-  if (!token) {
-    return jsonError(corsOrigin, 403, "TURNSTILE_REQUIRED", "Turnstile token required.", requestId, {
-      turnstile: {
-        requestId,
-        expectedAction: String(action || "").trim().toLowerCase(),
-        hasToken: false,
-        origin: normalizeOriginValue(request.headers.get("Origin"))
-      }
-    });
-  }
-  let response;
-  try {
-    response = await fetch(TURNSTILE_VERIFY_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        secret,
-        response: token,
-        remoteip: getClientIp(request) || undefined,
-        idempotency_key: crypto.randomUUID()
-      })
-    });
-  } catch (error) {
-    console.error("Turnstile verification failed", { requestId, action, error: String(error?.message || error || "") });
-    return jsonError(corsOrigin, 502, "TURNSTILE_UNAVAILABLE", "Turnstile verification unavailable.", requestId);
-  }
-  const result = await response.json().catch(() => null);
-  if (!response.ok || !result?.success) {
-    console.warn("Turnstile rejected request", {
-      requestId,
-      action,
-      status: response.status,
-      errors: result?.["error-codes"] || [],
-      hostname: String(result?.hostname || "").trim().toLowerCase() || null,
-      verifiedAction: String(result?.action || "").trim().toLowerCase() || null,
-      tokenLength: token.length
-    });
-    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.", requestId, {
-      turnstile: {
-        requestId,
-        expectedAction: String(action || "").trim().toLowerCase(),
-        verifiedAction: String(result?.action || "").trim().toLowerCase() || null,
-        hostname: String(result?.hostname || "").trim().toLowerCase() || null,
-        errors: result?.["error-codes"] || [],
-        hasToken: true,
-        tokenLength: token.length,
-        origin: normalizeOriginValue(request.headers.get("Origin"))
-      }
-    });
-  }
-  const allowedHostnames = parseTurnstileAllowedHostnames(env, parseAllowedOrigins(env));
-  const verifiedHostname = String(result?.hostname || "").trim().toLowerCase();
-  if (allowedHostnames.size > 0 && (!verifiedHostname || !allowedHostnames.has(verifiedHostname))) {
-    console.warn("Turnstile hostname mismatch", {
-      requestId,
-      action,
-      verifiedHostname,
-      allowedHostnames: Array.from(allowedHostnames)
-    });
-    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.", requestId, {
-      turnstile: {
-        requestId,
-        expectedAction: String(action || "").trim().toLowerCase(),
-        verifiedAction: String(result?.action || "").trim().toLowerCase() || null,
-        hostname: verifiedHostname || null,
-        allowedHostnames: Array.from(allowedHostnames),
-        hasToken: true,
-        tokenLength: token.length,
-        origin: normalizeOriginValue(request.headers.get("Origin"))
-      }
-    });
-  }
-  const expectedAction = String(action || "").trim().toLowerCase();
-  const verifiedAction = String(result?.action || "").trim().toLowerCase();
-  if (!isCompatibleTurnstileAction(expectedAction, verifiedAction)) {
-    console.warn("Turnstile action mismatch", {
-      requestId,
-      expectedAction,
-      verifiedAction: verifiedAction || null
-    });
-    return jsonError(corsOrigin, 403, "TURNSTILE_FAILED", "Turnstile verification failed.", requestId, {
-      turnstile: {
-        requestId,
-        expectedAction,
-        verifiedAction: verifiedAction || null,
-        hostname: verifiedHostname || null,
-        hasToken: true,
-        tokenLength: token.length,
-        origin: normalizeOriginValue(request.headers.get("Origin"))
-      }
-    });
-  }
-  return null;
 }
 
 export default {
@@ -256,13 +109,6 @@ export default {
           Vary: "Origin"
         }
       });
-    }
-
-    if (!corsMeta.allowLocal) {
-      const turnstileResponse = await enforceTurnstile(request, env, corsOrigin, isEmbeddingsRoute ? "embeddings" : "chat", requestId);
-      if (turnstileResponse) {
-        return turnstileResponse;
-      }
     }
 
     const ipAddress = request.headers.get("cf-connecting-ip") || "";

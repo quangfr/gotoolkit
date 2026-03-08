@@ -16,9 +16,6 @@ simple = { limit = 10, period = 60 }
 # account_id = "b286ce2e71f34c63bfe16f940cb069fb"
 # route = "https://gotoolkit.web.app/*"
 
-# Optional bot gate for browser-origin POSTs:
-# wrangler secret put TURNSTILE_SECRET_KEY
-
 [observability]
 enabled = false
 head_sampling_rate = 1

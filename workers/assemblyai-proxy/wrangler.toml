@@ -15,9 +15,6 @@ simple = { limit = 10, period = 60 }
 # account_id = ""
 # route = ""
 
-# Optional bot gate for browser-origin token/upload/transcript routes:
-# wrangler secret put TURNSTILE_SECRET_KEY
-
 [observability]
 enabled = false
 head_sampling_rate = 1

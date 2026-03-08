@@ -37,8 +37,7 @@ Use these as the default entry points before reading the full guide.
 
 - Prefer a real spec under `tests/` over ad hoc scripts for any non-trivial repro.
 - On WSL, run Playwright from the Linux mirror, not `/mnt/c/...`.
-- Stub Turnstile and dismiss the docs tour unless they are the subject of the test.
-- For local Playwright and local browser repros, Turnstile must stay disabled by default for API-worker calls; only enable it when an explicit debug flag such as `turnstileDebug=1` is part of the repro.
+- Dismiss the docs tour unless it is the subject of the test.
 - Add step logs plus `console`, `pageerror`, `request`, and `response` listeners before rewriting a repro.
 - Use `spaceCode` bootstrap first for cloud coverage; fall back to OAuth UI only when the auth UX itself is under test.
 
@@ -235,7 +234,7 @@ Use this exact workflow for local UI debugging and repros on this repo:
 4. attach listeners for `console`, `pageerror`, `request`, and `response` before navigation
 5. add explicit `console.log` step markers before every intended UI interaction
 6. suppress the docs tour unless the tour itself is under test
-7. keep Turnstile disabled for local runs unless the repro explicitly uses a Turnstile debug flag such as `turnstileDebug=1`
+7. keep worker repros focused on route behavior, CORS, and rate limiting
 8. run the repo-local binary from the Linux mirror: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`, or use `npm run playwright:linux:test -- ...`
 9. keep the instrumentation in place until the failing stage is isolated; do not keep rewriting the harness blindly between runs
 
@@ -290,7 +289,6 @@ Practical guidance:
 - on WSL, use the Linux mirror
 - prefer a real spec under `tests/` over an ad hoc script
 - attach listeners before navigation
-- stub Turnstile when it is not under test
 - use explicit readiness selectors such as visible controls or feature APIs
 - suppress the docs tour and set local state directly when the repro allows it
 - distinguish “browser never sent the request” from “worker rejected it” through network events
@@ -392,7 +390,7 @@ Automate these checks:
 
 - allowed origin works
 - bad origin fails
-- Turnstile-required route rejects missing token
+- rate-limited route rejects excess requests
 - configured secret/env path succeeds when present
 
 ## 11. Playwright performance improvements
@@ -442,7 +440,7 @@ If `workers/ms-proxy/**` or other OAuth worker changed:
 If `workers/openrouter-proxy/**`, `workers/googletts-proxy/**`, or `workers/assemblyai-proxy/**` changed:
 
 - CORS smoke
-- missing Turnstile failure smoke
+- rate-limit smoke
 - happy-path env check
 
 ## 13. High-value regression suites to add

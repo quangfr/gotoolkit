@@ -11,8 +11,6 @@ preview_urls = true
 # wrangler secret put GOOGLE_CLOUD_PROJECT_ID
 # wrangler secret put GOOGLE_TTS_VOICES_JSON
 # wrangler secret put GOOGLE_TTS_CHAR_LIMIT
-# wrangler secret put TURNSTILE_SECRET_KEY
-#
 # Non-secret local/default override:
 [vars]
 GOOGLE_TTS_VOICES_JSON = '{"chirp3_hd":{"fr-FR":"fr-FR-Chirp3-HD-Leda","en-US":"en-US-Chirp3-HD-Aoede"},"studio":{"fr-FR":"fr-FR-Studio-A","en-US":"en-US-Studio-O"},"polyglot":{"fr-FR":"fr-FR-Polyglot-1","en-US":"en-US-Polyglot-1"}}'

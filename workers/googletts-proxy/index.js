@@ -14,7 +14,6 @@ const DEFAULT_CHAR_LIMITS = {
 };
 const CUSTOM_METRIC_TYPE = "custom.googleapis.com/gotoolkit/googletts/characters";
 const TOKEN_AUDIENCE = "https://oauth2.googleapis.com/token";
-const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const TOKEN_SCOPE = [
   "https://www.googleapis.com/auth/cloud-platform",
   "https://www.googleapis.com/auth/monitoring.read",
@@ -41,41 +40,8 @@ const DEFAULT_VOICES = {
 
 let cachedToken = { token: "", expiresAt: 0 };
 
-function normalizeClientIp(request) {
-  const raw =
-    request.headers.get("CF-Connecting-IP") ||
-    request.headers.get("X-Forwarded-For") ||
-    "";
-  const first = raw.split(",")[0].trim();
-  if (!first) return "unknown";
-  const withoutBrackets = first.replace(/^\[/, "").replace(/]$/, "");
-  const [hostPart] = withoutBrackets.split(":");
-  return hostPart || "unknown";
-}
-
 function normalizeOrigin(origin) {
   return String(origin || "").trim();
-}
-
-function getHostnameFromOrigin(origin) {
-  const candidate = String(origin || "").trim();
-  if (!candidate) return "";
-  try {
-    return String(new URL(candidate).hostname || "").trim().toLowerCase();
-  } catch {
-    return "";
-  }
-}
-
-function parseTurnstileAllowedHostnames(env) {
-  const fromEnv = String(env?.TURNSTILE_ALLOWED_HOSTNAMES || "")
-    .split(",")
-    .map(host => String(host || "").trim().toLowerCase())
-    .filter(Boolean);
-  const fromOrigins = ALLOWED_ORIGINS
-    .map(origin => getHostnameFromOrigin(origin))
-    .filter(Boolean);
-  return new Set([...fromOrigins, ...fromEnv]);
 }
 
 function isLocalOrigin(origin) {
@@ -91,7 +57,7 @@ function computeCorsHeaders(request) {
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,x-client-id,X-Turnstile-Token,CF-Turnstile-Response"
+    "Access-Control-Allow-Headers": "Content-Type,x-client-id"
   };
   headers.Vary = "Origin";
   return { origin: rawOrigin, allowLocal, corsOrigin, headers, allowed: allowedOrigin };
@@ -113,83 +79,6 @@ function jsonError(corsHeaders, status, code, message, extra) {
 function formatErrorDetails(error) {
   const raw = String(error?.message || error || "unknown_error");
   return raw.slice(0, 400);
-}
-
-function getTurnstileSecret(env) {
-  return String(env?.TURNSTILE_SECRET_KEY || env?.CF_TURNSTILE_SECRET_KEY || "").trim();
-}
-
-function getTurnstileToken(request, payload) {
-  const headerToken = String(
-    request.headers.get("X-Turnstile-Token")
-    || request.headers.get("CF-Turnstile-Response")
-    || ""
-  ).trim();
-  if (headerToken) return headerToken;
-  return String(
-    payload?.turnstileToken
-    || payload?.cfTurnstileResponse
-    || payload?.["cf-turnstile-response"]
-    || ""
-  ).trim();
-}
-
-async function enforceTurnstile(request, corsMeta, env, payload, action) {
-  const secret = getTurnstileSecret(env);
-  if (!secret) {
-    if (corsMeta.allowLocal) return null;
-    return jsonError(corsMeta.headers, 500, "MISSING_ENV", "Turnstile secret missing.");
-  }
-  const token = getTurnstileToken(request, payload);
-  if (!token) {
-    return jsonError(corsMeta.headers, 403, "TURNSTILE_REQUIRED", "Turnstile token required.");
-  }
-  let response;
-  try {
-    response = await fetch(TURNSTILE_VERIFY_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        secret,
-        response: token,
-        remoteip: normalizeClientIp(request) || undefined,
-        idempotency_key: crypto.randomUUID()
-      })
-    });
-  } catch (error) {
-    return jsonError(corsMeta.headers, 502, "TURNSTILE_UNAVAILABLE", "Turnstile verification unavailable.");
-  }
-  const result = await response.json().catch(() => null);
-  if (!response.ok || !result?.success) {
-    console.warn("[googletts-proxy] turnstile rejected", {
-      action,
-      status: response.status,
-      errors: result?.["error-codes"] || []
-    });
-    return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
-  }
-  const allowedHostnames = parseTurnstileAllowedHostnames(env);
-  const verifiedHostname = String(result?.hostname || "").trim().toLowerCase();
-  if (allowedHostnames.size > 0 && (!verifiedHostname || !allowedHostnames.has(verifiedHostname))) {
-    console.warn("[googletts-proxy] turnstile hostname mismatch", {
-      action,
-      verifiedHostname,
-      allowedHostnames: Array.from(allowedHostnames)
-    });
-    return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
-  }
-  const expectedAction = String(action || "").trim().toLowerCase();
-  const verifiedAction = String(result?.action || "").trim().toLowerCase();
-  if (expectedAction && verifiedAction !== expectedAction) {
-    console.warn("[googletts-proxy] turnstile action mismatch", {
-      expectedAction,
-      verifiedAction: verifiedAction || null
-    });
-    return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
-  }
-  return null;
 }
 
 function toBase64Url(input) {
@@ -488,7 +377,7 @@ async function synthesize(token, text, languageCode, voiceName) {
 async function enforceRateLimit(request, corsMeta, env) {
   if (corsMeta.allowLocal) return null;
   if (!env?.MY_RATE_LIMITER || typeof env.MY_RATE_LIMITER.limit !== "function") return null;
-  const ipAddress = request.headers.get("cf-connecting-ip") || normalizeClientIp(request);
+  const ipAddress = request.headers.get("cf-connecting-ip") || "unknown";
   const { success } = await env.MY_RATE_LIMITER.limit({ key: ipAddress });
   if (!success) {
     return jsonError(
@@ -593,9 +482,6 @@ export default {
     } catch (err) {
       return jsonError(corsMeta.headers, 400, "BAD_JSON", "Invalid JSON payload.");
     }
-
-    const turnstileResponse = await enforceTurnstile(request, corsMeta, env, payload, "speak");
-    if (turnstileResponse) return turnstileResponse;
 
     const text = String(payload?.text || "").trim();
     const requestedLanguageCode = String(payload?.languageCode || "").trim();

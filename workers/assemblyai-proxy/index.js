@@ -2,43 +2,9 @@ const ALLOWED_ORIGINS = [
   "https://gotoolkit.fr",
   "https://gotoolkit.workers.dev"
 ];
-const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
-
-function normalizeClientIp(request) {
-  const raw =
-    request.headers.get("CF-Connecting-IP") ||
-    request.headers.get("X-Forwarded-For") ||
-    "";
-  const first = raw.split(",")[0].trim();
-  if (!first) return "unknown";
-  const withoutBrackets = first.replace(/^\[/, "").replace(/]$/, "");
-  const [hostPart] = withoutBrackets.split(":");
-  return hostPart || "unknown";
-}
 
 function normalizeOrigin(origin) {
   return String(origin || "").trim();
-}
-
-function getHostnameFromOrigin(origin) {
-  const candidate = String(origin || "").trim();
-  if (!candidate) return "";
-  try {
-    return String(new URL(candidate).hostname || "").trim().toLowerCase();
-  } catch {
-    return "";
-  }
-}
-
-function parseTurnstileAllowedHostnames(env) {
-  const fromEnv = String(env?.TURNSTILE_ALLOWED_HOSTNAMES || "")
-    .split(",")
-    .map(host => String(host || "").trim().toLowerCase())
-    .filter(Boolean);
-  const fromOrigins = ALLOWED_ORIGINS
-    .map(origin => getHostnameFromOrigin(origin))
-    .filter(Boolean);
-  return new Set([...fromOrigins, ...fromEnv]);
 }
 
 function isLocalOrigin(origin) {
@@ -54,7 +20,7 @@ function computeCorsHeaders(request) {
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
     "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Authorization,X-AssemblyAI-Key,Content-Type,X-Turnstile-Token,CF-Turnstile-Response"
+    "Access-Control-Allow-Headers": "Authorization,X-AssemblyAI-Key,Content-Type"
   };
   headers["Vary"] = "Origin";
   return {
@@ -64,76 +30,6 @@ function computeCorsHeaders(request) {
     headers,
     allowed: allowedOrigin
   };
-}
-
-function getTurnstileSecret(env) {
-  return String(env?.TURNSTILE_SECRET_KEY || env?.CF_TURNSTILE_SECRET_KEY || "").trim();
-}
-
-function getTurnstileToken(request) {
-  return String(
-    request.headers.get("X-Turnstile-Token")
-    || request.headers.get("CF-Turnstile-Response")
-    || ""
-  ).trim();
-}
-
-async function enforceTurnstile(request, corsMeta, env, action) {
-  const secret = getTurnstileSecret(env);
-  if (!secret) {
-    if (corsMeta.allowLocal) return null;
-    return jsonError(corsMeta.headers, 500, "MISSING_ENV", "Turnstile secret missing.");
-  }
-  const token = getTurnstileToken(request);
-  if (!token) {
-    return jsonError(corsMeta.headers, 403, "TURNSTILE_REQUIRED", "Turnstile token required.");
-  }
-  let response;
-  try {
-    response = await fetch(TURNSTILE_VERIFY_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        secret,
-        response: token,
-        remoteip: normalizeClientIp(request) || undefined,
-        idempotency_key: crypto.randomUUID()
-      })
-    });
-  } catch (error) {
-    return jsonError(corsMeta.headers, 502, "TURNSTILE_UNAVAILABLE", "Turnstile verification unavailable.");
-  }
-  const result = await response.json().catch(() => null);
-  if (!response.ok || !result?.success) {
-    console.warn("[assemblyai-proxy] turnstile rejected", {
-      action,
-      status: response.status,
-      errors: result?.["error-codes"] || []
-    });
-    return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
-  }
-  const allowedHostnames = parseTurnstileAllowedHostnames(env);
-  const verifiedHostname = String(result?.hostname || "").trim().toLowerCase();
-  if (allowedHostnames.size > 0 && (!verifiedHostname || !allowedHostnames.has(verifiedHostname))) {
-    console.warn("[assemblyai-proxy] turnstile hostname mismatch", {
-      action,
-      verifiedHostname,
-      allowedHostnames: Array.from(allowedHostnames)
-    });
-    return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
-  }
-  const expectedAction = String(action || "").trim().toLowerCase();
-  const verifiedAction = String(result?.action || "").trim().toLowerCase();
-  if (expectedAction && verifiedAction !== expectedAction) {
-    console.warn("[assemblyai-proxy] turnstile action mismatch", {
-      expectedAction,
-      verifiedAction: verifiedAction || null
-    });
-    return jsonError(corsMeta.headers, 403, "TURNSTILE_FAILED", "Turnstile verification failed.");
-  }
-  return null;
 }
 
 function resolveAssemblyKey(request, env) {
@@ -299,7 +195,11 @@ export default {
     const pathname = url.pathname.replace(/\/$/, "");
     const segments = pathname.split("/").filter(Boolean);
 
-    if (request.method === "GET" && pathname.endsWith("/token")) {
+    if (
+      (request.method === "GET" && pathname.endsWith("/token"))
+      || (request.method === "POST" && pathname.endsWith("/upload"))
+      || (request.method === "POST" && pathname.endsWith("/transcript"))
+    ) {
       const limitResponse = await enforceRateLimitForToken(request, corsMeta, env);
       if (limitResponse) {
         return limitResponse;
@@ -307,14 +207,10 @@ export default {
     }
 
     if (request.method === "POST" && pathname.endsWith("/upload")) {
-      const turnstileResponse = await enforceTurnstile(request, corsMeta, env, "upload");
-      if (turnstileResponse) return turnstileResponse;
       return proxyAssemblyRequest(request, corsMeta, env, "/upload");
     }
 
     if (request.method === "POST" && pathname.endsWith("/transcript")) {
-      const turnstileResponse = await enforceTurnstile(request, corsMeta, env, "transcript");
-      if (turnstileResponse) return turnstileResponse;
       return proxyAssemblyRequest(request, corsMeta, env, "/transcript");
     }
 
@@ -336,8 +232,6 @@ export default {
     }
 
     if (request.method === "GET" && pathname.endsWith("/token")) {
-      const turnstileResponse = await enforceTurnstile(request, corsMeta, env, "token");
-      if (turnstileResponse) return turnstileResponse;
       return proxyTokenRequest(request, corsMeta, env);
     }
 

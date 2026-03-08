@@ -380,67 +380,28 @@ Effective rule:
 - worker: `workers/openrouter-proxy/index.js`
 - holds `OPENROUTER_API_KEY`
 - used for chat and embeddings
-- supports origin allowlist, Turnstile, payload size limits, and rate limiting
+- supports origin allowlist, payload size limits, and rate limiting
 
 ### Google TTS
 
 - worker: `workers/googletts-proxy/index.js`
 - keeps Google credentials server-side
-- supports origin allowlist, Turnstile, rate limiting, and server-side service-account token minting
+- supports origin allowlist, rate limiting, and server-side service-account token minting
 
 ### AssemblyAI
 
 - worker: `workers/assemblyai-proxy/index.js`
 - proxies upload/transcript/token routes
-- supports origin allowlist, Turnstile, and rate limiting
+- supports origin allowlist and rate limiting
 
-## 9. Turnstile
+## 9. Browser-facing worker protection
 
-Client helper:
+Current posture for paid/browser-facing worker routes:
 
-- `public/js/turnstile-helper.js`
-
-Browser API:
-
-- `window.GoToolkitTurnstile.getHeadersForUrl(...)`
-
-Used on current paid/browser-facing worker flows including:
-
-- OpenRouter
-- Google TTS
-- AssemblyAI
-
-Workers expect headers such as:
-
-- `X-Turnstile-Token`
-- `CF-Turnstile-Response`
-
-Server-side Turnstile behavior:
-
-- workers verify the token against Cloudflare `siteverify`
-- `remoteip` is forwarded from `CF-Connecting-IP` / `X-Forwarded-For`
-- verification requests use an `idempotency_key`
-- workers validate returned `hostname` against allowed hostnames
-- workers validate returned `action` against expected route action
-- localhost requests are exempted on some workers
-- missing Turnstile secret does not silently pass production traffic:
-  - `openrouter-proxy` returns `500 MISSING_ENV`
-  - `googletts-proxy` / `assemblyai-proxy` allow localhost but fail non-local traffic with `500 MISSING_ENV`
-
-Client-side Turnstile behavior:
-
-- the browser requests Turnstile only for protected worker hosts
-- the helper first tries a background/off-screen execution
-- if that times out, it can escalate to a visible interactive challenge rendered on demand
-- client action selection is route-specific; OpenRouter chat and embeddings must not share the same Turnstile action
-- after a client-side Turnstile failure, the helper applies a short cooldown to avoid request storms against Cloudflare challenge endpoints
-- the client records diagnostics and last-attempt summaries for debugging
-- AI debug capture stores request/response metadata (not full bodies) in `sessionStorage`
-
-Turnstile failures can occur in two distinct places:
-
-- client-side before any worker request is sent
-- worker-side after a request is sent but Cloudflare rejects the token
+- no Turnstile challenge is required on OpenRouter, Google TTS, or AssemblyAI routes
+- browser clients no longer send Turnstile headers to those workers
+- protection relies on origin allowlists plus worker-side rate limiting
+- Google TTS still enforces monthly upstream character quotas separately from request throttling
 
 ### Origin allowlists
 
@@ -465,11 +426,7 @@ Behavior:
 - rate-limited requests return `429 RATE_LIMIT_EXCEEDED`
 - OpenRouter, Google TTS, AssemblyAI token routes, and share write-sensitive paths all use worker-side throttling
 
-This is separate from:
-
-- Turnstile challenge enforcement
-- replay protection
-- bearer-token verification
+This is separate from replay protection and bearer-token verification.
 
 ### Input and request hardening
 
@@ -491,7 +448,6 @@ Other request-hardening mechanisms:
 - `public/js/document-rag.js`
 - `public/js/ia-client.js`
 - `public/js/googletts.js`
-- `public/js/turnstile-helper.js`
 - `workers/share-proxy/index.js`
 - `workers/ms-proxy/index.js`
 - `workers/gmail-proxy/index.js`
