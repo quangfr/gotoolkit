@@ -1,6 +1,6 @@
 (function () {
     const DB_NAME = "go-toolkit";
-    const DB_VERSION = 13;
+    const DB_VERSION = 14;
     const STORES = [
         "document-api",
         "share-history",
@@ -16,7 +16,8 @@
         "knowledge-descriptions-overrides",
         "knowledge-local-docs",
         "templates",
-        "cloud-drafts"
+        "cloud-drafts",
+        "document-history"
     ];
 
     function isIndexedDbAvailable() {
@@ -119,6 +120,33 @@
     };
 
     window.goToolkitTemplateStore = templateStore;
+
+    const documentHistoryStore = {
+        async getTimeline(docId) {
+            const id = String(docId || "").trim();
+            if (!id) return null;
+            return (await withStore("document-history", "readonly", s => s.get(id))) || null;
+        },
+        async saveTimeline(docId, timeline) {
+            const id = String(docId || "").trim();
+            if (!id || !timeline || typeof timeline !== "object") return null;
+            const next = {
+                id,
+                versions: Array.isArray(timeline.versions) ? timeline.versions : [],
+                updatedAt: String(timeline.updatedAt || new Date().toISOString()).trim() || new Date().toISOString()
+            };
+            await withStore("document-history", "readwrite", s => s.put(next, id));
+            return next;
+        },
+        async deleteTimeline(docId) {
+            const id = String(docId || "").trim();
+            if (!id) return false;
+            await withStore("document-history", "readwrite", s => s.delete(id));
+            return true;
+        }
+    };
+
+    window.goToolkitDocumentHistoryStore = documentHistoryStore;
 
     const memoMediaBlobUrlCache = new Map();
     const MEMO_MEDIA_STORE = "memo-media-assets";

@@ -73,6 +73,7 @@ Current stores:
 
 - `document-api`
 - `share-history`
+- `document-history`
 - `documents-settings`
 - `memo-images`
 - `voice-recordings`
@@ -159,6 +160,15 @@ Role:
 - remember previously shared records
 - keep cloud-facing identifiers and ordering metadata for the UI
 
+Document history store:
+
+- IndexedDB store: `document-history`
+
+Role:
+
+- keep a small rolling version timeline per page for restore/duplicate flows
+- store local checkpoints for both private pages and locally opened cloud pages
+
 Cloud draft queue:
 
 - IndexedDB store: `cloud-drafts`
@@ -183,6 +193,7 @@ Remote collections:
 
 - content collection: `pages`
 - metadata/tree collection: `pages-meta`
+- history checkpoints collection: `pages-history`
 
 Collection families also used elsewhere by sharing:
 
@@ -198,6 +209,7 @@ Current separation of concerns:
 
 - `pages`: content payload
 - `pages-meta`: title, tree, hierarchy, status, sharing metadata
+- `pages-history`: capped checkpoint timeline for shared page restore
 
 Cloud page rule:
 
@@ -370,12 +382,12 @@ Read/write behavior:
 Delete/archive behavior:
 
 - deletion of cloud docs does not remove the meta row immediately
-- the worker writes an archived meta payload with:
-  - `status = "archived"`
+- the worker writes a deleted meta payload with:
+  - `status = "deleted"`
   - `archivedAt`
   - `archivedReason`
-- content payload can be removed while meta remains archived
-- clients should treat archived page meta as removed from the active tree unless explicitly requesting archived items
+- content payload can be removed while meta remains as a deleted tombstone
+- clients should treat deleted page meta as removed from the active tree unless explicitly requesting removed items
 
 ### 8.3 Asset routes
 
@@ -444,9 +456,9 @@ Browser sync behavior:
 
 Delete semantics:
 
-- cloud deletion currently archives meta in `pages-meta.status = "archived"`
-- legacy flows may still refer to `deleted` in older tests or old drafts
-- UI sync should treat both `archived` and legacy `deleted` statuses as removed from the active tree
+- cloud deletion now keeps only a tombstone in `pages-meta.status = "deleted"`
+- legacy records may still contain `archived` and should be treated as removed
+- UI sync should treat both `deleted` and legacy `archived` statuses as removed from the active tree
 
 This section complements `8.4`:
 

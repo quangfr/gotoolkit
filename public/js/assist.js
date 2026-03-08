@@ -6757,6 +6757,7 @@
                         role: "bot",
                         content: "..."
                     };
+                    statusMessage._isStreaming = true;
                     this.conversation.messages.push(statusMessage);
                     this.appendMessage(statusMessage);
                     this.persist();
@@ -10641,6 +10642,7 @@
             role: "bot",
             content: "..."
         };
+        botMessage._isStreaming = true;
         botMessage.references = [];
         botMessage.suggestions = [];
 
@@ -12071,6 +12073,7 @@
 
             // 4. Créer et afficher le message bot avec loading "..."
             botMessage = createMessage('bot', '...');
+            botMessage._isStreaming = true;
             botMessage.references = [];
             botMessage.suggestions = [];
 

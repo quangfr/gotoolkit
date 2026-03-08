@@ -1,3 +1,6 @@
+## 2026-03-08
+- Historique de versions
+
 ## 2026-03-06
 - Authentification SSO Google
 - Espace de partage Epiconcept

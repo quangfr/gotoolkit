@@ -1392,9 +1392,9 @@ function buildShareSummary(entry) {
   };
 }
 
-function isArchivedPayload(payload) {
+function isRemovedPayload(payload) {
   const status = String(payload?.status || "active").trim().toLowerCase();
-  return status === "archived";
+  return status === "archived" || status === "deleted";
 }
 
 function mapStorageObjectToAsset(objectName, upload) {
@@ -1900,22 +1900,22 @@ function buildEmptyMemosContentPayloadFromMeta(metaPayload) {
   };
 }
 
-function buildArchivedMemosMetaPayload(metaPayload, contentPayload, options = {}) {
+function buildDeletedMemosMetaPayload(metaPayload, contentPayload, options = {}) {
   const baseMeta = metaPayload && typeof metaPayload === "object" ? metaPayload : {};
   const normalizedFromContent = normalizeMemosMetaPayloadFromContent(
     contentPayload && typeof contentPayload === "object" ? contentPayload : {},
-    "Document archivé"
+    "Document supprime"
   );
   const base = Object.keys(baseMeta).length ? baseMeta : normalizedFromContent;
   const archivedAt = String(options?.archivedAt || new Date().toISOString()).trim() || new Date().toISOString();
   return {
-    title: String(base?.title || normalizedFromContent?.title || "Document archivé").trim() || "Document archivé",
+    title: String(base?.title || normalizedFromContent?.title || "Document supprime").trim() || "Document supprime",
     description: String(base?.description || normalizedFromContent?.description || "").trim(),
     superpowers: Array.isArray(base?.superpowers) ? base.superpowers : (Array.isArray(normalizedFromContent?.superpowers) ? normalizedFromContent.superpowers : []),
     icon: String(base?.icon || normalizedFromContent?.icon || "file-symlink").trim() || "file-symlink",
     parentId: String(base?.parentId || normalizedFromContent?.parentId || "").trim(),
     spaceId: resolvePayloadSpaceId(base) || resolvePayloadSpaceId(normalizedFromContent),
-    status: "archived",
+    status: "deleted",
     position: Number.isFinite(Number(base?.position))
       ? Number(base.position)
       : (Number.isFinite(Number(normalizedFromContent?.position)) ? Number(normalizedFromContent.position) : Date.now()),
@@ -1965,7 +1965,7 @@ async function reconcileMemosConsistency(env, request, options = {}) {
   const contentOnly = [];
   const metaOnly = [];
   const metaOnlyActive = [];
-  const metaOnlyArchived = [];
+  const metaOnlyRemoved = [];
   const repairedMeta = [];
   const removedMeta = [];
 
@@ -1978,7 +1978,7 @@ async function reconcileMemosConsistency(env, request, options = {}) {
   for (const id of metaOnly) {
     const metaDoc = metaById.get(id);
     const payload = metaDoc?.payload && typeof metaDoc.payload === "object" ? metaDoc.payload : {};
-    if (isArchivedPayload(payload)) metaOnlyArchived.push(id);
+    if (isRemovedPayload(payload)) metaOnlyRemoved.push(id);
     else metaOnlyActive.push(id);
   }
 
@@ -2007,7 +2007,7 @@ async function reconcileMemosConsistency(env, request, options = {}) {
       contentOnlyCount: contentOnly.length,
       metaOnlyCount: metaOnly.length,
       metaOnlyActiveCount: metaOnlyActive.length,
-      metaOnlyArchivedCount: metaOnlyArchived.length
+      metaOnlyRemovedCount: metaOnlyRemoved.length
     },
     repaired: {
       metaCreatedFromContent: dryRun ? 0 : repairedMeta.length,
@@ -2018,7 +2018,7 @@ async function reconcileMemosConsistency(env, request, options = {}) {
       contentOnly: contentOnly.slice(0, 50),
       metaOnly: metaOnly.slice(0, 50),
       metaOnlyActive: metaOnlyActive.slice(0, 50),
-      metaOnlyArchived: metaOnlyArchived.slice(0, 50)
+      metaOnlyRemoved: metaOnlyRemoved.slice(0, 50)
     }
   };
 }
@@ -2707,7 +2707,7 @@ async function handleRequest(request, env) {
           }
         }
       }
-      const archivedMetaPayload = buildArchivedMemosMetaPayload(
+      const archivedMetaPayload = buildDeletedMemosMetaPayload(
         existingMeta?.payload || null,
         existingContent?.payload || null,
         { reason: "delete", archivedAt: new Date().toISOString() }
@@ -2718,7 +2718,7 @@ async function handleRequest(request, env) {
       ]);
       results.push({
         id,
-        archived: true,
+        removed: "deleted",
         deleted: { content: true },
         kept: { meta: true }
       });
@@ -2861,7 +2861,7 @@ async function handleRequest(request, env) {
         const summaries = docs
           .map(buildShareSummary)
           .filter(item => item.id)
-          .filter(item => includeArchived || item.status !== "archived")
+          .filter(item => includeArchived || (item.status !== "archived" && item.status !== "deleted"))
           .filter(item => !spaceFilter || item.spaceId === spaceFilter)
           .sort((a, b) => {
             const ap = Number.isFinite(Number(a?.position)) ? Number(a.position) : Number.POSITIVE_INFINITY;
@@ -2875,7 +2875,7 @@ async function handleRequest(request, env) {
         });
       }
       const docs = await listShareDocuments(env, path.collection);
-      const filtered = includeArchived ? docs : docs.filter(doc => !isArchivedPayload(doc?.payload || {}));
+      const filtered = includeArchived ? docs : docs.filter(doc => !isRemovedPayload(doc?.payload || {}));
       return jsonResponse({ documents: filtered }, 200, request, env, {
         "Cache-Control": "no-store, max-age=0"
       });

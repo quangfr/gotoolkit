@@ -2417,21 +2417,16 @@
                             .filter(Boolean)
                     );
                     const shared = await shareHistory.getRecordsByApp("memo");
-                    const staleTokensToRemove = [];
                     const filteredShared = (Array.isArray(shared) ? shared : []).filter(item => {
                         const token = String(item?.token || "").trim();
                         if (!token) return false;
                         const draft = cloudDrafts[`share:${token}`];
                         const draftOpType = String(draft?.opType || draft?.reason || "").trim().toLowerCase();
                         if (draftOpType === "archive") {
-                            staleTokensToRemove.push(token);
                             return false;
                         }
                         return true;
                     });
-                    if (staleTokensToRemove.length && shareHistory?.removeRecord) {
-                        await Promise.all(staleTokensToRemove.map(token => shareHistory.removeRecord("memo", token)));
-                    }
                     const knownSharedTokens = new Set(filteredShared.map(item => String(item?.token || "").trim()).filter(Boolean));
                     const draftOnlyShared = Array.from(draftByToken.entries())
                         .map(([token, draft]) => {

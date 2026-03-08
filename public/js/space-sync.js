@@ -372,6 +372,7 @@
             var normalizedToken = normalizeSharedToken(token);
             if (!normalizedToken) return;
             var activeId = "share:" + normalizedToken;
+            var existingDraft = getCloudDraft(activeId) || {};
             var targetSpaceId = normalizeSpaceId(options.spaceId || DEFAULT_SPACE_ID);
             var parentId = normalizeSharedParentId(options.parentId || "");
             logSync("page-drag-cloud-to-local:queued", {
@@ -385,11 +386,17 @@
                 token: normalizedToken,
                 opType: "archive",
                 reason: String(options.reason || "moved-to-local").trim() || "moved-to-local",
-                title: String(options.title || "").trim(),
-                description: String(options.description || "").trim(),
-                superpowers: Array.isArray(options.superpowers) ? options.superpowers : [],
+                title: String(options.title || existingDraft?.title || "").trim(),
+                description: String(options.description || existingDraft?.description || "").trim(),
+                superpowers: Array.isArray(options.superpowers)
+                    ? options.superpowers
+                    : (Array.isArray(existingDraft?.superpowers) ? existingDraft.superpowers : []),
+                icon: String(options.icon || existingDraft?.icon || "").trim(),
                 spaceId: targetSpaceId,
                 parentId: parentId,
+                payload: (existingDraft?.payload && typeof existingDraft.payload === "object")
+                    ? existingDraft.payload
+                    : undefined,
                 updatedAt: new Date().toISOString()
             });
             setStatus?.("Archivage cloud en attente de sync pour " + targetSpaceId.toUpperCase());
