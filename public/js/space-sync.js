@@ -486,8 +486,10 @@
             }
         }
 
-        async function reloadSpaceFromRemote(spaceId) {
+        async function reloadSpaceFromRemote(spaceId, options) {
+            options = options || {};
             var targetSpaceId = normalizeSpaceId(spaceId || DEFAULT_SPACE_ID);
+            var explicitUserSync = options.explicitUserSync === true;
             if (!shareWorker?.isReady || !shareHistory?.getRecordsByApp) {
                 setStatus?.("Service de partage indisponible", true);
                 return;
@@ -498,7 +500,12 @@
                 // A manual reclick should clear the latched warning state and visibly retry the sync.
                 d.setSpaceSyncError?.(targetSpaceId, "");
                 updateSharedSpaceSyncButtonState(targetSpaceId, true);
-                await syncSpaceFromRemote(targetSpaceId, { refreshExplorer: true });
+                await syncSpaceFromRemote(targetSpaceId, { refreshExplorer: true, explicitUserSync: explicitUserSync });
+                if (explicitUserSync && global.GoToolkitMemoHistoryApi?.flushPendingRemoteCheckpoints) {
+                    await global.GoToolkitMemoHistoryApi.flushPendingRemoteCheckpoints(targetSpaceId).catch(function (err) {
+                        console.warn("Manual remote memo history flush failed", err);
+                    });
+                }
                 markSpaceLastSynced(targetSpaceId);
                 var hasPendingAfterSync = hasPendingSharedSyncInSpace(targetSpaceId);
                 if (hadPendingSync && !hasPendingAfterSync) {
@@ -517,7 +524,12 @@
                             updateSharedSpaceSyncButtonState(targetSpaceId, true);
                             const refreshResult = await shareWorker.refreshSpaceAuth(targetSpaceId);
                             if (refreshResult?.ok) {
-                                await syncSpaceFromRemote(targetSpaceId, { refreshExplorer: true });
+                                await syncSpaceFromRemote(targetSpaceId, { refreshExplorer: true, explicitUserSync: explicitUserSync });
+                                if (explicitUserSync && global.GoToolkitMemoHistoryApi?.flushPendingRemoteCheckpoints) {
+                                    await global.GoToolkitMemoHistoryApi.flushPendingRemoteCheckpoints(targetSpaceId).catch(function (err) {
+                                        console.warn("Manual remote memo history flush failed", err);
+                                    });
+                                }
                                 markSpaceLastSynced(targetSpaceId);
                                 d.setSpaceSyncError?.(targetSpaceId, "");
                                 setStatus?.("Connexion rétablie, espace synchronisé");
@@ -579,7 +591,7 @@
                     var sid = targetSpaceIds[i];
                     logSync("cloud-sync:space-start", { spaceId: sid });
                     updateSharedSpaceSyncButtonState(sid, true);
-                    await syncSpaceFromRemote(sid, { refreshExplorer: false });
+                    await syncSpaceFromRemote(sid, { refreshExplorer: false, explicitUserSync: false });
                     markSpaceLastSynced(sid);
                     updateSharedSpaceSyncButtonState(sid, false);
                     logSync("cloud-sync:space-done", { spaceId: sid });

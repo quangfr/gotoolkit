@@ -24,6 +24,20 @@ type SeedDoc = {
   contentMarker: string;
 };
 
+function expectMarkersIsolated(
+  label: string,
+  html: string,
+  includes: string[],
+  excludes: string[]
+) {
+  for (const marker of includes) {
+    expect.soft(html, `${label}: missing ${marker}`).toContain(marker);
+  }
+  for (const marker of excludes) {
+    expect.soft(html, `${label}: mixed with ${marker}`).not.toContain(marker);
+  }
+}
+
 function installBrowserDebugLogging(page: Page, prefix: string) {
   page.on("console", async message => {
     const values = await Promise.all(message.args().map(async arg => {
@@ -84,6 +98,27 @@ async function readCloudDocState(page: Page, docId: string) {
   }, docId);
 }
 
+async function readLocalCloudDocState(page: Page, docId: string) {
+  return page.evaluate(async currentDocId => {
+    const token = String(currentDocId || "").replace(/^share:/, "").trim();
+    const history = (window as any).goToolkitShareHistory;
+    const drafts = (window as any).goToolkitCloudDrafts;
+    const historyRows = await history?.getRecordsByApp?.("memo").catch?.(() => []) || [];
+    const historyRow = Array.isArray(historyRows)
+      ? historyRows.find((row: any) => String(row?.token || "") === token)
+      : null;
+    const allDrafts = await drafts?.readAll?.().catch?.(() => ({})) || {};
+    const draft = allDrafts?.[currentDocId] || null;
+    return {
+      activeDocId: String((window as any).GoToolkitMemoGetActiveDocumentId?.() || ""),
+      editorHtml: String((window as any).GoToolkitMemoInstance?.getValue?.() || ""),
+      historyHtml: String(historyRow?.payload?.tabs?.[0]?.content || ""),
+      draftHtml: String(draft?.payload?.tabs?.[0]?.content || ""),
+      draftOpType: String(draft?.opType || "")
+    };
+  }, docId);
+}
+
 async function moveCaretToDocumentEnd(page: Page) {
   await page.evaluate(() => {
     const editor = (window as any).MemoEditor || (window as any).memoEditor;
@@ -113,32 +148,6 @@ async function moveCaretToDocumentEnd(page: Page) {
   });
 }
 
-async function disableRemoteHistoryForRepro(page: Page) {
-  await page.evaluate(() => {
-    const worker = (window as any).goToolkitShareWorker;
-    if (!worker || worker.__remoteHistoryDisabledForRepro) return;
-    const originalFetch = typeof worker.fetchSharePayload === "function" ? worker.fetchSharePayload.bind(worker) : null;
-    const originalSave = typeof worker.saveSharePayload === "function" ? worker.saveSharePayload.bind(worker) : null;
-    if (originalFetch) {
-      worker.fetchSharePayload = async (collection: string, ...args: any[]) => {
-        if (String(collection || "").trim() === "pages-history") {
-          return null;
-        }
-        return originalFetch(collection, ...args);
-      };
-    }
-    if (originalSave) {
-      worker.saveSharePayload = async (collection: string, ...args: any[]) => {
-        if (String(collection || "").trim() === "pages-history") {
-          return { skipped: true, collection: "pages-history" };
-        }
-        return originalSave(collection, ...args);
-      };
-    }
-    worker.__remoteHistoryDisabledForRepro = true;
-  });
-}
-
 test.describe("Cloud rapid switching large-content stress", () => {
   test("keeps cloud content through rapid small edits, switching, refresh, sync, and reload", async ({ page }) => {
     test.setTimeout(360_000);
@@ -150,8 +159,19 @@ test.describe("Cloud rapid switching large-content stress", () => {
     const targetSpaceId = PW_TEST_SPACE_ID;
     const targetSpaceCode = PW_TEST_SPACE_CODE;
     const cleanupTokens: string[] = [];
+    const shareRequests: Array<{ method: string; url: string }> = [];
+    let lastShareRequestAt = 0;
 
     installBrowserDebugLogging(page, "cloud-rapid-switch-large");
+    page.on("request", request => {
+      const url = request.url();
+      if (!/\/v1\/shares\//i.test(url)) return;
+      lastShareRequestAt = Date.now();
+      shareRequests.push({
+        method: request.method(),
+        url
+      });
+    });
     await page.addInitScript(() => {
       try {
         localStorage.setItem("go-toolkit-docs-tour-seen.v1", "1");
@@ -170,7 +190,6 @@ test.describe("Cloud rapid switching large-content stress", () => {
       await dismissDocsTour(page);
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 60_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 60_000 });
-      await disableRemoteHistoryForRepro(page);
       await waitForMemoReady(page, 60_000);
       console.log("[cloud-rapid-switch-large] connect:done");
 
@@ -322,6 +341,9 @@ test.describe("Cloud rapid switching large-content stress", () => {
 
       seeded.forEach(doc => cleanupTokens.push(doc.token));
       console.log("[cloud-rapid-switch-large] seed:done", seeded);
+      await page.waitForTimeout(1500);
+      await expect.poll(() => Date.now() - lastShareRequestAt, { timeout: 20_000 }).toBeGreaterThan(2000);
+      shareRequests.length = 0;
 
       const operations = [
         { docIndex: 0, append: ` OP1_${ts}` },
@@ -340,6 +362,9 @@ test.describe("Cloud rapid switching large-content stress", () => {
 
       const expectedMarkers = new Map<string, string[]>();
       seeded.forEach(doc => expectedMarkers.set(doc.id, [doc.baseMarker]));
+      const excludedMarkers = (docId: string) => seeded
+        .filter(doc => doc.id !== docId)
+        .flatMap(doc => expectedMarkers.get(doc.id) || []);
 
       for (let index = 0; index < operations.length; index += 1) {
         const operation = operations[index];
@@ -361,28 +386,47 @@ test.describe("Cloud rapid switching large-content stress", () => {
         await clickMemoDoc(page, targetDoc.id, { allowProgrammaticOpen: false });
         await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(operation.append.trim());
 
-        if (index === 4 || index === 9) {
-          console.log("[cloud-rapid-switch-large] refresh-sync", { index: index + 1 });
-          await refreshMemoExplorer(page, 30_000);
-          await syncGolive(page, targetSpaceId, 90_000);
-        }
       }
+
+      expect(
+        shareRequests.filter(entry => /\/v1\/shares\/(pages|pages-meta|pages-history)(?:[/?#:]|$)/i.test(entry.url)),
+        "cloud draft edits and page switches should not hit share worker before manual sync"
+      ).toHaveLength(0);
 
       for (const doc of seeded) {
         await clickMemoDoc(page, doc.id, { allowProgrammaticOpen: false });
         const html = await getMemoEditorHtml(page);
-        for (const marker of expectedMarkers.get(doc.id) || []) {
-          expect.soft(html).toContain(marker);
-        }
-        const state = await readCloudDocState(page, doc.id);
-        for (const marker of expectedMarkers.get(doc.id) || []) {
-          expect.soft(state.editorHtml, `${doc.id}: editor missing ${marker}`).toContain(marker);
-          expect.soft(state.historyHtml, `${doc.id}: history missing ${marker}`).toContain(marker);
-          if (state.draftHtml || state.draftOpType) {
-            expect.soft(state.draftHtml, `${doc.id}: draft missing ${marker}`).toContain(marker);
-          }
+        expectMarkersIsolated(
+          `${doc.id}: editor before reload`,
+          html,
+          expectedMarkers.get(doc.id) || [],
+          excludedMarkers(doc.id)
+        );
+        const state = await readLocalCloudDocState(page, doc.id);
+        expectMarkersIsolated(
+          `${doc.id}: editor state before reload`,
+          state.editorHtml,
+          expectedMarkers.get(doc.id) || [],
+          excludedMarkers(doc.id)
+        );
+        expectMarkersIsolated(
+          `${doc.id}: history state before reload`,
+          state.historyHtml,
+          expectedMarkers.get(doc.id) || [],
+          excludedMarkers(doc.id)
+        );
+        if (state.draftHtml || state.draftOpType) {
+          expectMarkersIsolated(
+            `${doc.id}: draft state before reload`,
+            state.draftHtml,
+            expectedMarkers.get(doc.id) || [],
+            excludedMarkers(doc.id)
+          );
         }
       }
+
+      console.log("[cloud-rapid-switch-large] sync:start");
+      await syncGolive(page, targetSpaceId, 90_000);
 
       console.log("[cloud-rapid-switch-large] reload:start");
       await page.reload({ waitUntil: "commit", timeout: 20_000 });
@@ -391,7 +435,6 @@ test.describe("Cloud rapid switching large-content stress", () => {
         spaceId: targetSpaceId,
         spaceCode: targetSpaceCode
       });
-      await disableRemoteHistoryForRepro(page);
       await waitForMemoReady(page, 60_000);
       await refreshMemoExplorer(page, 30_000);
       await syncGolive(page, targetSpaceId, 90_000);
@@ -399,28 +442,46 @@ test.describe("Cloud rapid switching large-content stress", () => {
       for (const doc of seeded) {
         await clickMemoDoc(page, doc.id, { allowProgrammaticOpen: false });
         const state = await readCloudDocState(page, doc.id);
-        for (const marker of expectedMarkers.get(doc.id) || []) {
-          expect(state.editorHtml, `${doc.id}: editor missing after reload ${marker}`).toContain(marker);
-          expect(state.historyHtml, `${doc.id}: history missing after reload ${marker}`).toContain(marker);
-          expect(state.remoteHtml, `${doc.id}: remote missing after reload ${marker}`).toContain(marker);
-        }
+        expectMarkersIsolated(
+          `${doc.id}: editor after reload`,
+          state.editorHtml,
+          expectedMarkers.get(doc.id) || [],
+          excludedMarkers(doc.id)
+        );
+        expectMarkersIsolated(
+          `${doc.id}: history after reload`,
+          state.historyHtml,
+          expectedMarkers.get(doc.id) || [],
+          excludedMarkers(doc.id)
+        );
+        expectMarkersIsolated(
+          `${doc.id}: remote after reload`,
+          state.remoteHtml,
+          expectedMarkers.get(doc.id) || [],
+          excludedMarkers(doc.id)
+        );
       }
     } finally {
       console.log("[cloud-rapid-switch-large] cleanup:start", { cleanupTokens });
-      await page.evaluate(async tokens => {
-        const worker = (window as any).goToolkitShareWorker;
-        const history = (window as any).goToolkitShareHistory;
-        const explorer = (window as any).GoToolkitMemoDocumentExplorer;
-        const drafts = (window as any).goToolkitCloudDrafts;
-        for (const token of tokens || []) {
-          try { await worker?.deleteSharePayload?.("pages", token); } catch { /* ignore */ }
-          try { await worker?.deleteSharePayload?.("pages-meta", token); } catch { /* ignore */ }
-          try { await history?.removeRecord?.("memo", token); } catch { /* ignore */ }
-          try { drafts?.remove?.(`share:${token}`); } catch { /* ignore */ }
-          try { await explorer?.removeItemById?.(`share:${token}`); } catch { /* ignore */ }
-        }
-        try { await explorer?.refresh?.({ forceReload: true }); } catch { /* ignore */ }
-      }, cleanupTokens);
+      try {
+        await page.waitForLoadState("domcontentloaded", { timeout: 10_000 }).catch(() => null);
+        await page.evaluate(async tokens => {
+          const worker = (window as any).goToolkitShareWorker;
+          const history = (window as any).goToolkitShareHistory;
+          const explorer = (window as any).GoToolkitMemoDocumentExplorer;
+          const drafts = (window as any).goToolkitCloudDrafts;
+          for (const token of tokens || []) {
+            try { await worker?.deleteSharePayload?.("pages", token); } catch { /* ignore */ }
+            try { await worker?.deleteSharePayload?.("pages-meta", token); } catch { /* ignore */ }
+            try { await history?.removeRecord?.("memo", token); } catch { /* ignore */ }
+            try { drafts?.remove?.(`share:${token}`); } catch { /* ignore */ }
+            try { await explorer?.removeItemById?.(`share:${token}`); } catch { /* ignore */ }
+          }
+          try { await explorer?.refresh?.({ forceReload: true }); } catch { /* ignore */ }
+        }, cleanupTokens);
+      } catch {
+        // ignore cleanup failures after navigation/context teardown
+      }
       console.log("[cloud-rapid-switch-large] cleanup:done");
     }
   });

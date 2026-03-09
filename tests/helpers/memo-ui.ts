@@ -89,6 +89,10 @@ export async function syncGolive(page: Page, spaceId: string, timeout = 60_000) 
   const syncBtn = page.locator(`.document-explorer__item-action--sync-refresh[data-space-id="${spaceId}"]`).first();
   await expect(syncBtn).toBeVisible({ timeout: 30_000 });
   const hasPendingSharedSync = async () => page.evaluate(async targetSpaceId => {
+    if (typeof (window as any).getPendingSharedSyncDetailsInSpace === "function") {
+      const details = (window as any).getPendingSharedSyncDetailsInSpace(targetSpaceId);
+      return Boolean(details?.hasPending);
+    }
     const drafts = (window as any).goToolkitCloudDrafts;
     const openDocs = Array.isArray((window as any).openDocuments) ? (window as any).openDocuments : [];
     const sid = String(targetSpaceId || "").trim().toLowerCase();

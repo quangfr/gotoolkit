@@ -238,6 +238,7 @@ Auth material model:
 - `spaceCode` is used only to obtain access, never as the bearer token for protected routes.
 - `X-Space-Auth` is a signed scoped token (`typ`, `spaceId`, `iat`, `exp`) with HMAC verification and expiration checks.
 - `contentKey` is separate from both `spaceCode` and `X-Space-Auth`, and is used for protected content encryption/decryption.
+- protected shared content currently includes `pages` and `pages-history`; `pages-meta` stays auth-protected but is not encrypted with `contentKey`
 - `POST /v1/spaces/auth/rotate` changes the access-code hash only; it does not rotate the `contentKey`.
 
 ### Sync protection

@@ -24,7 +24,7 @@
   const PAGE_PAYLOAD_OFFLOAD_THRESHOLD_BYTES = 350 * 1024;
   const SHARE_DEBUG_PREFIX = "[MemoCloudDebug]";
   const CLOUD_SYNC_DEBUG_ENABLED = window.GO_TOOLKIT_DEBUG_CLOUD_SYNC === true;
-  const BATCH_IDS_CHUNK_SIZE = 60;
+  const BATCH_IDS_CHUNK_SIZE = 15;
   const BATCH_WRITES_CHUNK_SIZE = 40;
   const SYNC_SESSION_TTL_MS = 15 * 60 * 1000;
   const textEncoder = new TextEncoder();
@@ -385,7 +385,8 @@
   }
 
   async function encryptPagePayload(base, payload, collection, spaceId) {
-    if (String(collection || "").trim().toLowerCase() !== "pages") return payload;
+    const normalizedCollection = String(collection || "").trim().toLowerCase();
+    if (normalizedCollection !== "pages" && normalizedCollection !== "pages-history") return payload;
     if (!payload || typeof payload !== "object") return payload;
     if (isEncryptedPagePayload(payload)) return payload;
     const key = await getSpaceCryptoKey(base, spaceId);
@@ -410,7 +411,8 @@
   }
 
   async function decryptPagePayload(base, payload, collection) {
-    if (String(collection || "").trim().toLowerCase() !== "pages") return payload;
+    const normalizedCollection = String(collection || "").trim().toLowerCase();
+    if (normalizedCollection !== "pages" && normalizedCollection !== "pages-history") return payload;
     if (!isEncryptedPagePayload(payload)) return payload;
     const effectiveSpaceId = String(payload.spaceId || "golive").trim().toLowerCase() || "golive";
     const key = await getSpaceCryptoKey(base, effectiveSpaceId);
@@ -1340,7 +1342,7 @@
     return withWorkerFallback(async base => {
       const resolvedSpaceId = resolveRequestSpaceId(collection, "", options);
       const query = {};
-      if ((collection === "pages" || collection === "pages-meta") && resolvedSpaceId) {
+      if ((collection === "pages" || collection === "pages-meta" || collection === "pages-history") && resolvedSpaceId) {
         query.spaceId = resolvedSpaceId;
       }
       const url = Object.keys(query).length ? buildCollectionQueryUrl(base, collection, query) : buildShareUrl(base, collection, null);
@@ -1630,7 +1632,7 @@
     const known = resolveKnownRequestSpaceId(collection, token, options);
     if (known) return known;
     const normalizedCollection = String(collection || "").trim().toLowerCase();
-    if (normalizedCollection === "pages" || normalizedCollection === "pages-meta") {
+    if (normalizedCollection === "pages" || normalizedCollection === "pages-meta" || normalizedCollection === "pages-history") {
       const spacesApi = window.GoToolkitSpaces;
       const allSpaces = typeof spacesApi?.readSpaces === "function" ? spacesApi.readSpaces() : [];
       const withCode = (Array.isArray(allSpaces) ? allSpaces : [])
@@ -1791,7 +1793,7 @@
     const collection = String(options?.collection || "").trim().toLowerCase();
     const shouldAuth = Boolean(
       method !== "OPTIONS"
-      && (collection === "pages" || collection === "pages-meta" || collection === "assets")
+      && (collection === "pages" || collection === "pages-meta" || collection === "pages-history" || collection === "assets")
     );
     if (!shouldAuth) return headers || {};
     const spaceId = normalizeSpaceId(options?.spaceId || "");

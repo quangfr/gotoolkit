@@ -5,6 +5,7 @@ const SPACES_SEGMENT = "spaces";
 const VALID_COLLECTIONS = new Set([
   "grids",
   "pages",
+  "pages-history",
   "pages-meta",
   "template-memos",
   "handoffs",
@@ -318,7 +319,7 @@ function resolvePayloadSpaceId(payload) {
 
 function isSpaceProtectedCollection(collection) {
   const normalized = String(collection || "").trim().toLowerCase();
-  return normalized === "pages" || normalized === "pages-meta";
+  return normalized === "pages" || normalized === "pages-meta" || normalized === "pages-history";
 }
 
 function readSpaceAuthHeaders(request) {

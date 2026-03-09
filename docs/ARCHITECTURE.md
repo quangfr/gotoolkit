@@ -210,6 +210,9 @@ Current separation of concerns:
 - `pages`: content payload
 - `pages-meta`: title, tree, hierarchy, status, sharing metadata
 - `pages-history`: capped checkpoint timeline for shared page restore
+  - cloud page edit/switch/save checkpoints are queued locally first
+  - remote `pages-history` is flushed only during explicit manual sync, not background sync
+  - remote checkpoint payloads are encrypted client-side with the same per-space `contentKey` flow as `pages`
 
 Cloud page rule:
 

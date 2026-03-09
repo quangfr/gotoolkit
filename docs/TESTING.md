@@ -117,14 +117,18 @@ Functional intent of the tests currently present in `tests/`:
   - end-to-end cloud persistence scenario covering create, edit, rename, move, reorder, delete, sync, reload, and remote state verification
 
 - `cloud-switch-persist.spec.ts`
-  - verifies that edits on cloud documents survive switching between cloud pages and remain present after reload
+  - verifies that edits on cloud documents survive switching between cloud pages, remain present after reload, and do not leak into the other page
 
 - `cloud-switch-noop-pending.spec.ts`
   - verifies that switching between cloud pages without edits does not create a pending draft or sync badge
 
+- `cloud-history-explicit-sync.spec.ts`
+  - verifies that cloud edit/switch/save flows do not call remote `pages-history` before manual sync, and that manual sync flushes the queued remote history checkpoint
+
 - `cloud-rapid-switch-large.spec.ts`
-  - stress repro for 3 cloud pages seeded with large content, then 12 rapid edit/switch operations with refresh, sync, and reload validation
-  - current expected outcome: pass after final reload + sync; do not assert latest markers in remote `pages` before that final sync because the last edits may still be local drafts
+  - stress repro for 3 cloud pages seeded from large `epiconcept` content when available, then 12 rapid edit/switch operations, followed by one explicit sync and a reload
+  - verifies that draft-only edit/switch activity makes no share-worker request for `pages`, `pages-meta`, or `pages-history` before that manual sync
+  - verifies cross-page content isolation locally before sync and remotely after the final reload + sync
 
 - `cloud-private-transfer-sync.spec.ts`
   - verifies two transfer paths: copying a cloud document to private storage and promoting a private document to cloud storage, with sync persistence checks
