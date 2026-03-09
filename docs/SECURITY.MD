@@ -1,6 +1,6 @@
 # GoToolkit Security Architecture
 
-Date: 2026-03-05
+Date: 2026-03-09
 Purpose: short technical map of how security works in the current codebase
 Scope: `public/`, `workers/`, `firebase.json`
 
@@ -263,6 +263,7 @@ Replay protection uses two layers:
 - KV-backed replay keys:
   - `sync:replay:${X-Sync-Session}:${X-Sync-JTI}`
 - in-worker local caches to short-circuit repeated replays without extra KV reads
+- if KV replay reads/writes return `429` because of KV limits, the worker temporarily skips KV-backed replay enforcement for that request without surfacing a client warning
 
 Revocation also uses two layers:
 

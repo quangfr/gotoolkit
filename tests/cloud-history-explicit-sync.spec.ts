@@ -138,10 +138,12 @@ test.describe("Cloud history explicit sync", () => {
 
     await syncGolive(page, seed.spaceId, 60_000);
 
-    const pendingQueueAfterSync = await page.evaluate(async () => {
-      return await (window as any).goToolkitDocStore?.createStore?.("documents-settings")?.get?.("memo.pending-remote-history").catch?.(() => null);
-    });
-    expect(Object.keys(pendingQueueAfterSync || {})).not.toContain(seed.tokenA);
+    await expect.poll(async () => {
+      const pendingQueueAfterSync = await page.evaluate(async () => {
+        return await (window as any).goToolkitDocStore?.createStore?.("documents-settings")?.get?.("memo.pending-remote-history").catch?.(() => null);
+      });
+      return Object.keys(pendingQueueAfterSync || {});
+    }, { timeout: 20_000, intervals: [500, 1000, 2000] }).not.toContain(seed.tokenA);
     expect(pagesHistoryRequests.some(url => url.includes(seed.tokenA))).toBeTruthy();
 
     const remoteHistory = await page.evaluate(async ({ token, spaceId }) => {

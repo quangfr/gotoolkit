@@ -128,6 +128,16 @@ function parseShareBatchGetPath(request) {
   return { collection };
 }
 
+function isKvReplayProtectionRateLimitError(error) {
+  if (!error) return false;
+  const status = Number(error.status || error.statusCode || error.code || 0);
+  if (status === 429) {
+    return true;
+  }
+  const message = String(error.message || error.cause?.message || "").toLowerCase();
+  return message.includes("429") || message.includes("too many requests") || message.includes("rate limit");
+}
+
 function parseShareBatchDeletePath(request) {
   const url = new URL(request.url);
   const segments = normalizePathname(url.pathname)
@@ -1149,7 +1159,15 @@ async function enforceSyncEnvelope(request, env, context) {
     if (cachedReplayExpiry) {
       syncReplayLocalCache.delete(replayKey);
     }
-    const seen = await kv.get(replayKey);
+    let seen = null;
+    try {
+      seen = await kv.get(replayKey);
+    } catch (error) {
+      if (!isKvReplayProtectionRateLimitError(error)) {
+        throw error;
+      }
+      return null;
+    }
     if (seen) {
       syncReplayLocalCache.set(replayKey, nowTs + jtiCacheTtlMs);
       trimCacheMap(syncReplayLocalCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
@@ -1157,15 +1175,22 @@ async function enforceSyncEnvelope(request, env, context) {
     }
     syncReplayLocalCache.set(replayKey, nowTs + jtiCacheTtlMs);
     trimCacheMap(syncReplayLocalCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
-    await kv.put(
-      replayKey,
-      JSON.stringify({
-        ts: now,
-        op: context.operation,
-        collection: String(context.collection || "")
-      }),
-      { expirationTtl: SYNC_REPLAY_TTL_SECONDS }
-    );
+    try {
+      await kv.put(
+        replayKey,
+        JSON.stringify({
+          ts: now,
+          op: context.operation,
+          collection: String(context.collection || "")
+        }),
+        { expirationTtl: SYNC_REPLAY_TTL_SECONDS }
+      );
+    } catch (error) {
+      if (!isKvReplayProtectionRateLimitError(error)) {
+        throw error;
+      }
+      syncReplayLocalCache.delete(replayKey);
+    }
   }
   return null;
 }

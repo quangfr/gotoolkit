@@ -350,6 +350,12 @@ test.describe("Protected space create/rotate/delete", () => {
       expect(syncCheck.syncHistoryReadable).toBeTruthy();
       expect(syncCheck.originalReadable).toBeTruthy();
       expect(syncCheck.originalHistoryReadable).toBeTruthy();
+    } catch (error: any) {
+      const message = String(error?.message || error || "");
+      if (/KV put\(\) limit exceeded for the day/i.test(message)) {
+        test.skip(true, "share worker KV daily write limit exceeded");
+      }
+      throw error;
     } finally {
       logStep("space-delete:start", { spaceId });
       const deleteResponse = await fetch(`${SHARE_WORKER_BASE}/v1/spaces/auth/delete`, {

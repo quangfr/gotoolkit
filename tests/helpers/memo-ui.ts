@@ -8,7 +8,31 @@ export async function waitForMemoReady(page: Page, timeout = 45_000) {
       && (w.GoToolkitMemoGetActiveDocumentId || w.GoToolkitMemoOpenDocumentByLink)
     );
   }, null, { timeout });
-  await page.waitForSelector(".ProseMirror:visible", { timeout });
+
+  const deadline = Date.now() + timeout;
+  let lastError: unknown = null;
+  while (Date.now() < deadline) {
+    try {
+      const editorVisible = await page.evaluate(() => {
+        const nodes = Array.from(document.querySelectorAll(".ProseMirror")) as HTMLElement[];
+        return nodes.some(node => {
+          const style = window.getComputedStyle(node);
+          const rect = node.getBoundingClientRect();
+          return style.display !== "none"
+            && style.visibility !== "hidden"
+            && rect.width > 0
+            && rect.height > 0;
+        });
+      });
+      if (editorVisible) return;
+    } catch (error) {
+      lastError = error;
+    }
+    await page.waitForTimeout(500);
+  }
+
+  if (lastError) throw lastError;
+  throw new Error(`Memo editor did not become visible within ${timeout}ms`);
 }
 
 export async function refreshMemoExplorer(page: Page, timeout = 45_000) {

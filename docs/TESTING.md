@@ -1,6 +1,6 @@
 # GoToolkit Test Guide
 
-Date: 2026-03-01
+Date: 2026-03-09
 Purpose: describe how to automate testing, cloud document manipulation, browser-session reuse, worker verification, deployment checks, and CI regression coverage in the current repo
 Audience: coding agents and maintainers working from the repo and terminal
 
@@ -106,40 +106,100 @@ Current useful worker/API surfaces:
 
 Use this as a fast ownership map, not as a full per-spec changelog.
 
+Coverage-map maintenance rule:
+
+- when you add or update a coverage-map entry, also update its `Last execution`, `Execution length`, and `Execution time`
+- for all Playwright coverage-map entries, also record `Status`, `Blocking step`, and `Details`
+- when you rerun the full Playwright suite, update the latest suite result in this section with the execution date, length, duration, and pass/fail summary
+
+Latest full Playwright suite result:
+
+- `Last execution`: `2026-03-09`
+- `Execution length`: `24 tests`
+- `Execution time`: `10.1m`
+- `Result`: `20 passed`, `3 failed`, `1 skipped`
+- `Known failing specs`:
+  - `cloud-history-explicit-sync.spec.ts`
+  - `cloud-rapid-switch-large.spec.ts`
+  - `cloud-sync-persist.spec.ts`
+
 - `private-switch-persist.spec.ts`
   - verifies that edits on private documents survive document switching and a full page reload
+  - `Status`: `passing`
+  - `Blocking step`: `none`
+  - `Details`: `No failure recorded in the latest full-suite run summary`
 
 - `cloud-sync-persist.spec.ts`
   - end-to-end cloud persistence scenario covering create, edit, rename, move, reorder, delete, sync, reload, and remote state verification
+  - `Status`: `failing`
+  - `Blocking step`: `waitForMemoReady`
+  - `Details`: `Latest full-suite run timed out waiting for .ProseMirror:visible at tests/cloud-sync-persist.spec.ts:46`
 
 - `cloud-switch-persist.spec.ts`
   - verifies that edits on cloud documents survive switching between cloud pages, remain present after reload, and do not leak into the other page
+  - `Status`: `passing`
+  - `Blocking step`: `none`
+  - `Details`: `No failure recorded in the latest full-suite run summary`
 
 - `cloud-history-explicit-sync.spec.ts`
   - verifies that cloud edit/switch/save flows do not call remote `pages-history` before manual sync, and that manual sync flushes the queued remote history checkpoint
+  - `Status`: `failing`
+  - `Blocking step`: `pending queue clear assertion after manual sync`
+  - `Details`: `Latest full-suite run still found seed.tokenA in memo.pending-remote-history at tests/cloud-history-explicit-sync.spec.ts:144`
 
 - `memo-history-isolation.spec.ts`
   - verifies that version history stays isolated per page, and that restore / duplicate apply the selected version instead of reusing stale cached tab content from another snapshot
+  - `Status`: `passing`
+  - `Blocking step`: `none`
+  - `Details`: `No failure recorded in the latest full-suite run summary`
 
 - `cloud-rapid-switch-large.spec.ts`
   - stress repro for 3 cloud pages seeded from large `epiconcept` content when available, then 12 rapid edit/switch operations, followed by one explicit sync and a reload
   - verifies that draft-only edit/switch activity makes no mutating share-worker request for `pages`, `pages-meta`, or `pages-history` before that manual sync
   - verifies cross-page content isolation locally before sync and remotely after the final reload + sync
+  - `Status`: `failing`
+  - `Blocking step`: `waitForMemoReady`
+  - `Details`: `Latest full-suite run timed out waiting for .ProseMirror:visible at tests/cloud-rapid-switch-large.spec.ts:153`
 
 - `cloud-private-transfer-sync.spec.ts`
   - verifies two transfer paths: copying a cloud document to private storage and promoting a private document to cloud storage, with sync persistence checks
+  - `Status`: `passing`
+  - `Blocking step`: `none`
+  - `Details`: `All three transfer scenarios advanced in the latest full-suite run without recorded failure`
 
 - `cloud-spacecode-bootstrap.spec.ts`
   - verifies space access bootstrap with `spaceCode` without OAuth UI, and verifies that cloud drafts persist across reload and flush correctly on sync
+  - `Status`: `passing`
+  - `Blocking step`: `none`
+  - `Details`: `No failure recorded in the latest full-suite run summary`
 
 - `cloud-draft-archive-ops.spec.ts`
   - verifies local draft semantics: archive and delete drafts remain terminal operations and are not overwritten by later non-terminal updates
+  - `Status`: `passing`
+  - `Blocking step`: `none`
+  - `Details`: `Completed as the first passing spec in the latest full-suite run`
 
 - `space-code-rotate.spec.ts`
   - verifies protected-space lifecycle around create/rotate/delete: create a protected space, write a cloud document and remote `pages-history`, rotate the space code, confirm the old code is rejected, confirm the document and history remain readable with the new code across reload and sync, then delete the protected space with the admin create secret
+  - `Status`: `passing`
+  - `Blocking step`: `none`
+  - `Details`: `Completed successfully in the latest full-suite run with sync-check and space-delete done`
 
 - `microsoft-oauth-proxy.spec.ts`
   - covers Microsoft OAuth integration in three layers: contract-level popup handshake through `ms-proxy`, real Microsoft login and managed space loading, and auth state capture for reuse
+  - `Status`: `passing`
+  - `Blocking step`: `none`
+  - `Details`: `All three Microsoft OAuth scenarios completed in the latest full-suite run`
+
+- `excalidraw-regression.spec.ts`
+  - verifies Excalidraw/Mermaid regression coverage across block and modal surfaces for manual scene mutation and Mermaid generation (`flowchart`, `sequenceDiagram`, `classDiagram`), including close/save, page switch, and reload persistence checks
+  - verifies block and full-view sync for Mermaid-generated diagrams
+  - `Last execution`: `2026-03-09`
+  - `Execution length`: `8 tests`
+  - `Execution time`: `1.6m`
+  - `Status`: `passing`
+  - `Blocking step`: `none`
+  - `Details`: `Focused rerun passed after trimming the manual branch back to the stable baseline; manual coverage uses scene mutation, Mermaid coverage verifies block/full sync`
 
 Shared test helpers:
 
