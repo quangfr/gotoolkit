@@ -33,6 +33,26 @@ Use these as the default entry points before reading the full guide.
   - run `npm run csp:inline:sync`
   - do not run `npm run check:csp` on every local repro loop
 
+### 0.0 Triage matrix
+
+Use this before changing app code:
+
+- editor content is wrong before reload
+  - likely editor, switch, or save-path bug
+  - inspect the visible editor first, then rerun the closest `private-switch-*` or `cloud-switch-*` spec
+
+- editor is correct but local persisted state is wrong
+  - likely snapshot, open-doc, `share-history`, or cloud-draft bug
+  - compare editor output with IndexedDB `documents`, `share-history`, and `cloud-drafts`
+
+- local persisted state is correct but remote `pages` is wrong
+  - likely sync timing, worker write, or worker read/materialization bug
+  - compare local draft state with remote `pages-meta` and `pages`, and do not assume rate limiting without `429` or failed batch evidence
+
+- remote `pages` looks stale before final reload or sync
+  - first confirm whether the latest edits are still unsynced local drafts
+  - for rapid cloud-switch repros, prefer final reload + sync before asserting remote content
+
 ## 0.1 Core rules
 
 - Prefer a real spec under `tests/` over ad hoc scripts for any non-trivial repro.
@@ -87,9 +107,6 @@ Current useful worker/API surfaces:
 
 Functional intent of the tests currently present in `tests/`:
 
-- `index-ai-model-selection.spec.ts`
-  - verifies that changing the AI model from the `index.html` settings modal persists the selected value and that Assist sends the chosen model in the OpenRouter payload
-
 - `private-switch-persist.spec.ts`
   - verifies that edits on private documents survive document switching and a full page reload
 
@@ -102,8 +119,12 @@ Functional intent of the tests currently present in `tests/`:
 - `cloud-switch-persist.spec.ts`
   - verifies that edits on cloud documents survive switching between cloud pages and remain present after reload
 
+- `cloud-switch-noop-pending.spec.ts`
+  - verifies that switching between cloud pages without edits does not create a pending draft or sync badge
+
 - `cloud-rapid-switch-large.spec.ts`
   - stress repro for 3 cloud pages seeded with large content, then 12 rapid edit/switch operations with refresh, sync, and reload validation
+  - current expected outcome: pass after final reload + sync; do not assert latest markers in remote `pages` before that final sync because the last edits may still be local drafts
 
 - `cloud-private-transfer-sync.spec.ts`
   - verifies two transfer paths: copying a cloud document to private storage and promoting a private document to cloud storage, with sync persistence checks
@@ -272,6 +293,16 @@ Generic step-logging pattern:
 - keep this instrumentation in the spec until the failing stage is isolated; remove or reduce it only after the repro is stable
 
 The goal is to learn exactly where the scenario stopped without rewriting the test harness on every rerun.
+
+Fast isolation rules from the latest cloud-sync investigation:
+
+- for rapid cloud-switch repros, treat pre-reload remote `pages` reads as potentially stale when the last edits are still unsynced drafts
+- if the failure appears only in remote assertions, compare all three layers before changing app code:
+  - editor content
+  - local `share-history` / cloud drafts
+  - remote `pages`
+- when a batch write reports success, verify whether the bug is on write, sync timing, or read/materialization before assuming rate limiting
+- disable unrelated subsystems in the repro first when they add noise, for example remote `pages-history` writes
 
 Important CSP constraint:
 
