@@ -86,6 +86,66 @@ export async function clickMemoDoc(page: Page, docId: string, options: { allowPr
   } catch {
     await page.waitForSelector(".ProseMirror:visible", { timeout });
   }
+  await page.waitForFunction(async expectedId => {
+    const normalizedDocId = String(expectedId || "").trim();
+    const activeId = String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "").trim();
+    if (!normalizedDocId || activeId !== normalizedDocId) return false;
+    const currentHtml = String((window as any).GoToolkitMemoInstance?.getValue?.() || "");
+    const token = normalizedDocId.replace(/^share:/, "").trim();
+    const history = (window as any).goToolkitShareHistory;
+    const documentApi = (window as any).goToolkitDocumentApi;
+    const isCloudDoc = normalizedDocId.startsWith("share:");
+    const historyRecords = history?.getRecordsByApp ? await history.getRecordsByApp("memo").catch(() => []) : [];
+    const allRows = Array.isArray(historyRecords) ? historyRecords : [];
+    const cloudRow = isCloudDoc
+      ? allRows.find((row: any) => String(row?.token || "").trim() === token)
+      : null;
+    const expectedCloudHtml = String(cloudRow?.payload?.tabs?.[0]?.content || "");
+    if (expectedCloudHtml) return currentHtml === expectedCloudHtml;
+    const record = !isCloudDoc && documentApi?.getRecord ? await documentApi.getRecord(normalizedDocId).catch(() => null) : null;
+    const expectedLocalHtml = String(record?.payload?.tabs?.[0]?.content || record?.payload || "");
+    if (expectedLocalHtml) return currentHtml === expectedLocalHtml;
+    return currentHtml.length > 0 || document.querySelector(".ProseMirror")?.textContent !== null;
+  }, docId, { timeout }).catch(() => null);
+}
+
+export async function renameMemoDoc(
+  page: Page,
+  docId: string,
+  nextTitle: string,
+  options: { timeout?: number } = {}
+) {
+  const { timeout = 30_000 } = options;
+  const item = getMemoDocItem(page, docId);
+  await expect(item).toBeVisible({ timeout });
+  await item.dblclick();
+  const renameInput = page.locator(".document-explorer__item-inline-input").first();
+  await expect(renameInput).toBeVisible({ timeout: Math.min(timeout, 15_000) });
+  await renameInput.fill(nextTitle);
+  await renameInput.press("Enter");
+  await expect(item).toContainText(nextTitle, { timeout });
+}
+
+export async function deleteActiveMemoDoc(page: Page, options: { timeout?: number } = {}) {
+  const { timeout = 30_000 } = options;
+  await page.click("#fileMenuBtn");
+  await page.click("#deleteDocumentBtn");
+  await page.waitForTimeout(Math.min(1000, Math.max(150, Math.floor(timeout / 60))));
+}
+
+export function captureShareRequests(page: Page, options: { includeSpaces?: boolean } = {}) {
+  const { includeSpaces = false } = options;
+  const requests: Array<{ method: string; url: string }> = [];
+  page.on("request", request => {
+    const url = request.url();
+    const pattern = includeSpaces ? /\/v1\/shares\/|\/v1\/spaces\//i : /\/v1\/shares\//i;
+    if (!pattern.test(url)) return;
+    requests.push({
+      method: request.method(),
+      url
+    });
+  });
+  return requests;
 }
 
 export async function typeIntoVisibleEditor(

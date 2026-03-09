@@ -6,8 +6,10 @@ import {
   PW_TEST_SPACE_ID
 } from "./helpers/share-test-space";
 import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
+import { readCloudMemoLocalState, readCloudMemoRemoteState } from "./helpers/cloud-state";
 import {
   clickMemoDoc,
+  captureShareRequests,
   dismissDocsTour,
   getMemoEditorHtml,
   refreshMemoExplorer,
@@ -82,53 +84,6 @@ function installBrowserDebugLogging(page: Page, prefix: string) {
   });
 }
 
-async function readCloudDocState(page: Page, docId: string) {
-  return page.evaluate(async currentDocId => {
-    const token = String(currentDocId || "").replace(/^share:/, "").trim();
-    const worker = (window as any).goToolkitShareWorker;
-    const history = (window as any).goToolkitShareHistory;
-    const drafts = (window as any).goToolkitCloudDrafts;
-    const historyRows = await history?.getRecordsByApp?.("memo").catch?.(() => []) || [];
-    const historyRow = Array.isArray(historyRows)
-      ? historyRows.find((row: any) => String(row?.token || "") === token)
-      : null;
-    const allDrafts = await drafts?.readAll?.().catch?.(() => ({})) || {};
-    const draft = allDrafts?.[currentDocId] || null;
-    const remoteMeta = token ? await worker?.fetchSharePayload?.("pages-meta", token).catch?.(() => null) : null;
-    const remotePage = token ? await worker?.fetchSharePayload?.("pages", token).catch?.(() => null) : null;
-    return {
-      activeDocId: String((window as any).GoToolkitMemoGetActiveDocumentId?.() || ""),
-      editorHtml: String((window as any).GoToolkitMemoInstance?.getValue?.() || ""),
-      historyHtml: String(historyRow?.payload?.tabs?.[0]?.content || ""),
-      draftHtml: String(draft?.payload?.tabs?.[0]?.content || ""),
-      draftOpType: String(draft?.opType || ""),
-      remoteHtml: String(remotePage?.payload?.tabs?.[0]?.content || ""),
-      remoteStatus: String(remoteMeta?.payload?.status || "")
-    };
-  }, docId);
-}
-
-async function readLocalCloudDocState(page: Page, docId: string) {
-  return page.evaluate(async currentDocId => {
-    const token = String(currentDocId || "").replace(/^share:/, "").trim();
-    const history = (window as any).goToolkitShareHistory;
-    const drafts = (window as any).goToolkitCloudDrafts;
-    const historyRows = await history?.getRecordsByApp?.("memo").catch?.(() => []) || [];
-    const historyRow = Array.isArray(historyRows)
-      ? historyRows.find((row: any) => String(row?.token || "") === token)
-      : null;
-    const allDrafts = await drafts?.readAll?.().catch?.(() => ({})) || {};
-    const draft = allDrafts?.[currentDocId] || null;
-    return {
-      activeDocId: String((window as any).GoToolkitMemoGetActiveDocumentId?.() || ""),
-      editorHtml: String((window as any).GoToolkitMemoInstance?.getValue?.() || ""),
-      historyHtml: String(historyRow?.payload?.tabs?.[0]?.content || ""),
-      draftHtml: String(draft?.payload?.tabs?.[0]?.content || ""),
-      draftOpType: String(draft?.opType || "")
-    };
-  }, docId);
-}
-
 async function moveCaretToDocumentEnd(page: Page) {
   await page.evaluate(() => {
     const editor = (window as any).MemoEditor || (window as any).memoEditor;
@@ -169,18 +124,13 @@ test.describe("Cloud rapid switching large-content stress", () => {
     const targetSpaceId = PW_TEST_SPACE_ID;
     const targetSpaceCode = PW_TEST_SPACE_CODE;
     const cleanupTokens: string[] = [];
-    const shareRequests: Array<{ method: string; url: string }> = [];
+    const shareRequests = captureShareRequests(page);
     let lastShareRequestAt = 0;
 
     installBrowserDebugLogging(page, "cloud-rapid-switch-large");
     page.on("request", request => {
-      const url = request.url();
-      if (!/\/v1\/shares\//i.test(url)) return;
+      if (!/\/v1\/shares\//i.test(request.url())) return;
       lastShareRequestAt = Date.now();
-      shareRequests.push({
-        method: request.method(),
-        url
-      });
     });
     await page.addInitScript(() => {
       try {
@@ -400,7 +350,7 @@ test.describe("Cloud rapid switching large-content stress", () => {
           targetExpectedMarkers,
           targetExcludedMarkers
         );
-        const localStateAfterEdit = await readLocalCloudDocState(page, targetDoc.id);
+        const localStateAfterEdit = await readCloudMemoLocalState(page, targetDoc.id);
         expectMarkersIsolated(
           `${targetDoc.id}: local editor state after edit ${index + 1}`,
           localStateAfterEdit.editorHtml,
@@ -419,7 +369,7 @@ test.describe("Cloud rapid switching large-content stress", () => {
           targetExcludedMarkers
         );
         await expect.poll(async () => {
-          const state = await readLocalCloudDocState(page, targetDoc.id);
+          const state = await readCloudMemoLocalState(page, targetDoc.id);
           return markersAreIsolated(
             state.historyHtml,
             targetExpectedMarkers,
@@ -429,7 +379,7 @@ test.describe("Cloud rapid switching large-content stress", () => {
           timeout: 10_000,
           message: `${targetDoc.id}: local history state after roundtrip ${index + 1} did not stabilize on the expected page content`
         }).toBe(true);
-        const localStateAfterRoundtrip = await readLocalCloudDocState(page, targetDoc.id);
+        const localStateAfterRoundtrip = await readCloudMemoLocalState(page, targetDoc.id);
         expectMarkersIsolated(
           `${targetDoc.id}: local history state after roundtrip ${index + 1}`,
           localStateAfterRoundtrip.historyHtml,
@@ -465,7 +415,7 @@ test.describe("Cloud rapid switching large-content stress", () => {
           expectedMarkers.get(doc.id) || [],
           excludedMarkers(doc.id)
         );
-        const state = await readLocalCloudDocState(page, doc.id);
+        const state = await readCloudMemoLocalState(page, doc.id);
         expectMarkersIsolated(
           `${doc.id}: editor state before reload`,
           state.editorHtml,
@@ -504,7 +454,14 @@ test.describe("Cloud rapid switching large-content stress", () => {
 
       for (const doc of seeded) {
         await clickMemoDoc(page, doc.id, { allowProgrammaticOpen: false });
-        const state = await readCloudDocState(page, doc.id);
+        const token = String(doc.id || "").replace(/^share:/, "").trim();
+        const localState = await readCloudMemoLocalState(page, doc.id);
+        const remoteState = await readCloudMemoRemoteState(page, { token, spaceId: targetSpaceId });
+        const state = {
+          ...localState,
+          remoteHtml: String(remoteState.contentHtml || ""),
+          remoteStatus: String(remoteState.metaStatus || "")
+        };
         expectMarkersIsolated(
           `${doc.id}: editor after reload`,
           state.editorHtml,

@@ -1,7 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
 import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
-import { clickMemoDoc, refreshMemoExplorer, syncGolive, typeIntoVisibleEditor, waitForMemoReady } from "./helpers/memo-ui";
+import { readCloudMemoRemoteState, seedCloudMemoDocs } from "./helpers/cloud-state";
+import {
+  clickMemoDoc,
+  deleteActiveMemoDoc,
+  refreshMemoExplorer,
+  renameMemoDoc,
+  syncGolive,
+  typeIntoVisibleEditor,
+  waitForMemoReady
+} from "./helpers/memo-ui";
 
 test.describe("Cloud sync persistency", () => {
   test("persists cloud create/edit/rename/move/reorder/delete operations and cleans up", async ({ page }) => {
@@ -41,69 +50,16 @@ test.describe("Cloud sync persistency", () => {
       });
 
       logStep("seed-cloud-docs:start", { prefix });
-      const seeded = await page.evaluate(async seed => {
-        const { state, spaceId, spaceCode } = seed as any;
-        const worker = (window as any).goToolkitShareWorker;
-        const history = (window as any).goToolkitShareHistory;
-        const spaces = (window as any).GoToolkitSpaces;
-        spaces?.upsertSpace?.({
-          id: spaceId,
-          name: "Go Live",
-          icon: "cloud-upload",
-          spaceJoinCode: spaceCode,
-          isDefault: true
-        });
-
-        const makePayload = (tabId: string, title: string, content: string, position: number, parentId = "") => ({
-          tabs: [{
-            id: tabId,
-            title,
-            description: "",
-            superpowers: [],
-            content: `<p>${content}</p>`
-          }],
-          activeTabId: tabId,
-          parentId,
-          spaceId,
-          status: "active",
-          position
-        });
-
-        const writeCloudDoc = async (token: string, title: string, content: string, position: number, parentId = "") => {
-          const payload = makePayload(`tab-${token}`, title, content, position, parentId);
-          const meta = {
-            title,
-            description: "",
-            superpowers: [],
-            icon: "file-symlink",
-            parentId,
-            spaceId,
-            position,
-            status: "active"
-          };
-          const savedMeta = await worker.saveSharePayload("pages-meta", token, meta);
-          await worker.saveSharePayload("pages", token, payload);
-          await history.upsertRecord("memo", {
-            token,
-            title,
-            description: "",
-            superpowers: [],
-            payload,
-            icon: "file-symlink",
-            parentId,
-            spaceId,
-            position,
-            updatedAt: String(savedMeta?.updatedAt || new Date().toISOString())
-          });
-        };
-
-        await writeCloudDoc(state.existingToken, `PW Existing ${Date.now()}`, "EXISTING_BASE", 10, "");
-        await writeCloudDoc(state.rootToken, `PW Root ${Date.now()}`, "ROOT_BASE", 20, "");
-        await writeCloudDoc(state.parentToken, `PW Parent ${Date.now()}`, "PARENT_BASE", 30, "");
-        await writeCloudDoc(state.childToken, `PW Child ${Date.now()}`, "CHILD_BASE", 40, state.parentToken);
-        await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
-        return [state.existingToken, state.rootToken, state.parentToken, state.childToken];
-      }, { state, spaceId: PW_TEST_SPACE_ID, spaceCode: PW_TEST_SPACE_CODE });
+      const seeded = await seedCloudMemoDocs(page, {
+        spaceId: PW_TEST_SPACE_ID,
+        spaceCode: PW_TEST_SPACE_CODE,
+        docs: [
+          { token: state.existingToken, title: `PW Existing ${Date.now()}`, content: "<p>EXISTING_BASE</p>", position: 10 },
+          { token: state.rootToken, title: `PW Root ${Date.now()}`, content: "<p>ROOT_BASE</p>", position: 20 },
+          { token: state.parentToken, title: `PW Parent ${Date.now()}`, content: "<p>PARENT_BASE</p>", position: 30 },
+          { token: state.childToken, title: `PW Child ${Date.now()}`, content: "<p>CHILD_BASE</p>", position: 40, parentId: state.parentToken }
+        ]
+      });
       createdTokens.push(...seeded);
       logStep("seed-cloud-docs:done", { createdTokens });
 
@@ -124,14 +80,7 @@ test.describe("Cloud sync persistency", () => {
 
       logStep("rename-parent:start", { docId: `share:${state.parentToken}`, title: state.renamedParentTitle });
       await clickMemoDoc(page, `share:${state.parentToken}`);
-      const parentItemForRename = page.locator(`.document-explorer__item[data-document-id="share:${state.parentToken}"]`).first();
-      await expect(parentItemForRename).toBeVisible({ timeout: 30_000 });
-      await parentItemForRename.dblclick();
-      const renameInput = page.locator(".document-explorer__item-inline-input").first();
-      await expect(renameInput).toBeVisible({ timeout: 15_000 });
-      await renameInput.fill(state.renamedParentTitle);
-      await renameInput.press("Enter");
-      await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.parentToken}"]`)).toContainText(state.renamedParentTitle, { timeout: 20_000 });
+      await renameMemoDoc(page, `share:${state.parentToken}`, state.renamedParentTitle);
       await page.evaluate(async ({ token, title, spaceId }) => {
         const docId = `share:${token}`;
         const state = (window as any).__memoState;
@@ -226,22 +175,19 @@ test.describe("Cloud sync persistency", () => {
 
       logStep("delete-existing:start");
       await clickMemoDoc(page, `share:${state.existingToken}`);
-      await page.click("#fileMenuBtn");
-      await page.click("#deleteDocumentBtn");
+      await deleteActiveMemoDoc(page);
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.existingToken}"]`)).toHaveCount(0, { timeout: 20_000 });
       logStep("delete-existing:done");
 
       logStep("delete-child:start");
       await clickMemoDoc(page, `share:${state.childToken}`);
-      await page.click("#fileMenuBtn");
-      await page.click("#deleteDocumentBtn");
+      await deleteActiveMemoDoc(page);
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.childToken}"]`)).toHaveCount(0, { timeout: 20_000 });
       logStep("delete-child:done");
 
       logStep("delete-root:start");
       await clickMemoDoc(page, `share:${state.rootToken}`);
-      await page.click("#fileMenuBtn");
-      await page.click("#deleteDocumentBtn");
+      await deleteActiveMemoDoc(page);
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.rootToken}"]`)).toHaveCount(0, { timeout: 20_000 });
       logStep("delete-root:done");
 
@@ -250,22 +196,20 @@ test.describe("Cloud sync persistency", () => {
       logStep("sync:done");
       logStep("remote-delete-check:start");
       await expect.poll(
-        async () => page.evaluate(async ({ existingToken, rootToken, childToken, spaceId }) => {
-          const worker = (window as any).goToolkitShareWorker;
-          const read = async (token: string) => {
-            const meta = await worker.fetchSharePayload("pages-meta", token, { spaceId });
-            const content = await worker.fetchSharePayload("pages", token, { spaceId });
-            return {
-              metaStatus: String(meta?.payload?.status || "").trim().toLowerCase(),
-              contentMissing: !content?.payload
-            };
-          };
-          return {
-            existing: await read(existingToken),
-            root: await read(rootToken),
-            child: await read(childToken)
-          };
-        }, { ...state, spaceId: PW_TEST_SPACE_ID }),
+        async () => ({
+          existing: await readCloudMemoRemoteState(page, { token: state.existingToken, spaceId: PW_TEST_SPACE_ID }).then(result => ({
+            metaStatus: result.metaStatus,
+            contentMissing: !result.content?.payload
+          })),
+          root: await readCloudMemoRemoteState(page, { token: state.rootToken, spaceId: PW_TEST_SPACE_ID }).then(result => ({
+            metaStatus: result.metaStatus,
+            contentMissing: !result.content?.payload
+          })),
+          child: await readCloudMemoRemoteState(page, { token: state.childToken, spaceId: PW_TEST_SPACE_ID }).then(result => ({
+            metaStatus: result.metaStatus,
+            contentMissing: !result.content?.payload
+          }))
+        }),
         { timeout: 60_000, intervals: [1200, 2400, 4000] }
       ).toEqual({
         existing: { metaStatus: "deleted", contentMissing: true },
@@ -282,26 +226,20 @@ test.describe("Cloud sync persistency", () => {
       logStep("remote-state-check:start");
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.parentToken}"]`)).toContainText(state.renamedParentTitle, { timeout: 20_000 });
 
-      const remoteCheck = await page.evaluate(async ({ parentToken, renamedParentTitle, existingToken, rootToken, childToken, spaceId }) => {
-        const worker = (window as any).goToolkitShareWorker;
-        const parentMeta = await worker.fetchSharePayload("pages-meta", parentToken, { spaceId });
-        const existingMeta = await worker.fetchSharePayload("pages-meta", existingToken, { spaceId });
-        const rootMeta = await worker.fetchSharePayload("pages-meta", rootToken, { spaceId });
-        const childMeta = await worker.fetchSharePayload("pages-meta", childToken, { spaceId });
-        const existingContent = await worker.fetchSharePayload("pages", existingToken, { spaceId });
-        const rootContent = await worker.fetchSharePayload("pages", rootToken, { spaceId });
-        const childContent = await worker.fetchSharePayload("pages", childToken, { spaceId });
-        return {
-          parentTitle: String(parentMeta?.payload?.title || ""),
-          existingArchived: String(existingMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
-          rootArchived: String(rootMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
-          childArchived: String(childMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
-          existingContentMissing: !existingContent?.payload,
-          rootContentMissing: !rootContent?.payload,
-          childContentMissing: !childContent?.payload,
-          expectedTitle: renamedParentTitle
-        };
-      }, { ...state, spaceId: PW_TEST_SPACE_ID });
+      const parentState = await readCloudMemoRemoteState(page, { token: state.parentToken, spaceId: PW_TEST_SPACE_ID });
+      const existingState = await readCloudMemoRemoteState(page, { token: state.existingToken, spaceId: PW_TEST_SPACE_ID });
+      const rootState = await readCloudMemoRemoteState(page, { token: state.rootToken, spaceId: PW_TEST_SPACE_ID });
+      const childState = await readCloudMemoRemoteState(page, { token: state.childToken, spaceId: PW_TEST_SPACE_ID });
+      const remoteCheck = {
+        parentTitle: String(parentState.meta?.payload?.title || ""),
+        existingArchived: existingState.metaStatus === "deleted",
+        rootArchived: rootState.metaStatus === "deleted",
+        childArchived: childState.metaStatus === "deleted",
+        existingContentMissing: !existingState.content?.payload,
+        rootContentMissing: !rootState.content?.payload,
+        childContentMissing: !childState.content?.payload,
+        expectedTitle: state.renamedParentTitle
+      };
 
       logStep("remote-state-check:result", remoteCheck);
       expect(remoteCheck.parentTitle).toContain(remoteCheck.expectedTitle);

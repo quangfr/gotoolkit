@@ -102,9 +102,9 @@ Current useful worker/API surfaces:
 - `GET /v1/assets/:id`
 - `DELETE /v1/assets/:id`
 
-### 2.1 Current test inventory
+### 2.1 Coverage map
 
-Functional intent of the tests currently present in `tests/`:
+Use this as a fast ownership map, not as a full per-spec changelog.
 
 - `private-switch-persist.spec.ts`
   - verifies that edits on private documents survive document switching and a full page reload
@@ -150,13 +150,35 @@ Shared test helpers:
   - exposes the configured Playwright test space ID and code from the environment
 
 - `helpers/memo-ui.ts`
-  - provides common memo UI operations used by Playwright specs: waiting for the editor, opening a document, typing into the visible editor, interacting with the history modal, refreshing the explorer, dismissing the docs tour, and triggering cloud sync
+  - provides common memo UI operations used by Playwright specs: waiting for the editor, opening a document, renaming/deleting from the explorer or file menu, typing into the visible editor, interacting with the history modal, capturing share requests, refreshing the explorer, dismissing the docs tour, and triggering cloud sync
+
+- `helpers/cloud-state.ts`
+  - provides cloud-state setup and verification primitives: seed shared memo docs, read local cloud draft/history state, and read remote `pages` / `pages-meta` / `pages-history` state
 
 Recent fixes now covered by the suite:
 
 - active cloud delete from the file menu must target the currently open document unless the user has a real multi-selection
 - memo history restore must replace cached editor-tab content when switching to an already-mounted tab id
 - rapid cloud stress assertions should ignore read-only `pages:batchGet` traffic before manual sync
+
+### 2.2 Helper rules
+
+Prefer helper extraction when a Playwright flow is reused in 2 or more specs.
+
+- put UI actions in `helpers/memo-ui.ts`
+  - examples: open, rename, delete, drag, sync, history modal interaction
+
+- put cloud setup and cloud assertions in `helpers/cloud-state.ts`
+  - examples: seed `pages` + `pages-meta`, read remote content/meta/history, inspect local draft/history state
+
+- keep spec-local helpers only when they are tightly coupled to one scenario
+  - examples: custom marker validation for a single stress spec
+
+- prefer selecting history rows by visible preview content, not by raw index
+
+- prefer asserting on mutating remote traffic separately from read-only traffic
+  - `pages:batchGet` is a read
+  - `pages:batch`, `pages-meta:batch`, `PUT`, and `DELETE` are writes
 
 ## 3. Recommended automation model
 
@@ -167,6 +189,14 @@ For this repo, the default model is:
 3. reuse that state across runs
 4. do setup and verification through APIs when possible
 5. keep UI tests focused on real user behavior
+
+When deciding whether to fix the app or the test:
+
+- fix the app when the user-visible contract is wrong
+  - examples: restore applies stale editor state, file-menu delete targets the wrong active doc
+
+- fix the test when the assertion is bound to an unstable implementation detail
+  - examples: relying on history modal row index instead of selected preview content
 
 ## 4. Bypassing OAuth for cloud document automation
 
@@ -264,6 +294,9 @@ Use this exact workflow for local UI debugging and repros on this repo:
 2. if you are on WSL, create or refresh the persistent Linux mirror with `npm run playwright:linux:mirror`; do not run Playwright from `/mnt/c/...`
 3. write or reuse a real spec under `tests/`
 4. attach listeners for `console`, `pageerror`, `request`, and `response` before navigation
+5. use helpers before writing raw locator flows inline
+6. keep worker setup and worker assertions in helper-backed `page.evaluate(...)` blocks
+7. after a fix, rerun the focused spec first, then rerun the relevant suite slice
 
 ### 6.1 Local noise to treat carefully
 
@@ -276,11 +309,24 @@ These are currently known local-run noises and should not be treated as memo reg
 - `pages:batchGet` requests during cloud stress runs
   - these are read-side fetches
   - do not classify them as premature remote writes when the assertion is specifically about pre-sync mutation traffic
-5. add explicit `console.log` step markers before every intended UI interaction
-6. suppress the docs tour unless the tour itself is under test
-7. keep worker repros focused on route behavior, CORS, and rate limiting
-8. run the repo-local binary from the Linux mirror: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`, or use `npm run playwright:linux:test -- ...`
-9. keep the instrumentation in place until the failing stage is isolated; do not keep rewriting the harness blindly between runs
+
+- `pages-history` `404` before first checkpoint creation
+  - this is expected when the sync path probes remote history before the first successful remote history write
+  - only treat it as a failure if the subsequent `PUT` or final history assertion fails
+
+## 7. Recommended cleanup direction
+
+When touching Playwright coverage in this repo, bias toward:
+
+- fewer large specs with duplicated setup logic
+- more shared helpers for cloud bootstrap, remote-state reads, and explorer actions
+- assertions written in terms of user-visible behavior and draft/sync semantics
+- explicit distinction between local draft state, local history state, and remote worker state
+- add explicit `console.log` step markers before every intended UI interaction
+- suppress the docs tour unless the tour itself is under test
+- keep worker repros focused on route behavior, CORS, and rate limiting
+- run the repo-local binary from the Linux mirror: `./node_modules/.bin/playwright test ... --workers=1 --reporter=line`, or use `npm run playwright:linux:test -- ...`
+- keep the instrumentation in place until the failing stage is isolated; do not keep rewriting the harness blindly between runs
 
 This is the minimum standard for non-trivial UI debugging.
 
