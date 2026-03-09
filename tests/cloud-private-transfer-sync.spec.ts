@@ -5,6 +5,7 @@ import {
   clickMemoDoc,
   dismissDocsTour,
   dragMemoDocToSection,
+  expandMemoSection,
   getMemoDocItem,
   refreshMemoExplorer,
   syncGolive
@@ -317,8 +318,40 @@ test.describe("Cloud/private transfer sync", () => {
         spaceCode: PW_TEST_SPACE_CODE
       });
 
-      await dragMemoDocToSection(page, seeded.archivedId, `shared:${PW_TEST_SPACE_ID}`);
+      await expandMemoSection(page, "archives");
+      await dragMemoDocToSection(page, seeded.archivedId, `shared:${PW_TEST_SPACE_ID}`, { expandSection: true });
 
+      await expect.poll(async () => {
+        return await page.evaluate(async ({ archivedMarker, deletedCloudToken }) => {
+          const history = (window as any).goToolkitShareHistory;
+          const drafts = (window as any).goToolkitCloudDrafts;
+          const rows = await history?.getRecordsByApp?.("memo");
+          const promoted = (Array.isArray(rows) ? rows : []).find((row: any) =>
+            String(row?.payload?.tabs?.[0]?.content || "").includes(String(archivedMarker || ""))
+            && String(row?.token || "") !== String(deletedCloudToken || "")
+          );
+          const allDrafts = await drafts?.readAll?.().catch?.(() => ({})) || {};
+          const matchingDraft = Object.values(allDrafts).find((draft: any) =>
+            String(draft?.payload?.tabs?.[0]?.content || "").includes(String(archivedMarker || ""))
+          ) as any;
+          return {
+            promotedToken: String(promoted?.token || ""),
+            deletedTokenReusedInHistory: Boolean((Array.isArray(rows) ? rows : []).find((row: any) =>
+              String(row?.token || "") === String(deletedCloudToken || "")
+              && String(row?.payload?.tabs?.[0]?.content || "").includes(String(archivedMarker || ""))
+            )),
+            draftToken: String(matchingDraft?.token || ""),
+            draftOpType: String(matchingDraft?.opType || "")
+          };
+        }, { archivedMarker, deletedCloudToken });
+      }, {
+        timeout: 20_000
+      }).not.toEqual({
+        promotedToken: "",
+        deletedTokenReusedInHistory: false,
+        draftToken: "",
+        draftOpType: ""
+      });
       const localPromoteState = await page.evaluate(async ({ archivedMarker, deletedCloudToken }) => {
         const history = (window as any).goToolkitShareHistory;
         const drafts = (window as any).goToolkitCloudDrafts;

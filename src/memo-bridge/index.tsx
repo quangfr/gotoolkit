@@ -240,9 +240,9 @@ const App = () => {
                     const hasExisting = Boolean(prev[id]);
                     const nextContent = typeof initialContent === 'string' ? initialContent : '';
                     const existingContent = hasExisting && typeof prev[id]?.content === 'string' ? prev[id].content : '';
-                    const resolvedContent = hasExisting && existingContent
-                        ? existingContent
-                        : nextContent;
+                    const resolvedContent = typeof initialContent === 'string'
+                        ? nextContent
+                        : existingContent;
                     const next: Record<string, EditorInstance> = hasExisting
                         ? {
                             ...prev,

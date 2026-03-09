@@ -1,6 +1,6 @@
 {
   "name": "gotoolkit",
-  "version": "2026.03.09.5",
+  "version": "2026.03.09.6",
   "description": "Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides** (pour créer des planches claires et structurées) et **Go-Timeline** (pour visualiser et ajuster un planning). Chaque outil s’utilise en ouvrant directement son fichier dans un navigateur, avec des assistants IA, des exports réactifs et des modèles prêts à l’emploi.",
   "main": "index.js",
   "scripts": {
@@ -13,7 +13,6 @@
     "playwright:linux:mirror": "./scripts/playwright-linux-mirror.sh",
     "playwright:linux:test": "./scripts/playwright-linux-test.sh test",
     "playwright:ms:auth:save": "PW_BOOTSTRAP_MS_AUTH=1 ./node_modules/.bin/playwright test tests/microsoft-oauth-proxy.spec.ts -g \"captures Microsoft auth state for reuse\" --workers=1 --headed --reporter=line",
-    "playwright:ms:oauth:debug": "PW_MS_OAUTH_DEBUG=1 ./node_modules/.bin/playwright test tests/microsoft-oauth-proxy.spec.ts -g \"debugs Microsoft OAuth popup step-by-step\" --workers=1 --headed --reporter=line",
     "playwright:persist": "PW_PERSIST_PROFILE=1 ./node_modules/.bin/playwright test --workers=1",
     "playwright:persist:headed": "PW_PERSIST_PROFILE=1 ./node_modules/.bin/playwright test --workers=1 --headed",
     "dev": "concurrently \"npm run dev:connect\" \"npm run dev:memo\" \"npm run start\"",

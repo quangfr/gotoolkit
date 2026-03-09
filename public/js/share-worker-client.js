@@ -1677,7 +1677,7 @@
       throw new Error("Token espace invalide");
     }
     cacheSpaceContentKey(normalizedSpaceId, contentKey);
-    spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt });
+    spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt, mode: "code", spaceCode });
     return token;
   }
 
@@ -1709,7 +1709,7 @@
       throw new Error("Token espace invalide");
     }
     cacheSpaceContentKey(normalizedSpaceId, contentKey);
-    spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt });
+    spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt, mode: "oauth" });
     return token;
   }
 
@@ -1718,12 +1718,21 @@
     if (!normalizedSpaceId) return null;
     const now = Date.now();
     const cached = spaceAuthTokenCache.get(normalizedSpaceId);
-    if (cached && cached.token && Number(cached.expiresAt || 0) > now + 10_000) {
-      return cached.token;
-    }
     const space = getSpaceById(normalizedSpaceId);
     const hasManagedOauthAccess = Boolean(space?.accessManaged) && String(space?.accessMode || "").trim().toLowerCase() === "oauth";
     const spaceCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
+    const canReuseCached = Boolean(
+      cached
+      && cached.token
+      && Number(cached.expiresAt || 0) > now + 10_000
+      && (
+        (hasManagedOauthAccess && String(cached.mode || "") === "oauth")
+        || (!hasManagedOauthAccess && spaceCode && String(cached.mode || "") === "code" && String(cached.spaceCode || "") === spaceCode)
+      )
+    );
+    if (canReuseCached) {
+      return cached.token;
+    }
     if (hasManagedOauthAccess) {
       return authenticateSpaceWithOauth(base, normalizedSpaceId);
     }
@@ -1775,7 +1784,7 @@
       const contentKey = String(data?.contentKey || "").trim();
       cacheSpaceContentKey(normalizedSpaceId, contentKey);
       if (token && Number.isFinite(expiresAt)) {
-        spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt });
+        spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt, mode: "code", spaceCode: nextSpaceCode });
       } else {
         spaceAuthTokenCache.delete(normalizedSpaceId);
       }

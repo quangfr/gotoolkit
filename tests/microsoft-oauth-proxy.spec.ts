@@ -353,31 +353,4 @@ test.describe("Microsoft OAuth proxy flow", () => {
     expect(fs.existsSync(MS_AUTH_STATE_PATH)).toBeTruthy();
   });
 
-  test("debugs Microsoft OAuth popup step-by-step (headed)", async ({ page, context }) => {
-    test.setTimeout(300_000);
-    test.skip(process.env.PW_MS_OAUTH_DEBUG !== "1", "Set PW_MS_OAUTH_DEBUG=1 to run headed popup debug");
-
-    const loginEmail = String(process.env.PW_MICROSOFT_LOGIN_EMAIL || "").trim();
-    const loginPassword = String(process.env.PW_MICROSOFT_LOGIN_PASSWORD || "").trim();
-    test.skip(!loginEmail || !loginPassword, "PW_MICROSOFT_LOGIN_EMAIL/PW_MICROSOFT_LOGIN_PASSWORD are required");
-    logStep("oauth-debug:start", { headed: true, hasEmail: Boolean(loginEmail) });
-
-    page.on("pageerror", err => {
-      console.log(`[ms-oauth:debug:pageerror] ${err.message}`);
-    });
-    page.on("console", msg => {
-      const text = msg.text();
-      if (text.includes("[SSO Debug]") || text.includes("Popup") || text.includes("OAuth")) {
-        console.log(`[ms-oauth:debug:console:${msg.type()}] ${text}`);
-      }
-    });
-
-    await page.goto("http://127.0.0.1:5000/index.html", { waitUntil: "commit", timeout: 20_000 });
-    await page.waitForFunction(() => Boolean((window as any).GoToolkitMicrosoftPublish?.getAuthStatus), null, { timeout: 120_000 });
-    const preStatus = await page.evaluate(async () => {
-      return await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
-    });
-    logStep("oauth-debug:pre-status", preStatus);
-    await runMicrosoftPopupLogin(page, context, loginEmail, loginPassword, { debugArtifacts: true });
-  });
 });

@@ -88,7 +88,6 @@ Current built-in automation hooks in the repo:
 - `tests/cloud-switch-persist.spec.ts`
 - `tests/cloud-rapid-switch-large.spec.ts`
 - `tests/private-switch-persist.spec.ts`
-- `tests/private-switch-rapid-repro.spec.ts`
 - `tests/space-code-rotate.spec.ts`
 - `scripts/with-env-local.sh`
 
@@ -110,27 +109,21 @@ Functional intent of the tests currently present in `tests/`:
 - `private-switch-persist.spec.ts`
   - verifies that edits on private documents survive document switching and a full page reload
 
-- `private-switch-rapid-repro.spec.ts`
-  - stress repro for rapid private-page switching while typing, followed by a reload check on both pages
-
 - `cloud-sync-persist.spec.ts`
   - end-to-end cloud persistence scenario covering create, edit, rename, move, reorder, delete, sync, reload, and remote state verification
 
 - `cloud-switch-persist.spec.ts`
   - verifies that edits on cloud documents survive switching between cloud pages, remain present after reload, and do not leak into the other page
 
-- `cloud-switch-noop-pending.spec.ts`
-  - verifies that switching between cloud pages without edits does not create a pending draft or sync badge
-
 - `cloud-history-explicit-sync.spec.ts`
   - verifies that cloud edit/switch/save flows do not call remote `pages-history` before manual sync, and that manual sync flushes the queued remote history checkpoint
 
 - `memo-history-isolation.spec.ts`
-  - verifies that version history stays isolated per page, and that `Restaurer` / `Dupliquer` apply the selected version instead of leaking another page payload
+  - verifies that version history stays isolated per page, and that restore / duplicate apply the selected version instead of reusing stale cached tab content from another snapshot
 
 - `cloud-rapid-switch-large.spec.ts`
   - stress repro for 3 cloud pages seeded from large `epiconcept` content when available, then 12 rapid edit/switch operations, followed by one explicit sync and a reload
-  - verifies that draft-only edit/switch activity makes no share-worker request for `pages`, `pages-meta`, or `pages-history` before that manual sync
+  - verifies that draft-only edit/switch activity makes no mutating share-worker request for `pages`, `pages-meta`, or `pages-history` before that manual sync
   - verifies cross-page content isolation locally before sync and remotely after the final reload + sync
 
 - `cloud-private-transfer-sync.spec.ts`
@@ -139,17 +132,14 @@ Functional intent of the tests currently present in `tests/`:
 - `cloud-spacecode-bootstrap.spec.ts`
   - verifies space access bootstrap with `spaceCode` without OAuth UI, and verifies that cloud drafts persist across reload and flush correctly on sync
 
-- `cloud-archive-retry.spec.ts`
-  - verifies that an archive operation remains queued after a transient failure and is retried successfully on the next sync
-
 - `cloud-draft-archive-ops.spec.ts`
   - verifies local draft semantics: archive and delete drafts remain terminal operations and are not overwritten by later non-terminal updates
 
 - `space-code-rotate.spec.ts`
-  - verifies protected-space lifecycle around create/rotate/delete: create a protected space, write a cloud document, rotate the space code, confirm the old code is rejected, confirm the document remains readable with the new code across reload and sync, then delete the protected space with the admin create secret
+  - verifies protected-space lifecycle around create/rotate/delete: create a protected space, write a cloud document and remote `pages-history`, rotate the space code, confirm the old code is rejected, confirm the document and history remain readable with the new code across reload and sync, then delete the protected space with the admin create secret
 
 - `microsoft-oauth-proxy.spec.ts`
-  - covers Microsoft OAuth integration in four layers: contract-level popup handshake through `ms-proxy`, real Microsoft login and managed space loading, auth state capture for reuse, and interactive headed popup debugging
+  - covers Microsoft OAuth integration in three layers: contract-level popup handshake through `ms-proxy`, real Microsoft login and managed space loading, and auth state capture for reuse
 
 Shared test helpers:
 
@@ -161,6 +151,12 @@ Shared test helpers:
 
 - `helpers/memo-ui.ts`
   - provides common memo UI operations used by Playwright specs: waiting for the editor, opening a document, typing into the visible editor, interacting with the history modal, refreshing the explorer, dismissing the docs tour, and triggering cloud sync
+
+Recent fixes now covered by the suite:
+
+- active cloud delete from the file menu must target the currently open document unless the user has a real multi-selection
+- memo history restore must replace cached editor-tab content when switching to an already-mounted tab id
+- rapid cloud stress assertions should ignore read-only `pages:batchGet` traffic before manual sync
 
 ## 3. Recommended automation model
 
@@ -268,6 +264,18 @@ Use this exact workflow for local UI debugging and repros on this repo:
 2. if you are on WSL, create or refresh the persistent Linux mirror with `npm run playwright:linux:mirror`; do not run Playwright from `/mnt/c/...`
 3. write or reuse a real spec under `tests/`
 4. attach listeners for `console`, `pageerror`, `request`, and `response` before navigation
+
+### 6.1 Local noise to treat carefully
+
+These are currently known local-run noises and should not be treated as memo regressions by default:
+
+- transient jsDelivr / Excalidraw chunk load errors during long Playwright runs
+  - example: `ChunkLoadError` for `vendor-677e88ca78c86bddf13d.js`
+  - if the memo flow under test still completes and assertions pass, treat this as external asset noise first
+
+- `pages:batchGet` requests during cloud stress runs
+  - these are read-side fetches
+  - do not classify them as premature remote writes when the assertion is specifically about pre-sync mutation traffic
 5. add explicit `console.log` step markers before every intended UI interaction
 6. suppress the docs tour unless the tour itself is under test
 7. keep worker repros focused on route behavior, CORS, and rate limiting

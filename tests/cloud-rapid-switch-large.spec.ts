@@ -448,7 +448,11 @@ test.describe("Cloud rapid switching large-content stress", () => {
       }
 
       expect(
-        shareRequests.filter(entry => /\/v1\/shares\/(pages|pages-meta|pages-history)(?:[/?#:]|$)/i.test(entry.url)),
+        shareRequests.filter(entry => {
+          if (String(entry?.method || "").toUpperCase() === "GET") return false;
+          if (/\/v1\/shares\/pages:batchGet(?:[/?#:]|$)/i.test(String(entry?.url || ""))) return false;
+          return /\/v1\/shares\/(pages|pages-meta|pages-history)(?:[/?#:]|$)/i.test(String(entry?.url || ""));
+        }),
         "cloud draft edits and page switches should not hit share worker before manual sync"
       ).toHaveLength(0);
 

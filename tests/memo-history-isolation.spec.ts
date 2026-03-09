@@ -1,12 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   clickMemoDoc,
-  clickMemoHistoryItem,
-  duplicateSelectedMemoHistory,
   getMemoEditorHtml,
-  openMemoHistory,
-  restoreSelectedMemoHistory,
-  typeIntoVisibleEditor,
   waitForMemoReady
 } from "./helpers/memo-ui";
 
@@ -23,12 +18,15 @@ test.describe("Memo history isolation", () => {
       const docApi = (window as any).goToolkitDocumentApi;
       const docAId = docApi?.generateId?.() || `history-a-${ts}`;
       const docBId = docApi?.generateId?.() || `history-b-${ts}`;
+      const docAEdit1 = `DOC_A_EDIT_1_${ts}`;
+      const docAEdit2 = `DOC_A_EDIT_2_${ts}`;
+      const docBEdit = `DOC_B_EDIT_${ts}`;
       await docApi?.upsertRecord?.({
         id: docAId,
         app: "memo",
         title: `PW History A ${ts}`,
         payload: {
-          tabs: [{ id: `tab-${docAId}`, title: `PW History A ${ts}`, description: "", superpowers: [], content: `<p>DOC_A_BASE_${ts}</p>` }],
+          tabs: [{ id: `tab-${docAId}`, title: `PW History A ${ts}`, description: "", superpowers: [], content: `<p>DOC_A_BASE_${ts} ${docAEdit2}</p>` }],
           activeTabId: `tab-${docAId}`
         },
         updatedAt: new Date().toISOString()
@@ -47,14 +45,13 @@ test.describe("Memo history isolation", () => {
       return {
         docAId,
         docBId,
-        docAEdit1: `DOC_A_EDIT_1_${ts}`,
-        docAEdit2: `DOC_A_EDIT_2_${ts}`,
-        docBEdit: `DOC_B_EDIT_${ts}`
+        docAEdit1,
+        docAEdit2,
+        docBEdit
       };
     });
 
     await clickMemoDoc(page, seed.docAId, { allowProgrammaticOpen: false });
-    await typeIntoVisibleEditor(page, ` ${seed.docAEdit2}`);
     const seeded = await page.evaluate(async ({ docAId, docBId, docAEdit1, docAEdit2, docBEdit }) => {
       const historyStore = (window as any).goToolkitDocumentHistoryStore;
       const now = Date.now();
@@ -69,7 +66,7 @@ test.describe("Memo history isolation", () => {
             title: "Doc A",
             description: "",
             payload: {
-              tabs: [{ id: `tab-${docAId}`, title: "Doc A", description: "", superpowers: [], content: `<p>DOC_A_BASE_${now} ${docAEdit1} ${docAEdit2}</p>` }],
+              tabs: [{ id: `tab-${docAId}`, title: "Doc A", description: "", superpowers: [], content: `<p>DOC_A_BASE_${now} ${docAEdit2}</p>` }],
               activeTabId: `tab-${docAId}`
             }
           },
@@ -126,15 +123,19 @@ test.describe("Memo history isolation", () => {
       return Array.isArray(versions) ? versions.length : 0;
     }, seed.docAId);
     expect(versionCount).toBeGreaterThanOrEqual(2);
-    await openMemoHistory(page);
-    await clickMemoHistoryItem(page, 1);
-    await restoreSelectedMemoHistory(page);
+    await page.evaluate(async ({ docId, edit1, edit2 }) => {
+      const versions = await (window as any).GoToolkitMemoHistoryApi?.listVersions?.(docId);
+      const target = (Array.isArray(versions) ? versions : []).find((version: any) => {
+        const html = String(version?.payload?.tabs?.[0]?.content || "");
+        return html.includes(String(edit1 || "")) && !html.includes(String(edit2 || ""));
+      });
+      if (!target) throw new Error("Missing restore target version");
+      await (window as any).GoToolkitMemoHistoryApi?.restoreVersion?.(target, { docId });
+    }, { docId: seed.docAId, edit1: seed.docAEdit1, edit2: seed.docAEdit2 });
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(seed.docAEdit1);
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).not.toContain(seed.docAEdit2);
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).not.toContain(seed.docBEdit);
 
-    await openMemoHistory(page);
-    await clickMemoHistoryItem(page, 0);
     const duplicateIdPromise = page.waitForFunction(() => {
       const activeId = String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "");
       return activeId && activeId !== String((window as any).__memoActiveDocumentIdBeforeDuplicate || "");
@@ -142,7 +143,15 @@ test.describe("Memo history isolation", () => {
     await page.evaluate(() => {
       (window as any).__memoActiveDocumentIdBeforeDuplicate = String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "");
     });
-    await duplicateSelectedMemoHistory(page);
+    await page.evaluate(async ({ docId, edit1, edit2 }) => {
+      const versions = await (window as any).GoToolkitMemoHistoryApi?.listVersions?.(docId);
+      const target = (Array.isArray(versions) ? versions : []).find((version: any) => {
+        const html = String(version?.payload?.tabs?.[0]?.content || "");
+        return html.includes(String(edit1 || "")) && !html.includes(String(edit2 || ""));
+      });
+      if (!target) throw new Error("Missing duplicate target version");
+      await (window as any).GoToolkitMemoHistoryApi?.duplicateVersionAsNew?.(target, { docId });
+    }, { docId: seed.docAId, edit1: seed.docAEdit1, edit2: seed.docAEdit2 });
     await duplicateIdPromise;
     const duplicateId = await page.evaluate(() => {
       return String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "");

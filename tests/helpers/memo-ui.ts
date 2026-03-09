@@ -123,6 +123,27 @@ export async function clickMemoHistoryItem(page: Page, index: number, timeout = 
   const item = getMemoHistoryItems(page).nth(index);
   await expect(item).toBeVisible({ timeout });
   await item.click();
+  await expect(item).toHaveClass(/is-active/, { timeout });
+}
+
+export async function clickMemoHistoryItemByPreview(
+  page: Page,
+  options: { contains: string; excludes?: string[]; timeout?: number }
+) {
+  const { contains, excludes = [], timeout = 15_000 } = options;
+  const items = getMemoHistoryItems(page);
+  const count = await items.count();
+  for (let index = 0; index < count; index += 1) {
+    const item = items.nth(index);
+    await expect(item).toBeVisible({ timeout });
+    await item.click();
+    await expect(item).toHaveClass(/is-active/, { timeout });
+    const previewHtml = await page.locator("#memo-history-preview-text").innerHTML();
+    if (!String(previewHtml || "").includes(contains)) continue;
+    if (excludes.some(value => String(value || "") && String(previewHtml || "").includes(value))) continue;
+    return index;
+  }
+  throw new Error(`No memo history item matched preview contains=${JSON.stringify(contains)} excludes=${JSON.stringify(excludes)}`);
 }
 
 export async function restoreSelectedMemoHistory(page: Page, timeout = 30_000) {

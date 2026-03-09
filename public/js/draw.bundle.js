@@ -4517,6 +4517,31 @@
     if (!Array.isArray(point) || point.length < 2) return false;
     return Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]));
   };
+  var normalizeLinearPoints = (points) => {
+    const normalized = [];
+    for (const point of points) {
+      const x = Number(point[0]);
+      const y = Number(point[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        continue;
+      }
+      const last = normalized[normalized.length - 1];
+      if (last && last[0] === x && last[1] === y) {
+        continue;
+      }
+      normalized.push([x, y]);
+    }
+    return normalized;
+  };
+  var getLinearPathLength = (points) => {
+    let total = 0;
+    for (let index = 1; index < points.length; index += 1) {
+      const [prevX, prevY] = points[index - 1];
+      const [nextX, nextY] = points[index];
+      total += Math.hypot(nextX - prevX, nextY - prevY);
+    }
+    return total;
+  };
   var sanitizeSceneElements = (elements) => {
     const list = Array.isArray(elements) ? elements : [];
     const sanitized = [];
@@ -4538,9 +4563,15 @@
         normalized.height = Math.max(0, toFiniteNumber(normalized.height, 0));
       }
       if (Array.isArray(normalized.points)) {
-        const points = normalized.points.filter(hasFinitePoint).map((point) => [Number(point[0]), Number(point[1])]);
-        if ((normalized.type === "line" || normalized.type === "arrow") && points.length < 2) continue;
-        if (normalized.type !== "line" && normalized.type !== "arrow" && points.length < 1) continue;
+        const rawPoints = normalized.points.filter(hasFinitePoint).map((point) => [Number(point[0]), Number(point[1])]);
+        const isLinear = normalized.type === "line" || normalized.type === "arrow";
+        const points = isLinear ? normalizeLinearPoints(rawPoints) : rawPoints;
+        if (isLinear) {
+          if (points.length < 2) continue;
+          if (!(getLinearPathLength(points) > 0)) continue;
+        } else if (points.length < 1) {
+          continue;
+        }
         normalized.points = points;
       }
       if ("angle" in normalized) {

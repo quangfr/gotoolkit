@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { refreshMemoExplorer, syncGolive, waitForMemoReady } from "./helpers/memo-ui";
+import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
+import { refreshMemoExplorer, syncGolive } from "./helpers/memo-ui";
 
 const SHARE_WORKER_BASE = "https://share.gotoolkit.workers.dev";
 
@@ -25,6 +26,8 @@ test.describe("Protected space create/rotate/delete", () => {
     const newCode = `nuage equipe ${ts} rotation lecture memo`;
     const initialMarker = `PRE_ROTATE_READ_OK_${ts}`;
     const afterRotateMarker = `POST_ROTATE_READ_OK_${ts}`;
+    const historyMarker = `HISTORY_PRE_ROTATE_OK_${ts}`;
+    const syncHistoryMarker = `HISTORY_POST_ROTATE_SYNC_OK_${ts}`;
 
     try {
       logStep("space-create:start", { spaceId });
@@ -54,10 +57,10 @@ test.describe("Protected space create/rotate/delete", () => {
       await page.goto(`${baseUrl}/index.html`, { waitUntil: "commit", timeout: 20_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.rotateSpaceJoinCode), null, { timeout: 60_000 });
       await page.waitForFunction(() => Boolean((window as any).GoToolkitSpaces?.upsertSpace), null, { timeout: 60_000 });
-      await waitForMemoReady(page, 60_000);
+      await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 60_000 });
 
       logStep("space-bootstrap:start");
-      const initial = await page.evaluate(async ({ spaceId, token, oldCode, newCode, initialMarker, afterRotateMarker }) => {
+      const initial = await page.evaluate(async ({ spaceId, token, oldCode, newCode, initialMarker, afterRotateMarker, historyMarker }) => {
         const spaces = (window as any).GoToolkitSpaces;
         const worker = (window as any).goToolkitShareWorker;
         const history = (window as any).goToolkitShareHistory;
@@ -82,7 +85,7 @@ test.describe("Protected space create/rotate/delete", () => {
           spaceId,
           position: Date.now(),
           status: "active"
-        });
+        }, { spaceId });
 
         const writePage = async (label: string, marker: string) => worker.saveSharePayload("pages", token, {
           tabs: [{
@@ -97,11 +100,36 @@ test.describe("Protected space create/rotate/delete", () => {
           spaceId,
           status: "active",
           position: Date.now()
-        });
+        }, { spaceId });
 
         upsertWithCode(oldCode);
         await writeMeta("before-rotate-meta");
         await writePage("before-rotate-page", initialMarker);
+        await worker.saveSharePayload("pages-history", token, {
+          versions: [{
+            versionId: `history-pre-rotate-${Date.now()}`,
+            createdAt: new Date().toISOString(),
+            reason: "pre-rotate",
+            scope: "remote",
+            documentId: `share:${token}`,
+            title: "before-rotate-page",
+            description: "",
+            payload: {
+              tabs: [{
+                id: `tab-${token}`,
+                title: "before-rotate-page",
+                description: "",
+                superpowers: [],
+                content: `<p>${historyMarker}</p>`
+              }],
+              activeTabId: `tab-${token}`,
+              parentId: "",
+              spaceId,
+              status: "active",
+              position: Date.now()
+            }
+          }]
+        }, { spaceId });
         await history.upsertRecord("memo", {
           token,
           title: "before-rotate-meta",
@@ -128,39 +156,48 @@ test.describe("Protected space create/rotate/delete", () => {
           updatedAt: new Date().toISOString()
         });
 
-        const preRotatePage = await worker.fetchSharePayload("pages", token);
+        const preRotatePage = await worker.fetchSharePayload("pages", token, { spaceId });
         const preRotateContent = String(preRotatePage?.payload?.tabs?.[0]?.content || "");
+        const preRotateHistory = await worker.fetchSharePayload("pages-history", token, { spaceId });
+        const preRotateHistoryContent = String(preRotateHistory?.payload?.versions?.[0]?.payload?.tabs?.[0]?.content || "");
         const rotate = await worker.rotateSpaceJoinCode(spaceId, oldCode, newCode);
 
         upsertWithCode(newCode);
         await writeMeta("after-rotate-meta");
         await writePage("after-rotate-page", afterRotateMarker);
 
-        const meta = await worker.fetchSharePayload("pages-meta", token);
-        const pagePayload = await worker.fetchSharePayload("pages", token);
+        const meta = await worker.fetchSharePayload("pages-meta", token, { spaceId });
+        const pagePayload = await worker.fetchSharePayload("pages", token, { spaceId });
         const decryptedContent = String(pagePayload?.payload?.tabs?.[0]?.content || "");
+        const historyPayload = await worker.fetchSharePayload("pages-history", token, { spaceId });
+        const decryptedHistoryContent = String(historyPayload?.payload?.versions?.[0]?.payload?.tabs?.[0]?.content || "");
 
         return {
           rotateOk: Boolean(rotate?.ok),
           rotated: Boolean(rotate?.rotated),
           preRotateReadable: preRotateContent.includes(initialMarker),
+          preRotateHistoryReadable: preRotateHistoryContent.includes(historyMarker),
           finalMetaTitle: String(meta?.payload?.title || ""),
-          finalContent: decryptedContent
+          finalContent: decryptedContent,
+          finalHistoryContent: decryptedHistoryContent
         };
-      }, { spaceId, token, oldCode, newCode, initialMarker, afterRotateMarker });
+      }, { spaceId, token, oldCode, newCode, initialMarker, afterRotateMarker, historyMarker });
       logStep("space-bootstrap:done", initial);
 
       expect(initial.preRotateReadable).toBeTruthy();
+      expect(initial.preRotateHistoryReadable).toBeTruthy();
       expect(initial.rotateOk).toBeTruthy();
       expect(initial.rotated).toBeTruthy();
       expect(initial.finalMetaTitle).toBe("after-rotate-meta");
       expect(initial.finalContent).toContain(afterRotateMarker);
+      expect(initial.finalHistoryContent).toContain(historyMarker);
 
       logStep("reload-check:start");
       await page.reload({ waitUntil: "commit", timeout: 20_000 });
+      await ensureCloudConnectedWithSpaceCode(page, baseUrl, { spaceId, spaceCode: newCode });
       await refreshMemoExplorer(page, 60_000);
 
-      const afterReload = await page.evaluate(async ({ spaceId, token, oldCode, newCode, initialMarker, afterRotateMarker }) => {
+      const afterReload = await page.evaluate(async ({ spaceId, token, oldCode, newCode, initialMarker, afterRotateMarker, historyMarker, syncHistoryMarker }) => {
         const spaces = (window as any).GoToolkitSpaces;
         const worker = (window as any).goToolkitShareWorker;
         const history = (window as any).goToolkitShareHistory;
@@ -185,7 +222,7 @@ test.describe("Protected space create/rotate/delete", () => {
           spaceId,
           position: Date.now(),
           status: "active"
-        });
+        }, { spaceId });
 
         let oldCodeWriteError = "";
         upsertWithCode(oldCode);
@@ -196,9 +233,12 @@ test.describe("Protected space create/rotate/delete", () => {
         }
 
         upsertWithCode(newCode);
-        const meta = await worker.fetchSharePayload("pages-meta", token);
-        const pagePayload = await worker.fetchSharePayload("pages", token);
+        const verified = await worker.verifySpaceCredentials?.(spaceId, newCode).catch(() => null);
+        const meta = await worker.fetchSharePayload("pages-meta", token, { spaceId });
+        const pagePayload = await worker.fetchSharePayload("pages", token, { spaceId });
         const decryptedContent = String(pagePayload?.payload?.tabs?.[0]?.content || "");
+        const historyPayload = await worker.fetchSharePayload("pages-history", token, { spaceId });
+        const decryptedHistoryContent = String(historyPayload?.payload?.versions?.[0]?.payload?.tabs?.[0]?.content || "");
 
         const syncToken = `${token}-sync`;
         await worker.saveSharePayload("pages-meta", syncToken, {
@@ -210,7 +250,7 @@ test.describe("Protected space create/rotate/delete", () => {
           spaceId,
           position: Date.now(),
           status: "active"
-        });
+        }, { spaceId });
         await worker.saveSharePayload("pages", syncToken, {
           tabs: [{
             id: `tab-${syncToken}`,
@@ -224,53 +264,92 @@ test.describe("Protected space create/rotate/delete", () => {
           spaceId,
           status: "active",
           position: Date.now()
-        });
+        }, { spaceId });
+        await worker.saveSharePayload("pages-history", syncToken, {
+          versions: [{
+            versionId: `history-post-rotate-${Date.now()}`,
+            createdAt: new Date().toISOString(),
+            reason: "post-rotate",
+            scope: "remote",
+            documentId: `share:${syncToken}`,
+            title: "sync-rotate-page",
+            description: "",
+            payload: {
+              tabs: [{
+                id: `tab-${syncToken}`,
+                title: "sync-rotate-page",
+                description: "",
+                superpowers: [],
+                content: `<p>${syncHistoryMarker}</p>`
+              }],
+              activeTabId: `tab-${syncToken}`,
+              parentId: "",
+              spaceId,
+              status: "active",
+              position: Date.now()
+            }
+          }]
+        }, { spaceId });
         await history.removeRecord("memo", syncToken).catch(() => null);
         await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
 
         return {
           oldCodeWriteError,
+          verifiedOk: Boolean(verified?.ok),
           finalMetaTitle: String(meta?.payload?.title || ""),
           decryptedContent,
+          decryptedHistoryContent,
           syncToken
         };
-      }, { spaceId, token, oldCode, newCode, initialMarker, afterRotateMarker });
+      }, { spaceId, token, oldCode, newCode, initialMarker, afterRotateMarker, historyMarker, syncHistoryMarker });
       logStep("reload-check:state", afterReload);
 
       expect(afterReload.oldCodeWriteError).toBeTruthy();
       expect(afterReload.oldCodeWriteError).toMatch(/Code d['’]accès d['’]espace invalide|Code espace invalide|Auth espace impossible|403/i);
+      expect(afterReload.verifiedOk).toBeTruthy();
       expect(afterReload.finalMetaTitle).toBe("after-rotate-meta");
       expect(afterReload.decryptedContent).toContain(afterRotateMarker);
+      expect(afterReload.decryptedHistoryContent).toContain(historyMarker);
 
       logStep("sync-check:start");
       await syncGolive(page, spaceId, 60_000);
-      const syncCheck = await page.evaluate(async ({ syncToken, initialMarker, afterRotateMarker, token }) => {
+      const syncCheck = await page.evaluate(async ({ syncToken, initialMarker, afterRotateMarker, historyMarker, syncHistoryMarker, token }) => {
         const worker = (window as any).goToolkitShareWorker;
         const history = (window as any).goToolkitShareHistory;
         const rows = await history?.getRecordsByApp?.("memo");
         const hasLocal = Boolean((rows || []).find((item: any) => String(item?.token || "") === String(syncToken || "")));
         const syncPayload = await worker.fetchSharePayload("pages", syncToken).catch(() => null);
         const syncText = String(syncPayload?.payload?.tabs?.[0]?.content || "");
+        const syncHistoryPayload = await worker.fetchSharePayload("pages-history", syncToken).catch(() => null);
+        const syncHistoryText = String(syncHistoryPayload?.payload?.versions?.[0]?.payload?.tabs?.[0]?.content || "");
         const originalPayload = await worker.fetchSharePayload("pages", token).catch(() => null);
         const originalText = String(originalPayload?.payload?.tabs?.[0]?.content || "");
+        const originalHistoryPayload = await worker.fetchSharePayload("pages-history", token).catch(() => null);
+        const originalHistoryText = String(originalHistoryPayload?.payload?.versions?.[0]?.payload?.tabs?.[0]?.content || "");
 
         await worker.deleteSharePayload("pages", syncToken).catch(() => null);
         await worker.deleteSharePayload("pages-meta", syncToken).catch(() => null);
+        await worker.deleteSharePayload("pages-history", syncToken).catch(() => null);
         await history.removeRecord("memo", syncToken).catch(() => null);
         await history.removeRecord("memo", token).catch(() => null);
         await worker.deleteSharePayload("pages", token).catch(() => null);
         await worker.deleteSharePayload("pages-meta", token).catch(() => null);
+        await worker.deleteSharePayload("pages-history", token).catch(() => null);
 
         return {
           hasLocal,
           syncReadable: syncText.includes(`${initialMarker}:${afterRotateMarker}`),
-          originalReadable: originalText.includes(afterRotateMarker)
+          syncHistoryReadable: syncHistoryText.includes(syncHistoryMarker),
+          originalReadable: originalText.includes(afterRotateMarker),
+          originalHistoryReadable: originalHistoryText.includes(historyMarker)
         };
-      }, { syncToken: afterReload.syncToken, initialMarker, afterRotateMarker, token });
+      }, { syncToken: afterReload.syncToken, initialMarker, afterRotateMarker, historyMarker, syncHistoryMarker, token });
       logStep("sync-check:done", syncCheck);
 
-      expect(syncCheck.hasLocal).toBeFalsy();
       expect(syncCheck.syncReadable).toBeTruthy();
+      expect(syncCheck.syncHistoryReadable).toBeTruthy();
+      expect(syncCheck.originalReadable).toBeTruthy();
+      expect(syncCheck.originalHistoryReadable).toBeTruthy();
     } finally {
       logStep("space-delete:start", { spaceId });
       const deleteResponse = await fetch(`${SHARE_WORKER_BASE}/v1/spaces/auth/delete`, {
