@@ -23,6 +23,7 @@ This file is the short operational guide. Use the docs below as the canonical re
   - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
   - [`docs/SECURITY.MD`](docs/SECURITY.MD)
   - [`docs/TESTING.md`](docs/TESTING.md)
+- When updating a reference doc, also refresh its visible date or last-updated field in the same edit.
 - After any HTML/CSS edit in the CSP scope (`public/index.html`, `public/grid.html`, `public/mobile.html`, `public/styles/*`, and CSP mirror/config files), run:
   - `npm run csp:inline:sync`
 - For any request involving `bump`, `commit`, or `push`, run:
