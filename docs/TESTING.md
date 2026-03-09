@@ -120,10 +120,10 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-09 21:28`
+- `Last execution`: `2026-03-09 21:48`
 - `Scope`: `Tier 1`
 - `Execution length`: `5 tests`
-- `Execution time`: `02:57`
+- `Execution time`: `02:18`
 - `Result`: `4 passed, 0 failed, 1 skipped`
 - `Details`: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
@@ -136,17 +136,17 @@ Tier suites:
 
   - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `00:55`) on `2026-03-09 21:28`
+    - results: `passing` (`1 test`, `00:49`) on `2026-03-09 21:48`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.2` `cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
-    - results: `passing` (`1 test`, `00:57`) on `2026-03-09 21:28`
+    - results: `passing` (`1 test`, `00:57`) on `2026-03-09 21:48`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse
-    - results: `passing` (`3 tests`, `01:05`) on `2026-03-09 21:28`
+    - results: `passing` (`3 tests`, `00:32`) on `2026-03-09 21:48`
     - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
 - `Tier 4` essential troubleshooting
