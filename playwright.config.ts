@@ -5,6 +5,7 @@ import path from "node:path";
 const persistProfile = process.env.PW_PERSIST_PROFILE === "1";
 const storageStatePath = path.resolve(".tmp/playwright-storage-state.json");
 const msAuthStatePath = path.resolve("playwright/.auth/ms.json");
+const effectiveStorageStatePath = path.resolve(".tmp/playwright-effective-storage-state.json");
 const envLocalPath = path.resolve(".env.local");
 
 function readEnvLocalValue(key: string): string {
@@ -71,14 +72,13 @@ export default defineConfig({
   fullyParallel: !persistProfile,
   workers: persistProfile ? 1 : undefined,
   timeout: 60 * 1000,
+  globalSetup: "./scripts/playwright-global-setup.mjs",
   use: {
     headless: true,
     viewport: { width: 1280, height: 720 },
     actionTimeout: 30 * 1000,
     navigationTimeout: 30 * 1000,
-    storageState: fs.existsSync(msAuthStatePath)
-      ? msAuthStatePath
-      : (fs.existsSync(storageStatePath) ? storageStatePath : undefined)
+    storageState: effectiveStorageStatePath
   },
   webServer: {
     command: "npm run start:test",

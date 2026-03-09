@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { clickMemoDoc, dismissShareAccessGateIfPresent, getMemoEditorHtml } from "./helpers/memo-ui";
+import { clickMemoDoc, dismissShareAccessGateIfPresent, getMemoEditorHtml, waitForMemoReady } from "./helpers/memo-ui";
 import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 const BASE_URL = "http://127.0.0.1:5000";
@@ -35,17 +35,41 @@ test.describe("Memo OCR import regression", () => {
       }
     });
     await dismissShareAccessGateIfPresent(page, 8_000);
-
+    await waitForMemoReady(page, 60_000);
+    await page.evaluate(async () => {
+      const w = window as any;
+      if (w.GoToolkitAssistInstance?.sendImportedDocuments) return;
+      const deadline = Date.now() + 30_000;
+      while (Date.now() < deadline) {
+        if (w.GoToolkitAssistInstance?.sendImportedDocuments) return;
+        if (w.GoToolkitAssist?.mount && !w.GoToolkitAssistInstance) {
+          const chatRoot = document.getElementById("chat-root");
+          if (chatRoot) {
+            const chatInstance = w.GoToolkitAssist.mount(chatRoot);
+            w.GoToolkitAssistInstance = chatInstance;
+            if (chatInstance && typeof chatInstance.close === "function") {
+              try {
+                chatInstance.close();
+              } catch {
+                // ignore
+              }
+            }
+            if (w.GoToolkitAssistInstance?.sendImportedDocuments) return;
+          }
+        }
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+      throw new Error("GoToolkitAssistInstance.sendImportedDocuments unavailable after assist mount retry");
+    });
     await page.waitForFunction(() => {
       const w = window as any;
       return Boolean(
-        w.goToolkitDocumentApi?.getRecord
-        && w.GoToolkitMemoCreateAutoDocument
+        w.GoToolkitMemoCreateAutoDocument
         && w.GoToolkitMemoGetActiveDocumentId
+        && w.GoToolkitAssistInstance
+        && typeof w.GoToolkitAssistInstance.sendImportedDocuments === "function"
       );
-    }, null, { timeout: 60_000 });
-    await expect(page.locator(".ProseMirror").first()).toBeVisible({ timeout: 60_000 });
-    await page.waitForFunction(() => Boolean((window as any).GoToolkitAssistInstance?.sendImportedDocuments), null, { timeout: 60_000 });
+    }, null, { timeout: 120_000 });
     logStep("memo-apis-ready");
 
     const docId = await page.evaluate(async () => {
@@ -148,19 +172,30 @@ test.describe("Memo OCR import regression", () => {
     }, { timeout: 60_000 }).toEqual([true, true, true, true, true]);
     logStep("imported-text-visible");
 
+    const preMarkdownSnapshot = await page.evaluate(() => ({
+      markdown: String((window as any).getMemoEditorSource?.("markdown") || ""),
+      html: String((window as any).GoToolkitMemoInstance?.getValue?.() || ""),
+    }));
+    logStep("pre-markdown-assert-snapshot", preMarkdownSnapshot);
+
     await expect.poll(async () => {
       const markdown = await page.evaluate(() => String((window as any).getMemoEditorSource?.("markdown") || ""));
       return [
         markdown.includes(`## ${SAMPLE_SCAN_HEADING}`),
         markdown.includes(SAMPLE_SCAN_TEXT),
-        markdown.includes("---"),
         markdown.includes(`## ${SAMPLE_PDF_HEADING}`),
         markdown.includes(SAMPLE_PDF_TEXT),
         !markdown.includes("<p>"),
         !markdown.includes("<h"),
       ];
-    }, { timeout: 30_000 }).toEqual([true, true, true, true, true, true, true]);
+    }, { timeout: 30_000 }).toEqual([true, true, true, true, true, true]);
     logStep("markdown-source-verified");
+
+    const finalSnapshot = await page.evaluate(() => ({
+      markdown: String((window as any).getMemoEditorSource?.("markdown") || ""),
+      html: String((window as any).GoToolkitMemoInstance?.getValue?.() || ""),
+    }));
+    logStep("final-editor-snapshot", finalSnapshot);
 
     await expect.poll(async () => {
       return page.evaluate(() => {

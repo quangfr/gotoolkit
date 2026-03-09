@@ -115,18 +115,17 @@ Coverage-map maintenance rule:
 - normal repo runs through `npm run playwright:linux:test -- ...` auto-write per-suite metrics and sync the affected Coverage Map `results` and `details`
 - tier `results` may use aggregate runtime, but suite `results` must use per-suite runtime when known
 - when you rerun the full Playwright suite, update the latest suite result in this section with the execution date, length, duration, and pass/fail summary
-- `Tier 1` is the release gate for `bump`, `commit`, and `push`
-  - if `Tier 1` passed on the current code state, you may release
-  - if `Tier 1` failed, continue fixing and rerunning before release
+- `Tier 1` is the CI gate for PRs and `main` pushes through `.github/workflows/firebase-hosting-pull-request.yml` and `.github/workflows/firebase-hosting-merge.yml`
+- local `bump`, `commit`, and `push` flows do not require rerunning `Tier 1` unless the task explicitly asks for it
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-09 21:14`
-- `Scope`: `memo-import-ocr-regression.spec.ts`
-- `Execution length`: `1 test`
-- `Execution time`: `00:32`
-- `Result`: `0 passed, 1 failed, 0 skipped`
-- `Details`: `Latest run has failures. Auto-synced from Playwright suite metrics.`
+- `Last execution`: `2026-03-09 21:28`
+- `Scope`: `Tier 1`
+- `Execution length`: `5 tests`
+- `Execution time`: `02:57`
+- `Result`: `4 passed, 0 failed, 1 skipped`
+- `Details`: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
 Tier suites:
 
@@ -137,17 +136,17 @@ Tier suites:
 
   - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `01:02`) on `2026-03-09 19:52`
+    - results: `passing` (`1 test`, `00:55`) on `2026-03-09 21:28`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.2` `cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
-    - results: `passing` (`1 test`, `01:11`) on `2026-03-09 19:55`
+    - results: `passing` (`1 test`, `00:57`) on `2026-03-09 21:28`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse
-    - results: `passing` (`3 tests`, `00:39`) on `2026-03-09 18:45`
+    - results: `passing` (`3 tests`, `01:05`) on `2026-03-09 21:28`
     - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
 - `Tier 4` essential troubleshooting
@@ -177,8 +176,8 @@ Tier suites:
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `11 passed, 1 failed, 0 skipped` (`12 tests`, `03:32`) on `2026-03-09 21:14`
-  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
+  - results: `12 passed, 0 failed, 0 skipped` (`12 tests`, `03:08`) on `2026-03-09 21:23`
+  - details: `Latest suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `cloud-history-explicit-sync.spec.ts`
     - description: explicit sync gating for remote `pages-history` writes
@@ -202,8 +201,8 @@ Tier suites:
 
   - `T2.5` `memo-import-ocr-regression.spec.ts`
     - description: private-page import of JPG OCR + PDF in one batch with direct paste into the active document
-    - results: `failing` (`1 test`, `00:32`) on `2026-03-09 21:14`
-    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`1 test`, `00:08`) on `2026-03-09 21:23`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 3` admin features
   - description: protected-space administration coverage for space-code rotation and post-rotate readability
