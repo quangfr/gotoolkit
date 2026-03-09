@@ -38,6 +38,16 @@ function expectMarkersIsolated(
   }
 }
 
+function markersAreIsolated(
+  html: string,
+  includes: string[],
+  excludes: string[]
+) {
+  const value = String(html || "");
+  return includes.every(marker => value.includes(marker))
+    && excludes.every(marker => !value.includes(marker));
+}
+
 function installBrowserDebugLogging(page: Page, prefix: string) {
   page.on("console", async message => {
     const values = await Promise.all(message.args().map(async arg => {
@@ -369,6 +379,8 @@ test.describe("Cloud rapid switching large-content stress", () => {
       for (let index = 0; index < operations.length; index += 1) {
         const operation = operations[index];
         const targetDoc = seeded[operation.docIndex];
+        const targetExpectedMarkers = expectedMarkers.get(targetDoc.id) || [];
+        const targetExcludedMarkers = excludedMarkers(targetDoc.id);
         console.log("[cloud-rapid-switch-large] operation:start", { index: index + 1, docId: targetDoc.id, append: operation.append });
         await clickMemoDoc(page, targetDoc.id, { allowProgrammaticOpen: false });
         await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(targetDoc.baseMarker);
@@ -381,10 +393,57 @@ test.describe("Cloud rapid switching large-content stress", () => {
         expectedMarkers.get(targetDoc.id)?.push(operation.append.trim());
         await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(operation.append.trim());
 
+        const editorHtmlAfterEdit = await getMemoEditorHtml(page);
+        expectMarkersIsolated(
+          `${targetDoc.id}: editor immediately after edit ${index + 1}`,
+          editorHtmlAfterEdit,
+          targetExpectedMarkers,
+          targetExcludedMarkers
+        );
+        const localStateAfterEdit = await readLocalCloudDocState(page, targetDoc.id);
+        expectMarkersIsolated(
+          `${targetDoc.id}: local editor state after edit ${index + 1}`,
+          localStateAfterEdit.editorHtml,
+          targetExpectedMarkers,
+          targetExcludedMarkers
+        );
         const nextDoc = seeded[(operation.docIndex + 1) % seeded.length];
         await clickMemoDoc(page, nextDoc.id, { allowProgrammaticOpen: false });
         await clickMemoDoc(page, targetDoc.id, { allowProgrammaticOpen: false });
         await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(operation.append.trim());
+        const editorHtmlAfterRoundtrip = await getMemoEditorHtml(page);
+        expectMarkersIsolated(
+          `${targetDoc.id}: editor after roundtrip ${index + 1}`,
+          editorHtmlAfterRoundtrip,
+          targetExpectedMarkers,
+          targetExcludedMarkers
+        );
+        await expect.poll(async () => {
+          const state = await readLocalCloudDocState(page, targetDoc.id);
+          return markersAreIsolated(
+            state.historyHtml,
+            targetExpectedMarkers,
+            targetExcludedMarkers
+          );
+        }, {
+          timeout: 10_000,
+          message: `${targetDoc.id}: local history state after roundtrip ${index + 1} did not stabilize on the expected page content`
+        }).toBe(true);
+        const localStateAfterRoundtrip = await readLocalCloudDocState(page, targetDoc.id);
+        expectMarkersIsolated(
+          `${targetDoc.id}: local history state after roundtrip ${index + 1}`,
+          localStateAfterRoundtrip.historyHtml,
+          targetExpectedMarkers,
+          targetExcludedMarkers
+        );
+        if (localStateAfterRoundtrip.draftHtml || localStateAfterRoundtrip.draftOpType) {
+          expectMarkersIsolated(
+            `${targetDoc.id}: local draft state after roundtrip ${index + 1}`,
+            localStateAfterRoundtrip.draftHtml,
+            targetExpectedMarkers,
+            targetExcludedMarkers
+          );
+        }
 
       }
 
