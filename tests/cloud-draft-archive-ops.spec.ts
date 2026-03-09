@@ -1,13 +1,22 @@
 import { expect, test } from "@playwright/test";
+import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 test.describe("Cloud draft archive ops", () => {
   test("preserves archive/delete drafts when later non-terminal updates arrive", async ({ page }) => {
     test.setTimeout(120_000);
     const baseUrl = "http://127.0.0.1:5000";
+    const logStep = createStepLogger("cloud-draft-archive-ops");
 
+    attachPageDebugLogging(page, "cloud-draft-archive-ops");
+
+    logStep("goto:start", { baseUrl });
     await page.goto(`${baseUrl}/index.html`, { waitUntil: "commit", timeout: 20_000 });
+    logStep("goto:done");
+    logStep("draft-store:wait");
     await page.waitForFunction(() => Boolean((window as any).goToolkitCloudDrafts?.set && (window as any).goToolkitCloudDrafts?.readAll), null, { timeout: 120_000 });
+    logStep("draft-store:ready");
 
+    logStep("drafts:exercise");
     const result = await page.evaluate(async () => {
       const drafts = (window as any).goToolkitCloudDrafts;
       if (!drafts) throw new Error("drafts indisponibles");
@@ -64,6 +73,7 @@ test.describe("Cloud draft archive ops", () => {
         deleteReason: String(deletion?.reason || "")
       };
     });
+    logStep("drafts:result", result);
 
     expect(result.archiveOpType).toBe("archive");
     expect(result.archiveReason).toBe("moved-to-local");

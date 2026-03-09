@@ -2,17 +2,25 @@ import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
 import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
 import { clickMemoDoc, getMemoEditorHtml, refreshMemoExplorer, syncGolive, typeIntoVisibleEditor, waitForMemoReady } from "./helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 test.describe("Cloud page switching persistency", () => {
   test("keeps cloud edits across cloud page switches and reload", async ({ page }) => {
     test.setTimeout(120_000);
     const baseUrl = "http://127.0.0.1:5000";
+    const logStep = createStepLogger("cloud-switch-persist");
 
+    attachPageDebugLogging(page, "cloud-switch-persist");
+
+    logStep("connect-space:start");
     await ensureCloudConnectedWithSpaceCode(page, baseUrl);
+    logStep("connect-space:done");
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 30_000 });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 30_000 });
     await waitForMemoReady(page, 30_000);
+    logStep("memo-ready");
 
+    logStep("seed-cloud-docs:start");
     const seed = await page.evaluate(async ({ spaceId, spaceCode }) => {
       const ts = Date.now();
       const tokenA = `pw-cloud-a-${ts}`;
@@ -107,6 +115,7 @@ test.describe("Cloud page switching persistency", () => {
       await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
       return { cloudAId, cloudBId, cloudAEdit, cloudBEdit, cloudABase, cloudBBase, tokenA, tokenB, spaceId };
     }, { spaceId: PW_TEST_SPACE_ID, spaceCode: PW_TEST_SPACE_CODE });
+    logStep("seed-cloud-docs:done", seed);
 
     const readDocState = async (docId: string, token: string) => page.evaluate(async ({ currentDocId, currentToken }) => {
       const history = (window as any).goToolkitShareHistory;
@@ -134,34 +143,44 @@ test.describe("Cloud page switching persistency", () => {
       });
     };
 
+    logStep("edit-cloud-a:start");
     await clickMemoDoc(page, seed.cloudAId, { allowProgrammaticOpen: false });
     await typeIntoVisibleEditor(page, ` ${seed.cloudAEdit}`);
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.cloudAEdit);
+    logStep("edit-cloud-a:done");
 
+    logStep("edit-cloud-b:start");
     await clickMemoDoc(page, seed.cloudBId, { allowProgrammaticOpen: false });
     await typeIntoVisibleEditor(page, ` ${seed.cloudBEdit}`);
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.cloudBEdit);
+    logStep("edit-cloud-b:done");
 
     const stateBLocal = await readDocState(seed.cloudBId, seed.tokenB);
     expectExcludesOnly("cloudB editor before switch back", stateBLocal.editorHtml, [seed.cloudABase, seed.cloudAEdit]);
     expectExcludesOnly("cloudB history before switch back", stateBLocal.historyHtml, [seed.cloudABase, seed.cloudAEdit]);
 
+    logStep("switch-back-to-a:start");
     await clickMemoDoc(page, seed.cloudAId, { allowProgrammaticOpen: false });
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.cloudAEdit);
+    logStep("switch-back-to-a:done");
 
     const stateALocal = await readDocState(seed.cloudAId, seed.tokenA);
     expectExcludesOnly("cloudA editor after switch back", stateALocal.editorHtml, [seed.cloudBBase, seed.cloudBEdit]);
     expectExcludesOnly("cloudA history after switch back", stateALocal.historyHtml, [seed.cloudBBase, seed.cloudBEdit]);
 
+    logStep("sync:start");
     await syncGolive(page, seed.spaceId, 60_000);
+    logStep("sync:done");
 
     const stateARemoteAfterSync = await readDocState(seed.cloudAId, seed.tokenA);
     const stateBRemoteAfterSync = await readDocState(seed.cloudBId, seed.tokenB);
     expectExcludesOnly("cloudA remote after sync", stateARemoteAfterSync.remoteHtml, [seed.cloudBBase, seed.cloudBEdit]);
     expectExcludesOnly("cloudB remote after sync", stateBRemoteAfterSync.remoteHtml, [seed.cloudABase, seed.cloudAEdit]);
 
+    logStep("reload:start");
     await page.reload({ waitUntil: "commit", timeout: 20_000 });
     await refreshMemoExplorer(page, 30_000);
+    logStep("reload:done");
 
     await clickMemoDoc(page, seed.cloudAId, { allowProgrammaticOpen: false });
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(seed.cloudAEdit);

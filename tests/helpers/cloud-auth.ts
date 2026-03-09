@@ -1,4 +1,5 @@
 import { expect, Page } from "@playwright/test";
+import { dismissShareAccessGateIfPresent } from "./memo-ui";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./share-test-space";
 
 async function gotoIndex(page: Page, baseUrl: string) {
@@ -10,14 +11,17 @@ async function gotoIndex(page: Page, baseUrl: string) {
   });
   try {
     await page.goto(targetUrl, { waitUntil: "commit", timeout: 20_000 });
+    await dismissShareAccessGateIfPresent(page, 8_000);
     return;
   } catch {
     await page.waitForTimeout(1500);
     await page.goto(targetUrl, { waitUntil: "commit", timeout: 20_000 });
+    await dismissShareAccessGateIfPresent(page, 8_000);
   }
 }
 
 async function waitForMemoAppReady(page: Page, timeout = 120_000) {
+  await dismissShareAccessGateIfPresent(page, Math.min(timeout, 8_000));
   await page.waitForFunction(() => {
     const w = window as any;
     return Boolean(
@@ -25,6 +29,7 @@ async function waitForMemoAppReady(page: Page, timeout = 120_000) {
       && w.GoToolkitSpaces?.upsertSpace
     );
   }, null, { timeout });
+  await dismissShareAccessGateIfPresent(page, 1_000);
 }
 
 export async function ensureCloudConnected(page: Page, baseUrl = "http://127.0.0.1:5000") {

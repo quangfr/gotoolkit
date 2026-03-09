@@ -17,6 +17,7 @@ import {
   typeIntoVisibleEditor,
   waitForMemoReady
 } from "./helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 type SeedDoc = {
   id: string;
@@ -48,40 +49,6 @@ function markersAreIsolated(
   const value = String(html || "");
   return includes.every(marker => value.includes(marker))
     && excludes.every(marker => !value.includes(marker));
-}
-
-function installBrowserDebugLogging(page: Page, prefix: string) {
-  page.on("console", async message => {
-    const values = await Promise.all(message.args().map(async arg => {
-      try {
-        return await arg.jsonValue();
-      } catch {
-        return arg.toString();
-      }
-    }));
-    console.log(`[${prefix}] browser:${message.type()}`, message.text(), values);
-  });
-  page.on("pageerror", error => {
-    console.log(`[${prefix}] pageerror`, { message: error.message, stack: error.stack });
-  });
-  page.on("requestfailed", request => {
-    const url = request.url();
-    if (!/\/v1\/shares\/|\/v1\/spaces\//i.test(url)) return;
-    console.log(`[${prefix}] requestfailed`, {
-      method: request.method(),
-      url,
-      failure: request.failure()?.errorText || ""
-    });
-  });
-  page.on("response", async response => {
-    const url = response.url();
-    if (!/\/v1\/shares\/|\/v1\/spaces\//i.test(url)) return;
-    console.log(`[${prefix}] response`, {
-      status: response.status(),
-      url,
-      requestMethod: response.request().method()
-    });
-  });
 }
 
 async function moveCaretToDocumentEnd(page: Page) {
@@ -126,8 +93,9 @@ test.describe("Cloud rapid switching large-content stress", () => {
     const cleanupTokens: string[] = [];
     const shareRequests = captureShareRequests(page);
     let lastShareRequestAt = 0;
+    const logStep = createStepLogger("cloud-rapid-switch-large");
 
-    installBrowserDebugLogging(page, "cloud-rapid-switch-large");
+    attachPageDebugLogging(page, "cloud-rapid-switch-large");
     page.on("request", request => {
       if (!/\/v1\/shares\//i.test(request.url())) return;
       lastShareRequestAt = Date.now();
@@ -142,7 +110,7 @@ test.describe("Cloud rapid switching large-content stress", () => {
     });
 
     try {
-      console.log("[cloud-rapid-switch-large] connect:start", { targetSpaceId, sourceSpaceId });
+      logStep("connect:start", { targetSpaceId, sourceSpaceId });
       await ensureCloudConnectedWithSpaceCode(page, baseUrl, {
         spaceId: targetSpaceId,
         spaceCode: targetSpaceCode
@@ -151,7 +119,7 @@ test.describe("Cloud rapid switching large-content stress", () => {
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 60_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 60_000 });
       await waitForMemoReady(page, 60_000);
-      console.log("[cloud-rapid-switch-large] connect:done");
+      logStep("connect:done");
 
       const seeded = await page.evaluate(async ({
         prefix: currentPrefix,

@@ -2,12 +2,16 @@ import { expect, test } from "@playwright/test";
 import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
 import { clickMemoDoc, refreshMemoExplorer, syncGolive, typeIntoVisibleEditor, waitForMemoReady } from "./helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 test.describe("Cloud history explicit sync", () => {
   test("keeps pages-history local during edit switch and save, then flushes on manual sync", async ({ page }) => {
     test.setTimeout(120_000);
     const baseUrl = "http://127.0.0.1:5000";
     const pagesHistoryRequests: string[] = [];
+    const logStep = createStepLogger("cloud-history-explicit-sync");
+
+    attachPageDebugLogging(page, "cloud-history-explicit-sync");
 
     page.on("request", request => {
       const url = request.url();
@@ -16,11 +20,15 @@ test.describe("Cloud history explicit sync", () => {
       }
     });
 
+    logStep("connect-space:start");
     await ensureCloudConnectedWithSpaceCode(page, baseUrl);
+    logStep("connect-space:done");
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 30_000 });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 30_000 });
     await waitForMemoReady(page, 30_000);
+    logStep("memo-ready");
 
+    logStep("seed-cloud-docs:start");
     const seed = await page.evaluate(async ({ spaceId, spaceCode }) => {
       const ts = Date.now();
       const tokenA = `pw-history-a-${ts}`;
@@ -111,9 +119,11 @@ test.describe("Cloud history explicit sync", () => {
       await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
       return { cloudAId, cloudBId, tokenA, spaceId, marker: `HISTORY_EDIT_${ts}` };
     }, { spaceId: PW_TEST_SPACE_ID, spaceCode: PW_TEST_SPACE_CODE });
+    logStep("seed-cloud-docs:done", seed);
 
     pagesHistoryRequests.length = 0;
 
+    logStep("edit-save-switch:start");
     await refreshMemoExplorer(page, 30_000);
     await clickMemoDoc(page, seed.cloudAId, { allowProgrammaticOpen: false });
     await typeIntoVisibleEditor(page, ` ${seed.marker}`);
@@ -128,6 +138,7 @@ test.describe("Cloud history explicit sync", () => {
     await page.waitForTimeout(300);
     await clickMemoDoc(page, seed.cloudBId, { allowProgrammaticOpen: false });
     await page.waitForTimeout(1200);
+    logStep("edit-save-switch:done", { pagesHistoryRequests: pagesHistoryRequests.length });
 
     expect(pagesHistoryRequests, "edit, save, and switch should not call pages-history before manual sync").toHaveLength(0);
 
@@ -136,7 +147,9 @@ test.describe("Cloud history explicit sync", () => {
     });
     expect(Object.keys(pendingQueueBeforeSync || {})).toContain(seed.tokenA);
 
+    logStep("sync:start");
     await syncGolive(page, seed.spaceId, 60_000);
+    logStep("sync:done");
 
     await expect.poll(async () => {
       const pendingQueueAfterSync = await page.evaluate(async () => {
@@ -151,6 +164,7 @@ test.describe("Cloud history explicit sync", () => {
     }, { token: seed.tokenA, spaceId: seed.spaceId });
     const remoteVersions = Array.isArray(remoteHistory?.payload?.versions) ? remoteHistory.payload.versions : [];
     const latestHtml = String(remoteVersions[0]?.payload?.tabs?.[0]?.content || "");
+    logStep("remote-history:result", { versions: remoteVersions.length, latestHtml });
     expect(latestHtml).toContain(seed.marker);
   });
 });

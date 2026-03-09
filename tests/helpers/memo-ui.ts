@@ -1,6 +1,7 @@
 import { expect, Page } from "@playwright/test";
 
 export async function waitForMemoReady(page: Page, timeout = 45_000) {
+  await dismissShareAccessGateIfPresent(page, Math.min(timeout, 8_000));
   await page.waitForFunction(() => {
     const w = window as any;
     return Boolean(
@@ -13,6 +14,7 @@ export async function waitForMemoReady(page: Page, timeout = 45_000) {
   let lastError: unknown = null;
   while (Date.now() < deadline) {
     try {
+      await dismissShareAccessGateIfPresent(page, 500);
       const editorVisible = await page.evaluate(() => {
         const nodes = Array.from(document.querySelectorAll(".ProseMirror")) as HTMLElement[];
         return nodes.some(node => {
@@ -265,6 +267,34 @@ export async function dismissDocsTour(page: Page) {
       node.style.pointerEvents = "none";
     });
   });
+}
+
+export async function dismissShareAccessGateIfPresent(page: Page, timeout = 5_000) {
+  const connectionModal = page.locator("#connectionModal[aria-hidden='false']").first();
+  const privateModeButton = page.locator("#connectionModalDoneBtn").first();
+  const closeConnectionButton = page.locator("#connectionModalClose").first();
+  const shareAccessHeading = page.getByText("Accéder aux espaces de partage", { exact: true }).first();
+  const spaceAccessOverlay = page.locator("#spaceAccessOverlay[aria-hidden='false']").first();
+  const spaceAccessClose = page.locator("#spaceAccessOverlayClose").first();
+
+  const connectionVisible = await Promise.race([
+    connectionModal.isVisible().catch(() => false),
+    shareAccessHeading.isVisible().catch(() => false),
+    page.waitForTimeout(timeout).then(() => false),
+  ]);
+  if (connectionVisible) {
+    if (await privateModeButton.isVisible().catch(() => false)) {
+      await privateModeButton.click();
+    } else if (await closeConnectionButton.isVisible().catch(() => false)) {
+      await closeConnectionButton.click();
+    }
+  }
+
+  if (await spaceAccessOverlay.isVisible().catch(() => false)) {
+    if (await spaceAccessClose.isVisible().catch(() => false)) {
+      await spaceAccessClose.click();
+    }
+  }
 }
 
 export async function syncGolive(page: Page, spaceId: string, timeout = 60_000) {

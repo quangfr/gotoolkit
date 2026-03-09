@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { clickMemoDoc, refreshMemoExplorer, waitForMemoReady } from "./helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 const BASE_URL = "http://127.0.0.1:5000";
 const TEST_TIMEOUT = 120_000;
@@ -103,7 +104,11 @@ test.describe("Excalidraw regression", () => {
     for (const scenario of SCENARIOS) {
       test(`${surface} :: ${scenario.name}`, async ({ page }) => {
         test.setTimeout(TEST_TIMEOUT);
+        const logStep = createStepLogger(`excalidraw-regression:${surface}:${scenario.name}`);
 
+        attachPageDebugLogging(page, `excalidraw-regression:${surface}:${scenario.name}`);
+
+        logStep("goto:start");
         await page.goto(`${BASE_URL}/index.html`, { waitUntil: "commit", timeout: 20_000 });
         await page.evaluate(() => {
           try {
@@ -114,11 +119,14 @@ test.describe("Excalidraw regression", () => {
         });
 
         await waitForMemoReady(page, 60_000);
+        logStep("memo-ready");
         await page.evaluate(async () => {
           await (window as any).GoToolkitLazyCdn.loadMermaid();
           await (window as any).GoToolkitLazyCdn.loadExcalidraw();
         });
+        logStep("draw-deps-ready");
 
+        logStep("seed-private-docs:start");
         const seed = await page.evaluate(async (scenarioName: string) => {
           const ts = Date.now();
           const docApi = (window as any).goToolkitDocumentApi;
@@ -153,9 +161,11 @@ X[Other ${scenarioName}] --> Y[Page]
           await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
           return { privateAId, privateBId };
         }, scenario.name);
+        logStep("seed-private-docs:done", seed);
 
         await refreshMemoExplorer(page, 30_000);
         await clickMemoDoc(page, seed.privateAId, { allowProgrammaticOpen: false });
+        logStep("open-primary-doc:done");
 
         await page.evaluate(() => {
           (window as any).setEditorMarkdown("```mermaid\n\n```");
@@ -175,6 +185,7 @@ X[Other ${scenarioName}] --> Y[Page]
         }, null, { timeout: 60_000 });
         const canvas = page.locator(".mermaid-modal .excalidraw__canvas").first();
         await expect(canvas).toBeVisible({ timeout: 60_000 });
+        logStep("modal-ready");
 
         if (scenario.name === "manual") {
           await page.evaluate(() => {

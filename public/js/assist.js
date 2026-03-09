@@ -6490,6 +6490,8 @@
         var skipIngestion = Boolean(options.skipIngestion);
         var directPasteMode = Boolean(options.directPasteMode) ||
             Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.directPasteEnabled", false));
+        var markdownViaAi = Boolean(options.markdownViaAi) ||
+            Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.markdownViaAiEnabled", false));
 
         this.attachmentsTotalCount = fileArray.length;
         this.attachmentsTotalSize = fileArray.reduce(function (acc, file) {
@@ -6605,7 +6607,7 @@
                     return;
                 }
 
-                if (parsedEntries.length > 1) {
+                if (parsedEntries.length > 1 && !directPasteMode) {
                     var parentDocumentId = memoId;
                     var toChildPageTitle = function (fileName, index) {
                         var base = String(fileName || "").trim();
@@ -6913,7 +6915,7 @@
             }
 
             // Check for direct paste mode with media transcripts - paste directly and skip AI
-            if (directPasteMode && memoId && mediaTranscriptTextMap.size) {
+            if (directPasteMode && !markdownViaAi && memoId && mediaTranscriptTextMap.size) {
                 var mergeTranscriptAsParagraph = function (parts) {
                     return (Array.isArray(parts) ? parts : [])
                         .map(function (value) {
@@ -6931,7 +6933,12 @@
                     }
                 });
                 if (transcriptParts.length) {
-                    window.GoToolkitMemoAppendText?.(mergeTranscriptAsParagraph(transcriptParts));
+                    var mergedTranscriptText = mergeTranscriptAsParagraph(transcriptParts);
+                    if (typeof window.insertEditorMarkdownAtEnd === "function") {
+                        window.insertEditorMarkdownAtEnd(mergedTranscriptText + "\n\n");
+                    } else {
+                        window.GoToolkitMemoAppendText?.(mergedTranscriptText);
+                    }
                     var toastMsg = readyDocNames.length === 1
                         ? "⤷ " + readyDocNames[0] + " importé"
                         : readyDocNames.length + " documents importés";
@@ -6978,13 +6985,16 @@
                     }
                 });
                 if (transcriptParts.length) {
-                    window.GoToolkitMemoAppendText?.(
-                        transcriptParts
-                            .map(function (value) { return String(value || "").replace(/\s+/g, " ").trim(); })
-                            .filter(Boolean)
-                            .join(" ")
-                            .trim()
-                    );
+                    var mergedTranscriptText = transcriptParts
+                        .map(function (value) { return String(value || "").replace(/\s+/g, " ").trim(); })
+                        .filter(Boolean)
+                        .join(" ")
+                        .trim();
+                    if (typeof window.insertEditorMarkdownAtEnd === "function") {
+                        window.insertEditorMarkdownAtEnd(mergedTranscriptText + "\n\n");
+                    } else {
+                        window.GoToolkitMemoAppendText?.(mergedTranscriptText);
+                    }
                     if (!skipEmbeddings) window.GoToolkitMemoToast?.("Transcription importée.");
                 }
             }
@@ -7024,7 +7034,7 @@
                 return;
             }
 
-            if (memoId && parsedEntries.length > 1) {
+            if (memoId && parsedEntries.length > 1 && !directPasteMode) {
                 var parentDocumentId = memoId;
                 var toChildPageTitle = function (fileName, index) {
                     var base = String(fileName || "").trim();
@@ -7070,9 +7080,13 @@
             this.clearAttachments();
 
             // 4. Check for direct paste mode (OCR/transcription files get pasted directly to memo)
-            if (directPasteMode && memoId && parsedContents.length) {
+            if (directPasteMode && !markdownViaAi && memoId && parsedContents.length) {
                 var fullText = parsedContents.join("\n\n");
-                window.GoToolkitMemoAppendText?.(fullText);
+                if (typeof window.insertEditorMarkdownAtEnd === "function") {
+                    window.insertEditorMarkdownAtEnd(fullText + "\n\n");
+                } else {
+                    window.GoToolkitMemoAppendText?.(fullText);
+                }
                 var toastMsg = readyDocNames.length === 1
                     ? "⤷ " + readyDocNames[0] + " importé"
                     : readyDocNames.length + " documents importés";

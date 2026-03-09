@@ -628,6 +628,20 @@
         }
     }
 
+    function backfillTranscriptToMemo(text, memoId, documentId) {
+        const transcript = String(text || "").trim();
+        if (!transcript || state.hadLiveTranscriptInSession) return false;
+        if (memoId && typeof window.GoToolkitMemoAppendToRecordingTab === "function") {
+            window.GoToolkitMemoAppendToRecordingTab(transcript, memoId, documentId || null);
+            return true;
+        }
+        if (memoId && typeof window.GoToolkitMemoAppendText === "function") {
+            window.GoToolkitMemoAppendText(transcript, memoId);
+            return true;
+        }
+        return false;
+    }
+
     function resetLiveTranscriptionState() {
         state.liveInsertedByTurn = {};
         state.liveInsertedOnce = false;
@@ -1416,7 +1430,52 @@
 
     function setRecordingForMemo(memoId, recordingId) {
         if (window.GoToolkitMemoVoice?.setVoiceRecordingId) {
-            window.GoToolkitMemoVoice.setVoiceRecordingId(memoId, recordingId);
+            return window.GoToolkitMemoVoice.setVoiceRecordingId(memoId, recordingId);
+        }
+        return false;
+    }
+
+    async function persistRecordingLink(memoId, recordingId, options = {}) {
+        const linkedInActiveMemo = setRecordingForMemo(memoId, recordingId);
+        if (linkedInActiveMemo) return true;
+        const documentId = String(options?.documentId || state.recordingDocumentId || "").trim();
+        const normalizedMemoId = String(memoId || "").trim();
+        const normalizedRecordingId = String(recordingId || "").trim();
+        const documentApi = window.goToolkitDocumentApi;
+        if (!documentId || !normalizedMemoId || !documentApi?.getRecord || !documentApi?.upsertRecord) {
+            return false;
+        }
+        try {
+            const record = await documentApi.getRecord(documentId);
+            if (!record || String(record?.app || "").trim() !== "memo") return false;
+            const payload = record?.payload && typeof record.payload === "object"
+                ? JSON.parse(JSON.stringify(record.payload))
+                : null;
+            if (!payload || !Array.isArray(payload.tabs)) return false;
+            let updated = false;
+            payload.tabs = payload.tabs.map(tab => {
+                if (String(tab?.id || "").trim() !== normalizedMemoId) return tab;
+                updated = true;
+                return {
+                    ...tab,
+                    voiceRecordingId: normalizedRecordingId || null
+                };
+            });
+            if (!updated) return false;
+            await documentApi.upsertRecord({
+                id: documentId,
+                app: "memo",
+                title: record.title || "",
+                description: record.description || "",
+                superpowers: record.superpowers || [],
+                payload,
+                voiceRecordingId: normalizedRecordingId || null,
+                updatedAt: new Date().toISOString()
+            });
+            return true;
+        } catch (err) {
+            console.warn("Recording link persistence failed", err);
+            return false;
         }
     }
 
@@ -2207,7 +2266,9 @@
                 state.currentMemoRecordingId = recordId;
                 state.currentMemoRecordingHasVideo = Boolean(state.videoBlob);
             }
-            setRecordingForMemo(memoId, recordId);
+            await persistRecordingLink(memoId, recordId, {
+                documentId: state.recordingDocumentId || null
+            });
             state.recordingMemoId = memoId;
             state.recordingMemoName = memoName || "";
             state.isTranscribing = false;
@@ -2296,6 +2357,7 @@
             const audioVtt = await fetchAssemblyTranscriptVtt(transcriptId, assemblyKey);
             const audioSentences = audioVtt ? parseVttTranscript(audioVtt) : [];
             const audioText = getTranscriptText(audioSentences);
+            backfillTranscriptToMemo(audioText, memoId, state.recordingDocumentId || null);
             let videoVtt = "";
             let videoSentences = [];
             if (state.videoBlob) {
@@ -2340,7 +2402,9 @@
                 state.currentMemoRecordingId = recordId;
                 state.currentMemoRecordingHasVideo = Boolean(state.videoBlob);
             }
-            setRecordingForMemo(memoId, recordId);
+            await persistRecordingLink(memoId, recordId, {
+                documentId: state.recordingDocumentId || null
+            });
             state.recordingMemoId = memoId;
             state.recordingMemoName = memoName || "";
             state.isTranscribing = false;
@@ -2394,7 +2458,9 @@
                 state.currentMemoRecordingId = recordId;
                 state.currentMemoRecordingHasVideo = Boolean(state.videoBlob);
             }
-            setRecordingForMemo(memoId, recordId);
+            await persistRecordingLink(memoId, recordId, {
+                documentId: state.recordingDocumentId || null
+            });
             state.recordingMemoId = memoId;
             state.recordingMemoName = memoName || "";
             updateButton();
@@ -2547,6 +2613,11 @@
             await stopRecording();
             if (targetDocumentId && window.GoToolkitMemoOpenDocumentByLink) {
                 await window.GoToolkitMemoOpenDocumentByLink(targetDocumentId);
+                const activeDocumentId = String(window.GoToolkitMemoGetActiveDocumentId?.() || "").trim();
+                if (activeDocumentId !== targetDocumentId) {
+                    await new Promise(resolve => setTimeout(resolve, 150));
+                    await window.GoToolkitMemoOpenDocumentByLink(targetDocumentId);
+                }
             }
             return;
         }

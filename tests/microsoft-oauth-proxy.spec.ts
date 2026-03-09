@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { attachPageDebugLogging } from "./helpers/test-debug";
 
 const MS_AUTH_STATE_PATH = path.resolve("playwright/.auth/ms.json");
 
@@ -120,6 +121,7 @@ test.describe("Microsoft OAuth proxy flow", () => {
     const apiBase = "https://ms.gotoolkit.workers.dev";
     let statusCalls = 0;
     let identityCalls = 0;
+    attachPageDebugLogging(page, "ms-oauth:handshake");
 
     await page.route(`${apiBase}/auth/status`, async route => {
       statusCalls += 1;
@@ -219,6 +221,7 @@ test.describe("Microsoft OAuth proxy flow", () => {
     const loginEmail = String(process.env.PW_MICROSOFT_LOGIN_EMAIL || "").trim();
     const loginPassword = String(process.env.PW_MICROSOFT_LOGIN_PASSWORD || "").trim();
     test.skip(!loginEmail || !loginPassword, "PW_MICROSOFT_LOGIN_EMAIL/PW_MICROSOFT_LOGIN_PASSWORD are required");
+    attachPageDebugLogging(page, "ms-oauth:managed-spaces");
 
     await page.goto("http://127.0.0.1:5000/index.html", { waitUntil: "commit", timeout: 20_000 });
     await page.waitForFunction(() => Boolean((window as any).GoToolkitMicrosoftPublish?.getAuthStatus), null, { timeout: 120_000 });

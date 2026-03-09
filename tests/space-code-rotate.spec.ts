@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
 import { refreshMemoExplorer, syncGolive } from "./helpers/memo-ui";
+import { attachPageDebugLogging } from "./helpers/test-debug";
 
 const SHARE_WORKER_BASE = "https://share.gotoolkit.workers.dev";
 
@@ -28,6 +29,7 @@ test.describe("Protected space create/rotate/delete", () => {
     const afterRotateMarker = `POST_ROTATE_READ_OK_${ts}`;
     const historyMarker = `HISTORY_PRE_ROTATE_OK_${ts}`;
     const syncHistoryMarker = `HISTORY_POST_ROTATE_SYNC_OK_${ts}`;
+    attachPageDebugLogging(page, "space-code-rotate");
 
     try {
       logStep("space-create:start", { spaceId });

@@ -121,91 +121,96 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-09 18:33`
-- `Scope`: `Tier 1`
-- `Execution length`: `5 tests`
-- `Execution time`: `02:42`
-- `Result`: `4 passed, 0 failed, 1 skipped`
-- `Details`: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
+- `Last execution`: `2026-03-09 21:14`
+- `Scope`: `memo-import-ocr-regression.spec.ts`
+- `Execution length`: `1 test`
+- `Execution time`: `00:32`
+- `Result`: `0 passed, 1 failed, 0 skipped`
+- `Details`: `Latest run has failures. Auto-synced from Playwright suite metrics.`
 
 Tier suites:
 
 - `Tier 1` default gate
   - description: essential feature coverage for cloud persistence and Microsoft-managed space access
-  - results: `4 passed, 0 failed, 1 skipped` (`5 tests`, `02:42`) on `2026-03-09 18:33`
-  - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
+  - results: `4 passed, 0 failed, 1 skipped` (`5 tests`, `02:52`) on `2026-03-09 19:55`
+  - details: `Latest suite entries are all passing/skipped as expected. Aggregate summary refreshed from the latest recorded Tier 1 suite results.`
 
-  - `cloud-switch-persist.spec.ts`
+  - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `00:55`) on `2026-03-09 18:33`
+    - results: `passing` (`1 test`, `01:02`) on `2026-03-09 19:52`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `cloud-sync-persist.spec.ts`
+  - `T1.2` `cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
-    - results: `passing` (`1 test`, `01:11`) on `2026-03-09 18:33`
+    - results: `passing` (`1 test`, `01:11`) on `2026-03-09 19:55`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `microsoft-oauth-proxy.spec.ts`
+  - `T1.3` `microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse
-    - results: `passing` (`3 tests`, `00:36`) on `2026-03-09 18:33`
+    - results: `passing` (`3 tests`, `00:39`) on `2026-03-09 18:45`
     - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
-- `Tier 1b` essential troubleshooting
-  - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, transfers, and spaceCode bootstrap
-  - results: `8 passed, 0 failed, 0 skipped` (`8 tests`, `04:12`) on `2026-03-09 13:03`
+- `Tier 4` essential troubleshooting
+  - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers
+  - results: `6 passed, 0 failed, 0 skipped` (`6 tests`, `03:13`) on `2026-03-09 13:03`
   - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `private-switch-persist.spec.ts`
+  - `T4.1` `private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
     - results: `passing` (`1 test`, `00:07`) on `2026-03-09 13:03`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `cloud-rapid-switch-large.spec.ts`
+  - `T4.2` `cloud-rapid-switch-large.spec.ts`
     - description: large cloud stress switch/edit flow with pre-sync write suppression and post-sync isolation
     - results: `passing` (`1 test`, `01:12`) on `2026-03-09 13:03`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `cloud-draft-archive-ops.spec.ts`
+  - `T4.3` `cloud-draft-archive-ops.spec.ts`
     - description: local draft archive/delete terminal semantics
     - results: `passing` (`1 test`, `00:07`) on `2026-03-09 13:03`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `cloud-private-transfer-sync.spec.ts`
+  - `T4.4` `cloud-private-transfer-sync.spec.ts`
     - description: cloud-to-private copy and private-to-cloud promotion with sync persistence
     - results: `passing` (`3 tests`, `01:48`) on `2026-03-09 13:03`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `cloud-spacecode-bootstrap.spec.ts`
-    - description: spaceCode bootstrap without OAuth UI and cloud draft persistence
-    - results: `passing` (`2 tests`, `00:59`) on `2026-03-09 13:03`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
-
 - `Tier 2` advanced features
-  - description: advanced coverage for explicit history sync, history isolation, and Excalidraw/Mermaid regression behavior
-  - results: `10 passed, 0 failed, 0 skipped` (`10 tests`, `02:33`) on `2026-03-09 12:58`
-  - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+  - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
+  - results: `11 passed, 1 failed, 0 skipped` (`12 tests`, `03:32`) on `2026-03-09 21:14`
+  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
-  - `cloud-history-explicit-sync.spec.ts`
+  - `T2.1` `cloud-history-explicit-sync.spec.ts`
     - description: explicit sync gating for remote `pages-history` writes
     - results: `passing` (`1 test`, `00:46`) on `2026-03-09 12:58`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `memo-history-isolation.spec.ts`
+  - `T2.2` `memo-history-isolation.spec.ts`
     - description: history isolation plus restore/duplicate correctness per page
     - results: `passing` (`1 test`, `00:04`) on `2026-03-09 12:58`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `excalidraw-regression.spec.ts`
+  - `T2.3` `excalidraw-regression.spec.ts`
     - description: Excalidraw/Mermaid block+modal regression, persistence, and block/full-view sync
     - results: `passing` (`8 tests`, `01:43`) on `2026-03-09 12:58`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+
+  - `T2.4` `voice-recording-assemblyai-live.spec.ts`
+    - description: real AssemblyAI proxy coverage using `test-data/sample.wav` during an actual recording, with live transcript mutation, cross-page stop/switch return to the origin page, saved transcript polling, badge state, and video playback verification
+    - results: `passing` (`1 test`, `00:27`) on `2026-03-09 21:04`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+
+  - `T2.5` `memo-import-ocr-regression.spec.ts`
+    - description: private-page import of JPG OCR + PDF in one batch with direct paste into the active document
+    - results: `failing` (`1 test`, `00:32`) on `2026-03-09 21:14`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 3` admin features
   - description: protected-space administration coverage for space-code rotation and post-rotate readability
   - results: `1 passed, 0 failed, 0 skipped` (`1 test`, `00:30`) on `2026-03-09 13:05`
   - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `space-code-rotate.spec.ts`
+  - `T3.1` `space-code-rotate.spec.ts`
     - description: protected-space create/rotate/delete lifecycle and post-rotate readability
     - results: `passing` (`1 test`, `00:30`) on `2026-03-09 13:05`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`

@@ -4,15 +4,22 @@ import {
   getMemoEditorHtml,
   waitForMemoReady
 } from "./helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 test.describe("Memo history isolation", () => {
   test("restores and duplicates the selected page history without leaking another page content", async ({ page }) => {
     test.setTimeout(120_000);
     const baseUrl = "http://127.0.0.1:5000";
+    const logStep = createStepLogger("memo-history-isolation");
 
+    attachPageDebugLogging(page, "memo-history-isolation");
+
+    logStep("goto:start");
     await page.goto(`${baseUrl}/index.html`, { waitUntil: "commit", timeout: 20_000 });
     await waitForMemoReady(page, 30_000);
+    logStep("memo-ready");
 
+    logStep("seed-docs:start");
     const seed = await page.evaluate(async () => {
       const ts = Date.now();
       const docApi = (window as any).goToolkitDocumentApi;
@@ -50,8 +57,10 @@ test.describe("Memo history isolation", () => {
         docBEdit
       };
     });
+    logStep("seed-docs:done", seed);
 
     await clickMemoDoc(page, seed.docAId, { allowProgrammaticOpen: false });
+    logStep("open-doc-a:done");
     const seeded = await page.evaluate(async ({ docAId, docBId, docAEdit1, docAEdit2, docBEdit }) => {
       const historyStore = (window as any).goToolkitDocumentHistoryStore;
       const now = Date.now();
@@ -113,6 +122,7 @@ test.describe("Memo history isolation", () => {
         hasApi: Boolean((window as any).GoToolkitMemoHistoryApi?.listVersions)
       };
     }, seed);
+    logStep("seed-history-store:result", seeded);
     expect(seeded.hasStore).toBeTruthy();
     expect(seeded.hasApi).toBeTruthy();
     expect(seeded.aCount).toBeGreaterThanOrEqual(2);
@@ -132,6 +142,7 @@ test.describe("Memo history isolation", () => {
       if (!target) throw new Error("Missing restore target version");
       await (window as any).GoToolkitMemoHistoryApi?.restoreVersion?.(target, { docId });
     }, { docId: seed.docAId, edit1: seed.docAEdit1, edit2: seed.docAEdit2 });
+    logStep("restore-version:done");
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(seed.docAEdit1);
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).not.toContain(seed.docAEdit2);
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).not.toContain(seed.docBEdit);
@@ -153,6 +164,7 @@ test.describe("Memo history isolation", () => {
       await (window as any).GoToolkitMemoHistoryApi?.duplicateVersionAsNew?.(target, { docId });
     }, { docId: seed.docAId, edit1: seed.docAEdit1, edit2: seed.docAEdit2 });
     await duplicateIdPromise;
+    logStep("duplicate-version:done");
     const duplicateId = await page.evaluate(() => {
       return String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "");
     });
