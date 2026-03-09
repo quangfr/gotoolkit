@@ -18,9 +18,54 @@ export async function refreshMemoExplorer(page: Page, timeout = 45_000) {
   await page.waitForTimeout(Math.min(1000, Math.max(200, Math.floor(timeout / 45))));
 }
 
+export function getMemoDocItem(page: Page, docId: string) {
+  return page.locator(`.document-explorer__item[data-document-id="${docId}"]`).first();
+}
+
+export function getMemoSectionHeader(page: Page, section: string) {
+  return page.locator(`.document-explorer__section-header[data-section="${section}"]`).first();
+}
+
+export async function expandMemoSection(page: Page, section: string, timeout = 30_000) {
+  await page.evaluate(async sectionName => {
+    await (window as any).GoToolkitMemoDocumentExplorer?.expandSection?.(String(sectionName || ""));
+  }, section);
+  await expect(getMemoSectionHeader(page, section)).toBeVisible({ timeout });
+}
+
+export async function dragMemoDocToSection(
+  page: Page,
+  docId: string,
+  section: string,
+  options: { expandSection?: boolean; timeout?: number } = {}
+) {
+  const { expandSection: shouldExpand = true, timeout = 30_000 } = options;
+  if (shouldExpand) {
+    await expandMemoSection(page, section, timeout);
+  }
+  const item = getMemoDocItem(page, docId);
+  const header = getMemoSectionHeader(page, section);
+  await expect(item).toBeVisible({ timeout });
+  await expect(header).toBeVisible({ timeout });
+  await item.dragTo(header);
+}
+
+export async function dragMemoDocToDoc(
+  page: Page,
+  fromDocId: string,
+  toDocId: string,
+  timeout = 30_000
+) {
+  const source = getMemoDocItem(page, fromDocId);
+  const target = getMemoDocItem(page, toDocId);
+  await expect(source).toBeVisible({ timeout });
+  await expect(target).toBeVisible({ timeout });
+  await source.dragTo(target);
+}
+
 export async function clickMemoDoc(page: Page, docId: string, options: { allowProgrammaticOpen?: boolean; timeout?: number } = {}) {
   const { allowProgrammaticOpen = true, timeout = 120_000 } = options;
-  const item = page.locator(`.document-explorer__item[data-document-id="${docId}"]`).first();
+  const item = getMemoDocItem(page, docId);
   const visible = await item.isVisible().catch(() => false);
   if (visible) {
     await item.click();

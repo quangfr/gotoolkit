@@ -1,7 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
 import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
-import { clickMemoDoc, dismissDocsTour, refreshMemoExplorer, syncGolive } from "./helpers/memo-ui";
+import {
+  clickMemoDoc,
+  dismissDocsTour,
+  dragMemoDocToSection,
+  getMemoDocItem,
+  refreshMemoExplorer,
+  syncGolive
+} from "./helpers/memo-ui";
 
 test.describe("Cloud/private transfer sync", () => {
   test("copies a cloud doc to private storage while keeping the cloud source", async ({ page }) => {
@@ -66,13 +73,9 @@ test.describe("Cloud/private transfer sync", () => {
         await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
       }, { cloudToken, cloudMarker, spaceId: PW_TEST_SPACE_ID, spaceCode: PW_TEST_SPACE_CODE });
 
-      const cloudRow = page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`).first();
-      const privateSectionHeader = page.locator('.document-explorer__section-header[data-section="private"]').first();
-      await expect(cloudRow).toBeVisible({ timeout: 30_000 });
-      await expect(privateSectionHeader).toBeVisible({ timeout: 30_000 });
       await dismissDocsTour(page);
-      await cloudRow.dragTo(privateSectionHeader);
-      await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(1, { timeout: 20_000 });
+      await dragMemoDocToSection(page, `share:${cloudToken}`, "private");
+      await expect(getMemoDocItem(page, `share:${cloudToken}`)).toHaveCount(1, { timeout: 20_000 });
 
       const privateCopyState = await page.evaluate(async ({ cloudMarker }) => {
         const docApi = (window as any).goToolkitDocumentApi;
@@ -237,6 +240,149 @@ test.describe("Cloud/private transfer sync", () => {
           try { await explorer?.removeItemById?.(`share:${token}`); } catch {}
           try { await explorer?.refresh?.({ forceReload: true }); } catch {}
         }, { token: promotedToken });
+      } catch {
+        // ignore teardown failures
+      }
+    }
+  });
+
+  test("promotes an archived local doc to cloud with a fresh token instead of reusing cloudOriginToken", async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem("go-toolkit-docs-tour-seen.v1", "1");
+      } catch {
+        // ignore
+      }
+    });
+    const baseUrl = "http://127.0.0.1:5000";
+    const ts = Date.now();
+    const deletedCloudToken = `pw-archived-deleted-origin-${ts}`;
+    const archivedMarker = `PW_ARCHIVED_FRESH_TOKEN_${ts}`;
+    let promotedToken = "";
+
+    try {
+      await ensureCloudConnectedWithSpaceCode(page, baseUrl);
+      await dismissDocsTour(page);
+      await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
+      await page.waitForFunction(() => Boolean((window as any).goToolkitDocumentApi?.getRecord), null, { timeout: 45_000 });
+
+      const seeded = await page.evaluate(async ({ archivedMarker, deletedCloudToken, spaceId, spaceCode }) => {
+        const docApi = (window as any).goToolkitDocumentApi;
+        const worker = (window as any).goToolkitShareWorker;
+        const spaces = (window as any).GoToolkitSpaces;
+        const explorer = (window as any).GoToolkitMemoDocumentExplorer;
+        const archivedId = docApi?.generateId?.() || `archived-${Date.now()}`;
+        spaces?.upsertSpace?.({ id: spaceId, name: "Go Live", icon: "cloud-upload", spaceJoinCode: spaceCode, isDefault: true });
+        await worker?.saveSharePayload?.("pages-meta", deletedCloudToken, {
+          title: `Deleted ${deletedCloudToken}`,
+          description: "",
+          superpowers: [],
+          icon: "file-symlink",
+          parentId: "",
+          spaceId,
+          position: Date.now(),
+          status: "deleted"
+        });
+        await docApi?.upsertRecord?.({
+          id: archivedId,
+          app: "memo",
+          title: `Archived ${Date.now()}`,
+          payload: {
+            tabs: [{ id: `tab-${archivedId}`, title: `Archived ${Date.now()}`, description: "", superpowers: [], content: `<p>${archivedMarker}</p>` }],
+            activeTabId: `tab-${archivedId}`
+          },
+          status: "archived",
+          cloudOriginToken: deletedCloudToken,
+          updatedAt: new Date().toISOString()
+        });
+        await explorer?.upsertItem?.({
+          id: archivedId,
+          app: "memo",
+          title: `Archived ${Date.now()}`,
+          payload: {
+            tabs: [{ id: `tab-${archivedId}`, title: `Archived ${Date.now()}`, description: "", superpowers: [], content: `<p>${archivedMarker}</p>` }],
+            activeTabId: `tab-${archivedId}`
+          },
+          status: "archived",
+          section: "archives",
+          updatedAt: new Date().toISOString()
+        });
+        await explorer?.refresh?.({ forceReload: true });
+        return { archivedId };
+      }, {
+        archivedMarker,
+        deletedCloudToken,
+        spaceId: PW_TEST_SPACE_ID,
+        spaceCode: PW_TEST_SPACE_CODE
+      });
+
+      await dragMemoDocToSection(page, seeded.archivedId, `shared:${PW_TEST_SPACE_ID}`);
+
+      const localPromoteState = await page.evaluate(async ({ archivedMarker, deletedCloudToken }) => {
+        const history = (window as any).goToolkitShareHistory;
+        const drafts = (window as any).goToolkitCloudDrafts;
+        const rows = await history?.getRecordsByApp?.("memo");
+        const promoted = (Array.isArray(rows) ? rows : []).find((row: any) =>
+          String(row?.payload?.tabs?.[0]?.content || "").includes(String(archivedMarker || ""))
+          && String(row?.token || "") !== String(deletedCloudToken || "")
+        );
+        const allDrafts = await drafts?.readAll?.().catch?.(() => ({})) || {};
+        const matchingDraft = Object.values(allDrafts).find((draft: any) =>
+          String(draft?.payload?.tabs?.[0]?.content || "").includes(String(archivedMarker || ""))
+        ) as any;
+        return {
+          promotedToken: String(promoted?.token || ""),
+          deletedTokenReusedInHistory: Boolean((Array.isArray(rows) ? rows : []).find((row: any) =>
+            String(row?.token || "") === String(deletedCloudToken || "")
+            && String(row?.payload?.tabs?.[0]?.content || "").includes(String(archivedMarker || ""))
+          )),
+          draftToken: String(matchingDraft?.token || ""),
+          draftOpType: String(matchingDraft?.opType || "")
+        };
+      }, { archivedMarker, deletedCloudToken });
+
+      promotedToken = localPromoteState.promotedToken || localPromoteState.draftToken;
+      expect(localPromoteState.deletedTokenReusedInHistory).toBe(false);
+      expect(promotedToken).toBeTruthy();
+      expect(promotedToken).not.toBe(deletedCloudToken);
+      expect(localPromoteState.draftOpType).toBe("create");
+
+      await syncGolive(page, PW_TEST_SPACE_ID, 60_000);
+
+      const remoteState = await page.evaluate(async ({ promotedToken, deletedCloudToken, archivedMarker, spaceId }) => {
+        const worker = (window as any).goToolkitShareWorker;
+        const newRemote = await worker?.fetchSharePayload?.("pages", promotedToken, { spaceId });
+        const deletedRemote = await worker?.fetchSharePayload?.("pages", deletedCloudToken, { spaceId }).catch?.(() => null);
+        const deletedMeta = await worker?.fetchSharePayload?.("pages-meta", deletedCloudToken, { spaceId }).catch?.(() => null);
+        return {
+          newRemoteHasMarker: String(newRemote?.payload?.tabs?.[0]?.content || "").includes(String(archivedMarker || "")),
+          deletedRemoteHasMarker: String(deletedRemote?.payload?.tabs?.[0]?.content || "").includes(String(archivedMarker || "")),
+          deletedMetaStatus: String(deletedMeta?.payload?.status || "")
+        };
+      }, { promotedToken, deletedCloudToken, archivedMarker, spaceId: PW_TEST_SPACE_ID });
+
+      expect(remoteState.newRemoteHasMarker).toBe(true);
+      expect(remoteState.deletedRemoteHasMarker).toBe(false);
+      expect(remoteState.deletedMetaStatus).toBe("deleted");
+    } finally {
+      try {
+        await page.evaluate(async ({ promotedToken, deletedCloudToken }) => {
+          const worker = (window as any).goToolkitShareWorker;
+          const history = (window as any).goToolkitShareHistory;
+          const drafts = (window as any).goToolkitCloudDrafts;
+          const explorer = (window as any).GoToolkitMemoDocumentExplorer;
+          if (promotedToken) {
+            try { await worker?.deleteSharePayload?.("pages", promotedToken); } catch {}
+            try { await worker?.deleteSharePayload?.("pages-meta", promotedToken); } catch {}
+            try { await history?.removeRecord?.("memo", promotedToken); } catch {}
+            try { drafts?.remove?.(`share:${promotedToken}`); } catch {}
+            try { await explorer?.removeItemById?.(`share:${promotedToken}`); } catch {}
+          }
+          try { await worker?.deleteSharePayload?.("pages", deletedCloudToken); } catch {}
+          try { await worker?.deleteSharePayload?.("pages-meta", deletedCloudToken); } catch {}
+          try { await explorer?.refresh?.({ forceReload: true }); } catch {}
+        }, { promotedToken, deletedCloudToken });
       } catch {
         // ignore teardown failures
       }
