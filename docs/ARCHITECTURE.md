@@ -1,6 +1,6 @@
 # GoToolkit Data Architecture
 
-Date: 2026-03-01
+Date: 2026-03-09
 Purpose: describe how app data is structured, stored, synced, ingested, and processed so coding agents can modify the right layer without guessing
 Scope: `public/`, `workers/share-proxy`, browser storage, cloud storage
 
@@ -344,7 +344,7 @@ Functional behavior:
 Server-side state used by those routes:
 
 - `space_code_hashes` in D1 for the access-code hash
-- KV content key entry per space, stored separately from the access-code hash
+- `space_content_keys` in D1 for the per-space content key
 - signed `X-Space-Auth` tokens produced from `SHARE_SPACE_AUTH_SECRET`
 
 Managed OAuth behavior:
@@ -426,6 +426,12 @@ Worker responsibilities on sync requests:
 - reject replayed `X-Sync-Session` + `X-Sync-JTI`
 - reject revoked sync sessions
 - validate request timestamp tolerance
+
+Current storage for sync enforcement:
+
+- `sync_replay_nonces` in D1 stores single-use `(session_id, jti)` entries with expiry
+- `sync_revoked_sessions` in D1 stores revoked session ids with expiry
+- in-worker memory caches are retained only as a short-lived fast path ahead of D1
 
 This is why page writes and asset writes are not authenticated only by `spaceCode` or `X-Space-Auth`.
 

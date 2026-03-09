@@ -128,16 +128,6 @@ function parseShareBatchGetPath(request) {
   return { collection };
 }
 
-function isKvReplayProtectionRateLimitError(error) {
-  if (!error) return false;
-  const status = Number(error.status || error.statusCode || error.code || 0);
-  if (status === 429) {
-    return true;
-  }
-  const message = String(error.message || error.cause?.message || "").toLowerCase();
-  return message.includes("429") || message.includes("too many requests") || message.includes("rate limit");
-}
-
 function parseShareBatchDeletePath(request) {
   const url = new URL(request.url);
   const segments = normalizePathname(url.pathname)
@@ -691,14 +681,6 @@ function shouldCheckSyncRevoke(env) {
   return String(env?.SHARE_SYNC_CHECK_REVOKE || "").trim() === "1";
 }
 
-function getSyncReplayStore(env) {
-  const kv = env?.SYNC_REPLAY_KV;
-  if (!kv || typeof kv.get !== "function" || typeof kv.put !== "function") {
-    return null;
-  }
-  return kv;
-}
-
 function getSpaceAuthStore(env) {
   const kv = env?.SYNC_REPLAY_KV;
   if (!kv || typeof kv.get !== "function" || typeof kv.put !== "function") {
@@ -711,6 +693,109 @@ function getSpaceAuthDb(env) {
   const db = env?.SPACE_AUTH_DB;
   if (!db || typeof db.prepare !== "function") return null;
   return db;
+}
+
+function getSyncProtectionDb(env) {
+  return getSpaceAuthDb(env);
+}
+
+async function isSyncSessionRevoked(env, sessionId) {
+  const normalizedSessionId = String(sessionId || "").trim();
+  if (!normalizedSessionId) return false;
+  const db = getSyncProtectionDb(env);
+  if (!db) throw new Error("Stockage sync D1 indisponible");
+  try {
+    const row = await db
+      .prepare(`SELECT 1
+        FROM sync_revoked_sessions
+        WHERE session_id = ?1 AND expires_at > ?2
+        LIMIT 1`)
+      .bind(normalizedSessionId, new Date().toISOString())
+      .first();
+    return Boolean(row);
+  } catch (err) {
+    console.warn("sync revoke d1 read failed", err);
+    throw new Error("Stockage sync D1 indisponible");
+  }
+}
+
+async function revokeSyncSession(env, sessionId, ttlSeconds) {
+  const normalizedSessionId = String(sessionId || "").trim();
+  if (!normalizedSessionId) return 0;
+  const db = getSyncProtectionDb(env);
+  if (!db) throw new Error("Stockage sync D1 indisponible");
+  const ttl = Math.max(60, Math.min(7 * 24 * 60 * 60, Number(ttlSeconds) || 24 * 60 * 60));
+  const revokedAt = new Date();
+  const expiresAt = new Date(revokedAt.getTime() + ttl * 1000);
+  try {
+    await db
+      .prepare(`INSERT INTO sync_revoked_sessions (session_id, revoked_at, expires_at)
+        VALUES (?1, ?2, ?3)
+        ON CONFLICT(session_id) DO UPDATE SET revoked_at = excluded.revoked_at, expires_at = excluded.expires_at`)
+      .bind(normalizedSessionId, revokedAt.toISOString(), expiresAt.toISOString())
+      .run();
+    return ttl;
+  } catch (err) {
+    console.warn("sync revoke d1 write failed", err);
+    throw new Error("Stockage sync D1 indisponible");
+  }
+}
+
+async function unrevokeSyncSession(env, sessionId) {
+  const normalizedSessionId = String(sessionId || "").trim();
+  if (!normalizedSessionId) return;
+  const db = getSyncProtectionDb(env);
+  if (!db) throw new Error("Stockage sync D1 indisponible");
+  try {
+    await db
+      .prepare("DELETE FROM sync_revoked_sessions WHERE session_id = ?1")
+      .bind(normalizedSessionId)
+      .run();
+  } catch (err) {
+    console.warn("sync unrevoke d1 delete failed", err);
+    throw new Error("Stockage sync D1 indisponible");
+  }
+}
+
+async function consumeSyncReplayNonce(env, sessionId, jti, context) {
+  const normalizedSessionId = String(sessionId || "").trim();
+  const normalizedJti = String(jti || "").trim();
+  if (!normalizedSessionId || !normalizedJti) return false;
+  const db = getSyncProtectionDb(env);
+  if (!db) throw new Error("Stockage sync D1 indisponible");
+  const createdAt = new Date();
+  const expiresAt = new Date(createdAt.getTime() + SYNC_REPLAY_TTL_SECONDS * 1000);
+  try {
+    const result = await db
+      .prepare(`INSERT INTO sync_replay_nonces (
+          session_id,
+          jti,
+          created_at,
+          expires_at,
+          operation,
+          collection
+        )
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+        ON CONFLICT(session_id, jti) DO UPDATE SET
+          created_at = excluded.created_at,
+          expires_at = excluded.expires_at,
+          operation = excluded.operation,
+          collection = excluded.collection
+        WHERE sync_replay_nonces.expires_at <= excluded.created_at`)
+      .bind(
+        normalizedSessionId,
+        normalizedJti,
+        createdAt.toISOString(),
+        expiresAt.toISOString(),
+        String(context?.operation || ""),
+        String(context?.collection || "")
+      )
+      .run();
+    return Number(result?.meta?.changes || 0) > 0;
+  } catch (err) {
+    console.warn("sync replay d1 write failed", err);
+    throw new Error("Stockage sync D1 indisponible");
+  }
 }
 
 async function readSpaceCodeHash(env, spaceId) {
@@ -1115,9 +1200,9 @@ async function enforceSyncEnvelope(request, env, context) {
   if (!context || !isSyncProtectionEnabled(env)) {
     return null;
   }
-  const kv = getSyncReplayStore(env);
-  if (!kv) {
-    return errorResponse("SYNC_REPLAY_KV manquant", 500, request, env);
+  const db = getSyncProtectionDb(env);
+  if (!db) {
+    return errorResponse("SPACE_AUTH_DB manquant pour la protection sync", 500, request, env);
   }
   const envelope = readSyncEnvelope(request);
   const timestamp = Number(envelope.timestampRaw || 0);
@@ -1140,7 +1225,7 @@ async function enforceSyncEnvelope(request, env, context) {
     if (cachedRevokeExpiry) {
       syncSessionRevokedCache.delete(revokedKey);
     }
-    const revoked = await kv.get(revokedKey);
+    const revoked = await isSyncSessionRevoked(env, envelope.sessionId);
     if (revoked) {
       syncSessionRevokedCache.set(revokedKey, nowTs + revokeCacheTtlMs);
       trimCacheMap(syncSessionRevokedCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
@@ -1159,38 +1244,14 @@ async function enforceSyncEnvelope(request, env, context) {
     if (cachedReplayExpiry) {
       syncReplayLocalCache.delete(replayKey);
     }
-    let seen = null;
-    try {
-      seen = await kv.get(replayKey);
-    } catch (error) {
-      if (!isKvReplayProtectionRateLimitError(error)) {
-        throw error;
-      }
-      return null;
-    }
-    if (seen) {
+    const consumed = await consumeSyncReplayNonce(env, envelope.sessionId, envelope.jti, context);
+    if (!consumed) {
       syncReplayLocalCache.set(replayKey, nowTs + jtiCacheTtlMs);
       trimCacheMap(syncReplayLocalCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
       return errorResponse("Protection anti-rejeu déclenchée: ce couple X-Sync-Session/X-Sync-JTI a déjà été utilisé", 409, request, env);
     }
     syncReplayLocalCache.set(replayKey, nowTs + jtiCacheTtlMs);
     trimCacheMap(syncReplayLocalCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
-    try {
-      await kv.put(
-        replayKey,
-        JSON.stringify({
-          ts: now,
-          op: context.operation,
-          collection: String(context.collection || "")
-        }),
-        { expirationTtl: SYNC_REPLAY_TTL_SECONDS }
-      );
-    } catch (error) {
-      if (!isKvReplayProtectionRateLimitError(error)) {
-        throw error;
-      }
-      syncReplayLocalCache.delete(replayKey);
-    }
   }
   return null;
 }
@@ -2589,9 +2650,9 @@ async function handleRequest(request, env) {
         headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
       });
     }
-    const kv = getSyncReplayStore(env);
-    if (!kv) {
-      return errorResponse("SYNC_REPLAY_KV manquant", 500, request, env);
+    const db = getSyncProtectionDb(env);
+    if (!db) {
+      return errorResponse("SPACE_AUTH_DB manquant pour la protection sync", 500, request, env);
     }
     let body = null;
     try {
@@ -2605,16 +2666,11 @@ async function handleRequest(request, env) {
     }
     const revokedKey = `sync:revoked:${sessionId}`;
     if (controlPath.action === "sync:revoke") {
-      const ttl = Math.max(60, Math.min(7 * 24 * 60 * 60, Number(body?.ttlSeconds || 24 * 60 * 60) || 24 * 60 * 60));
-      await kv.put(revokedKey, JSON.stringify({ revokedAt: new Date().toISOString() }), { expirationTtl: ttl });
+      const ttl = await revokeSyncSession(env, sessionId, body?.ttlSeconds);
       syncSessionRevokedCache.set(revokedKey, Date.now() + getLocalSyncRevokeCacheTtlMs(env));
       return jsonResponse({ ok: true, sessionId, revoked: true, ttlSeconds: ttl }, 200, request, env);
     }
-    if (typeof kv.delete === "function") {
-      await kv.delete(revokedKey);
-    } else {
-      await kv.put(revokedKey, "", { expirationTtl: 1 });
-    }
+    await unrevokeSyncSession(env, sessionId);
     syncSessionRevokedCache.delete(revokedKey);
     return jsonResponse({ ok: true, sessionId, revoked: false }, 200, request, env);
   }

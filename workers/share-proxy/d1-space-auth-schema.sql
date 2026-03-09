@@ -15,3 +15,25 @@ CREATE TABLE IF NOT EXISTS space_content_keys (
 
 CREATE INDEX IF NOT EXISTS idx_space_content_keys_updated_at
 ON space_content_keys (updated_at);
+
+CREATE TABLE IF NOT EXISTS sync_replay_nonces (
+  session_id TEXT NOT NULL,
+  jti TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  operation TEXT NOT NULL,
+  collection TEXT NOT NULL,
+  PRIMARY KEY (session_id, jti)
+);
+
+CREATE INDEX IF NOT EXISTS idx_sync_replay_nonces_expires_at
+ON sync_replay_nonces (expires_at);
+
+CREATE TABLE IF NOT EXISTS sync_revoked_sessions (
+  session_id TEXT NOT NULL PRIMARY KEY,
+  revoked_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sync_revoked_sessions_expires_at
+ON sync_revoked_sessions (expires_at);

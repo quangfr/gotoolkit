@@ -175,8 +175,8 @@ Main storage:
 
 - Firestore: shared page content and metadata
 - R2: shared media/assets
-- D1: `space_code_hashes` and `space_content_keys`
-- KV: sync/replay support (and auth fallback when D1 bindings are unavailable)
+- D1: `space_code_hashes`, `space_content_keys`, `sync_replay_nonces`, and `sync_revoked_sessions`
+- KV: auth fallback when D1 bindings are unavailable
 
 Main collections and records:
 
@@ -260,15 +260,16 @@ Current server-side checks include:
 
 Replay protection uses two layers:
 
-- KV-backed replay keys:
-  - `sync:replay:${X-Sync-Session}:${X-Sync-JTI}`
-- in-worker local caches to short-circuit repeated replays without extra KV reads
-- if KV replay reads/writes return `429` because of KV limits, the worker temporarily skips KV-backed replay enforcement for that request without surfacing a client warning
+- D1-backed replay rows in `sync_replay_nonces`
+  - primary key: `(session_id, jti)`
+  - rows carry `created_at`, `expires_at`, `operation`, and `collection`
+- in-worker local caches to short-circuit repeated replays without extra D1 reads
 
 Revocation also uses two layers:
 
-- KV-backed revoked-session keys:
-  - `sync:revoked:${X-Sync-Session}`
+- D1-backed revoked-session rows in `sync_revoked_sessions`
+  - primary key: `session_id`
+  - rows carry `revoked_at` and `expires_at`
 - local cache of revoked sessions for faster rejection
 
 Practical consequence:

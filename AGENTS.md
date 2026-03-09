@@ -29,6 +29,9 @@ This file is the short operational guide. Use the docs below as the canonical re
 - For any request involving `bump`, `commit`, or `push`, run:
   - `npm run check:csp`
 - Only after CSP hash workflow passes, run `npm run bump`.
+- Use the latest `Tier 1` result in [`docs/TESTING.md`](docs/TESTING.md) as the release gate:
+  - if `Tier 1` passed, proceed with `bump`, `commit`, and `push`
+  - if `Tier 1` failed, keep fixing and rerunning instead of releasing
 - Commit title format: `vYYYY.MM.DD.N : <summary>` with a summary under 15 words.
 - Keep the IndexedDB repair version in `public/js/assist.js` aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - Reuse existing colors/classes from `public/styles/style.css` before adding new CSS.
@@ -71,6 +74,10 @@ This file is the short operational guide. Use the docs below as the canonical re
 - On WSL, do not run Playwright from `/mnt/c/...`; use `npm run playwright:linux:mirror` or `npm run playwright:linux:test -- ...`.
 - During local Playwright iteration, skip `npm run check:csp`; if you changed an inline script in CSP scope, run `npm run csp:inline:sync` before browser repros.
 - Follow [`docs/TESTING.md`](docs/TESTING.md) for the full Playwright workflow, logging pattern, Turnstile/tour handling, artifact naming, and `spaceCode` bootstrap rules.
+- Normal repo Playwright runs through `npm run playwright:linux:test -- ...` now auto-write per-suite metrics and sync the affected Coverage Map `results` and `details` in [`docs/TESTING.md`](docs/TESTING.md).
+- After every Playwright execution requested in a task, verify that the auto-synced Coverage Map update is correct, then adjust any remaining manual remarks only when needed.
+- When a suite still shows `duration not measured separately`, treat that as missing coverage-map data and rerun that suite or its tier through the repo wrapper so the placeholder gets replaced automatically.
+- When a task asks for `bump`, `commit`, or `push`, rerun `Tier 1` first unless the latest recorded `Tier 1` result in [`docs/TESTING.md`](docs/TESTING.md) already reflects the current code state.
 
 ## Cloud/share essentials
 - For the full share model, routes, storage split, and auth details, follow [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/SECURITY.MD`](docs/SECURITY.MD).

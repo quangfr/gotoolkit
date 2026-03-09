@@ -108,98 +108,107 @@ Use this as a fast ownership map, not as a full per-spec changelog.
 
 Coverage-map maintenance rule:
 
-- when you add or update a coverage-map entry, also update its `Last execution`, `Execution length`, and `Execution time`
-- for all Playwright coverage-map entries, also record `Status`, `Blocking step`, and `Details`
+- for each Playwright suite entry, keep the compact format:
+  - `description`
+  - `results` with pass/skip/fail counts, suite duration in `mm:ss` when known, and execution date
+  - `details`
+- normal repo runs through `npm run playwright:linux:test -- ...` auto-write per-suite metrics and sync the affected Coverage Map `results` and `details`
+- tier `results` may use aggregate runtime, but suite `results` must use per-suite runtime when known
 - when you rerun the full Playwright suite, update the latest suite result in this section with the execution date, length, duration, and pass/fail summary
+- `Tier 1` is the release gate for `bump`, `commit`, and `push`
+  - if `Tier 1` passed on the current code state, you may release
+  - if `Tier 1` failed, continue fixing and rerunning before release
 
-Latest full Playwright suite result:
+Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-09`
-- `Execution length`: `24 tests`
-- `Execution time`: `10.1m`
-- `Result`: `20 passed`, `3 failed`, `1 skipped`
-- `Known failing specs`:
-  - `cloud-history-explicit-sync.spec.ts`
-  - `cloud-rapid-switch-large.spec.ts`
+- `Last execution`: `2026-03-09 13:15`
+- `Scope`: `Tier 1`
+- `Execution length`: `5 tests`
+- `Execution time`: `02:32`
+- `Result`: `4 passed, 0 failed, 1 skipped`
+- `Details`: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
+
+Tier suites:
+
+- `Tier 1` default gate
+  - description: essential feature coverage for cloud persistence and Microsoft-managed space access
+  - results: `4 passed, 0 failed, 1 skipped` (`5 tests`, `02:32`) on `2026-03-09 13:15`
+  - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
+
+  - `cloud-switch-persist.spec.ts`
+    - description: cloud page switch persistence and reload isolation
+    - results: `passing` (`1 test`, `00:55`) on `2026-03-09 13:15`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+
   - `cloud-sync-persist.spec.ts`
+    - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
+    - results: `passing` (`1 test`, `00:45`) on `2026-03-09 13:15`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `private-switch-persist.spec.ts`
-  - verifies that edits on private documents survive document switching and a full page reload
-  - `Status`: `passing`
-  - `Blocking step`: `none`
-  - `Details`: `No failure recorded in the latest full-suite run summary`
+  - `microsoft-oauth-proxy.spec.ts`
+    - description: Microsoft popup handshake, managed space loading, and auth-state reuse
+    - results: `passing` (`3 tests`, `00:52`) on `2026-03-09 13:15`
+    - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
-- `cloud-sync-persist.spec.ts`
-  - end-to-end cloud persistence scenario covering create, edit, rename, move, reorder, delete, sync, reload, and remote state verification
-  - `Status`: `failing`
-  - `Blocking step`: `waitForMemoReady`
-  - `Details`: `Latest full-suite run timed out waiting for .ProseMirror:visible at tests/cloud-sync-persist.spec.ts:46`
+- `Tier 1b` essential troubleshooting
+  - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, transfers, and spaceCode bootstrap
+  - results: `8 passed, 0 failed, 0 skipped` (`8 tests`, `04:12`) on `2026-03-09 13:03`
+  - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `cloud-switch-persist.spec.ts`
-  - verifies that edits on cloud documents survive switching between cloud pages, remain present after reload, and do not leak into the other page
-  - `Status`: `passing`
-  - `Blocking step`: `none`
-  - `Details`: `No failure recorded in the latest full-suite run summary`
+  - `private-switch-persist.spec.ts`
+    - description: private document switch persistence and reload survival
+    - results: `passing` (`1 test`, `00:07`) on `2026-03-09 13:03`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `cloud-history-explicit-sync.spec.ts`
-  - verifies that cloud edit/switch/save flows do not call remote `pages-history` before manual sync, and that manual sync flushes the queued remote history checkpoint
-  - `Status`: `failing`
-  - `Blocking step`: `pending queue clear assertion after manual sync`
-  - `Details`: `Latest full-suite run still found seed.tokenA in memo.pending-remote-history at tests/cloud-history-explicit-sync.spec.ts:144`
+  - `cloud-rapid-switch-large.spec.ts`
+    - description: large cloud stress switch/edit flow with pre-sync write suppression and post-sync isolation
+    - results: `passing` (`1 test`, `01:12`) on `2026-03-09 13:03`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `memo-history-isolation.spec.ts`
-  - verifies that version history stays isolated per page, and that restore / duplicate apply the selected version instead of reusing stale cached tab content from another snapshot
-  - `Status`: `passing`
-  - `Blocking step`: `none`
-  - `Details`: `No failure recorded in the latest full-suite run summary`
+  - `cloud-draft-archive-ops.spec.ts`
+    - description: local draft archive/delete terminal semantics
+    - results: `passing` (`1 test`, `00:07`) on `2026-03-09 13:03`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `cloud-rapid-switch-large.spec.ts`
-  - stress repro for 3 cloud pages seeded from large `epiconcept` content when available, then 12 rapid edit/switch operations, followed by one explicit sync and a reload
-  - verifies that draft-only edit/switch activity makes no mutating share-worker request for `pages`, `pages-meta`, or `pages-history` before that manual sync
-  - verifies cross-page content isolation locally before sync and remotely after the final reload + sync
-  - `Status`: `failing`
-  - `Blocking step`: `waitForMemoReady`
-  - `Details`: `Latest full-suite run timed out waiting for .ProseMirror:visible at tests/cloud-rapid-switch-large.spec.ts:153`
+  - `cloud-private-transfer-sync.spec.ts`
+    - description: cloud-to-private copy and private-to-cloud promotion with sync persistence
+    - results: `passing` (`3 tests`, `01:48`) on `2026-03-09 13:03`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `cloud-private-transfer-sync.spec.ts`
-  - verifies two transfer paths: copying a cloud document to private storage and promoting a private document to cloud storage, with sync persistence checks
-  - `Status`: `passing`
-  - `Blocking step`: `none`
-  - `Details`: `All three transfer scenarios advanced in the latest full-suite run without recorded failure`
+  - `cloud-spacecode-bootstrap.spec.ts`
+    - description: spaceCode bootstrap without OAuth UI and cloud draft persistence
+    - results: `passing` (`2 tests`, `00:59`) on `2026-03-09 13:03`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `cloud-spacecode-bootstrap.spec.ts`
-  - verifies space access bootstrap with `spaceCode` without OAuth UI, and verifies that cloud drafts persist across reload and flush correctly on sync
-  - `Status`: `passing`
-  - `Blocking step`: `none`
-  - `Details`: `No failure recorded in the latest full-suite run summary`
+- `Tier 2` advanced features
+  - description: advanced coverage for explicit history sync, history isolation, and Excalidraw/Mermaid regression behavior
+  - results: `10 passed, 0 failed, 0 skipped` (`10 tests`, `02:33`) on `2026-03-09 12:58`
+  - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `cloud-draft-archive-ops.spec.ts`
-  - verifies local draft semantics: archive and delete drafts remain terminal operations and are not overwritten by later non-terminal updates
-  - `Status`: `passing`
-  - `Blocking step`: `none`
-  - `Details`: `Completed as the first passing spec in the latest full-suite run`
+  - `cloud-history-explicit-sync.spec.ts`
+    - description: explicit sync gating for remote `pages-history` writes
+    - results: `passing` (`1 test`, `00:46`) on `2026-03-09 12:58`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `space-code-rotate.spec.ts`
-  - verifies protected-space lifecycle around create/rotate/delete: create a protected space, write a cloud document and remote `pages-history`, rotate the space code, confirm the old code is rejected, confirm the document and history remain readable with the new code across reload and sync, then delete the protected space with the admin create secret
-  - `Status`: `passing`
-  - `Blocking step`: `none`
-  - `Details`: `Completed successfully in the latest full-suite run with sync-check and space-delete done`
+  - `memo-history-isolation.spec.ts`
+    - description: history isolation plus restore/duplicate correctness per page
+    - results: `passing` (`1 test`, `00:04`) on `2026-03-09 12:58`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `microsoft-oauth-proxy.spec.ts`
-  - covers Microsoft OAuth integration in three layers: contract-level popup handshake through `ms-proxy`, real Microsoft login and managed space loading, and auth state capture for reuse
-  - `Status`: `passing`
-  - `Blocking step`: `none`
-  - `Details`: `All three Microsoft OAuth scenarios completed in the latest full-suite run`
+  - `excalidraw-regression.spec.ts`
+    - description: Excalidraw/Mermaid block+modal regression, persistence, and block/full-view sync
+    - results: `passing` (`8 tests`, `01:43`) on `2026-03-09 12:58`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-- `excalidraw-regression.spec.ts`
-  - verifies Excalidraw/Mermaid regression coverage across block and modal surfaces for manual scene mutation and Mermaid generation (`flowchart`, `sequenceDiagram`, `classDiagram`), including close/save, page switch, and reload persistence checks
-  - verifies block and full-view sync for Mermaid-generated diagrams
-  - `Last execution`: `2026-03-09`
-  - `Execution length`: `8 tests`
-  - `Execution time`: `1.6m`
-  - `Status`: `passing`
-  - `Blocking step`: `none`
-  - `Details`: `Focused rerun passed after trimming the manual branch back to the stable baseline; manual coverage uses scene mutation, Mermaid coverage verifies block/full sync`
+- `Tier 3` admin features
+  - description: protected-space administration coverage for space-code rotation and post-rotate readability
+  - results: `1 passed, 0 failed, 0 skipped` (`1 test`, `00:30`) on `2026-03-09 13:05`
+  - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+
+  - `space-code-rotate.spec.ts`
+    - description: protected-space create/rotate/delete lifecycle and post-rotate readability
+    - results: `passing` (`1 test`, `00:30`) on `2026-03-09 13:05`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 Shared test helpers:
 
@@ -563,28 +572,7 @@ Current repo guidance is already good. The next useful improvements are:
 - collect traces/screenshots/videos on failure in CI and on-demand locally, not on every passing run
 - keep running Playwright from the Linux mirror on WSL instead of `/mnt/c/...`
 
-## 12. Good CI candidates
-
-The goal is not to put every scenario in CI. The goal is to prevent regressions cheaply.
-
-Recommended CI tiers:
-
-### Fast checks on every PR
-
-- `npm run check:csp`
-- targeted `node --check` for touched JS files
-- targeted build if touched code requires it
-- one or two fast Playwright local-persistence tests
-
-### Medium checks on every PR touching cloud/share/workers
-
-- `tests/cloud-sync-persist.spec.ts`
-- `tests/cloud-private-transfer-sync.spec.ts`
-- `tests/cloud-archive-retry.spec.ts`
-- `tests/cloud-draft-terminal-ops.spec.ts`
-- one API smoke script for `share-proxy`
-
-### Conditional checks on worker changes
+## 12. Conditional checks on worker changes
 
 If `workers/share-proxy/**` changed:
 
