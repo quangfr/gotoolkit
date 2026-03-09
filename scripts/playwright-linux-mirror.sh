@@ -94,7 +94,7 @@ sync_dependencies_if_needed() {
   if [[ ! -d "${MIRROR_DIR}/node_modules" || -z "${source_hash}" || "${source_hash}" != "${target_hash}" ]]; then
     (
       cd "${MIRROR_DIR}"
-      npm ci
+      npm ci >&2
     )
     if [[ -n "${source_hash}" ]]; then
       printf '%s\n' "${source_hash}" > "${target_lock}"
