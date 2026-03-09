@@ -107,6 +107,38 @@ export async function getMemoEditorHtml(page: Page) {
   return page.evaluate(() => String((window as any).GoToolkitMemoInstance?.getValue?.() || ""));
 }
 
+export async function openMemoHistory(page: Page, timeout = 30_000) {
+  await page.waitForFunction(() => typeof (window as any).openMemoHistoryModal === "function", null, { timeout });
+  await page.evaluate(async () => {
+    await (window as any).openMemoHistoryModal?.();
+  });
+  await expect(page.locator("#memo-history-overlay.open")).toBeVisible({ timeout });
+}
+
+export function getMemoHistoryItems(page: Page) {
+  return page.locator(".memo-history-item");
+}
+
+export async function clickMemoHistoryItem(page: Page, index: number, timeout = 15_000) {
+  const item = getMemoHistoryItems(page).nth(index);
+  await expect(item).toBeVisible({ timeout });
+  await item.click();
+}
+
+export async function restoreSelectedMemoHistory(page: Page, timeout = 30_000) {
+  const button = page.locator("#memo-history-restore");
+  await expect(button).toBeVisible({ timeout });
+  await button.click();
+  await page.waitForSelector("#memo-history-overlay.open", { state: "hidden", timeout }).catch(() => null);
+}
+
+export async function duplicateSelectedMemoHistory(page: Page, timeout = 30_000) {
+  const button = page.locator("#memo-history-duplicate");
+  await expect(button).toBeVisible({ timeout });
+  await button.click();
+  await page.waitForSelector("#memo-history-overlay.open", { state: "hidden", timeout }).catch(() => null);
+}
+
 export async function dismissDocsTour(page: Page) {
   await page.evaluate(() => {
     try {

@@ -87,6 +87,7 @@
 
     let versions = [];
     let selectedVersionId = "";
+    let modalDocId = "";
 
     function getSelectedVersion() {
         return versions.find(item => String(item?.versionId || "") === selectedVersionId) || versions[0] || null;
@@ -148,7 +149,7 @@
 
     async function refreshModal() {
         const api = window.GoToolkitMemoHistoryApi;
-        const docId = String(window.__memoActiveDocumentId || "").trim();
+        const docId = String(modalDocId || window.__memoActiveDocumentId || "").trim();
         const title = document.getElementById("memo-history-title");
         const pageTitleInput = document.getElementById("memoPageTitleInput");
         const pageName = String(pageTitleInput?.value || document.title || "").trim();
@@ -167,6 +168,7 @@
     async function openModal() {
         ensureStyles();
         ensureDom();
+        modalDocId = String(window.__memoActiveDocumentId || "").trim();
         await refreshModal();
         document.getElementById("memo-history-overlay")?.classList.add("open");
     }
@@ -195,7 +197,7 @@
         if (target.closest("#memo-history-restore")) {
             const version = getSelectedVersion();
             if (!version) return;
-            await window.GoToolkitMemoHistoryApi?.restoreVersion?.(version);
+            await window.GoToolkitMemoHistoryApi?.restoreVersion?.(version, { docId: modalDocId || version?.documentId || "" });
             await refreshModal();
             closeModal();
             return;
@@ -203,7 +205,7 @@
         if (target.closest("#memo-history-duplicate")) {
             const version = getSelectedVersion();
             if (!version) return;
-            await window.GoToolkitMemoHistoryApi?.duplicateVersionAsNew?.(version);
+            await window.GoToolkitMemoHistoryApi?.duplicateVersionAsNew?.(version, { docId: modalDocId || version?.documentId || "" });
             closeModal();
         }
     });

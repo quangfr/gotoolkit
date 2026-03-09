@@ -125,6 +125,9 @@ Functional intent of the tests currently present in `tests/`:
 - `cloud-history-explicit-sync.spec.ts`
   - verifies that cloud edit/switch/save flows do not call remote `pages-history` before manual sync, and that manual sync flushes the queued remote history checkpoint
 
+- `memo-history-isolation.spec.ts`
+  - verifies that version history stays isolated per page, and that `Restaurer` / `Dupliquer` apply the selected version instead of leaking another page payload
+
 - `cloud-rapid-switch-large.spec.ts`
   - stress repro for 3 cloud pages seeded from large `epiconcept` content when available, then 12 rapid edit/switch operations, followed by one explicit sync and a reload
   - verifies that draft-only edit/switch activity makes no share-worker request for `pages`, `pages-meta`, or `pages-history` before that manual sync
@@ -157,7 +160,7 @@ Shared test helpers:
   - exposes the configured Playwright test space ID and code from the environment
 
 - `helpers/memo-ui.ts`
-  - provides common memo UI operations used by Playwright specs: waiting for the editor, opening a document, typing into the visible editor, refreshing the explorer, dismissing the docs tour, and triggering cloud sync
+  - provides common memo UI operations used by Playwright specs: waiting for the editor, opening a document, typing into the visible editor, interacting with the history modal, refreshing the explorer, dismissing the docs tour, and triggering cloud sync
 
 ## 3. Recommended automation model
 
