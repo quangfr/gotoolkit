@@ -346,6 +346,7 @@ Server-side state used by those routes:
 - `space_code_hashes` in D1 for the access-code hash
 - `space_content_keys` in D1 for the per-space content key
 - signed `X-Space-Auth` tokens produced from `SHARE_SPACE_AUTH_SECRET`
+- protected-space auth now fails closed if `SPACE_AUTH_DB` is unavailable; there is no KV fallback path
 
 Managed OAuth behavior:
 

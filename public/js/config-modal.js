@@ -1883,12 +1883,26 @@
         return gmailJsonPost("/auth/status", {});
     }
 
+    async function gmailGetIdentityStatus() {
+        return gmailJsonPost("/auth/identity-status", {});
+    }
+
+    async function gmailGetOneTapConfig() {
+        return gmailJsonPost("/auth/onetap/config", {});
+    }
+
     async function gmailGetIdentity() {
         return gmailJsonPost("/auth/identity", {});
     }
 
     async function gmailDisconnect() {
         return gmailJsonPost("/auth/disconnect", {});
+    }
+
+    async function gmailConnectWithOneTap(credential) {
+        return gmailJsonPost("/auth/onetap", {
+            credential: String(credential || "").trim()
+        });
     }
 
     async function gmailEnsureConnected() {
@@ -1928,8 +1942,11 @@
     global.GoToolkitGmailPublish = {
         getDeviceId: getGmailDeviceId,
         getAuthStatus: gmailGetAuthStatus,
+        getIdentityStatus: gmailGetIdentityStatus,
+        getOneTapConfig: gmailGetOneTapConfig,
         getIdentity: gmailGetIdentity,
         ensureConnected: gmailEnsureConnected,
+        connectWithOneTap: gmailConnectWithOneTap,
         disconnect: gmailDisconnect,
         createDraft: gmailCreateDraft
     };

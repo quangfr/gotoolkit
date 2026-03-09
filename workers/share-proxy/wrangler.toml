@@ -18,10 +18,6 @@ simple = { limit = 20, period = 60 }
 binding = "SHARE_MEDIA_BUCKET"
 bucket_name = "gotoolkit-share-media"
 
-[[kv_namespaces]]
-binding = "SYNC_REPLAY_KV"
-id = "bfe6e648d5734e2f93bd4105278f487c"
-
 [[d1_databases]]
 binding = "SPACE_AUTH_DB"
 database_name = "gotoolkit-space-auth"

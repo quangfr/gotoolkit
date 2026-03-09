@@ -43,6 +43,7 @@ There is no single backend. Each feature has its own path:
 - shared/cloud docs: browser -> `share-proxy` -> Firestore/R2/KV/D1
 - AI/TTS/transcription: browser -> dedicated worker -> upstream API
 - OAuth/SSO: browser popup -> provider worker -> provider API
+- Google One Tap identity: browser GIS prompt -> `gmail-proxy` token verification -> signed identity token
 
 ## 2. Entry points and CSP
 
@@ -107,6 +108,7 @@ Current implementation note:
 
 - `public/js/assist.js` centralizes rich HTML writes via `setTrustedHtml(...)` as a choke point for guarded rendering paths.
 - Dynamic icon/label UI in main surfaces has largely moved to DOM assembly (`createElement`/`textContent`) instead of template-string injection.
+- Google One Tap requires CSP allowance for `https://accounts.google.com` scripts and still must route identity trust through worker-side verification before the app accepts managed-space access.
 
 ## 3. Browser storage
 
@@ -176,7 +178,6 @@ Main storage:
 - Firestore: shared page content and metadata
 - R2: shared media/assets
 - D1: `space_code_hashes`, `space_content_keys`, `sync_replay_nonces`, and `sync_revoked_sessions`
-- KV: auth fallback when D1 bindings are unavailable
 
 Main collections and records:
 
@@ -276,6 +277,7 @@ Practical consequence:
 
 - a captured write request cannot simply be replayed with the same `X-Sync-Session` + `X-Sync-JTI`
 - a revoked sync session is denied even if the bearer token is otherwise still valid
+- protected-space auth and sync enforcement are D1-only now; if `SPACE_AUTH_DB` is unavailable, those routes fail closed
 
 ## 5. SSO / OAuth
 

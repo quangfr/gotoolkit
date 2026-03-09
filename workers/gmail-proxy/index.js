@@ -5,6 +5,7 @@ const ALLOWED_ORIGINS = [
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 const GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
 const SESSION_COOKIE_NAME = "gt_gmail_sid";
@@ -248,6 +249,7 @@ function normalizeAttachments(rawAttachments) {
 function normalizeStoredToken(raw) {
   const token = raw && typeof raw === "object" ? raw : {};
   return {
+    auth_mode: String(token.auth_mode || "").trim(),
     access_token: String(token.access_token || "").trim(),
     refresh_token: String(token.refresh_token || "").trim(),
     token_type: String(token.token_type || "Bearer").trim() || "Bearer",
@@ -255,6 +257,28 @@ function normalizeStoredToken(raw) {
     expires_at: Number(token.expires_at || 0),
     account_email: String(token.account_email || "").trim(),
     account_name: String(token.account_name || "").trim()
+  };
+}
+
+function getConnectedIdentity(token) {
+  const normalized = normalizeStoredToken(token);
+  const accountEmail = String(normalized.account_email || "").trim().toLowerCase();
+  if (!accountEmail) return null;
+  if (normalized.access_token) {
+    return {
+      connected: true,
+      accountEmail,
+      accountName: String(normalized.account_name || "").trim(),
+      authMode: normalized.auth_mode || "oauth"
+    };
+  }
+  if (normalized.auth_mode !== "onetap") return null;
+  if (!Number.isFinite(normalized.expires_at) || normalized.expires_at <= Date.now()) return null;
+  return {
+    connected: true,
+    accountEmail,
+    accountName: String(normalized.account_name || "").trim(),
+    authMode: "onetap"
   };
 }
 
@@ -409,6 +433,43 @@ async function fetchGoogleProfile(accessToken) {
   return {
     email: String(payload?.email || "").trim(),
     name: String(payload?.name || payload?.given_name || "").trim()
+  };
+}
+
+async function verifyGoogleIdToken(env, idToken) {
+  const response = await fetch(`${GOOGLE_TOKENINFO_URL}?id_token=${encodeURIComponent(String(idToken || "").trim())}`);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = payload?.error_description || payload?.error || `HTTP ${response.status}`;
+    throw new Error(`Validation Google impossible: ${detail}`);
+  }
+  const audience = String(payload?.aud || "").trim();
+  if (!audience || audience !== String(env?.GMAIL_CLIENT_ID || "").trim()) {
+    throw new Error("Client Google invalide");
+  }
+  const issuer = String(payload?.iss || "").trim().toLowerCase();
+  if (issuer !== "accounts.google.com" && issuer !== "https://accounts.google.com") {
+    throw new Error("Jeton Google invalide");
+  }
+  const email = String(payload?.email || "").trim().toLowerCase();
+  const emailVerified = String(payload?.email_verified || "").trim().toLowerCase();
+  if (!email || emailVerified !== "true") {
+    throw new Error("Adresse Google non vérifiée");
+  }
+  const expiresAtSeconds = Number(payload?.exp || 0);
+  const expiresAt = expiresAtSeconds > 0 ? expiresAtSeconds * 1000 : 0;
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    throw new Error("Jeton Google expiré");
+  }
+  return {
+    auth_mode: "onetap",
+    access_token: "",
+    refresh_token: "",
+    token_type: "Bearer",
+    scope: "openid email profile",
+    expires_at: expiresAt,
+    account_email: email,
+    account_name: String(payload?.name || payload?.given_name || "").trim()
   };
 }
 
@@ -685,33 +746,70 @@ export default {
       if (!sessionId) {
         return jsonResponse(cors.headers, { connected: false, accountEmail: "", accountName: "" });
       }
-      const token = await getValidToken(env, sessionId).catch(() => null);
-      if (!token?.access_token) {
+      let token = await getValidToken(env, sessionId).catch(() => null);
+      if (!token) {
+        token = await readToken(env, sessionId).catch(() => null);
+      }
+      const identity = getConnectedIdentity(token);
+      if (!identity) {
         return jsonResponse(cors.headers, { connected: false, accountEmail: "", accountName: "" });
       }
       return jsonResponse(cors.headers, {
         connected: true,
-        accountEmail: token.account_email || "",
-        accountName: token.account_name || ""
+        accountEmail: identity.accountEmail || "",
+        accountName: identity.accountName || "",
+        authMode: identity.authMode || "oauth"
       }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
+    }
+
+    if (request.method === "POST" && path === "/auth/identity-status") {
+      const body = await request.json().catch(() => ({}));
+      const sessionId = resolveSessionId(request, body);
+      if (!sessionId) {
+        return jsonResponse(cors.headers, { connected: false, accountEmail: "", accountName: "", authMode: "" });
+      }
+      const raw = await readToken(env, sessionId).catch(() => null);
+      const token = normalizeStoredToken(raw);
+      const identity = getConnectedIdentity(token);
+      if (!identity) {
+        return jsonResponse(cors.headers, { connected: false, accountEmail: "", accountName: "", authMode: "" });
+      }
+      return jsonResponse(cors.headers, {
+        connected: true,
+        accountEmail: identity.accountEmail || "",
+        accountName: identity.accountName || "",
+        authMode: identity.authMode || ""
+      }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
+    }
+
+    if (request.method === "POST" && path === "/auth/onetap/config") {
+      return jsonResponse(cors.headers, {
+        enabled: Boolean(String(env?.GMAIL_CLIENT_ID || "").trim()),
+        clientId: String(env?.GMAIL_CLIENT_ID || "").trim()
+      });
     }
 
     if (request.method === "POST" && path === "/auth/identity") {
       await request.json().catch(() => ({}));
       const sessionId = resolveSessionId(request);
       if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
-      const token = await getValidToken(env, sessionId).catch(() => null);
-      const accountEmail = String(token?.account_email || "").trim().toLowerCase();
-      if (!token?.access_token || !accountEmail) {
+      let token = await getValidToken(env, sessionId).catch(() => null);
+      if (!token) {
+        token = await readToken(env, sessionId).catch(() => null);
+      }
+      token = normalizeStoredToken(token);
+      const identity = getConnectedIdentity(token);
+      const accountEmail = String(identity?.accountEmail || "").trim().toLowerCase();
+      if (!identity?.connected || !accountEmail) {
         return errorResponse(cors.headers, 401, "Connexion Gmail requise");
       }
       const now = Date.now();
-      const expiresAt = now + IDENTITY_TOKEN_TTL_MS;
+      const expiresAt = Math.min(now + IDENTITY_TOKEN_TTL_MS, Number(token?.expires_at || 0) || now + IDENTITY_TOKEN_TTL_MS);
       const identityToken = await createIdentityToken(env, {
         typ: "oauth-identity",
         provider: OAUTH_PROVIDER,
         email: accountEmail,
-        name: String(token?.account_name || "").trim(),
+        name: String(identity?.accountName || "").trim(),
         iat: now,
         exp: expiresAt
       });
@@ -719,10 +817,32 @@ export default {
         ok: true,
         provider: OAUTH_PROVIDER,
         accountEmail,
-        accountName: String(token?.account_name || "").trim(),
+        accountName: String(identity?.accountName || "").trim(),
         identityToken,
         expiresAt
       }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
+    }
+
+    if (request.method === "POST" && path === "/auth/onetap") {
+      const body = await request.json().catch(() => ({}));
+      const credential = String(body?.credential || "").trim();
+      if (!credential) return errorResponse(cors.headers, 400, "credential Google requise");
+      if (!env?.GMAIL_CLIENT_ID) return errorResponse(cors.headers, 500, "GMAIL_CLIENT_ID manquant");
+      const sessionId = getSessionIdFromRequest(request) || generateOpaqueSessionId();
+      try {
+        const verifiedIdentity = await verifyGoogleIdToken(env, credential);
+        await writeToken(env, sessionId, verifiedIdentity);
+        return jsonResponse(cors.headers, {
+          ok: true,
+          connected: true,
+          provider: OAUTH_PROVIDER,
+          accountEmail: verifiedIdentity.account_email || "",
+          accountName: verifiedIdentity.account_name || "",
+          authMode: verifiedIdentity.auth_mode || "onetap"
+        }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
+      } catch (err) {
+        return errorResponse(cors.headers, 401, err?.message || "Connexion Google One Tap impossible");
+      }
     }
 
     if (request.method === "POST" && path === "/auth/disconnect") {

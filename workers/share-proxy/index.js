@@ -681,14 +681,6 @@ function shouldCheckSyncRevoke(env) {
   return String(env?.SHARE_SYNC_CHECK_REVOKE || "").trim() === "1";
 }
 
-function getSpaceAuthStore(env) {
-  const kv = env?.SYNC_REPLAY_KV;
-  if (!kv || typeof kv.get !== "function" || typeof kv.put !== "function") {
-    return null;
-  }
-  return kv;
-}
-
 function getSpaceAuthDb(env) {
   const db = env?.SPACE_AUTH_DB;
   if (!db || typeof db.prepare !== "function") return null;
@@ -802,44 +794,38 @@ async function readSpaceCodeHash(env, spaceId) {
   const normalizedSpaceId = normalizeSpaceId(spaceId);
   if (!normalizedSpaceId) return "";
   const db = getSpaceAuthDb(env);
-  if (db) {
-    try {
-      const row = await db
-        .prepare("SELECT code_hash FROM space_code_hashes WHERE space_id = ?1 LIMIT 1")
-        .bind(normalizedSpaceId)
-        .first();
-      return String(row?.code_hash || "").trim();
-    } catch (err) {
-      console.warn("space auth d1 read failed", err);
-      throw new Error("Stockage auth espace indisponible");
-    }
+  if (!db) {
+    throw new Error("SPACE_AUTH_DB manquant");
   }
-  const kv = getSpaceAuthStore(env);
-  if (!kv) return "";
-  const hashKey = `space:codehash:${normalizedSpaceId}`;
-  return String(await kv.get(hashKey) || "").trim();
+  try {
+    const row = await db
+      .prepare("SELECT code_hash FROM space_code_hashes WHERE space_id = ?1 LIMIT 1")
+      .bind(normalizedSpaceId)
+      .first();
+    return String(row?.code_hash || "").trim();
+  } catch (err) {
+    console.warn("space auth d1 read failed", err);
+    throw new Error("Stockage auth espace indisponible");
+  }
 }
 
 async function readSpaceContentKey(env, spaceId) {
   const normalizedSpaceId = normalizeSpaceId(spaceId);
   if (!normalizedSpaceId) return "";
   const db = getSpaceAuthDb(env);
-  if (db) {
-    try {
-      const result = await db
-        .prepare("SELECT content_key FROM space_content_keys WHERE space_id = ?1 LIMIT 1")
-        .bind(normalizedSpaceId)
-        .first();
-      return String(result?.content_key || "").trim();
-    } catch (err) {
-      console.warn("space content key d1 read failed", err);
-      throw new Error("Stockage clé contenu espace indisponible");
-    }
+  if (!db) {
+    throw new Error("SPACE_AUTH_DB manquant");
   }
-  const kv = getSpaceAuthStore(env);
-  if (!kv) return "";
-  const contentKey = `space:contentkey:${normalizedSpaceId}`;
-  return String(await kv.get(contentKey) || "").trim();
+  try {
+    const result = await db
+      .prepare("SELECT content_key FROM space_content_keys WHERE space_id = ?1 LIMIT 1")
+      .bind(normalizedSpaceId)
+      .first();
+    return String(result?.content_key || "").trim();
+  } catch (err) {
+    console.warn("space content key d1 read failed", err);
+    throw new Error("Stockage clé contenu espace indisponible");
+  }
 }
 
 async function writeSpaceCodeHash(env, spaceId, codeHash) {
@@ -847,24 +833,20 @@ async function writeSpaceCodeHash(env, spaceId, codeHash) {
   const normalizedHash = String(codeHash || "").trim();
   if (!normalizedSpaceId || !normalizedHash) return;
   const db = getSpaceAuthDb(env);
-  if (db) {
-    try {
-      await db
-        .prepare(`INSERT INTO space_code_hashes (space_id, code_hash, updated_at)
-          VALUES (?1, ?2, ?3)
-          ON CONFLICT(space_id) DO UPDATE SET code_hash = excluded.code_hash, updated_at = excluded.updated_at`)
-        .bind(normalizedSpaceId, normalizedHash, new Date().toISOString())
-        .run();
-      return;
-    } catch (err) {
-      console.warn("space auth d1 write failed", err);
-      throw new Error("Stockage auth espace indisponible");
-    }
+  if (!db) {
+    throw new Error("SPACE_AUTH_DB manquant");
   }
-  const kv = getSpaceAuthStore(env);
-  if (!kv) throw new Error("Stockage auth espace indisponible");
-  const hashKey = `space:codehash:${normalizedSpaceId}`;
-  await kv.put(hashKey, normalizedHash);
+  try {
+    await db
+      .prepare(`INSERT INTO space_code_hashes (space_id, code_hash, updated_at)
+        VALUES (?1, ?2, ?3)
+        ON CONFLICT(space_id) DO UPDATE SET code_hash = excluded.code_hash, updated_at = excluded.updated_at`)
+      .bind(normalizedSpaceId, normalizedHash, new Date().toISOString())
+      .run();
+  } catch (err) {
+    console.warn("space auth d1 write failed", err);
+    throw new Error("Stockage auth espace indisponible");
+  }
 }
 
 async function writeSpaceContentKey(env, spaceId, contentKey) {
@@ -872,68 +854,56 @@ async function writeSpaceContentKey(env, spaceId, contentKey) {
   const normalizedKey = String(contentKey || "").trim();
   if (!normalizedSpaceId || !normalizedKey) return;
   const db = getSpaceAuthDb(env);
-  if (db) {
-    try {
-      await db
-        .prepare(`INSERT INTO space_content_keys (space_id, content_key, updated_at)
-          VALUES (?1, ?2, ?3)
-          ON CONFLICT(space_id) DO UPDATE SET content_key = excluded.content_key, updated_at = excluded.updated_at`)
-        .bind(normalizedSpaceId, normalizedKey, new Date().toISOString())
-        .run();
-      return;
-    } catch (err) {
-      console.warn("space content key d1 write failed", err);
-      throw new Error("Stockage clé contenu espace indisponible");
-    }
+  if (!db) {
+    throw new Error("SPACE_AUTH_DB manquant");
   }
-  const kv = getSpaceAuthStore(env);
-  if (!kv) throw new Error("Stockage clé contenu espace indisponible");
-  const storeKey = `space:contentkey:${normalizedSpaceId}`;
-  await kv.put(storeKey, normalizedKey);
+  try {
+    await db
+      .prepare(`INSERT INTO space_content_keys (space_id, content_key, updated_at)
+        VALUES (?1, ?2, ?3)
+        ON CONFLICT(space_id) DO UPDATE SET content_key = excluded.content_key, updated_at = excluded.updated_at`)
+      .bind(normalizedSpaceId, normalizedKey, new Date().toISOString())
+      .run();
+  } catch (err) {
+    console.warn("space content key d1 write failed", err);
+    throw new Error("Stockage clé contenu espace indisponible");
+  }
 }
 
 async function deleteSpaceCodeHash(env, spaceId) {
   const normalizedSpaceId = normalizeSpaceId(spaceId);
   if (!normalizedSpaceId) return;
   const db = getSpaceAuthDb(env);
-  if (db) {
-    try {
-      await db
-        .prepare("DELETE FROM space_code_hashes WHERE space_id = ?1")
-        .bind(normalizedSpaceId)
-        .run();
-      return;
-    } catch (err) {
-      console.warn("space auth d1 delete failed", err);
-      throw new Error("Suppression auth espace indisponible");
-    }
+  if (!db) {
+    throw new Error("SPACE_AUTH_DB manquant");
   }
-  const kv = getSpaceAuthStore(env);
-  if (!kv) throw new Error("Suppression auth espace indisponible");
-  const hashKey = `space:codehash:${normalizedSpaceId}`;
-  await kv.delete(hashKey);
+  try {
+    await db
+      .prepare("DELETE FROM space_code_hashes WHERE space_id = ?1")
+      .bind(normalizedSpaceId)
+      .run();
+  } catch (err) {
+    console.warn("space auth d1 delete failed", err);
+    throw new Error("Suppression auth espace indisponible");
+  }
 }
 
 async function deleteSpaceContentKey(env, spaceId) {
   const normalizedSpaceId = normalizeSpaceId(spaceId);
   if (!normalizedSpaceId) return;
   const db = getSpaceAuthDb(env);
-  if (db) {
-    try {
-      await db
-        .prepare("DELETE FROM space_content_keys WHERE space_id = ?1")
-        .bind(normalizedSpaceId)
-        .run();
-      return;
-    } catch (err) {
-      console.warn("space content key d1 delete failed", err);
-      throw new Error("Suppression clé contenu espace indisponible");
-    }
+  if (!db) {
+    throw new Error("SPACE_AUTH_DB manquant");
   }
-  const kv = getSpaceAuthStore(env);
-  if (!kv) throw new Error("Suppression clé contenu espace indisponible");
-  const storeKey = `space:contentkey:${normalizedSpaceId}`;
-  await kv.delete(storeKey);
+  try {
+    await db
+      .prepare("DELETE FROM space_content_keys WHERE space_id = ?1")
+      .bind(normalizedSpaceId)
+      .run();
+  } catch (err) {
+    console.warn("space content key d1 delete failed", err);
+    throw new Error("Suppression clé contenu espace indisponible");
+  }
 }
 
 function generateSpaceContentKey() {
@@ -1035,6 +1005,7 @@ function resolveAllowedSpacesForEmail(emailRaw) {
   }
   if (email === "maximepispisa@gmail.com") {
     allowed.add("golive");
+    allowed.add("epiconcept");
     return Array.from(allowed);
   }
   const domain = email.split("@")[1] || "";
@@ -2246,8 +2217,8 @@ async function handleRequest(request, env) {
     if (request.method !== "POST") {
       return errorResponse("Méthode non autorisée", 405, request, env);
     }
-    if (!getSpaceAuthDb(env) && !getSpaceAuthStore(env)) {
-      return errorResponse("Stockage auth espace manquant", 500, request, env);
+    if (!getSpaceAuthDb(env)) {
+      return errorResponse("SPACE_AUTH_DB manquant", 500, request, env);
     }
     const secret = getSpaceAuthSecret(env);
     if (!secret) return errorResponse("SHARE_SPACE_AUTH_SECRET manquant", 500, request, env);
