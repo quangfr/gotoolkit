@@ -1,5 +1,5 @@
 ;(function (global) {
-    const configPath = (global.GoToolkitSiteConfigPath || "config.json").trim();
+    const configPath = (global.GoToolkitSiteConfigPath || "data/config.json").trim();
     let cachedConfig = normalizeConfig(
         global.GoToolkitSiteConfig?.getData?.() ||
             global.GoToolkitSiteConfigData ||

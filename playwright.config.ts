@@ -4,7 +4,7 @@ import path from "node:path";
 
 const persistProfile = process.env.PW_PERSIST_PROFILE === "1";
 const storageStatePath = path.resolve(".tmp/playwright-storage-state.json");
-const msAuthStatePath = path.resolve("playwright/.auth/ms.json");
+const msAuthStatePath = path.resolve(".tmp/playwright-ms-auth-state.json");
 const effectiveStorageStatePath = path.resolve(".tmp/playwright-effective-storage-state.json");
 const envLocalPath = path.resolve(".env.local");
 
@@ -69,6 +69,7 @@ if (shareSpaceCreateSecret) {
 
 export default defineConfig({
   testDir: "tests",
+  outputDir: "tests/results",
   fullyParallel: !persistProfile,
   workers: persistProfile ? 1 : undefined,
   timeout: 60 * 1000,

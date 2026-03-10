@@ -1,6 +1,6 @@
 (function () {
-    const RELEASES_PATH = "content/index_releases.md";
-    const ROADMAP_PATH = "content/index_roadmap.md";
+    const RELEASES_PATH = "docs/index_releases.md";
+    const ROADMAP_PATH = "docs/index_roadmap.md";
 
     const state = {
         modal: null,

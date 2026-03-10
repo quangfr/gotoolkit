@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const storageStatePath = path.resolve(".tmp/playwright-storage-state.json");
-const msAuthStatePath = path.resolve("playwright/.auth/ms.json");
+const msAuthStatePath = path.resolve(".tmp/playwright-ms-auth-state.json");
 const effectiveStorageStatePath = path.resolve(".tmp/playwright-effective-storage-state.json");
 const appOrigin = "http://127.0.0.1:5000";
 const docsTourSeenKey = "go-toolkit-docs-tour-seen.v1";

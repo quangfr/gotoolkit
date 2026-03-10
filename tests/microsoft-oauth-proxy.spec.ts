@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { attachPageDebugLogging } from "./helpers/test-debug";
 
-const MS_AUTH_STATE_PATH = path.resolve("playwright/.auth/ms.json");
+const MS_AUTH_STATE_PATH = path.resolve(".tmp/playwright-ms-auth-state.json");
 
 function logStep(label: string, details?: unknown) {
   if (typeof details === "undefined") {
@@ -14,7 +14,7 @@ function logStep(label: string, details?: unknown) {
 }
 
 async function runMicrosoftPopupLogin(page: any, context: any, loginEmail: string, loginPassword: string, options: { debugArtifacts?: boolean } = {}) {
-  const artifactsDir = path.resolve("test-results/ms-oauth-debug");
+  const artifactsDir = path.resolve("tests/results/ms-oauth-debug");
   const writeDebug = (name: string, details: Record<string, unknown> = {}) => {
     if (!options.debugArtifacts) return;
     fs.mkdirSync(artifactsDir, { recursive: true });

@@ -11,7 +11,7 @@ LOCK_FILE=".pw-sync.lock"
 should_skip_path() {
   local rel="$1"
   case "$rel" in
-    .git|.git/*|node_modules|node_modules/*|test-results|test-results/*|playwright-report|playwright-report/*|.tmp|.tmp/*|tmp|tmp/*)
+    .git|.git/*|node_modules|node_modules/*|test-results|test-results/*|tests/results|tests/results/*|playwright-report|playwright-report/*|.tmp|.tmp/*)
       return 0
       ;;
     *)
@@ -54,9 +54,9 @@ full_sync() {
     --exclude '.git' \
     --exclude 'node_modules' \
     --exclude 'test-results' \
+    --exclude 'tests/results' \
     --exclude '.tmp' \
     --exclude 'playwright-report' \
-    --exclude 'tmp' \
     "${ROOT_DIR}/" "${MIRROR_DIR}/"
   touch "${MIRROR_DIR}/${FULL_SYNC_MARKER}"
 }

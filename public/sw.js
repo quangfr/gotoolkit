@@ -8,7 +8,7 @@ const ASSETS = [
     './js/ia-client.js',
     './js/share-worker-client.js',
     './js/voice-transcript.js',
-    './prompt.js',
+    './data/prompt.js',
     './img/logo.png'
 ];
 

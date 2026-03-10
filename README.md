@@ -1,125 +1,161 @@
 # GoToolkit
 
-Browser-first productivity toolkit for consultants. GoToolkit combines document authoring, data grid workflows, AI assistance, sharing, and voice/video capture while keeping local-first behavior for user content and settings.
+GoToolkit est une application web statique avec logique frontend en `public/`, bundles React générés depuis `src/`, tests Playwright dans `tests/`, et proxies/backend dans `workers/`.
 
-## Core Apps
+Ce README donne le minimum pour :
+- installer le projet
+- lancer l'application en local
+- comprendre où modifier quoi
 
-- `Docs` (`public/index.html`): rich text editor (Tiptap bridge), AI assist sidebar, local document library, semantic RAG over imported files, sharing/export flows.
-- `Grid` (`public/grid.html`): AG Grid workspace with templates/criteria helpers, AI-assisted generation, and export capabilities.
-- `Mobile` (`public/mobile.html`): narrow-screen optimized experience. `index.html` auto-redirects to this page for mobile contexts.
+Pour le détail architecture, sécurité et tests, voir :
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/SECURITY.MD](docs/SECURITY.MD)
+- [docs/TESTING.md](docs/TESTING.md)
 
-## Architecture
-
-- Static frontend: `public/` (HTML/CSS/vanilla JS + bundled bridges in `public/js`).
-- React bridges bundled with esbuild:
-  - `src/memo-bridge/index.tsx` -> `public/js/memo.bundle.js`
-  - `src/draw-editor/index.tsx` -> `public/js/draw.bundle.js`
-- Cloudflare Workers in `workers/`:
-  - `openrouter-proxy`
-  - `share-proxy`, `feedback-proxy`
-  - `assemblyai-proxy`, `googletts-proxy`
-  - `notion-proxy`, `youtube-proxy`, `gmail-proxy`, `ms-proxy`
-
-## AI + Data
-
-- Client AI routing/config: `public/js/ia-config.js`, `public/js/ia-client.js`
-- Local storage:
-  - `localStorage` for user config
-  - IndexedDB (`go-toolkit`, `gotoolkit-documents`) for documents, sharing history, and RAG index data
-- RAG engine: `public/js/document-rag.js`
-  - On-device embedding model (`Xenova/all-MiniLM-L6-v2`, 384 dims)
-  - Vector + keyword retrieval
-  - File ingestion/chunking for common office/text formats
-
-## Development
-
-### Requirements
+## Prérequis
 
 - Node.js 18+
 - npm
 
-### Install
+## Installation
 
 ```bash
 npm install
 ```
 
-### Start local server
+Le projet lit aussi certaines variables depuis `.env.local` pour les workers, l'auth et certains scénarios de test.
+
+Exemple minimal :
+
+```dotenv
+# Playwright shared-space bootstrap
+PW_TEST_SPACE_ID=gotoolkit
+PW_TEST_SPACE_CODE=gotoolkit
+
+# Optional: protected space rotation test
+SHARE_SPACE_CREATE_SECRET=
+
+# Optional: Microsoft OAuth Playwright flows
+PW_MICROSOFT_LOGIN_EMAIL=
+PW_MICROSOFT_LOGIN_PASSWORD=
+
+# Optional: enable the real AssemblyAI integration spec
+PW_ENABLE_LIVE_ASSEMBLYAI=0
+```
+
+## Lancer l'application en local
+
+Serveur local standard :
 
 ```bash
 npm start
 ```
 
-Serves `public/` on `http://localhost:5000`.
+Serveur local de test :
 
-### Full dev mode (watch + server)
+```bash
+npm run start:test
+```
+
+Les deux servent le frontend sur `http://localhost:5000` ou `http://127.0.0.1:5000`.
+
+## Développement frontend
+
+Mode watch + serveur :
 
 ```bash
 npm run dev
 ```
 
-### Build
+Build des bundles :
 
 ```bash
 npm run build
 ```
 
-Production-optimized bundle build:
+Build optimisé :
 
 ```bash
 npm run build:prod
 ```
 
-### Playwright tests
+Les bundles générés sont écrits dans `public/js/`.
+
+Les 2 bundles frontend principaux sont :
+
+- `public/js/memo.bundle.js` : bundle principal de l’expérience Docs, généré depuis `src/memo-bridge/index.tsx`.
+- `public/js/draw.bundle.js` : bundle principal de l’expérience dessin/connect, généré depuis `src/draw-editor/index.tsx`.
+
+## Tests Playwright
+
+Exécution simple :
 
 ```bash
-npm run test:playwright
+npx playwright test
 ```
 
-## Versioning and Cache Busting
-
-- Version format: `YYYY.MM.DD.N`
-- Automated bump command:
+Sur cette machine et sous WSL, utiliser de préférence le workflow repo :
 
 ```bash
-npm run bump
+npm run playwright:linux:test -- tests/<spec>.spec.ts --workers=1 --reporter=line
 ```
 
-This updates:
+Bootstrap d'état d'auth Playwright :
 
-- `package.json` version
-- HTML cache-buster query params (`?v=...`)
-- visible version labels
+```bash
+npm run playwright:auth:bootstrap
+```
 
-## Worker Environment Variables
+Voir [docs/TESTING.md](docs/TESTING.md) pour le workflow complet, le miroir Linux, les fixtures et les conventions de couverture.
 
-Each worker has its own `wrangler.toml` and required bindings/secrets. Main variables include:
+## Structure du dépôt
 
-- `OPENROUTER_API_KEY`
-- `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`
-- OAuth client credentials for Notion/YouTube/Gmail/Microsoft workers
-- KV bindings for OAuth/session usage
-- R2 bucket bindings for shared/feedback media
-- `MY_RATE_LIMITER` binding for request limiting
+- `AGENTS.md` : guide opérationnel court pour agents IA et contributeurs.
+- `public/` : frontend statique servi tel quel.
+- `public/index.html` : point d’entrée principal de l’application Docs.
+- `public/mobile.html` : point d’entrée mobile.
+- `public/data/` : configuration statique frontend, catégories, presets et prompts.
+- `public/docs/` : contenus Markdown servis au frontend.
+- `public/js/` : runtime applicatif et bundles générés.
+- `public/js/assist.js` : logique centrale de l’assistant, de l’import et d’une partie des flux Docs.
+- `public/js/document-rag.js` : indexation et recherche locale RAG.
+- `public/js/document-storage.js` : stockage local des documents.
+- `public/js/document-api.js` : API frontend de manipulation des documents.
+- `public/js/share-worker-client.js` : client frontend des workers de partage et sync.
+- `public/sw.js` : service worker mobile/offline.
+- `src/` : sources React/TypeScript compilées vers `public/js/`.
+- `src/memo-bridge/index.tsx` : source du bundle `memo.bundle.js`.
+- `src/draw-editor/index.tsx` : source du bundle `draw.bundle.js`.
+- `workers/` : Cloudflare Workers utilisés comme proxies et backend.
+- `tests/` : tests Playwright, helpers, fixtures et scripts de debug.
+- `tests/helpers/` : helpers partagés pour les specs Playwright.
+- `tests/fixtures/` : fichiers d’entrée réutilisables pour les tests.
+- `tests/debug/` : scripts locaux de debug et repro.
+- `tests/results/` : artefacts locaux d’exécution Playwright.
+- `scripts/` : scripts utilitaires de build, CSP, versioning et Playwright.
+- `playwright.config.ts` : configuration Playwright du projet.
+- `.tmp/` : artefacts runtime locaux temporaires.
 
-See each worker under `workers/*/index.js` and `workers/*/wrangler.toml` for exact requirements.
+## Fichiers à garder à la racine
 
-## Deployment Notes
+Ces fichiers doivent rester faciles à trouver et sont consommés directement par les outils :
 
-- Frontend is static and can be hosted on any static provider.
-- Worker deployment is separate and managed through Cloudflare Workers.
-- Build artifacts in `public/js` can appear in Git status after builds.
+- `package.json`
+- `package-lock.json`
+- `playwright.config.ts`
+- `firebase.json`
+- `firestore.rules`
+- `firestore.indexes.json`
+- `tsconfig.json`
+- `.env.local`
 
-## Security and Privacy Notes
+## Quand ouvrir les autres docs
 
-- User content and RAG indexes are stored locally in the browser by default.
-- Proxy workers handle external API calls and secrets server-side.
-- Configure strict allowed origins in worker environments for production domains.
+- Architecture stockage, sync, cloud, partage :
+  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-## Repository Quick Map
+- Sécurité frontend, CSP, auth, règles de partage :
+  [docs/SECURITY.MD](docs/SECURITY.MD)
 
-- `public/`: app entrypoints, UI, runtime scripts
-- `src/`: React bridge/editor sources and shims
-- `workers/`: Cloudflare worker services
-- `tests/`: Playwright scenarios
-- `scripts/`: build/version helper scripts
+- Playwright, repro, couverture et workflow WSL :
+  [docs/TESTING.md](docs/TESTING.md)

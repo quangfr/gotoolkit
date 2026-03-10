@@ -144,7 +144,7 @@
         }
         if (superpowersCatalog) return superpowersCatalog;
         try {
-            let response = await fetch('content/category.json');
+            let response = await fetch('data/category.json');
             if (response.ok) {
                 const payload = await response.json();
                 superpowersCatalog = normalizeCategoryPayload(payload);

@@ -121,99 +121,99 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-10 09:33`
-- `Scope`: `cloud-private-transfer-sync.spec.ts`
-- `Execution length`: `1 test`
-- `Execution time`: `01:04`
-- `Result`: `1 passed, 0 failed, 0 skipped`
-- `Details`: `Latest run passed. Auto-synced from Playwright suite metrics.`
+- `Last execution`: `2026-03-10 11:53`
+- `Scope`: `cloud-draft-archive-ops.spec.ts + cloud-history-explicit-sync.spec.ts + cloud-private-transfer-sync.spec.ts + cloud-rapid-switch-large.spec.ts + cloud-switch-persist.spec.ts + cloud-sync-persist.spec.ts + excalidraw-regression.spec.ts + memo-history-isolation.spec.ts + memo-idle-resume-guard.spec.ts + memo-import-ocr-regression.spec.ts + microsoft-oauth-proxy.spec.ts + private-switch-persist.spec.ts + space-code-rotate.spec.ts + voice-recording-assemblyai-live.spec.ts + voice-recording-cross-page.spec.ts`
+- `Execution length`: `19 tests`
+- `Execution time`: `00:39`
+- `Result`: `2 passed, 15 failed, 2 skipped`
+- `Details`: `Latest run has failures. Auto-synced from Playwright suite metrics.`
 
 Tier suites:
 
 - `Tier 1` default gate
   - description: essential feature coverage for cloud persistence and Microsoft-managed space access
-  - results: `4 passed, 0 failed, 1 skipped` (`5 tests`, `02:11`) on `2026-03-10 00:59`
-  - details: `Latest Tier 1 run passed with 1 skipped. Aggregate summary refreshed from the latest recorded Tier 1 suite results.`
+  - results: `0 passed, 4 failed, 1 skipped` (`5 tests`, `00:07`) on `2026-03-10 11:53`
+  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 1 suite results.`
 
   - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `00:48`) on `2026-03-10 00:59`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`1 test`, `00:02`) on `2026-03-10 11:53`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
   - `T1.2` `cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
-    - results: `passing` (`1 test`, `00:26`) on `2026-03-10 07:50`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`1 test`, `00:02`) on `2026-03-10 11:53`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse
-    - results: `passing` (`3 tests`, `00:35`) on `2026-03-10 00:59`
-    - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`3 tests`, `00:03`) on `2026-03-10 11:53`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 4` essential troubleshooting
   - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers
-  - results: `4 passed, 0 failed, 0 skipped` (`4 tests`, `02:46`) on `2026-03-10 09:33`
-  - details: `Latest suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
+  - results: `1 passed, 3 failed, 0 skipped` (`4 tests`, `00:06`) on `2026-03-10 11:53`
+  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
-    - results: `passing` (`1 test`, `00:07`) on `2026-03-09 13:03`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
   - `T4.2` `cloud-rapid-switch-large.spec.ts`
     - description: large cloud stress switch/edit flow with pre-sync write suppression and post-sync isolation
-    - results: `passing` (`1 test`, `01:28`) on `2026-03-10 09:33`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`1 test`, `00:02`) on `2026-03-10 11:53`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
   - `T4.3` `cloud-draft-archive-ops.spec.ts`
     - description: local draft archive/delete terminal semantics
-    - results: `passing` (`1 test`, `00:07`) on `2026-03-09 13:03`
+    - results: `passing` (`1 test`, `00:01`) on `2026-03-10 11:53`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T4.4` `cloud-private-transfer-sync.spec.ts`
     - description: grouped cloud copy, private promote, and archived fresh-token promotion with reload verification
-    - results: `passing` (`1 test`, `01:04`) on `2026-03-10 09:33`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`1 test`, `00:02`) on `2026-03-10 11:53`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `5 passed, 0 failed, 0 skipped` (`5 tests`, `01:44`) on `2026-03-10 08:45`
-  - details: `Latest suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
+  - results: `1 passed, 3 failed, 1 skipped` (`5 tests`, `00:20`) on `2026-03-10 11:53`
+  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `cloud-history-explicit-sync.spec.ts`
     - description: explicit sync gating for remote `pages-history` writes
-    - results: `passing` (`1 test`, `00:46`) on `2026-03-09 12:58`
+    - results: `passing` (`1 test`, `00:17`) on `2026-03-10 11:53`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T2.2` `memo-history-isolation.spec.ts`
     - description: history isolation plus restore/duplicate correctness per page
-    - results: `passing` (`1 test`, `00:04`) on `2026-03-09 12:58`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
   - `T2.3` `excalidraw-regression.spec.ts`
     - description: grouped Excalidraw/Mermaid regression across flowchart, sequence, and class docs with manual edit, switch, and reload checks
-    - results: `passing` (`1 test`, `00:19`) on `2026-03-10 08:45`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
   - `T2.4` `voice-recording-assemblyai-live.spec.ts`
-    - description: real AssemblyAI proxy coverage using `test-data/sample.wav` during an actual recording, with live transcript mutation, cross-page stop/switch return to the origin page, saved transcript polling, badge state, and video playback verification
-    - results: `passing` (`1 test`, `00:27`) on `2026-03-09 21:04`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - description: real AssemblyAI proxy coverage using `tests/fixtures/sample.wav` during an actual recording, with live transcript mutation, cross-page stop/switch return to the origin page, saved transcript polling, badge state, and video playback verification
+    - results: `skipped` (`1 test`, `00:00`) on `2026-03-10 11:53`
+    - details: `Latest run skipped. Auto-synced from Playwright suite metrics.`
 
   - `T2.5` `memo-import-ocr-regression.spec.ts`
     - description: private-page import of JPG OCR + PDF in one batch with direct paste into the active document
-    - results: `passing` (`1 test`, `00:08`) on `2026-03-09 21:23`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 3` admin features
   - description: protected-space administration coverage for space-code rotation and post-rotate readability
-  - results: `1 passed, 0 failed, 0 skipped` (`1 test`, `00:30`) on `2026-03-09 13:05`
-  - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+  - results: `0 passed, 1 failed, 0 skipped` (`1 test`, `00:01`) on `2026-03-10 11:53`
+  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 3 suite results.`
 
   - `T3.1` `space-code-rotate.spec.ts`
     - description: protected-space create/rotate/delete lifecycle and post-rotate readability
-    - results: `passing` (`1 test`, `00:30`) on `2026-03-09 13:05`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
 Shared test helpers:
 
@@ -350,12 +350,14 @@ Current repo support:
 
 - `playwright.config.ts` supports `storageState`
 - `scripts/playwright-auth-bootstrap.mjs` writes `.tmp/playwright-storage-state.json`
+- Microsoft OAuth reuse state lives in `.tmp/playwright-ms-auth-state.json`
 - `PW_PERSIST_PROFILE=1` switches Playwright to single-worker persistent-profile mode
 
 Recommended usage:
 
 - keep a persistent profile in `.tmp/playwright-profile`
 - keep reusable auth state in `.tmp/playwright-storage-state.json`
+- keep reusable Microsoft OAuth state in `.tmp/playwright-ms-auth-state.json`
 - use `./node_modules/.bin/playwright ... --workers=1`
 - prefer `waitUntil: "commit"` or `domcontentloaded` on `index.html`
 - prestart the server with `npm run start:test`
@@ -411,7 +413,7 @@ Persistent Linux mirror details:
 - the script keeps the mirror between runs, performs one full sync on first use, then switches to incremental sync based on the Git worktree
 - force a clean resync with `PW_LINUX_MIRROR_FULL_SYNC=1 npm run playwright:linux:mirror`
 - the script only re-runs `npm ci` when `package-lock.json` changed or `node_modules/` is missing
-- `test-results/`, `playwright-report/`, `.tmp/`, and `tmp/` stay local to each side and are not copied into the mirror
+- `tests/results/`, `playwright-report/`, and `.tmp/` stay local to each side and are not copied into the mirror
 - after the sync, change into the printed mirror path and run Playwright there
 - `npm run playwright:linux:test -- tests/foo.spec.ts --workers=1 --reporter=line` refreshes the mirror and runs Playwright from it in one command
 

@@ -300,7 +300,7 @@
     `;
     const CATEGORY_SETTINGS_STORAGE_KEY = "go-toolkit-category-settings.v1";
     const CATEGORY_SETTINGS_CHANGE_EVENT = "go-toolkit:categories-changed";
-    const CATEGORY_DEFAULTS_URL = "category.json";
+    const CATEGORY_DEFAULTS_URL = "data/category.json";
     const CATEGORY_ICON_CHOICES = Array.from(new Set(`
         tag tags star flag compass map brain book-type clapperboard wand-2 database
         file file-text folder folder-open briefcase chart-column chart-line

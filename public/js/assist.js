@@ -1,5 +1,5 @@
 (function (global) {
-    // Load configuration from config.json
+    // Load configuration from data/config.json
     var globalConfig = {};
     global.GoToolkitAssistConfig = globalConfig;
 
@@ -23,7 +23,7 @@
     }
 
     function buildConfigUrl() {
-        var base = (global.GoToolkitSiteConfigPath || "config.json").trim();
+        var base = (global.GoToolkitSiteConfigPath || "data/config.json").trim();
         var cacheBuster = resolveConfigCacheBuster();
         if (!cacheBuster) return base;
         return base + (base.indexOf("?") >= 0 ? "&" : "?") + "v=" + cacheBuster;
@@ -37,7 +37,7 @@
                 storeGlobalConfig(json);
             }
         } catch (err) {
-            console.warn("Failed to load config.json:", err);
+            console.warn("Failed to load data/config.json:", err);
         }
         return globalConfig;
     }
@@ -9098,19 +9098,19 @@
             {
                 name: "Guide Docs & Assist",
                 abstract: "Documentation technique exhaustive de l'architecture docs/assist.",
-                path: "content/toolkit_guide.md",
+                path: "docs/toolkit_guide.md",
                 updatedAt: "2026-01-21T10:00:00Z"
             },
             {
                 name: "Notes de version",
                 abstract: "Historique des évolutions et correctifs.",
-                path: "content/index_releases.md",
+                path: "docs/index_releases.md",
                 updatedAt: ""
             },
             {
                 name: "Roadmap",
                 abstract: "Feuille de route en cours.",
-                path: "content/index_roadmap.md",
+                path: "docs/index_roadmap.md",
                 updatedAt: ""
             }
         ]);

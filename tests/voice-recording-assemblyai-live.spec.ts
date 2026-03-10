@@ -6,7 +6,7 @@ import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 const BASE_URL = "http://127.0.0.1:5000";
 const TEST_TIMEOUT = 240_000;
-const SAMPLE_WAV_PATH = path.resolve("test-data/sample.wav");
+const SAMPLE_WAV_PATH = path.resolve("tests/fixtures/sample.wav");
 const SAMPLE_WAV_BASE64 = fs.readFileSync(SAMPLE_WAV_PATH).toString("base64");
 
 async function installLiveAudioHarness(page: import("@playwright/test").Page) {

@@ -1,85 +1,134 @@
-# GoToolkit contributor cheat sheet
+# GoToolkit agent guide
 
-This file is the short operational guide. Use the docs below as the canonical references when you need deeper detail:
+This file is the short operational guide for AI agents and contributors working in this repo.
 
-- Architecture and data/storage model: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- Automation and Playwright: [`docs/TESTING.md`](docs/TESTING.md)
-- Security and space auth: [`docs/SECURITY.MD`](docs/SECURITY.MD)
+Use it for the default workflow and repo-specific rules. For deeper detail, open the canonical docs:
 
-## Decision rules
-- If the task touches storage, sync, cloud data flow, or worker responsibilities, open [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-- If the task touches DOM injection, CSP, OAuth, auth headers, or protected-space rules, open [`docs/SECURITY.MD`](docs/SECURITY.MD).
-- If the task touches Playwright, repros, browser automation, or test coverage, open [`docs/TESTING.md`](docs/TESTING.md).
+- Architecture, storage, sync, cloud flows: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- Security, CSP, OAuth, protected spaces: [`docs/SECURITY.MD`](docs/SECURITY.MD)
+- Playwright, repro workflow, coverage map: [`docs/TESTING.md`](docs/TESTING.md)
 
-## Core layout
-- Static app entry points live in `public/`.
-- Workers live in `workers/`.
-- `public/index.html` is the Docs app entry point.
-- `public/prompt.js` is the root for AI system prompts/templates.
+## Default workflow
+
+When the user asks for a change, follow this order unless the task clearly does not need it:
+
+1. Read the relevant code and the matching reference doc if the task touches architecture, security, or testing.
+2. Make the smallest change that solves the request cleanly.
+3. Update any repo docs that are part of the same contract.
+4. Run the narrowest useful validation.
+5. Only run release steps when the user explicitly asks for `bump`, `commit`, or `push`.
+
+## When to open which doc
+
+- Open [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for:
+  - storage
+  - sync
+  - cloud/shared pages
+  - worker responsibilities
+
+- Open [`docs/SECURITY.MD`](docs/SECURITY.MD) for:
+  - DOM rendering
+  - CSP
+  - OAuth
+  - auth headers
+  - protected/shared space rules
+
+- Open [`docs/TESTING.md`](docs/TESTING.md) for:
+  - Playwright
+  - browser repros
+  - coverage updates
+  - WSL test execution
+
+## Repo map
+
+- `public/`: static frontend
+- `public/index.html`: main Docs app entry
+- `public/grid.html`: Grid app entry
+- `public/mobile.html`: mobile app entry
+- `public/data/`: frontend static config and prompt/preset data
+- `public/docs/`: Markdown content served to the frontend
+- `public/js/`: app runtime scripts and generated bundles
+- `src/`: React/TypeScript sources compiled into `public/js/`
+- `workers/`: Cloudflare Workers
+- `tests/`: Playwright specs, helpers, fixtures, debug scripts
+- `scripts/`: build, CSP, versioning, Playwright, utility scripts
+- `.tmp/`: local runtime artifacts only
 
 ## High-value rules
-- Bump the version only when the user asks for a `bump`, `commit`, or `push`.
-- If the user request changes architecture, security, cloud/share auth, or testing workflow/coverage, update the matching reference docs in the same task as needed:
-  - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-  - [`docs/SECURITY.MD`](docs/SECURITY.MD)
-  - [`docs/TESTING.md`](docs/TESTING.md)
-- When updating a reference doc, also refresh its visible date or last-updated field in the same edit.
-- After any HTML/CSS edit in the CSP scope (`public/index.html`, `public/grid.html`, `public/mobile.html`, `public/styles/*`, and CSP mirror/config files), run:
-  - `npm run csp:inline:sync`
-- For any request involving `bump`, `commit`, or `push`, run:
-  - `npm run check:csp`
-- Only after CSP hash workflow passes, run `npm run bump`.
-- Commit title format: `vYYYY.MM.DD.N : <summary>` with a summary under 15 words.
+
+- Only bump the version when the user explicitly asks for `bump`, `commit`, or `push`.
+- If the task changes architecture, security, cloud/share auth, or test workflow/coverage, update the matching reference doc in the same task.
+- When updating a reference doc, refresh its visible date or last-updated field in the same edit.
+- Do not edit `public/docs/index_releases.md` or `public/docs/index_roadmap.md` unless explicitly asked.
 - Keep the IndexedDB repair version in `public/js/assist.js` aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - Reuse existing colors/classes from `public/styles/style.css` before adding new CSS.
 - Only `public/js` should attach application globals to `window`.
-- Do not edit `public/content/index_releases.md` or `public/content/index_roadmap.md` unless explicitly asked.
 
-## Frontend security
-- Follow [`docs/SECURITY.MD`](docs/SECURITY.MD) for DOM rendering, sanitization, CSP, and share auth rules.
-- Before merging frontend changes, run:
-  - `rg -n "\\binnerHTML\\b" public -S -g '!**/*.map'`
-  - `node --check <touched-js-file>`
+## Local commands
 
-## Build and runtime
-- Dev server: `npm start` on port `5000`.
-- Preferred Playwright server: `npm run start:test`.
-- Full build: `npm run build`.
+- Install: `npm install`
+- App server: `npm start`
+- Preferred Playwright server: `npm run start:test`
+- Dev watch: `npm run dev`
+- Build: `npm run build`
+- CSP inline sync: `npm run csp:inline:sync`
+- CSP verification: `npm run check:csp`
+
+## Frontend and CSP rules
+
+Run `npm run csp:inline:sync` after changes to:
+
+- `public/index.html`
+- `public/grid.html`
+- `public/mobile.html`
+- `public/styles/*`
+- CSP mirror/config files
+
+Before merging frontend JS changes, run:
+
+- `rg -n "\\binnerHTML\\b" public -S -g '!**/*.map'`
+- `node --check <touched-js-file>`
+
+Treat `scripts/csp-common.js` as canonical for CSP-related checks.
+
+## Testing rules
+
+- Before Playwright, ensure the test server is available on `:5000`; otherwise start it with `npm run start:test`.
+- Prefer the repo Playwright workflow over ad hoc local wrappers.
+- On this machine, do not use the bundled Playwright Codex wrapper that targets the `chrome` channel.
+- On WSL, do not run Playwright from `/mnt/c/...`; use:
+  - `npm run playwright:linux:mirror`
+  - `npm run playwright:linux:test -- ...`
+- During local Playwright iteration, skip `npm run check:csp` unless the user explicitly asked for release-oriented validation.
+- If you changed inline scripts in CSP scope, run `npm run csp:inline:sync` before browser repros.
+- Keep reusable Playwright sample files in `tests/fixtures/`.
+- Keep Playwright local artifacts in `tests/results/`.
+- Keep ad hoc test/debug scripts in `tests/debug/`.
+- After any requested Playwright execution, verify the coverage-map update in [`docs/TESTING.md`](docs/TESTING.md).
+- If a suite still shows `duration not measured separately`, rerun that suite or tier through the repo wrapper so metrics are written back correctly.
+
+## Build and deployment rules
+
 - Use targeted builds when possible:
-  - run memo builds only for memo-side `src/` changes
-  - run draw/connect builds only for draw-side `src/` changes
-- If the user asks to deploy workers, automatically deploy each modified worker with Wrangler using credentials from `.env.local`.
-  - First verify auth with `npx wrangler whoami`.
-  - Then deploy only the touched workers through `scripts/with-env-local.sh`.
-  - Do not deploy untouched workers by default.
-- Release flow:
-  - run `npm run check:csp`
-  - then `npm run bump`
-  - include the versioned static entry files updated by the bump
-  - then commit and push
-  - do not deploy Firebase Hosting directly from this workflow
+  - memo-side `src/` changes -> prefer memo build path
+  - draw-side `src/` changes -> prefer draw build path
 
-## CSP hash workflow (inline scripts)
-- For inline `<script>` changes in `public/index.html`, `public/grid.html`, or `public/mobile.html`, run `npm run csp:inline:sync`.
-- Treat `scripts/csp-common.js` as canonical and keep CSP mirrors aligned.
-- After inline script edits, do a quick runtime smoke check for console `ReferenceError`s before push.
+- If the user asks to deploy workers:
+  1. verify auth with `npx wrangler whoami`
+  2. deploy only modified workers
+  3. use `scripts/with-env-local.sh`
+  4. do not deploy untouched workers by default
 
-## Testing defaults
-- Before running Playwright, ensure the test server is running on `:5000`; if not, start it with `npm run start:test`.
-- When a request explicitly asks for Playwright/browser automation, use the `playwright` Codex skill workflow first, then adapt to the repo constraints.
-- On this machine, do not use the bundled Playwright CLI wrapper from the Codex skill; it targets the `chrome` channel and fails here.
-- On WSL, do not run Playwright from `/mnt/c/...`; use `npm run playwright:linux:mirror` or `npm run playwright:linux:test -- ...`.
-- During local Playwright iteration, skip `npm run check:csp`; if you changed an inline script in CSP scope, run `npm run csp:inline:sync` before browser repros.
-- Follow [`docs/TESTING.md`](docs/TESTING.md) for the full Playwright workflow, logging pattern, Turnstile/tour handling, artifact naming, and `spaceCode` bootstrap rules.
-- Normal repo Playwright runs through `npm run playwright:linux:test -- ...` now auto-write per-suite metrics and sync the affected Coverage Map `results` and `details` in [`docs/TESTING.md`](docs/TESTING.md).
-- After every Playwright execution requested in a task, verify that the auto-synced Coverage Map update is correct, then adjust any remaining manual remarks only when needed.
-- When a suite still shows `duration not measured separately`, treat that as missing coverage-map data and rerun that suite or its tier through the repo wrapper so the placeholder gets replaced automatically.
-- `Tier 1` is maintained as a local regression tier; reruns before `bump`, `commit`, or `push` are optional unless the task explicitly asks for them.
+- Release flow when explicitly requested:
+  1. `npm run check:csp`
+  2. `npm run bump`
+  3. include updated versioned static entry files
+  4. commit and push
 
-## Cloud/share essentials
-- For the full share model, routes, storage split, and auth details, follow [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/SECURITY.MD`](docs/SECURITY.MD).
+- Do not deploy Firebase Hosting as part of the default release workflow.
 
 ## Quick diagnostics
+
 - `git status --short`
 - `rg -n "<feature|error|token>" public workers -S`
 - `node --check <touched-js-file>`
