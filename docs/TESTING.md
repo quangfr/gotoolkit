@@ -121,10 +121,10 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-10 08:45`
-- `Scope`: `excalidraw-regression.spec.ts`
+- `Last execution`: `2026-03-10 09:33`
+- `Scope`: `cloud-private-transfer-sync.spec.ts`
 - `Execution length`: `1 test`
-- `Execution time`: `00:19`
+- `Execution time`: `01:04`
 - `Result`: `1 passed, 0 failed, 0 skipped`
 - `Details`: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
@@ -152,8 +152,8 @@ Tier suites:
 
 - `Tier 4` essential troubleshooting
   - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers
-  - results: `6 passed, 0 failed, 0 skipped` (`6 tests`, `03:13`) on `2026-03-09 13:03`
-  - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+  - results: `4 passed, 0 failed, 0 skipped` (`4 tests`, `02:46`) on `2026-03-10 09:33`
+  - details: `Latest suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
@@ -162,7 +162,7 @@ Tier suites:
 
   - `T4.2` `cloud-rapid-switch-large.spec.ts`
     - description: large cloud stress switch/edit flow with pre-sync write suppression and post-sync isolation
-    - results: `passing` (`1 test`, `01:12`) on `2026-03-09 13:03`
+    - results: `passing` (`1 test`, `01:28`) on `2026-03-10 09:33`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T4.3` `cloud-draft-archive-ops.spec.ts`
@@ -171,8 +171,8 @@ Tier suites:
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T4.4` `cloud-private-transfer-sync.spec.ts`
-    - description: cloud-to-private copy and private-to-cloud promotion with sync persistence
-    - results: `passing` (`3 tests`, `01:48`) on `2026-03-09 13:03`
+    - description: grouped cloud copy, private promote, and archived fresh-token promotion with reload verification
+    - results: `passing` (`1 test`, `01:04`) on `2026-03-10 09:33`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 2` advanced features

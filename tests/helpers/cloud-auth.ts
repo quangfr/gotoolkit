@@ -20,6 +20,21 @@ async function gotoIndex(page: Page, baseUrl: string) {
   }
 }
 
+export async function reloadIndex(page: Page, baseUrl = "http://127.0.0.1:5000") {
+  try {
+    await page.reload({ waitUntil: "commit", timeout: 20_000 });
+    await dismissShareAccessGateIfPresent(page, 8_000);
+    return;
+  } catch (error) {
+    const message = String((error as Error | undefined)?.message || error || "");
+    if (!/ERR_CONNECTION_REFUSED/i.test(message)) {
+      throw error;
+    }
+  }
+
+  await gotoIndex(page, baseUrl);
+}
+
 async function waitForMemoAppReady(page: Page, timeout = 120_000) {
   await dismissShareAccessGateIfPresent(page, Math.min(timeout, 8_000));
   await page.waitForFunction(() => {

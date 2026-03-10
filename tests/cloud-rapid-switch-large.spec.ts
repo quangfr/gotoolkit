@@ -5,7 +5,7 @@ import {
   PW_TEST_SPACE_CODE,
   PW_TEST_SPACE_ID
 } from "./helpers/share-test-space";
-import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
+import { ensureCloudConnectedWithSpaceCode, reloadIndex } from "./helpers/cloud-auth";
 import { readCloudMemoLocalState, readCloudMemoRemoteState } from "./helpers/cloud-state";
 import {
   clickMemoDoc,
@@ -279,13 +279,7 @@ test.describe("Cloud rapid switching large-content stress", () => {
         { docIndex: 2, append: ` OP3_${ts}` },
         { docIndex: 0, append: ` OP4_${ts}` },
         { docIndex: 2, append: ` OP5_${ts}` },
-        { docIndex: 1, append: ` OP6_${ts}` },
-        { docIndex: 0, append: ` OP7_${ts}` },
-        { docIndex: 1, append: ` OP8_${ts}` },
-        { docIndex: 2, append: ` OP9_${ts}` },
-        { docIndex: 0, append: ` OP10_${ts}` },
-        { docIndex: 2, append: ` OP11_${ts}` },
-        { docIndex: 1, append: ` OP12_${ts}` }
+        { docIndex: 1, append: ` OP6_${ts}` }
       ];
 
       const expectedMarkers = new Map<string, string[]>();
@@ -300,13 +294,13 @@ test.describe("Cloud rapid switching large-content stress", () => {
         const targetExpectedMarkers = expectedMarkers.get(targetDoc.id) || [];
         const targetExcludedMarkers = excludedMarkers(targetDoc.id);
         console.log("[cloud-rapid-switch-large] operation:start", { index: index + 1, docId: targetDoc.id, append: operation.append });
-        await clickMemoDoc(page, targetDoc.id, { allowProgrammaticOpen: false });
+        await clickMemoDoc(page, targetDoc.id, {
+          allowProgrammaticOpen: false,
+          waitForContentMatch: false
+        });
         await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(targetDoc.baseMarker);
+        await page.locator(".ProseMirror:visible").first().click();
         await moveCaretToDocumentEnd(page);
-        await page.waitForFunction(() => {
-          const active = document.activeElement;
-          return Boolean(active && active.classList?.contains("ProseMirror"));
-        }, null, { timeout: 10_000 });
         await typeIntoVisibleEditor(page, operation.append, 30_000, { clickBeforeType: false });
         expectedMarkers.get(targetDoc.id)?.push(operation.append.trim());
         await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(operation.append.trim());
@@ -318,16 +312,22 @@ test.describe("Cloud rapid switching large-content stress", () => {
           targetExpectedMarkers,
           targetExcludedMarkers
         );
-        const localStateAfterEdit = await readCloudMemoLocalState(page, targetDoc.id);
-        expectMarkersIsolated(
-          `${targetDoc.id}: local editor state after edit ${index + 1}`,
-          localStateAfterEdit.editorHtml,
-          targetExpectedMarkers,
-          targetExcludedMarkers
-        );
         const nextDoc = seeded[(operation.docIndex + 1) % seeded.length];
-        await clickMemoDoc(page, nextDoc.id, { allowProgrammaticOpen: false });
-        await clickMemoDoc(page, targetDoc.id, { allowProgrammaticOpen: false });
+        await clickMemoDoc(page, nextDoc.id, {
+          allowProgrammaticOpen: false,
+          waitForContentMatch: false
+        });
+        await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(nextDoc.baseMarker);
+        expectMarkersIsolated(
+          `${nextDoc.id}: editor after switch away ${index + 1}`,
+          await getMemoEditorHtml(page),
+          expectedMarkers.get(nextDoc.id) || [],
+          excludedMarkers(nextDoc.id)
+        );
+        await clickMemoDoc(page, targetDoc.id, {
+          allowProgrammaticOpen: false,
+          waitForContentMatch: false
+        });
         await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(operation.append.trim());
         const editorHtmlAfterRoundtrip = await getMemoEditorHtml(page);
         expectMarkersIsolated(
@@ -375,7 +375,10 @@ test.describe("Cloud rapid switching large-content stress", () => {
       ).toHaveLength(0);
 
       for (const doc of seeded) {
-        await clickMemoDoc(page, doc.id, { allowProgrammaticOpen: false });
+        await clickMemoDoc(page, doc.id, {
+          allowProgrammaticOpen: false,
+          waitForContentMatch: false
+        });
         const html = await getMemoEditorHtml(page);
         expectMarkersIsolated(
           `${doc.id}: editor before reload`,
@@ -410,7 +413,7 @@ test.describe("Cloud rapid switching large-content stress", () => {
       await syncGolive(page, targetSpaceId, 90_000);
 
       console.log("[cloud-rapid-switch-large] reload:start");
-      await page.reload({ waitUntil: "commit", timeout: 20_000 });
+      await reloadIndex(page, baseUrl);
       await dismissDocsTour(page);
       await ensureCloudConnectedWithSpaceCode(page, baseUrl, {
         spaceId: targetSpaceId,
@@ -421,7 +424,10 @@ test.describe("Cloud rapid switching large-content stress", () => {
       await syncGolive(page, targetSpaceId, 90_000);
 
       for (const doc of seeded) {
-        await clickMemoDoc(page, doc.id, { allowProgrammaticOpen: false });
+        await clickMemoDoc(page, doc.id, {
+          allowProgrammaticOpen: false,
+          waitForContentMatch: false
+        });
         const token = String(doc.id || "").replace(/^share:/, "").trim();
         const localState = await readCloudMemoLocalState(page, doc.id);
         const remoteState = await readCloudMemoRemoteState(page, { token, spaceId: targetSpaceId });

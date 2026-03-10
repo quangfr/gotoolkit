@@ -89,8 +89,16 @@ export async function dragMemoDocToDoc(
   await source.dragTo(target);
 }
 
-export async function clickMemoDoc(page: Page, docId: string, options: { allowProgrammaticOpen?: boolean; timeout?: number } = {}) {
-  const { allowProgrammaticOpen = true, timeout = 120_000 } = options;
+export async function clickMemoDoc(
+  page: Page,
+  docId: string,
+  options: { allowProgrammaticOpen?: boolean; timeout?: number; waitForContentMatch?: boolean } = {}
+) {
+  const {
+    allowProgrammaticOpen = true,
+    timeout = 120_000,
+    waitForContentMatch = true
+  } = options;
   const item = getMemoDocItem(page, docId);
   const visible = await item.isVisible().catch(() => false);
   if (visible) {
@@ -112,6 +120,7 @@ export async function clickMemoDoc(page: Page, docId: string, options: { allowPr
   } catch {
     await page.waitForSelector(".ProseMirror:visible", { timeout });
   }
+  if (!waitForContentMatch) return;
   await page.waitForFunction(async expectedId => {
     const normalizedDocId = String(expectedId || "").trim();
     const activeId = String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "").trim();
