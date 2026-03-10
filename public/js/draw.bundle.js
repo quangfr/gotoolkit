@@ -4335,7 +4335,7 @@
   var DEFAULT_EXCALIDRAW_TEXT_SIZE = 22;
   var MERMAID_OPTIONS = { fontSize: 20 };
   if (typeof window !== "undefined" && !window.EXCALIDRAW_ASSET_PATH) {
-    window.EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/";
+    window.EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6/dist/";
   }
   var getExcalidrawLib = () => {
     const lib = window.ExcalidrawLib;
@@ -5499,3 +5499,4 @@ buffer/index.js:
    * @license  MIT
    *)
 */
+//# sourceMappingURL=draw.bundle.js.map

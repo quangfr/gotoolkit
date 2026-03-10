@@ -7718,6 +7718,25 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     };
   }, [slashActionMenuPos]);
 
+  const getNodeAtSafe = React.useCallback((pos: number) => {
+    if (!editor || !Number.isFinite(Number(pos))) return null;
+    const numericPos = Number(pos);
+    const maxPos = Number(editor.state.doc.content.size || 0);
+    if (numericPos < 0 || numericPos > maxPos) return null;
+    try {
+      return editor.state.doc.nodeAt(numericPos);
+    } catch {
+      return null;
+    }
+  }, [editor]);
+
+  React.useEffect(() => {
+    if (!blockDeleteHandle) return;
+    if (!getNodeAtSafe(blockDeleteHandle.pos)) {
+      setBlockDeleteHandle(null);
+    }
+  }, [blockDeleteHandle, getNodeAtSafe, editor.state.doc]);
+
   if (!editor) {
     return null;
   }
@@ -7768,6 +7787,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       onMouseLeave={() => {
         setRowHandle(null);
         setColHandle(null);
+        setBlockDeleteHandle(null);
         setQuoteHandle(null);
         setCodeHandle(null);
         setHoveredMermaidPos(null);
@@ -7978,7 +7998,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         </div>
       )}
 
-      {blockDeleteHandle && !dragState && !blockDragState && (
+      {blockDeleteHandle && getNodeAtSafe(blockDeleteHandle.pos) && !dragState && !blockDragState && (
         <div 
           className="block-handle-container"
           style={{
@@ -8006,7 +8026,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         {blockDeleteHandle.label === "le diagramme" && (
           <>
             {(() => {
-              const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
+              const node = getNodeAtSafe(blockDeleteHandle.pos);
               if (!node || node.type.name !== 'mermaidDiagram') return null;
               const code = node.attrs.code || '';
               if (!code.trim() || !isFlowchartDiagram(code)) return null;
@@ -8065,7 +8085,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               style={{ position: 'static', opacity: 1 }}
               onClick={(e) => {
                 e.stopPropagation();
-                const dom = editor.view.nodeDOM(blockDeleteHandle.pos) as HTMLElement;
+                const dom = editor.view.nodeDOM(blockDeleteHandle.pos) as HTMLElement | null;
                 if (dom) {
                   const container = dom.querySelector('.mermaid-diagram-container');
                   if (container) {
@@ -8093,7 +8113,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               style={{ position: 'static', opacity: 1 }}
               onClick={(e) => {
                 e.stopPropagation();
-                const dom = editor.view.nodeDOM(blockDeleteHandle.pos) as HTMLElement;
+                const dom = editor.view.nodeDOM(blockDeleteHandle.pos) as HTMLElement | null;
                 if (dom) {
                   const svg = dom.querySelector('svg');
                   if (svg) {

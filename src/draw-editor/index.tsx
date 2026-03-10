@@ -11,7 +11,7 @@ const DEFAULT_EXCALIDRAW_TEXT_SIZE = 22;
 const MERMAID_OPTIONS = { fontSize: 20 };
 // Fix for Excalidraw assets version being undefined
 if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
-    (window as any).EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/";
+    (window as any).EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6/dist/";
 }
 const getExcalidrawLib = () => {
     const lib = (window as any).ExcalidrawLib;

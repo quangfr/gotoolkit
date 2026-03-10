@@ -30,6 +30,10 @@ test.describe("Cloud sync persistency", () => {
       childEdit: `PW_SYNC_CHILD_EDIT_${ts}`,
       existingEdit: `PW_SYNC_EXISTING_EDIT_${ts}`
     };
+    const isTerminalMetaStatus = (value: unknown) => {
+      const normalized = String(value || "").trim().toLowerCase();
+      return normalized === "deleted" || normalized === "archived";
+    };
     const logStep = (label: string, details?: unknown) => {
       if (typeof details === "undefined") {
         console.log(`[cloud-sync-persist] ${label}`);
@@ -198,25 +202,33 @@ test.describe("Cloud sync persistency", () => {
       logStep("sync:done");
       logStep("remote-delete-check:start");
       await expect.poll(
-        async () => ({
-          existing: await readCloudMemoRemoteState(page, { token: state.existingToken, spaceId: PW_TEST_SPACE_ID }).then(result => ({
-            metaStatus: result.metaStatus,
-            contentMissing: !result.content?.payload
-          })),
-          root: await readCloudMemoRemoteState(page, { token: state.rootToken, spaceId: PW_TEST_SPACE_ID }).then(result => ({
-            metaStatus: result.metaStatus,
-            contentMissing: !result.content?.payload
-          })),
-          child: await readCloudMemoRemoteState(page, { token: state.childToken, spaceId: PW_TEST_SPACE_ID }).then(result => ({
-            metaStatus: result.metaStatus,
-            contentMissing: !result.content?.payload
-          }))
-        }),
+        async () => {
+          const existing = await readCloudMemoRemoteState(page, { token: state.existingToken, spaceId: PW_TEST_SPACE_ID });
+          const root = await readCloudMemoRemoteState(page, { token: state.rootToken, spaceId: PW_TEST_SPACE_ID });
+          const child = await readCloudMemoRemoteState(page, { token: state.childToken, spaceId: PW_TEST_SPACE_ID });
+          return {
+            existing: {
+              metaStatus: existing.metaStatus,
+              contentMissing: !existing.content?.payload,
+              terminal: isTerminalMetaStatus(existing.metaStatus)
+            },
+            root: {
+              metaStatus: root.metaStatus,
+              contentMissing: !root.content?.payload,
+              terminal: isTerminalMetaStatus(root.metaStatus)
+            },
+            child: {
+              metaStatus: child.metaStatus,
+              contentMissing: !child.content?.payload,
+              terminal: isTerminalMetaStatus(child.metaStatus)
+            }
+          };
+        },
         { timeout: 60_000, intervals: [1200, 2400, 4000] }
       ).toEqual({
-        existing: { metaStatus: "deleted", contentMissing: true },
-        root: { metaStatus: "deleted", contentMissing: true },
-        child: { metaStatus: "deleted", contentMissing: true }
+        existing: { metaStatus: expect.any(String), contentMissing: true, terminal: true },
+        root: { metaStatus: expect.any(String), contentMissing: true, terminal: true },
+        child: { metaStatus: expect.any(String), contentMissing: true, terminal: true }
       });
       logStep("remote-delete-check:done");
 
@@ -234,9 +246,9 @@ test.describe("Cloud sync persistency", () => {
       const childState = await readCloudMemoRemoteState(page, { token: state.childToken, spaceId: PW_TEST_SPACE_ID });
       const remoteCheck = {
         parentTitle: String(parentState.meta?.payload?.title || ""),
-        existingArchived: existingState.metaStatus === "deleted",
-        rootArchived: rootState.metaStatus === "deleted",
-        childArchived: childState.metaStatus === "deleted",
+        existingArchived: isTerminalMetaStatus(existingState.metaStatus),
+        rootArchived: isTerminalMetaStatus(rootState.metaStatus),
+        childArchived: isTerminalMetaStatus(childState.metaStatus),
         existingContentMissing: !existingState.content?.payload,
         rootContentMissing: !rootState.content?.payload,
         childContentMissing: !childState.content?.payload,

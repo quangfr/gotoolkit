@@ -16,10 +16,9 @@
             test: () => Boolean(global.ExcalidrawLib),
             beforeLoad: () => {
                 // Excalidraw runtime assets (JS chunks/fonts) are resolved from this base.
-                global.EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/";
+                global.EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6/dist/";
             },
-            src: "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js",
-            integrity: "sha384-2RnaDBiRrWXqT5k4HtP4X4gh/ukRFg9zn1Sjt+JeYQOUWSYYnN1tKE4FL9QA3Wdl"
+            src: "/vendor/excalidraw/0.17.6/dist/excalidraw.production.min.js"
         },
         // Optional dependency removed: invalid package/version caused 404+MIME errors.
         // `memo-source-modal` already falls back to textarea view when JSONViewer is unavailable.

@@ -63284,6 +63284,23 @@ ${innerMarkdown}
         left: `${clampedLeft}px`
       };
     }, [slashActionMenuPos]);
+    const getNodeAtSafe = react_shim_default.useCallback((pos) => {
+      if (!editor || !Number.isFinite(Number(pos))) return null;
+      const numericPos = Number(pos);
+      const maxPos = Number(editor.state.doc.content.size || 0);
+      if (numericPos < 0 || numericPos > maxPos) return null;
+      try {
+        return editor.state.doc.nodeAt(numericPos);
+      } catch (e) {
+        return null;
+      }
+    }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!blockDeleteHandle) return;
+      if (!getNodeAtSafe(blockDeleteHandle.pos)) {
+        setBlockDeleteHandle(null);
+      }
+    }, [blockDeleteHandle, getNodeAtSafe, editor.state.doc]);
     if (!editor) {
       return null;
     }
@@ -63330,6 +63347,7 @@ ${innerMarkdown}
         onMouseLeave: () => {
           setRowHandle(null);
           setColHandle(null);
+          setBlockDeleteHandle(null);
           setQuoteHandle(null);
           setCodeHandle(null);
           setHoveredMermaidPos(null);
@@ -63549,7 +63567,7 @@ ${innerMarkdown}
               children: "\u283F"
             }
           ),
-          blockDeleteHandle && !dragState && !blockDragState && /* @__PURE__ */ jsxs(
+          blockDeleteHandle && getNodeAtSafe(blockDeleteHandle.pos) && !dragState && !blockDragState && /* @__PURE__ */ jsxs(
             "div",
             {
               className: "block-handle-container",
@@ -63577,7 +63595,7 @@ ${innerMarkdown}
                 ),
                 blockDeleteHandle.label === "le diagramme" && /* @__PURE__ */ jsxs(Fragment3, { children: [
                   (() => {
-                    const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
+                    const node = getNodeAtSafe(blockDeleteHandle.pos);
                     if (!node || node.type.name !== "mermaidDiagram") return null;
                     const code = node.attrs.code || "";
                     if (!code.trim() || !isFlowchartDiagram(code)) return null;

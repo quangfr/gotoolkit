@@ -121,12 +121,12 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-10 00:59`
-- `Scope`: `Tier 1`
-- `Execution length`: `5 tests`
-- `Execution time`: `02:11`
-- `Result`: `4 passed, 0 failed, 1 skipped`
-- `Details`: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
+- `Last execution`: `2026-03-10 08:45`
+- `Scope`: `excalidraw-regression.spec.ts`
+- `Execution length`: `1 test`
+- `Execution time`: `00:19`
+- `Result`: `1 passed, 0 failed, 0 skipped`
+- `Details`: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 Tier suites:
 
@@ -142,7 +142,7 @@ Tier suites:
 
   - `T1.2` `cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
-    - results: `passing` (`1 test`, `00:48`) on `2026-03-10 00:59`
+    - results: `passing` (`1 test`, `00:26`) on `2026-03-10 07:50`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
@@ -177,7 +177,7 @@ Tier suites:
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `12 passed, 0 failed, 0 skipped` (`12 tests`, `03:08`) on `2026-03-09 21:23`
+  - results: `5 passed, 0 failed, 0 skipped` (`5 tests`, `01:44`) on `2026-03-10 08:45`
   - details: `Latest suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `cloud-history-explicit-sync.spec.ts`
@@ -191,8 +191,8 @@ Tier suites:
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T2.3` `excalidraw-regression.spec.ts`
-    - description: Excalidraw/Mermaid block+modal regression, persistence, and block/full-view sync
-    - results: `passing` (`8 tests`, `01:43`) on `2026-03-09 12:58`
+    - description: grouped Excalidraw/Mermaid regression across flowchart, sequence, and class docs with manual edit, switch, and reload checks
+    - results: `passing` (`1 test`, `00:19`) on `2026-03-10 08:45`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T2.4` `voice-recording-assemblyai-live.spec.ts`
