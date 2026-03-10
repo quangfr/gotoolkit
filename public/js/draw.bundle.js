@@ -4332,6 +4332,7 @@
   var Fragment2 = React2 == null ? void 0 : React2.Fragment;
 
   // src/draw-editor/index.tsx
+  var DEFAULT_EXCALIDRAW_TEXT_SIZE = 22;
   var MERMAID_OPTIONS = { fontSize: 20 };
   if (typeof window !== "undefined" && !window.EXCALIDRAW_ASSET_PATH) {
     window.EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/";
@@ -4827,6 +4828,7 @@
       viewBackgroundColor: "#fdfdfd",
       gridModeEnabled: false,
       isLoading: false,
+      currentItemFontSize: DEFAULT_EXCALIDRAW_TEXT_SIZE,
       currentItemRoundness: "sharp",
       currentItemRoughness: 0,
       zoom: { value: 0.9 }
@@ -4880,6 +4882,7 @@
             instance.updateScene({
               appState: {
                 viewModeEnabled: false,
+                currentItemFontSize: DEFAULT_EXCALIDRAW_TEXT_SIZE,
                 currentItemRoughness: 0,
                 currentItemRoundness: "sharp"
               }
@@ -5384,6 +5387,7 @@
           viewBackgroundColor: "#fdfdfd",
           gridModeEnabled: false,
           isLoading: false,
+          currentItemFontSize: DEFAULT_EXCALIDRAW_TEXT_SIZE,
           currentItemRoundness: "sharp",
           currentItemRoughness: 0,
           zoom: ((_a = appState == null ? void 0 : appState.zoom) == null ? void 0 : _a.value) ? appState.zoom : { value: 0.9 }
@@ -5495,4 +5499,3 @@ buffer/index.js:
    * @license  MIT
    *)
 */
-//# sourceMappingURL=draw.bundle.js.map

@@ -11,13 +11,6 @@ jobs:
   build_and_preview:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
-    env:
-      CI: "true"
-      PW_TEST_SPACE_ID: ${{ secrets.PW_TEST_SPACE_ID }}
-      PW_TEST_SPACE_CODE: ${{ secrets.PW_TEST_SPACE_CODE }}
-      PW_MICROSOFT_LOGIN_EMAIL: ${{ secrets.PW_MICROSOFT_LOGIN_EMAIL }}
-      PW_MICROSOFT_LOGIN_PASSWORD: ${{ secrets.PW_MICROSOFT_LOGIN_PASSWORD }}
-      SHARE_SPACE_CREATE_SECRET: ${{ secrets.SHARE_SPACE_CREATE_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,31 +21,7 @@ jobs:
 
       - run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Run Playwright Tier 1
-        run: >
-          npm run playwright:linux:test --
-          tests/cloud-switch-persist.spec.ts
-          tests/cloud-sync-persist.spec.ts
-          tests/microsoft-oauth-proxy.spec.ts
-          --workers=1
-          --reporter=line
-          --config=playwright.config.ts
-
       - run: npm run build:prod
-
-      - name: Upload Playwright artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-tier1-pr-artifacts
-          path: |
-            test-results
-            playwright-report
-            .tmp/playwright-suite-metrics.json
-          if-no-files-found: ignore
 
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

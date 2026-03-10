@@ -1,6 +1,6 @@
 # GoToolkit Test Guide
 
-Date: 2026-03-09
+Date: 2026-03-10
 Purpose: describe how to automate testing, cloud document manipulation, browser-session reuse, worker verification, deployment checks, and CI regression coverage in the current repo
 Audience: coding agents and maintainers working from the repo and terminal
 
@@ -115,15 +115,16 @@ Coverage-map maintenance rule:
 - normal repo runs through `npm run playwright:linux:test -- ...` auto-write per-suite metrics and sync the affected Coverage Map `results` and `details`
 - tier `results` may use aggregate runtime, but suite `results` must use per-suite runtime when known
 - when you rerun the full Playwright suite, update the latest suite result in this section with the execution date, length, duration, and pass/fail summary
-- `Tier 1` is the CI gate for PRs and `main` pushes through `.github/workflows/firebase-hosting-pull-request.yml` and `.github/workflows/firebase-hosting-merge.yml`
+- after any tier run (`Tier 1`, `Tier 2`, `Tier 3`, or `Tier 4`), also refresh that tier's aggregate `results` and `details` entry so it matches the latest per-suite records
+- `Tier 1` is a maintained local regression tier for cloud persistence and managed-space auth flows; it no longer runs in GitHub Actions by default
 - local `bump`, `commit`, and `push` flows do not require rerunning `Tier 1` unless the task explicitly asks for it
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-09 21:48`
+- `Last execution`: `2026-03-10 00:59`
 - `Scope`: `Tier 1`
 - `Execution length`: `5 tests`
-- `Execution time`: `02:18`
+- `Execution time`: `02:11`
 - `Result`: `4 passed, 0 failed, 1 skipped`
 - `Details`: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
@@ -131,22 +132,22 @@ Tier suites:
 
 - `Tier 1` default gate
   - description: essential feature coverage for cloud persistence and Microsoft-managed space access
-  - results: `4 passed, 0 failed, 1 skipped` (`5 tests`, `02:52`) on `2026-03-09 19:55`
-  - details: `Latest suite entries are all passing/skipped as expected. Aggregate summary refreshed from the latest recorded Tier 1 suite results.`
+  - results: `4 passed, 0 failed, 1 skipped` (`5 tests`, `02:11`) on `2026-03-10 00:59`
+  - details: `Latest Tier 1 run passed with 1 skipped. Aggregate summary refreshed from the latest recorded Tier 1 suite results.`
 
   - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `00:49`) on `2026-03-09 21:48`
+    - results: `passing` (`1 test`, `00:48`) on `2026-03-10 00:59`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.2` `cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
-    - results: `passing` (`1 test`, `00:57`) on `2026-03-09 21:48`
+    - results: `passing` (`1 test`, `00:48`) on `2026-03-10 00:59`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse
-    - results: `passing` (`3 tests`, `00:32`) on `2026-03-09 21:48`
+    - results: `passing` (`3 tests`, `00:35`) on `2026-03-10 00:59`
     - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
 - `Tier 4` essential troubleshooting

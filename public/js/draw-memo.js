@@ -7,27 +7,42 @@ window.GoToolkitDrawMemo = (function () {
     let excalidrawInstance = null;
     let isLoaded = false;
     let previewChain = Promise.resolve();
+    const DEFAULT_EXCALIDRAW_TEXT_SIZE = 22;
 
     const PRESETS = {
         small: {
-            fontSize: 12,
+            fontSize: 14,
             strokeWidth: 1.2,
             roughness: 0,
             flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 }
         },
         medium: {
-            fontSize: 12,
+            fontSize: 14,
             strokeWidth: 1.2,
             roughness: 0,
             flowchart: { padding: 3, nodeSpacing: 35, rankSpacing: 35 }
         },
         large: {
-            fontSize: 12,
+            fontSize: 14,
             strokeWidth: 1.2,
             roughness: 0,
             flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 }
         }
     };
+
+    function applyDefaultTextSize(api) {
+        if (!api?.updateScene || !api?.getAppState) return;
+        try {
+            api.updateScene({
+                appState: {
+                    ...api.getAppState(),
+                    currentItemFontSize: DEFAULT_EXCALIDRAW_TEXT_SIZE,
+                },
+            });
+        } catch (err) {
+            // no-op
+        }
+    }
 
     function getOptionsForSize(size) {
         return PRESETS[size?.toLowerCase()] || PRESETS.medium;
@@ -151,10 +166,12 @@ window.GoToolkitDrawMemo = (function () {
             // Ensure we're in interactive edit mode and selection tool is active.
             try {
                 const api = excalidrawInstance.getApi?.();
+                applyDefaultTextSize(api);
                 api?.setActiveTool?.({ type: "selection" });
                 api?.refresh?.();
                 if (!initialData || (typeof initialData === 'string' && initialData.trim().length === 0)) {
                     api?.resetScene?.();
+                    applyDefaultTextSize(api);
                     api?.refresh?.();
                 }
             } catch (e) {
@@ -182,6 +199,7 @@ window.GoToolkitDrawMemo = (function () {
             // Final refresh after scene apply (handles/render)
             try {
                 const api = excalidrawInstance.getApi?.();
+                applyDefaultTextSize(api);
                 api?.setActiveTool?.({ type: "selection" });
                 api?.refresh?.();
             } catch (e) {
@@ -201,6 +219,7 @@ window.GoToolkitDrawMemo = (function () {
                 const api = excalidrawInstance.getApi?.();
                 if (!code || !code.trim()) {
                     api?.resetScene?.();
+                    applyDefaultTextSize(api);
                     api?.setActiveTool?.({ type: "selection" });
                     api?.refresh?.();
                     return;
@@ -212,6 +231,7 @@ window.GoToolkitDrawMemo = (function () {
                     excalidrawInstance.applyScene(scene, wasEmpty);
                 }
 
+                applyDefaultTextSize(api);
                 api?.setActiveTool?.({ type: "selection" });
                 api?.refresh?.();
             } catch (e) {

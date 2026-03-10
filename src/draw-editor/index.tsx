@@ -7,6 +7,7 @@ import type {
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/types/element/types";
 import { parseMermaidToExcalidraw } from "@excalidraw/mermaid-to-excalidraw";
 
+const DEFAULT_EXCALIDRAW_TEXT_SIZE = 22;
 const MERMAID_OPTIONS = { fontSize: 20 };
 // Fix for Excalidraw assets version being undefined
 if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
@@ -562,6 +563,7 @@ const createInitialData = () => ({
         viewBackgroundColor: "#fdfdfd",
         gridModeEnabled: false,
         isLoading: false,
+        currentItemFontSize: DEFAULT_EXCALIDRAW_TEXT_SIZE,
         currentItemRoundness: "sharp" as const,
         currentItemRoughness: 0,
         zoom: { value: 0.9 as any }
@@ -620,6 +622,7 @@ class ExcalidrawBridge {
                     instance.updateScene({
                         appState: { 
                             viewModeEnabled: false,
+                            currentItemFontSize: DEFAULT_EXCALIDRAW_TEXT_SIZE,
                             currentItemRoughness: 0,
                             currentItemRoundness: "sharp"
                         }
@@ -1151,6 +1154,7 @@ class ExcalidrawBridge {
                 viewBackgroundColor: "#fdfdfd",
                 gridModeEnabled: false,
                 isLoading: false,
+                currentItemFontSize: DEFAULT_EXCALIDRAW_TEXT_SIZE,
                 currentItemRoundness: "sharp",
                 currentItemRoughness: 0,
                 zoom: appState?.zoom?.value ? appState.zoom : { value: 0.9 }
