@@ -3,6 +3,7 @@ import path from "node:path";
 
 const storageStatePath = path.resolve(".tmp/playwright-storage-state.json");
 const msAuthStatePath = path.resolve(".tmp/playwright-ms-auth-state.json");
+const legacyMsAuthStatePath = path.resolve("playwright/.auth/ms.json");
 const effectiveStorageStatePath = path.resolve(".tmp/playwright-effective-storage-state.json");
 const appOrigin = "http://127.0.0.1:5000";
 const docsTourSeenKey = "go-toolkit-docs-tour-seen.v1";
@@ -34,6 +35,7 @@ function upsertLocalStorageEntry(entries, name, value) {
 export default async function globalSetup() {
   const baseState = cloneState(
     readJson(msAuthStatePath)
+    || readJson(legacyMsAuthStatePath)
     || readJson(storageStatePath)
     || { cookies: [], origins: [] }
   );

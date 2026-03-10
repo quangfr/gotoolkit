@@ -1693,6 +1693,18 @@
             let statusPollTimer = null;
             let postCloseDeadlineMs = 0;
             let settled = false;
+            let statusPollInFlight = false;
+            async function readMicrosoftStatus() {
+                if (statusPollInFlight) return null;
+                statusPollInFlight = true;
+                try {
+                    return await microsoftGetAuthStatus();
+                } catch (err) {
+                    return null;
+                } finally {
+                    statusPollInFlight = false;
+                }
+            }
             const onMessage = event => {
                 if (event.origin !== api) return;
                 if (event.data?.source !== "gotoolkit-microsoft-oauth") return;
@@ -1722,15 +1734,11 @@
             global.addEventListener("message", onMessage);
             statusPollTimer = setInterval(async () => {
                 if (settled) return;
-                try {
-                    const status = await microsoftGetAuthStatus();
-                    if (status?.connected) {
-                        settled = true;
-                        cleanup();
-                        resolve({ ok: true, source: "status-polling" });
-                    }
-                } catch (err) {
-                    // noop
+                const status = await readMicrosoftStatus();
+                if (status?.connected) {
+                    settled = true;
+                    cleanup();
+                    resolve({ ok: true, source: "status-polling" });
                 }
             }, 1000);
             closedTimer = setInterval(async () => {
@@ -1739,22 +1747,19 @@
                     if (!postCloseDeadlineMs) {
                         postCloseDeadlineMs = Date.now() + 8000;
                     }
-                    try {
-                        const statusAfterClose = await microsoftGetAuthStatus();
-                        if (statusAfterClose?.connected) {
-                            settled = true;
-                            cleanup();
-                            resolve({ ok: true, source: "status-after-close" });
-                            return;
-                        }
-                    } catch (err) {
+                    const statusAfterClose = await readMicrosoftStatus();
+                    if (statusAfterClose?.connected) {
+                        settled = true;
+                        cleanup();
+                        resolve({ ok: true, source: "status-after-close" });
+                        return;
                     }
                     if (Date.now() < postCloseDeadlineMs) return;
                     settled = true;
                     cleanup();
                     reject(new Error("Connexion Outlook annulee"));
                 }
-            }, 300);
+            }, 1000);
         });
     }
 
@@ -1770,26 +1775,67 @@
         return microsoftJsonPost("/auth/disconnect", {});
     }
 
+    async function waitForMicrosoftIdentity(options = {}) {
+        const timeoutMs = Math.max(1000, Number(options?.timeoutMs) || 12000);
+        const intervalMs = Math.max(250, Number(options?.intervalMs) || 1000);
+        const requireConnectedStatus = options?.requireConnectedStatus !== false;
+        const deadline = Date.now() + timeoutMs;
+        let lastStatus = null;
+        let lastIdentity = null;
+        while (Date.now() <= deadline) {
+            if (requireConnectedStatus) {
+                try {
+                    lastStatus = await microsoftGetAuthStatus();
+                } catch (err) {
+                    lastStatus = null;
+                }
+                if (!lastStatus?.connected) {
+                    await new Promise(resolve => setTimeout(resolve, intervalMs));
+                    continue;
+                }
+            }
+            try {
+                lastIdentity = await microsoftGetIdentity();
+            } catch (err) {
+                lastIdentity = null;
+            }
+            const accountEmail = String(lastIdentity?.accountEmail || "").trim().toLowerCase();
+            if (accountEmail) {
+                return lastIdentity;
+            }
+            await new Promise(resolve => setTimeout(resolve, intervalMs));
+        }
+        return lastIdentity || lastStatus || null;
+    }
+
     async function microsoftEnsureConnected() {
         try {
             const status = await microsoftGetAuthStatus();
             if (status?.connected) {
-                try {
-                    const identityFromStatus = await microsoftGetIdentity();
-                    const statusEmail = String(identityFromStatus?.accountEmail || "").trim().toLowerCase();
-                    if (statusEmail) {
-                        return identityFromStatus;
-                    }
-                } catch (err) {
+                const identityFromStatus = await waitForMicrosoftIdentity({
+                    timeoutMs: 6000,
+                    intervalMs: 750,
+                    requireConnectedStatus: false
+                });
+                const statusEmail = String(identityFromStatus?.accountEmail || "").trim().toLowerCase();
+                if (statusEmail) {
+                    return identityFromStatus;
                 }
             }
         } catch (err) {
         }
         await openMicrosoftOAuthPopup();
-        let identity = null;
-        try {
-            identity = await microsoftGetIdentity();
-        } catch (err) {
+        let identity = await waitForMicrosoftIdentity({
+            timeoutMs: 8000,
+            intervalMs: 1000,
+            requireConnectedStatus: false
+        });
+        if (!String(identity?.accountEmail || "").trim()) {
+            identity = await waitForMicrosoftIdentity({
+                timeoutMs: 10000,
+                intervalMs: 1000,
+                requireConnectedStatus: true
+            });
         }
         const accountEmail = String(identity?.accountEmail || "").trim().toLowerCase();
         const accountName = String(identity?.accountName || "").trim();

@@ -121,12 +121,12 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-10 11:53`
-- `Scope`: `cloud-draft-archive-ops.spec.ts + cloud-history-explicit-sync.spec.ts + cloud-private-transfer-sync.spec.ts + cloud-rapid-switch-large.spec.ts + cloud-switch-persist.spec.ts + cloud-sync-persist.spec.ts + excalidraw-regression.spec.ts + memo-history-isolation.spec.ts + memo-idle-resume-guard.spec.ts + memo-import-ocr-regression.spec.ts + microsoft-oauth-proxy.spec.ts + private-switch-persist.spec.ts + space-code-rotate.spec.ts + voice-recording-assemblyai-live.spec.ts + voice-recording-cross-page.spec.ts`
-- `Execution length`: `19 tests`
-- `Execution time`: `00:39`
-- `Result`: `2 passed, 15 failed, 2 skipped`
-- `Details`: `Latest run has failures. Auto-synced from Playwright suite metrics.`
+- `Last execution`: `2026-03-10 12:21`
+- `Scope`: `Tier 1`
+- `Execution length`: `5 tests`
+- `Execution time`: `00:57`
+- `Result`: `4 passed, 0 failed, 1 skipped`
+- `Details`: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
 Tier suites:
 
@@ -137,18 +137,18 @@ Tier suites:
 
   - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `failing` (`1 test`, `00:02`) on `2026-03-10 11:53`
-    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`1 test`, `00:23`) on `2026-03-10 12:21`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.2` `cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
-    - results: `failing` (`1 test`, `00:02`) on `2026-03-10 11:53`
-    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`1 test`, `00:24`) on `2026-03-10 12:21`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse
-    - results: `failing` (`3 tests`, `00:03`) on `2026-03-10 11:53`
-    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`3 tests`, `00:10`) on `2026-03-10 12:21`
+    - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
 - `Tier 4` essential troubleshooting
   - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers

@@ -13,6 +13,67 @@ function logStep(label: string, details?: unknown) {
   console.log(`[ms-oauth] ${label}`, details);
 }
 
+async function collectMicrosoftRuntimeDiagnostics(page: any) {
+  return await page.evaluate(async () => {
+    const publisher = (window as any).GoToolkitMicrosoftPublish;
+    const spaces = (window as any).GoToolkitSpaces?.readSpaces?.() || [];
+    const managed = spaces.filter((space: any) => Boolean(space?.accessManaged) && String(space?.accessMode || "").trim().toLowerCase() === "oauth");
+    const status = await publisher?.getAuthStatus?.().catch((err: any) => ({ error: String(err?.message || err) }));
+    const identity = await publisher?.getIdentity?.().catch((err: any) => ({ error: String(err?.message || err) }));
+    return {
+      status,
+      identity,
+      managedIds: managed.map((space: any) => String(space?.id || "").trim().toLowerCase()),
+      allSpaces: spaces.map((space: any) => ({
+        id: String(space?.id || "").trim().toLowerCase(),
+        accessManaged: Boolean(space?.accessManaged),
+        accessMode: String(space?.accessMode || "").trim().toLowerCase()
+      }))
+    };
+  });
+}
+
+async function waitForManagedSpacesWithDiagnostics(page: any, timeoutMs = 120_000) {
+  const startedAt = Date.now();
+  const samples: Array<Record<string, unknown>> = [];
+  let seenConnected = false;
+  while (Date.now() - startedAt < timeoutMs) {
+    const snapshot = await page.evaluate(async () => {
+      const globalAny = window as any;
+      const publisher = (window as any).GoToolkitMicrosoftPublish;
+      const spaces = globalAny.GoToolkitSpaces?.readSpaces?.() || [];
+      const managed = spaces.filter((space: any) => Boolean(space?.accessManaged) && String(space?.accessMode || "").trim().toLowerCase() === "oauth");
+      let status = null;
+      if (!globalAny.__PW_MS_CONNECTED__) {
+        status = await publisher?.getAuthStatus?.().catch((err: any) => ({ error: String(err?.message || err) }));
+        if (status?.connected) {
+          globalAny.__PW_MS_CONNECTED__ = true;
+        }
+      }
+      return {
+        connected: Boolean(globalAny.__PW_MS_CONNECTED__ || status?.connected),
+        accountEmail: String(status?.accountEmail || "").trim().toLowerCase(),
+        accountName: String(status?.accountName || "").trim(),
+        managedIds: managed.map((space: any) => String(space?.id || "").trim().toLowerCase()),
+        raw: status
+      };
+    });
+    if (snapshot.connected) {
+      seenConnected = true;
+    }
+    samples.push({
+      atMs: Date.now() - startedAt,
+      ...snapshot
+    });
+    if ((seenConnected || snapshot.connected) && snapshot.managedIds.includes("golive") && snapshot.managedIds.includes("safran")) {
+      return { ok: true, samples };
+    }
+    await page.waitForTimeout(1000);
+  }
+  const diagnostics = await collectMicrosoftRuntimeDiagnostics(page);
+  return { ok: false, samples, diagnostics };
+}
+
 async function runMicrosoftPopupLogin(page: any, context: any, loginEmail: string, loginPassword: string, options: { debugArtifacts?: boolean } = {}) {
   const artifactsDir = path.resolve("tests/results/ms-oauth-debug");
   const writeDebug = (name: string, details: Record<string, unknown> = {}) => {
@@ -267,28 +328,12 @@ test.describe("Microsoft OAuth proxy flow", () => {
       await runMicrosoftPopupLogin(page, context, loginEmail, loginPassword);
     }
 
-    await page.waitForFunction(async () => {
-      const status = await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch(() => null);
-      return Boolean(status?.connected);
-    }, null, { timeout: 120_000 });
+    const managedSpacesConvergence = await waitForManagedSpacesWithDiagnostics(page, 120_000);
+    logStep("managed-spaces:space-convergence", managedSpacesConvergence);
+    expect(managedSpacesConvergence.ok, JSON.stringify(managedSpacesConvergence)).toBeTruthy();
 
     await page.waitForTimeout(2_000);
-    const diagnostics = await page.evaluate(async () => {
-      const status = await (window as any).GoToolkitMicrosoftPublish?.getAuthStatus?.().catch((err: any) => ({ error: String(err?.message || err) }));
-      const identity = await (window as any).GoToolkitMicrosoftPublish?.getIdentity?.().catch((err: any) => ({ error: String(err?.message || err) }));
-      const spaces = (window as any).GoToolkitSpaces?.readSpaces?.() || [];
-      const managed = spaces.filter((space: any) => Boolean(space?.accessManaged) && String(space?.accessMode || "").trim().toLowerCase() === "oauth");
-      return {
-        status,
-        identity,
-        managedIds: managed.map((space: any) => String(space?.id || "").trim().toLowerCase()),
-        allSpaces: spaces.map((space: any) => ({
-          id: String(space?.id || "").trim().toLowerCase(),
-          accessManaged: Boolean(space?.accessManaged),
-          accessMode: String(space?.accessMode || "").trim().toLowerCase()
-        }))
-      };
-    });
+    const diagnostics = await collectMicrosoftRuntimeDiagnostics(page);
     // eslint-disable-next-line no-console
     console.log("MS OAuth diagnostics:", JSON.stringify(diagnostics));
     expect(diagnostics.managedIds, JSON.stringify(diagnostics)).toContain("golive");
