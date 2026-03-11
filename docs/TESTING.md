@@ -37,6 +37,11 @@ Use these as the default entry points before reading the full guide.
 
 Use this before changing app code:
 
+- Playwright fails before expected app globals exist
+  - check browser console/page errors for CSP violations first
+  - if inline `index.html` scripts are blocked, run `npm run csp:inline:sync`
+  - only debug app bootstrap after CSP is clean
+
 - editor content is wrong before reload
   - likely editor, switch, or save-path bug
   - inspect the visible editor first, then rerun the closest `private-switch-*` or `cloud-switch-*` spec
@@ -60,6 +65,19 @@ Use this before changing app code:
 - Dismiss the docs tour unless it is the subject of the test.
 - Add step logs plus `console`, `pageerror`, `request`, and `response` listeners before rewriting a repro.
 - Use `spaceCode` bootstrap first for cloud coverage; fall back to OAuth UI only when the auth UX itself is under test.
+- For visual regressions, save screenshots in `tests/results/` before tightening assertions further.
+
+## 0.2 Screenshot workflow
+
+Use this when DOM assertions are passing but the UI still looks wrong.
+
+- Save block-level screenshots to `tests/results/` with explicit scenario names.
+  - example: `tests/results/mermaid-import-first-block-direct.png`
+- Save one full-page companion screenshot when layout/context matters.
+  - example: `tests/results/mermaid-import-page-direct.png`
+- Prefer capturing from the same Playwright flow under test instead of a separate ad hoc script.
+- If the wrapper does not preserve screenshots where expected, do one direct browser capture and save explicitly into the repo `tests/results/` path.
+- When a screenshot and DOM assertions disagree, trust the screenshot first and inspect which renderer or fallback path produced the visible output.
 
 ## 1. Main automation surfaces
 
@@ -177,7 +195,7 @@ Tier suites:
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `1 passed, 1 failed, 0 skipped` (`2 tests`, `00:08`) on `2026-03-11 16:23`
+  - results: `1 passed, 1 failed, 0 skipped` (`2 tests`, `00:17`) on `2026-03-11 17:46`
   - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `cloud-history-explicit-sync.spec.ts`
@@ -207,7 +225,7 @@ Tier suites:
 
   - `T2.6` `memo-import-mermaid-regression.spec.ts`
     - description: blank private-page shared-picker Markdown import with no OpenRouter calls, auto-rendered Mermaid SVG previews, and modal code/diagram parity
-    - results: `passing` (`1 test`, `00:07`) on `2026-03-11 16:23`
+    - results: `passing` (`1 test`, `00:16`) on `2026-03-11 17:46`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 3` admin features

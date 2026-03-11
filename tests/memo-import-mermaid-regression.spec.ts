@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { clickMemoDoc, dismissDocsTour, waitForMemoReady } from "./helpers/memo-ui";
 import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 const BASE_URL = "http://127.0.0.1:5000";
@@ -18,6 +17,31 @@ if (MERMAID_BLOCKS.length !== 3) {
 }
 
 const FIRST_MERMAID_BLOCK = MERMAID_BLOCKS[0];
+const FIRST_FLOWCHART_LABELS = [
+  "Invitation",
+  "Réponse",
+  "Planif RDV",
+  "Fin",
+  "Test réalisé",
+  "Analyse labo",
+  "Résultat",
+  "Notif Négatif",
+  "Notif Positif",
+  "Consultation",
+  "Suivi patient",
+  "Notif Inconnu",
+  "Re‑test",
+  "Oui",
+  "Non",
+  "Négatif",
+  "Positif",
+  "Inconnu",
+];
+
+const normalizeSvgText = (value: string) => value
+  .normalize("NFKC")
+  .replace(/\s+/g, " ")
+  .trim();
 
 test.describe("Memo Mermaid import regression", () => {
   test("imports sample markdown into a blank private doc without OpenRouter and shows modal parity", async ({ page }) => {
@@ -32,9 +56,14 @@ test.describe("Memo Mermaid import regression", () => {
       openrouterRequests.push({ method: request.method(), url });
     });
 
-    await page.goto(`${BASE_URL}/index.html`, { waitUntil: "commit", timeout: 20_000 });
-    await dismissDocsTour(page).catch(() => null);
-    await waitForMemoReady(page, 60_000);
+    await page.goto(`${BASE_URL}/index.html`, { waitUntil: "load", timeout: 30_000 });
+    await page.waitForFunction(() => {
+      const w = window as any;
+      return Boolean(
+        w.GoToolkitMemoInstance
+        && (w.GoToolkitMemoCreateAutoDocument || w.GoToolkitMemoGetActiveDocumentId || w.GoToolkitMemoOpenDocumentByLink)
+      );
+    }, null, { timeout: 60_000 });
     logStep("memo-ready");
 
     await page.evaluate(async () => {
@@ -77,7 +106,10 @@ test.describe("Memo Mermaid import regression", () => {
     });
     logStep("private-doc-created", { docId });
 
-    await clickMemoDoc(page, docId, { allowProgrammaticOpen: true, timeout: 60_000, waitForContentMatch: false });
+    await page.waitForFunction(expectedId => {
+      return String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "").trim() === String(expectedId || "").trim();
+    }, docId, { timeout: 30_000 });
+
     await expect.poll(async () => {
       return page.evaluate(() => String((window as any).getMemoEditorSource?.("markdown") || "").trim());
     }, { timeout: 15_000 }).toBe("");
@@ -132,10 +164,27 @@ test.describe("Memo Mermaid import regression", () => {
       svgPathCount: document.querySelectorAll(".mermaid-svg-container svg path").length,
       hasMermaidDiagram: String((window as any).getMemoEditorSource?.("markdown") || "").includes("```mermaid"),
       mermaidCodeBlocks: document.querySelectorAll("pre code.language-mermaid").length,
-      firstInlineSvgText: Array.from(document.querySelectorAll(".mermaid-diagram-wrapper .mermaid-svg-container svg text"))
-        .map(node => String(node.textContent || "").trim())
-        .filter(Boolean),
+      firstInlineSvgText: (() => {
+        const firstSvg = document.querySelector(".mermaid-diagram-wrapper .mermaid-svg-container svg");
+        return String(firstSvg?.textContent || "");
+      })(),
+      firstInlineSvgShapeStats: (() => {
+        const firstSvg = document.querySelector(".mermaid-diagram-wrapper .mermaid-svg-container svg");
+        if (!firstSvg) return null;
+        return {
+          textNodes: firstSvg.querySelectorAll("text").length,
+          tspanNodes: firstSvg.querySelectorAll("tspan").length,
+          rectNodes: firstSvg.querySelectorAll("rect").length,
+          polygonNodes: firstSvg.querySelectorAll("polygon").length,
+          pathNodes: firstSvg.querySelectorAll("path").length,
+        };
+      })(),
     }));
+
+    const firstDiagram = page.locator(".mermaid-diagram-wrapper .mermaid-diagram-container:visible").first();
+    await expect(firstDiagram).toBeVisible({ timeout: 30_000 });
+    await firstDiagram.screenshot({ path: "tests/results/mermaid-import-first-block.png" });
+    await page.screenshot({ path: "tests/results/mermaid-import-page.png", fullPage: true });
 
     expect(importSnapshot.wrappers).toBe(3);
     expect(importSnapshot.visibleSvgCount).toBe(3);
@@ -143,15 +192,17 @@ test.describe("Memo Mermaid import regression", () => {
     expect(importSnapshot.svgPathCount).toBeGreaterThan(0);
     expect(importSnapshot.hasMermaidDiagram).toBe(true);
     expect(importSnapshot.mermaidCodeBlocks).toBe(0);
-    expect(importSnapshot.firstInlineSvgText.join("\n")).toContain("Invitation");
-    expect(importSnapshot.firstInlineSvgText.join("\n")).toContain("Planif RDV");
-    expect(importSnapshot.firstInlineSvgText.join("\n")).toContain("Consultation");
+    expect(importSnapshot.firstInlineSvgShapeStats).not.toBeNull();
+    expect(importSnapshot.firstInlineSvgShapeStats?.textNodes || 0).toBeGreaterThan(10);
+    expect(importSnapshot.firstInlineSvgShapeStats?.rectNodes || 0).toBeGreaterThan(3);
+    expect(importSnapshot.firstInlineSvgShapeStats?.pathNodes || 0).toBeGreaterThan(10);
+    const normalizedFirstSvgText = normalizeSvgText(importSnapshot.firstInlineSvgText);
+    for (const label of FIRST_FLOWCHART_LABELS) {
+      expect(normalizedFirstSvgText).toContain(normalizeSvgText(label));
+    }
 
     expect(openrouterRequests).toEqual([]);
     logStep("import-complete", { openrouterRequests: openrouterRequests.length });
-
-    const firstDiagram = page.locator(".mermaid-diagram-wrapper .mermaid-diagram-container:visible").first();
-    await expect(firstDiagram).toBeVisible({ timeout: 30_000 });
     await firstDiagram.dblclick();
 
     const modal = page.locator(".mermaid-modal").first();

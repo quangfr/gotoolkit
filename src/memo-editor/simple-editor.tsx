@@ -383,6 +383,18 @@ const decodeMermaidAttrCode = (value: unknown) => {
   }
 };
 
+const hasInlineMarkdownSyntax = (value: string) => {
+  const text = String(value || '');
+  if (!text) return false;
+  return /(`[^`]+`)|(\*\*[^*]+\*\*)|(__[^_]+__)|(\*[^*\n]+\*)|(_[^_\n]+_)|(~~[^~]+~~)|(\[[^\]]+\]\([^)]+\))/m.test(text);
+};
+
+const unescapeMarkdownLiteralEscapes = (value: string) => {
+  const text = String(value || '');
+  if (!text) return '';
+  return text.replace(/\\([\\`*_[\]{}()#+\-.!|~])/g, '$1');
+};
+
 const setFlowchartDirection = (code: string, direction: string) => {
   const lines = (code || '').split('\n');
   let updated = false;
@@ -6992,8 +7004,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                   return;
                 }
                 if (!hasBlock) {
+                  const rawText = String(cell.textContent || '').trim();
                   const p = doc.createElement('p');
-                  p.innerHTML = sanitizeHtml(cell.innerHTML);
+                  if (hasInlineMarkdownSyntax(rawText)) {
+                    const inlineHtml = marked.parseInline(rawText, { gfm: true }) as string;
+                    p.innerHTML = sanitizeHtml(unescapeMarkdownLiteralEscapes(inlineHtml));
+                  } else {
+                    p.innerHTML = sanitizeHtml(unescapeMarkdownLiteralEscapes(cell.innerHTML));
+                  }
                   cell.innerHTML = '';
                   cell.appendChild(p);
                 }
@@ -7161,10 +7179,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           if (editor) {
             const trimmedHtml = typeof finalHtml === 'string' ? finalHtml.trim() : '';
             const safeHtml = (!trimmedHtml || trimmedHtml === '<>') ? '<p></p>' : finalHtml;
+            const currentMarkdown = String(getEditorMarkdown() || '').trim();
+            const needsSeparator = currentMarkdown.length > 0;
             editor
               .chain()
               .focus()
-              .insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? '' : '\n\n') + safeHtml)
+              .insertContentAt(editor.state.doc.content.size, (needsSeparator ? '\n\n' : '') + safeHtml)
               .run();
           }
         } catch (err) {

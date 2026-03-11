@@ -2881,7 +2881,38 @@
   // src/mermaid-shim.ts
   init_define_process_env();
   init_polyfills();
-  var mermaid = window.mermaid;
+  var getMermaidRuntime = () => {
+    const runtime = window.mermaid;
+    if (!runtime) {
+      throw new Error("Mermaid runtime unavailable");
+    }
+    return runtime;
+  };
+  var mermaid = new Proxy({}, {
+    get(_target, prop) {
+      return getMermaidRuntime()[prop];
+    },
+    set(_target, prop, value) {
+      getMermaidRuntime()[prop] = value;
+      return true;
+    },
+    has(_target, prop) {
+      return prop in getMermaidRuntime();
+    },
+    ownKeys() {
+      return Reflect.ownKeys(getMermaidRuntime());
+    },
+    getOwnPropertyDescriptor(_target, prop) {
+      const descriptor = Object.getOwnPropertyDescriptor(getMermaidRuntime(), prop);
+      if (descriptor) return descriptor;
+      return {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: getMermaidRuntime()[prop]
+      };
+    }
+  });
   var mermaid_shim_default = mermaid;
 
   // node_modules/@excalidraw/mermaid-to-excalidraw/dist/utils.js
@@ -5512,4 +5543,4 @@ buffer/index.js:
    * @license  MIT
    *)
 */
-                                        
+                                      p

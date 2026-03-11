@@ -53238,6 +53238,7 @@ ${content}</tr>
     const prevEditableRef = react_shim_default.useRef(null);
     const lastStableSvgRef = react_shim_default.useRef("");
     const lastPreviewSyncKeyRef = react_shim_default.useRef("");
+    const previewSourceRef = react_shim_default.useRef("none");
     const [promptInput, setPromptInput] = react_shim_default.useState("");
     const [diagramType, setDiagramType] = react_shim_default.useState("flow");
     const [isGenerating, setIsGenerating] = react_shim_default.useState(false);
@@ -53256,6 +53257,7 @@ ${content}</tr>
       }
       if (!code.trim() && !excalidrawJSON) {
         lastStableSvgRef.current = "";
+        previewSourceRef.current = "none";
       }
     }, [code, excalidrawJSON, svg2]);
     const getAutoResizeHeight = (textarea) => {
@@ -53499,7 +53501,8 @@ ${promptInput.trim()}`
     react_shim_default.useEffect(() => {
       if (isEditing) return;
       if (!code && !excalidrawJSON) return;
-      if (visibleSvg) return;
+      const hasSettledExcalidrawPreview = !!visibleSvg && (previewSourceRef.current === "excalidraw" || !!excalidrawJSON);
+      if (hasSettledExcalidrawPreview) return;
       if (!window.GoToolkitDrawMemo) return;
       const syncKey = `${String(code)}::${String(excalidrawJSON)}::${String(size2)}`;
       if (lastPreviewSyncKeyRef.current === syncKey) return;
@@ -53507,6 +53510,25 @@ ${promptInput.trim()}`
       const syncPreview = async () => {
         var _a, _b;
         try {
+          if (window.GoToolkitDrawMemo.renderPreview) {
+            const previewInput = excalidrawJSON || code;
+            const result = await window.GoToolkitDrawMemo.renderPreview(previewInput, "auto", size2);
+            if (result == null ? void 0 : result.skipped) {
+              return;
+            }
+            const json2 = result == null ? void 0 : result.json;
+            const svgHtml2 = result == null ? void 0 : result.svg;
+            if (json2 && !excalidrawJSON) {
+              updateAttributes2({ excalidrawJSON: json2 });
+            }
+            if (svgHtml2) {
+              previewSourceRef.current = "excalidraw";
+              setSvg(sanitizeRenderedSvg(svgHtml2));
+              setLastValidCode(code);
+              setError(null);
+              return;
+            }
+          }
           if (!excalidrawJSON && code) {
             let mermaidApi = getMermaidApi();
             if (!mermaidApi) {
@@ -53523,26 +53545,10 @@ ${promptInput.trim()}`
             const id = `mermaid-preview-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
             mermaidApi.initialize(INLINE_MERMAID_RENDER_CONFIG);
             const { svg: svg3 } = await mermaidApi.render(id, code);
+            previewSourceRef.current = "mermaid";
             setSvg(sanitizeRenderedSvg(svg3));
             setLastValidCode(code);
             setError(null);
-            return;
-          }
-          if (window.GoToolkitDrawMemo.renderPreview) {
-            const previewInput = excalidrawJSON || code;
-            const result = await window.GoToolkitDrawMemo.renderPreview(previewInput, "auto", size2);
-            if (result == null ? void 0 : result.skipped) {
-              return;
-            }
-            const json2 = result == null ? void 0 : result.json;
-            const svgHtml2 = result == null ? void 0 : result.svg;
-            if (json2 && !excalidrawJSON) {
-              updateAttributes2({ excalidrawJSON: json2 });
-            }
-            if (svgHtml2) {
-              setSvg(sanitizeRenderedSvg(svgHtml2));
-            }
-            setLastValidCode(code);
             return;
           }
           const tempDiv = document.createElement("div");
@@ -53562,6 +53568,7 @@ ${promptInput.trim()}`
           if (!excalidrawJSON) {
             updateAttributes2({ excalidrawJSON: json });
           }
+          previewSourceRef.current = "excalidraw";
           setSvg(sanitizeRenderedSvg(svgHtml));
           setLastValidCode(code);
           document.body.removeChild(tempDiv);
@@ -53575,12 +53582,17 @@ ${promptInput.trim()}`
     const renderDiagram = react_shim_default.useCallback(async () => {
       var _a, _b;
       if (isEditing) return;
-      if (excalidrawJSON) {
+      if (excalidrawJSON || code.trim()) {
         try {
           if (window.GoToolkitDrawMemo) {
             if (window.GoToolkitDrawMemo.renderPreview) {
-              const result = await window.GoToolkitDrawMemo.renderPreview(excalidrawJSON, "auto", size2);
+              const previewInput = excalidrawJSON || code;
+              const result = await window.GoToolkitDrawMemo.renderPreview(previewInput, "auto", size2);
+              if ((result == null ? void 0 : result.json) && !excalidrawJSON) {
+                updateAttributes2({ excalidrawJSON: result.json });
+              }
               if (result == null ? void 0 : result.svg) {
+                previewSourceRef.current = "excalidraw";
                 setSvg(sanitizeRenderedSvg(result.svg));
                 setError(null);
                 return;
@@ -53595,10 +53607,11 @@ ${promptInput.trim()}`
             tempDiv.style.opacity = "0";
             tempDiv.style.pointerEvents = "none";
             document.body.appendChild(tempDiv);
-            await window.GoToolkitDrawMemo.init(tempDiv, excalidrawJSON, size2);
+            await window.GoToolkitDrawMemo.init(tempDiv, excalidrawJSON || code, size2);
             await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
             await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
             const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
+            previewSourceRef.current = "excalidraw";
             setSvg(sanitizeRenderedSvg(svgHtml));
             document.body.removeChild(tempDiv);
             setError(null);
@@ -53630,13 +53643,14 @@ ${promptInput.trim()}`
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         mermaidApi.initialize(INLINE_MERMAID_RENDER_CONFIG);
         const { svg: svg3 } = await mermaidApi.render(id, code);
+        previewSourceRef.current = "mermaid";
         setSvg(sanitizeRenderedSvg(svg3));
         setError(null);
       } catch (err) {
         console.warn("Mermaid render error:", err);
         setError(err.message || "Invalid mermaid syntax");
       }
-    }, [code, excalidrawJSON, isEditing, size2]);
+    }, [code, excalidrawJSON, isEditing, size2, updateAttributes2]);
     react_shim_default.useEffect(() => {
       renderDiagram();
     }, [renderDiagram]);
@@ -53754,8 +53768,10 @@ ${promptInput.trim()}`
             excalidrawJSON: finalExcalidrawJSON
           });
           if (svgHtml && (finalCode.trim() || !isExcalidrawEmpty)) {
+            previewSourceRef.current = "excalidraw";
             setSvg(sanitizeRenderedSvg(svgHtml));
           } else {
+            previewSourceRef.current = "none";
             setSvg("");
           }
         }
@@ -57203,6 +57219,16 @@ ${promptInput.trim()}`
       textarea.innerHTML = text2;
       return textarea.value || text2;
     }
+  };
+  var hasInlineMarkdownSyntax = (value) => {
+    const text2 = String(value || "");
+    if (!text2) return false;
+    return /(`[^`]+`)|(\*\*[^*]+\*\*)|(__[^_]+__)|(\*[^*\n]+\*)|(_[^_\n]+_)|(~~[^~]+~~)|(\[[^\]]+\]\([^)]+\))/m.test(text2);
+  };
+  var unescapeMarkdownLiteralEscapes = (value) => {
+    const text2 = String(value || "");
+    if (!text2) return "";
+    return text2.replace(/\\([\\`*_[\]{}()#+\-.!|~])/g, "$1");
   };
   var setFlowchartDirection = (code, direction) => {
     const lines = (code || "").split("\n");
@@ -62752,8 +62778,14 @@ ${innerMarkdown}
                     return;
                   }
                   if (!hasBlock) {
+                    const rawText = String(cell2.textContent || "").trim();
                     const p = doc3.createElement("p");
-                    p.innerHTML = sanitizeHtml(cell2.innerHTML);
+                    if (hasInlineMarkdownSyntax(rawText)) {
+                      const inlineHtml = marked.parseInline(rawText, { gfm: true });
+                      p.innerHTML = sanitizeHtml(unescapeMarkdownLiteralEscapes(inlineHtml));
+                    } else {
+                      p.innerHTML = sanitizeHtml(unescapeMarkdownLiteralEscapes(cell2.innerHTML));
+                    }
                     cell2.innerHTML = "";
                     cell2.appendChild(p);
                   }
@@ -62907,7 +62939,9 @@ ${innerMarkdown}
             if (editor) {
               const trimmedHtml = typeof finalHtml === "string" ? finalHtml.trim() : "";
               const safeHtml = !trimmedHtml || trimmedHtml === "<>" ? "<p></p>" : finalHtml;
-              editor.chain().focus().insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? "" : "\n\n") + safeHtml).run();
+              const currentMarkdown = String(getEditorMarkdown() || "").trim();
+              const needsSeparator = currentMarkdown.length > 0;
+              editor.chain().focus().insertContentAt(editor.state.doc.content.size, (needsSeparator ? "\n\n" : "") + safeHtml).run();
             }
           } catch (err) {
             console.warn("insertEditorMarkdownAtEnd failed", err);
@@ -64665,4 +64699,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map
+                                        

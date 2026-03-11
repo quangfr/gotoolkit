@@ -87,6 +87,9 @@ Run `npm run csp:inline:sync` after changes to:
 - `public/styles/*`
 - CSP mirror/config files
 
+If Playwright or browser repros suddenly lose expected `window` globals from inline `index.html` scripts,
+assume a CSP hash mismatch first and run `npm run csp:inline:sync` before deeper app debugging.
+
 Before merging frontend JS changes, run:
 
 - `rg -n "\\binnerHTML\\b" public -S -g '!**/*.map'`
@@ -104,14 +107,17 @@ Treat `scripts/csp-common.js` as canonical for CSP-related checks.
   - `npm run playwright:linux:test -- ...`
 - During local Playwright iteration, skip `npm run check:csp` unless the user explicitly asked for release-oriented validation.
 - If you changed inline scripts in CSP scope, run `npm run csp:inline:sync` before browser repros.
+- If a Playwright repro fails before app globals attach, check browser console/page errors for CSP violations before changing app code.
 - Keep reusable Playwright sample files in `tests/fixtures/`.
 - Keep Playwright local artifacts in `tests/results/`.
+- Save visual-debug screenshots needed for investigation in `tests/results/` with scenario-specific names.
 - Keep ad hoc test/debug scripts in `tests/debug/`.
 - After any requested Playwright execution, verify the coverage-map update in [`docs/TESTING.md`](docs/TESTING.md).
 - If a suite still shows `duration not measured separately`, rerun that suite or tier through the repo wrapper so metrics are written back correctly.
 
 ## Build and deployment rules
 
+- Any change under `src/` requires running `npm run build`.
 - Use targeted builds when possible:
   - memo-side `src/` changes -> prefer memo build path
   - draw-side `src/` changes -> prefer draw build path

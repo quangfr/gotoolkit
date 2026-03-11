@@ -4,9 +4,22 @@ export async function waitForMemoReady(page: Page, timeout = 45_000) {
   await dismissShareAccessGateIfPresent(page, Math.min(timeout, 8_000));
   await page.waitForFunction(() => {
     const w = window as any;
-    return Boolean(
-      w.goToolkitDocumentApi?.getRecord
+    const editorVisible = Array.from(document.querySelectorAll(".ProseMirror")).some(node => {
+      const el = node as HTMLElement;
+      const style = window.getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      return style.display !== "none"
+        && style.visibility !== "hidden"
+        && rect.width > 0
+        && rect.height > 0;
+    });
+    const hasMemoApis = Boolean(
+      w.GoToolkitMemoCreateAutoDocument
       && (w.GoToolkitMemoGetActiveDocumentId || w.GoToolkitMemoOpenDocumentByLink)
+    );
+    return Boolean(
+      (w.goToolkitDocumentApi?.getRecord && (w.GoToolkitMemoGetActiveDocumentId || w.GoToolkitMemoOpenDocumentByLink))
+      || (hasMemoApis && editorVisible)
     );
   }, null, { timeout });
 
@@ -161,11 +174,33 @@ export async function renameMemoDoc(
   await expect(item).toContainText(nextTitle, { timeout });
 }
 
-export async function deleteActiveMemoDoc(page: Page, options: { timeout?: number } = {}) {
-  const { timeout = 30_000 } = options;
+export async function deleteActiveMemoDoc(
+  page: Page,
+  options: { timeout?: number; expectedDocId?: string; refreshOnStale?: boolean } = {}
+) {
+  const { timeout = 30_000, expectedDocId = "", refreshOnStale = true } = options;
   await page.click("#fileMenuBtn");
   await page.click("#deleteDocumentBtn");
-  await page.waitForTimeout(Math.min(1000, Math.max(150, Math.floor(timeout / 60))));
+  const settleDelay = Math.min(1000, Math.max(150, Math.floor(timeout / 60)));
+  await page.waitForTimeout(settleDelay);
+  const normalizedDocId = String(expectedDocId || "").trim();
+  if (!normalizedDocId) return;
+
+  try {
+    await page.waitForFunction(docId => {
+      const explorer = (window as any).GoToolkitMemoDocumentExplorer;
+      const items = explorer?.getItemsSnapshot?.() || [];
+      return !items.some((item: any) => String(item?.id || "").trim() === String(docId || "").trim());
+    }, normalizedDocId, { timeout: Math.max(1_500, Math.floor(timeout / 2)) });
+    return;
+  } catch {
+    if (refreshOnStale) {
+      await page.evaluate(async () => {
+        await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
+      }).catch(() => null);
+      await page.waitForTimeout(settleDelay);
+    }
+  }
 }
 
 export function captureShareRequests(page: Page, options: { includeSpaces?: boolean } = {}) {

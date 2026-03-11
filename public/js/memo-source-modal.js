@@ -29,6 +29,30 @@
         }
     }
 
+    function getHumanReadableExportTimestamp() {
+        const now = new Date();
+        const pad = (value) => String(value).padStart(2, "0");
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+    }
+
+    function sanitizeFilenamePart(value, fallback) {
+        const normalized = String(value || "")
+            .normalize("NFKD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[<>:"/\\|?*\x00-\x1f]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .replace(/[. ]+$/g, "");
+        return normalized || fallback;
+    }
+
+    function getExportBaseName() {
+        const pageTitleInput = document.getElementById("memoPageTitleInput");
+        const pageName = String(pageTitleInput?.value || document.title || "").trim();
+        const safePageName = sanitizeFilenamePart(pageName, "Page");
+        return `${safePageName} ${getHumanReadableExportTimestamp()}`;
+    }
+
     function extractAiInUserPayload(rawValue) {
         const list = Array.isArray(rawValue) ? rawValue : [rawValue];
         return list
@@ -207,7 +231,7 @@
         };
         const ext = extensions[format] || "txt";
         const mime = mimes[format] || "text/plain";
-        const filename = `memo-source-${format}-${new Date().toISOString().slice(0, 10)}.${ext}`;
+        const filename = `${getExportBaseName()}.${ext}`;
         const blob = new Blob([text], { type: mime });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");

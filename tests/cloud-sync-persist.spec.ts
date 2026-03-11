@@ -181,19 +181,19 @@ test.describe("Cloud sync persistency", () => {
 
       logStep("delete-existing:start");
       await clickMemoDoc(page, `share:${state.existingToken}`);
-      await deleteActiveMemoDoc(page);
+      await deleteActiveMemoDoc(page, { expectedDocId: `share:${state.existingToken}` });
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.existingToken}"]`)).toHaveCount(0, { timeout: 20_000 });
       logStep("delete-existing:done");
 
       logStep("delete-child:start");
       await clickMemoDoc(page, `share:${state.childToken}`);
-      await deleteActiveMemoDoc(page);
+      await deleteActiveMemoDoc(page, { expectedDocId: `share:${state.childToken}` });
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.childToken}"]`)).toHaveCount(0, { timeout: 20_000 });
       logStep("delete-child:done");
 
       logStep("delete-root:start");
       await clickMemoDoc(page, `share:${state.rootToken}`);
-      await deleteActiveMemoDoc(page);
+      await deleteActiveMemoDoc(page, { expectedDocId: `share:${state.rootToken}` });
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.rootToken}"]`)).toHaveCount(0, { timeout: 20_000 });
       logStep("delete-root:done");
 

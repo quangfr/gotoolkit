@@ -47,6 +47,21 @@ window.GoToolkitDrawMemo = (function () {
         }
     }
 
+    function clearSceneLoadingState(api) {
+        if (!api?.updateScene || !api?.getAppState) return;
+        try {
+            api.updateScene({
+                appState: {
+                    ...api.getAppState(),
+                    isLoading: false,
+                    viewModeEnabled: false,
+                },
+            });
+        } catch (err) {
+            // no-op
+        }
+    }
+
     function getOptionsForSize(size) {
         return PRESETS[size?.toLowerCase()] || PRESETS.medium;
     }
@@ -212,11 +227,13 @@ window.GoToolkitDrawMemo = (function () {
             try {
                 const api = excalidrawInstance.getApi?.();
                 applyDefaultTextSize(api);
+                clearSceneLoadingState(api);
                 api?.setActiveTool?.({ type: "selection" });
                 api?.refresh?.();
                 if (!initialData || (typeof initialData === 'string' && initialData.trim().length === 0)) {
                     api?.resetScene?.();
                     applyDefaultTextSize(api);
+                    clearSceneLoadingState(api);
                     api?.refresh?.();
                 }
             } catch (e) {
@@ -245,8 +262,18 @@ window.GoToolkitDrawMemo = (function () {
             try {
                 const api = excalidrawInstance.getApi?.();
                 applyDefaultTextSize(api);
+                clearSceneLoadingState(api);
                 api?.setActiveTool?.({ type: "selection" });
                 api?.refresh?.();
+                window.setTimeout(() => {
+                    try {
+                        const delayedApi = excalidrawInstance?.getApi?.();
+                        clearSceneLoadingState(delayedApi);
+                        delayedApi?.refresh?.();
+                    } catch (err) {
+                        // no-op
+                    }
+                }, 0);
             } catch (e) {
                 // no-op
             }
@@ -265,6 +292,7 @@ window.GoToolkitDrawMemo = (function () {
                 if (!code || !code.trim()) {
                     api?.resetScene?.();
                     applyDefaultTextSize(api);
+                    clearSceneLoadingState(api);
                     api?.setActiveTool?.({ type: "selection" });
                     api?.refresh?.();
                     return;
@@ -277,6 +305,7 @@ window.GoToolkitDrawMemo = (function () {
                 }
 
                 applyDefaultTextSize(api);
+                clearSceneLoadingState(api);
                 api?.setActiveTool?.({ type: "selection" });
                 api?.refresh?.();
             } catch (e) {

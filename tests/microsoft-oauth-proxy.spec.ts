@@ -74,7 +74,13 @@ async function waitForManagedSpacesWithDiagnostics(page: any, timeoutMs = 120_00
   return { ok: false, samples, diagnostics };
 }
 
-async function runMicrosoftPopupLogin(page: any, context: any, loginEmail: string, loginPassword: string, options: { debugArtifacts?: boolean } = {}) {
+async function runMicrosoftPopupLogin(
+  page: any,
+  context: any,
+  loginEmail: string,
+  loginPassword: string,
+  options: { debugArtifacts?: boolean; popup?: any } = {}
+) {
   const artifactsDir = path.resolve("tests/results/ms-oauth-debug");
   const writeDebug = (name: string, details: Record<string, unknown> = {}) => {
     if (!options.debugArtifacts) return;
@@ -82,45 +88,50 @@ async function runMicrosoftPopupLogin(page: any, context: any, loginEmail: strin
     fs.appendFileSync(path.join(artifactsDir, "timeline.log"), `${new Date().toISOString()} ${name} ${JSON.stringify(details)}\n`);
   };
 
-  const popupPromise = context.waitForEvent("page", { timeout: 60_000 });
-  logStep("popup-flow:start");
-  const preClickState = await page.evaluate(async () => {
-    const publisher = (window as any).GoToolkitMicrosoftPublish;
-    const status = await publisher?.getAuthStatus?.().catch(() => null);
-    const menu = document.getElementById("connectionProviderMenu");
-    return {
-      connectionBtnExists: Boolean(document.getElementById("memoConnectionBtn")),
-      menuExists: Boolean(menu),
-      menuOpen: Boolean(menu?.classList.contains("open")),
-      statusConnected: Boolean(status?.connected),
-      statusAccountEmail: String(status?.accountEmail || "").trim().toLowerCase()
-    };
-  });
-  logStep("popup-flow:pre-click-state", preClickState);
-  await page.locator("#memoConnectionBtn").click();
-  logStep("popup-flow:clicked-connection-btn");
-  await page.waitForSelector("#connectionProviderMenu.open", { timeout: 10_000 }).catch(() => null);
-  const menuStateAfterClick = await page.evaluate(() => {
-    const menu = document.getElementById("connectionProviderMenu");
-    const items = Array.from(menu?.querySelectorAll('[role="menuitem"]') || []).map(node => ({
-      text: String((node as HTMLElement).innerText || node.textContent || "").trim(),
-      ariaLabel: String((node as HTMLElement).getAttribute("aria-label") || "").trim()
-    }));
-    return {
-      menuOpen: Boolean(menu?.classList.contains("open")),
-      items
-    };
-  });
-  logStep("popup-flow:menu-state-after-click", menuStateAfterClick);
-  const microsoftItem = page.locator('#connectionProviderMenu.open [role="menuitem"]').filter({ hasText: /microsoft/i }).first();
-  const microsoftVisible = await microsoftItem.isVisible({ timeout: 5_000 }).catch(() => false);
-  logStep("popup-flow:microsoft-menuitem-visible", { visible: microsoftVisible });
-  if (microsoftVisible) {
-    await microsoftItem.click();
-    writeDebug("clicked_microsoft_provider");
-    logStep("popup-flow:clicked-microsoft-provider");
+  let popup = options.popup || null;
+  if (!popup) {
+    const popupPromise = context.waitForEvent("page", { timeout: 60_000 });
+    logStep("popup-flow:start");
+    const preClickState = await page.evaluate(async () => {
+      const publisher = (window as any).GoToolkitMicrosoftPublish;
+      const status = await publisher?.getAuthStatus?.().catch(() => null);
+      const menu = document.getElementById("connectionProviderMenu");
+      return {
+        connectionBtnExists: Boolean(document.getElementById("memoConnectionBtn")),
+        menuExists: Boolean(menu),
+        menuOpen: Boolean(menu?.classList.contains("open")),
+        statusConnected: Boolean(status?.connected),
+        statusAccountEmail: String(status?.accountEmail || "").trim().toLowerCase()
+      };
+    });
+    logStep("popup-flow:pre-click-state", preClickState);
+    await page.locator("#memoConnectionBtn").click();
+    logStep("popup-flow:clicked-connection-btn");
+    await page.waitForSelector("#connectionProviderMenu.open", { timeout: 10_000 }).catch(() => null);
+    const menuStateAfterClick = await page.evaluate(() => {
+      const menu = document.getElementById("connectionProviderMenu");
+      const items = Array.from(menu?.querySelectorAll('[role="menuitem"]') || []).map(node => ({
+        text: String((node as HTMLElement).innerText || node.textContent || "").trim(),
+        ariaLabel: String((node as HTMLElement).getAttribute("aria-label") || "").trim()
+      }));
+      return {
+        menuOpen: Boolean(menu?.classList.contains("open")),
+        items
+      };
+    });
+    logStep("popup-flow:menu-state-after-click", menuStateAfterClick);
+    const microsoftItem = page.locator('#connectionProviderMenu.open [role="menuitem"]').filter({ hasText: /microsoft/i }).first();
+    const microsoftVisible = await microsoftItem.isVisible({ timeout: 5_000 }).catch(() => false);
+    logStep("popup-flow:microsoft-menuitem-visible", { visible: microsoftVisible });
+    if (microsoftVisible) {
+      await microsoftItem.click();
+      writeDebug("clicked_microsoft_provider");
+      logStep("popup-flow:clicked-microsoft-provider");
+    }
+    popup = await popupPromise;
+  } else {
+    logStep("popup-flow:start", { source: "existing-popup" });
   }
-  const popup = await popupPromise;
   logStep("popup-flow:popup-opened", { url: popup.url() });
   writeDebug("popup_opened", { url: popup.url() });
 
@@ -173,6 +184,26 @@ async function runMicrosoftPopupLogin(page: any, context: any, loginEmail: strin
 
   await popup.waitForEvent("close", { timeout: 90_000 }).catch(() => null);
   writeDebug("popup_closed");
+}
+
+async function triggerMicrosoftEnsureConnected(page: any, context: any) {
+  const popupPromise = context.waitForEvent("page", { timeout: 60_000 });
+  await page.evaluate(() => {
+    const publisher = (window as any).GoToolkitMicrosoftPublish;
+    (window as any).__PW_MS_ENSURE_CONNECTED_RESULT__ = Promise.resolve()
+      .then(() => publisher?.ensureConnected?.())
+      .then((identity: any) => ({
+        ok: true,
+        accountEmail: String(identity?.accountEmail || "").trim().toLowerCase(),
+        accountName: String(identity?.accountName || "").trim(),
+        provider: String(identity?.provider || "").trim()
+      }))
+      .catch((error: any) => ({
+        ok: false,
+        error: String(error?.message || error || "")
+      }));
+  });
+  return popupPromise;
 }
 
 test.describe("Microsoft OAuth proxy flow", () => {
@@ -325,7 +356,13 @@ test.describe("Microsoft OAuth proxy flow", () => {
     logStep("managed-spaces:pre-status", preStatus);
 
     if (!preStatus?.connected) {
-      await runMicrosoftPopupLogin(page, context, loginEmail, loginPassword);
+      const popup = await triggerMicrosoftEnsureConnected(page, context);
+      await runMicrosoftPopupLogin(page, context, loginEmail, loginPassword, { popup });
+      const ensureConnectedResult = await page.evaluate(async () => {
+        return await (window as any).__PW_MS_ENSURE_CONNECTED_RESULT__;
+      });
+      logStep("managed-spaces:ensure-connected-result", ensureConnectedResult);
+      expect(ensureConnectedResult?.ok, JSON.stringify(ensureConnectedResult)).toBeTruthy();
     }
 
     const managedSpacesConvergence = await waitForManagedSpacesWithDiagnostics(page, 120_000);

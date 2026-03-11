@@ -95,6 +95,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
   const prevEditableRef = React.useRef<boolean | null>(null);
   const lastStableSvgRef = React.useRef('');
   const lastPreviewSyncKeyRef = React.useRef('');
+  const previewSourceRef = React.useRef<'none' | 'mermaid' | 'excalidraw'>('none');
 
   // AI Generation States
   const [promptInput, setPromptInput] = React.useState('');
@@ -120,6 +121,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     }
     if (!code.trim() && !excalidrawJSON) {
       lastStableSvgRef.current = '';
+      previewSourceRef.current = 'none';
     }
   }, [code, excalidrawJSON, svg]);
 
@@ -406,7 +408,9 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
   React.useEffect(() => {
     if (isEditing) return;
     if (!code && !excalidrawJSON) return;
-    if (visibleSvg) return;
+    const hasSettledExcalidrawPreview =
+      !!visibleSvg && (previewSourceRef.current === 'excalidraw' || !!excalidrawJSON);
+    if (hasSettledExcalidrawPreview) return;
     if (!(window as any).GoToolkitDrawMemo) return;
 
     const syncKey = `${String(code)}::${String(excalidrawJSON)}::${String(size)}`;
@@ -415,6 +419,26 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
 
     const syncPreview = async () => {
       try {
+        if ((window as any).GoToolkitDrawMemo.renderPreview) {
+          const previewInput = excalidrawJSON || code;
+          const result = await (window as any).GoToolkitDrawMemo.renderPreview(previewInput, 'auto', size);
+          if (result?.skipped) {
+            return;
+          }
+          const json = result?.json;
+          const svgHtml = result?.svg;
+          if (json && !excalidrawJSON) {
+            updateAttributes({ excalidrawJSON: json });
+          }
+          if (svgHtml) {
+            previewSourceRef.current = 'excalidraw';
+            setSvg(sanitizeRenderedSvg(svgHtml));
+            setLastValidCode(code);
+            setError(null);
+            return;
+          }
+        }
+
         if (!excalidrawJSON && code) {
           let mermaidApi = getMermaidApi();
           if (!mermaidApi) {
@@ -431,28 +455,10 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           const id = `mermaid-preview-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
           mermaidApi.initialize(INLINE_MERMAID_RENDER_CONFIG);
           const { svg } = await mermaidApi.render(id, code);
+          previewSourceRef.current = 'mermaid';
           setSvg(sanitizeRenderedSvg(svg));
           setLastValidCode(code);
           setError(null);
-          return;
-        }
-
-        // Prefer the bridge preview helper if available (serialized & sized host)
-        if ((window as any).GoToolkitDrawMemo.renderPreview) {
-          const previewInput = excalidrawJSON || code;
-          const result = await (window as any).GoToolkitDrawMemo.renderPreview(previewInput, 'auto', size);
-          if (result?.skipped) {
-            return;
-          }
-          const json = result?.json;
-          const svgHtml = result?.svg;
-          if (json && !excalidrawJSON) {
-            updateAttributes({ excalidrawJSON: json });
-          }
-          if (svgHtml) {
-            setSvg(sanitizeRenderedSvg(svgHtml));
-          }
-          setLastValidCode(code);
           return;
         }
 
@@ -474,6 +480,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
         if (!excalidrawJSON) {
           updateAttributes({ excalidrawJSON: json });
         }
+        previewSourceRef.current = 'excalidraw';
         setSvg(sanitizeRenderedSvg(svgHtml));
         setLastValidCode(code);
         document.body.removeChild(tempDiv);
@@ -490,13 +497,17 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     // which uses the same singleton Excalidraw bridge instance.
     if (isEditing) return;
 
-    if (excalidrawJSON) {
+    if (excalidrawJSON || code.trim()) {
       try {
-        // If we have Excalidraw JSON, use it to generate SVG
         if ((window as any).GoToolkitDrawMemo) {
           if ((window as any).GoToolkitDrawMemo.renderPreview) {
-            const result = await (window as any).GoToolkitDrawMemo.renderPreview(excalidrawJSON, 'auto', size);
+            const previewInput = excalidrawJSON || code;
+            const result = await (window as any).GoToolkitDrawMemo.renderPreview(previewInput, 'auto', size);
+            if (result?.json && !excalidrawJSON) {
+              updateAttributes({ excalidrawJSON: result.json });
+            }
             if (result?.svg) {
+              previewSourceRef.current = 'excalidraw';
               setSvg(sanitizeRenderedSvg(result.svg));
               setError(null);
               return;
@@ -512,10 +523,11 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           tempDiv.style.opacity = '0';
           tempDiv.style.pointerEvents = 'none';
           document.body.appendChild(tempDiv);
-          await (window as any).GoToolkitDrawMemo.init(tempDiv, excalidrawJSON, size);
+          await (window as any).GoToolkitDrawMemo.init(tempDiv, excalidrawJSON || code, size);
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
+          previewSourceRef.current = 'excalidraw';
           setSvg(sanitizeRenderedSvg(svgHtml));
           document.body.removeChild(tempDiv);
           setError(null);
@@ -554,13 +566,14 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
       mermaidApi.initialize(INLINE_MERMAID_RENDER_CONFIG);
 
       const { svg } = await mermaidApi.render(id, code);
+      previewSourceRef.current = 'mermaid';
       setSvg(sanitizeRenderedSvg(svg));
       setError(null);
     } catch (err: any) {
       console.warn('Mermaid render error:', err);
       setError(err.message || 'Invalid mermaid syntax');
     }
-  }, [code, excalidrawJSON, isEditing, size]);
+  }, [code, excalidrawJSON, isEditing, size, updateAttributes]);
 
   React.useEffect(() => {
     renderDiagram();
@@ -707,8 +720,10 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           excalidrawJSON: finalExcalidrawJSON,
         });
         if (svgHtml && (finalCode.trim() || !isExcalidrawEmpty)) {
+          previewSourceRef.current = 'excalidraw';
           setSvg(sanitizeRenderedSvg(svgHtml));
         } else {
+          previewSourceRef.current = 'none';
           setSvg('');
         }
       }
