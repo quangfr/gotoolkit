@@ -8,25 +8,25 @@ window.GoToolkitDrawMemo = (function () {
     let isLoaded = false;
     let previewChain = Promise.resolve();
     let interactiveSessionCount = 0;
-    const DEFAULT_EXCALIDRAW_TEXT_SIZE = 22;
+    const DEFAULT_EXCALIDRAW_TEXT_SIZE = 20;
     const PREVIEW_CACHE_LIMIT = 32;
     const previewCache = new Map();
 
     const PRESETS = {
         small: {
-            fontSize: 14,
+            fontSize: 16,
             strokeWidth: 1.2,
             roughness: 0,
             flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 }
         },
         medium: {
-            fontSize: 14,
+            fontSize: 16,
             strokeWidth: 1.2,
             roughness: 0,
             flowchart: { padding: 3, nodeSpacing: 35, rankSpacing: 35 }
         },
         large: {
-            fontSize: 14,
+            fontSize: 16,
             strokeWidth: 1.2,
             roughness: 0,
             flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 }

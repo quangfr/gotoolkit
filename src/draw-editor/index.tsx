@@ -7,8 +7,9 @@ import type {
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/types/element/types";
 import { parseMermaidToExcalidraw } from "@excalidraw/mermaid-to-excalidraw";
 
-const DEFAULT_EXCALIDRAW_TEXT_SIZE = 22;
+const DEFAULT_EXCALIDRAW_TEXT_SIZE = 20;
 const MERMAID_OPTIONS = { fontSize: 20 };
+const MERMAID_TEXT_SIZE_OFFSET = 4;
 // Fix for Excalidraw assets version being undefined
 if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
     (window as any).EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6/dist/";
@@ -576,9 +577,11 @@ const applyMermaidDefaults = (
 ): ExcalidrawElement[] =>
     elements.map(element => {
         const mustForceSolidStroke = element.type === "arrow";
+        const targetFontSize = (options?.fontSize ?? MERMAID_OPTIONS.fontSize) + MERMAID_TEXT_SIZE_OFFSET;
         return {
             ...element,
             locked: false,
+            ...(element.type === "text" ? { fontSize: targetFontSize } : {}),
             strokeWidth: options?.strokeWidth ?? element.strokeWidth ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeWidth,
             strokeStyle: mustForceSolidStroke
                 ? "solid"
@@ -742,6 +745,18 @@ class ExcalidrawBridge {
         const trimmed = code?.trim();
         if (!trimmed) {
             return null;
+        }
+
+        if (!(window as any).mermaid) {
+            try {
+                await (window as any).GoToolkitLazyCdn?.loadMermaid?.();
+            } catch (error) {
+                console.error("Failed to lazy-load mermaid runtime", error);
+            }
+        }
+
+        if (!(window as any).mermaid) {
+            throw new Error("Mermaid runtime unavailable");
         }
 
         const fontSize = options?.fontSize ?? MERMAID_OPTIONS.fontSize;

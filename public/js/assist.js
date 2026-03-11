@@ -6437,6 +6437,50 @@
         event.target.value = "";
     };
 
+    AssistSidebar.prototype.importMarkdownFilesDirectly = async function (files) {
+        var markdownFiles = Array.from(files || []).filter(function (file) {
+            var name = String(file?.name || "").toLowerCase();
+            return name.endsWith(".md") || name.endsWith(".markdown");
+        });
+        if (!markdownFiles.length) return false;
+
+        var importedMarkdownParts = [];
+        for (var index = 0; index < markdownFiles.length; index++) {
+            var markdownFile = markdownFiles[index];
+            if (!markdownFile) continue;
+            try {
+                var markdownContent = await markdownFile.text();
+                if (markdownContent && String(markdownContent).trim()) {
+                    importedMarkdownParts.push(String(markdownContent));
+                }
+            } catch (err) {
+                console.warn("Failed to read markdown file for direct import:", markdownFile?.name || "", err);
+            }
+        }
+
+        if (!importedMarkdownParts.length) {
+            this.setDocumentUploadStatus("Erreur : aucun contenu Markdown importable");
+            return true;
+        }
+
+        var mergedMarkdown = importedMarkdownParts.join("\n\n").trim();
+        if (!mergedMarkdown) {
+            this.setDocumentUploadStatus("Erreur : aucun contenu Markdown importable");
+            return true;
+        }
+
+        var value = mergedMarkdown + "\n\n";
+        if (typeof window.insertEditorMarkdownAtEnd === "function") {
+            window.insertEditorMarkdownAtEnd(value);
+        } else {
+            window.GoToolkitMemoAppendText?.(value);
+        }
+        window.GoToolkitMemoToast?.(
+            markdownFiles.length === 1 ? "Markdown importé" : markdownFiles.length + " fichiers Markdown importés"
+        );
+        return true;
+    };
+
     AssistSidebar.prototype.sendImportedDocuments = async function (files, options = {}) {
         if (!this.docManager) {
             console.warn("Document manager not available");
@@ -6488,10 +6532,24 @@
         // Options for import behavior
         var skipEmbeddings = Boolean(options.skipEmbeddings);
         var skipIngestion = Boolean(options.skipIngestion);
+        var directMarkdownImport = Boolean(options.directMarkdownImport);
         var directPasteMode = Boolean(options.directPasteMode) ||
             Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.directPasteEnabled", false));
         var markdownViaAi = Boolean(options.markdownViaAi) ||
             Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.markdownViaAiEnabled", false));
+
+        if (CHAT_APP_ID === "memo" && memoId && directMarkdownImport) {
+            var allFilesAreMarkdown = fileArray.length > 0 && fileArray.every(function (file) {
+                var name = String(file?.name || "").toLowerCase();
+                return name.endsWith(".md") || name.endsWith(".markdown");
+            });
+            if (allFilesAreMarkdown) {
+                var didImportMarkdown = await this.importMarkdownFilesDirectly(fileArray);
+                if (didImportMarkdown) {
+                    return;
+                }
+            }
+        }
 
         this.attachmentsTotalCount = fileArray.length;
         this.attachmentsTotalSize = fileArray.reduce(function (acc, file) {

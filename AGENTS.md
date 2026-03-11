@@ -57,6 +57,9 @@ When the user asks for a change, follow this order unless the task clearly does 
 ## High-value rules
 
 - Only bump the version when the user explicitly asks for `bump`, `commit`, or `push`.
+- When creating a commit, use this message format:
+  `v(version number) : 3-8 words summary of changes`
+  Body: `3-10` bullet items, each `5-18` words, summarizing the main changes.
 - If the task changes architecture, security, cloud/share auth, or test workflow/coverage, update the matching reference doc in the same task.
 - When updating a reference doc, refresh its visible date or last-updated field in the same edit.
 - Do not edit `public/docs/index_releases.md` or `public/docs/index_roadmap.md` unless explicitly asked.

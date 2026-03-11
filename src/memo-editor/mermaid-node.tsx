@@ -5,6 +5,25 @@ import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, S
 
 const getMermaidApi = () => (window as any).mermaid;
 
+const encodeMermaidHtmlAttr = (value: unknown): string => {
+  const text = String(value || "");
+  try {
+    return encodeURIComponent(text);
+  } catch {
+    return text;
+  }
+};
+
+const decodeMermaidHtmlAttr = (value: unknown): string => {
+  const text = String(value || "");
+  if (!text) return "";
+  try {
+    return decodeURIComponent(text);
+  } catch {
+    return text;
+  }
+};
+
 function sanitizeRenderedSvg(svgMarkup: string): string {
   const raw = String(svgMarkup || '').trim();
   if (!raw) return '';
@@ -211,15 +230,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
             setIsLoading(true);
             try {
               await (window as any).GoToolkitDrawMemo.updateFromMermaid(cleanCode, newSize);
-              const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-              const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
-              
-              updateAttributes({ 
-                code: cleanCode, 
-                size: newSize,
-                excalidrawJSON: json || ''
-              });
-              if (svgHtml) setSvg(sanitizeRenderedSvg(svgHtml));
+              // Keep the inline block preview stable while the modal is open.
               setLastValidCode(cleanCode);
               setModalError(null);
             } catch (syncErr: any) {
@@ -741,20 +752,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
       const targetSize = !isSizeSelectorVisible(draftCode) ? getAutoDetectedSize(draftCode) : size;
 
       // Do not update node attrs here: TipTap attribute updates can remount the node view
-      // and steal the Excalidraw singleton away from the modal.
+      // and steal the Excalidraw singleton away from the modal. Commit on close only.
       await (window as any).GoToolkitDrawMemo.updateFromMermaid(draftCode, targetSize);
-
-      // Now that Excalidraw has applied the scene, persist the results.
-      const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-      const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
-      updateAttributes({
-        code: draftCode,
-        excalidrawJSON: json || '',
-        size: targetSize // Persist the forced size too
-      });
-      if (svgHtml) {
-        setSvg(sanitizeRenderedSvg(svgHtml));
-      }
 
       setModalError(null);
       setLastValidCode(draftCode);
@@ -798,17 +797,13 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     }
 
     setDraftCode(updatedCode);
-    updateAttributes({ size: newSize, code: updatedCode });
 
     const drawMemo = (window as any).GoToolkitDrawMemo;
     if (drawMemo) {
       (async () => {
         try {
           await drawMemo.updateFromMermaid(updatedCode, newSize);
-          const json = drawMemo.getSceneJSON();
-          const svgHtml = await drawMemo.getSVG('auto');
-          updateAttributes({ excalidrawJSON: json });
-          if (svgHtml) setSvg(sanitizeRenderedSvg(svgHtml));
+          setLastValidCode(updatedCode);
         } catch (err) {
           console.error("Failed to update size", err);
         } finally {
@@ -1097,12 +1092,27 @@ export const MermaidNode = Node.create({
     return [
       {
         tag: 'mermaid-diagram',
+        getAttrs: (node) => {
+          if (!(node instanceof HTMLElement)) {
+            return {};
+          }
+          return {
+            code: decodeMermaidHtmlAttr(node.getAttribute('code') || ''),
+            excalidrawJSON: node.getAttribute('excalidrawJSON') || '',
+            size: node.getAttribute('size') || 'small',
+            autoOpen: node.getAttribute('autoOpen') === 'true',
+          };
+        },
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['mermaid-diagram', mergeAttributes(HTMLAttributes)];
+    const attrs = {
+      ...HTMLAttributes,
+      code: encodeMermaidHtmlAttr(HTMLAttributes?.code || ''),
+    };
+    return ['mermaid-diagram', mergeAttributes(attrs)];
   },
 
   addNodeView() {

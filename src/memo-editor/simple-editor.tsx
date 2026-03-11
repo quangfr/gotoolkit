@@ -6897,16 +6897,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           '<mark>$1</mark>'
         );
 
-        // Pre-process mermaid code blocks to mermaid-diagram tags
-        const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
+        // Convert Mermaid fences into editor blocks before generic markdown parsing.
+        // This catches importer and AI-output flows that both pass through markdown conversion.
+        const mermaidRegex = /```[ \t]*mermaid[^\n\r]*\r?\n([\s\S]*?)\r?\n?```/gi;
         const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
-          const escapedCode = code.trim()
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-          return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
+          const encodedCode = encodeURIComponent(code.trim());
+          return `<mermaid-diagram code="${encodedCode}"></mermaid-diagram>`;
         });
 
         const html = marked.parse(processedMarkdown, { gfm: true }) as string;
@@ -6930,6 +6926,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           const parser = new DOMParser();
           const doc = parser.parseFromString(finalHtml, 'text/html');
           if (doc && doc.body) {
+            doc.querySelectorAll('pre > code').forEach(codeEl => {
+              const className = String((codeEl as HTMLElement).className || '').toLowerCase();
+              if (!className.includes('language-mermaid')) return;
+              const pre = codeEl.parentElement;
+              if (!pre) return;
+              const mermaidCode = String(codeEl.textContent || '').trim();
+              if (!mermaidCode) return;
+              const mermaidDiagram = doc.createElement('mermaid-diagram');
+              mermaidDiagram.setAttribute('code', encodeURIComponent(mermaidCode));
+              pre.parentNode?.replaceChild(mermaidDiagram, pre);
+            });
+
             doc.querySelectorAll('a[href]').forEach(anchor => {
               const el = anchor as HTMLAnchorElement;
               const href = String(el.getAttribute('href') || '').trim();

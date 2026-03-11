@@ -53157,6 +53157,23 @@ ${content}</tr>
 
   // src/memo-editor/mermaid-node.tsx
   var getMermaidApi = () => window.mermaid;
+  var encodeMermaidHtmlAttr = (value) => {
+    const text2 = String(value || "");
+    try {
+      return encodeURIComponent(text2);
+    } catch (e) {
+      return text2;
+    }
+  };
+  var decodeMermaidHtmlAttr = (value) => {
+    const text2 = String(value || "");
+    if (!text2) return "";
+    try {
+      return decodeURIComponent(text2);
+    } catch (e) {
+      return text2;
+    }
+  };
   function sanitizeRenderedSvg(svgMarkup) {
     const raw = String(svgMarkup || "").trim();
     if (!raw) return "";
@@ -53325,14 +53342,6 @@ ${promptInput.trim()}`
               setIsLoading(true);
               try {
                 await window.GoToolkitDrawMemo.updateFromMermaid(cleanCode, newSize);
-                const json = window.GoToolkitDrawMemo.getSceneJSON();
-                const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-                updateAttributes2({
-                  code: cleanCode,
-                  size: newSize,
-                  excalidrawJSON: json || ""
-                });
-                if (svgHtml) setSvg(sanitizeRenderedSvg(svgHtml));
                 setLastValidCode(cleanCode);
                 setModalError(null);
               } catch (syncErr) {
@@ -53780,17 +53789,6 @@ ${promptInput.trim()}`
       try {
         const targetSize = !isSizeSelectorVisible(draftCode) ? getAutoDetectedSize(draftCode) : size2;
         await window.GoToolkitDrawMemo.updateFromMermaid(draftCode, targetSize);
-        const json = window.GoToolkitDrawMemo.getSceneJSON();
-        const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-        updateAttributes2({
-          code: draftCode,
-          excalidrawJSON: json || "",
-          size: targetSize
-          // Persist the forced size too
-        });
-        if (svgHtml) {
-          setSvg(sanitizeRenderedSvg(svgHtml));
-        }
         setModalError(null);
         setLastValidCode(draftCode);
       } catch (err) {
@@ -53828,16 +53826,12 @@ ${promptInput.trim()}`
         }
       }
       setDraftCode(updatedCode);
-      updateAttributes2({ size: newSize, code: updatedCode });
       const drawMemo = window.GoToolkitDrawMemo;
       if (drawMemo) {
         (async () => {
           try {
             await drawMemo.updateFromMermaid(updatedCode, newSize);
-            const json = drawMemo.getSceneJSON();
-            const svgHtml = await drawMemo.getSVG("auto");
-            updateAttributes2({ excalidrawJSON: json });
-            if (svgHtml) setSvg(sanitizeRenderedSvg(svgHtml));
+            setLastValidCode(updatedCode);
           } catch (err) {
             console.error("Failed to update size", err);
           } finally {
@@ -54121,12 +54115,27 @@ ${promptInput.trim()}`
     parseHTML() {
       return [
         {
-          tag: "mermaid-diagram"
+          tag: "mermaid-diagram",
+          getAttrs: (node) => {
+            if (!(node instanceof HTMLElement)) {
+              return {};
+            }
+            return {
+              code: decodeMermaidHtmlAttr(node.getAttribute("code") || ""),
+              excalidrawJSON: node.getAttribute("excalidrawJSON") || "",
+              size: node.getAttribute("size") || "small",
+              autoOpen: node.getAttribute("autoOpen") === "true"
+            };
+          }
         }
       ];
     },
     renderHTML({ HTMLAttributes }) {
-      return ["mermaid-diagram", mergeAttributes(HTMLAttributes)];
+      const attrs = {
+        ...HTMLAttributes,
+        code: encodeMermaidHtmlAttr((HTMLAttributes == null ? void 0 : HTMLAttributes.code) || "")
+      };
+      return ["mermaid-diagram", mergeAttributes(attrs)];
     },
     addNodeView() {
       return ReactNodeViewRenderer(MermaidDiagramComponent, {
@@ -62614,10 +62623,10 @@ ${innerMarkdown}
             /==(.*?)==/g,
             "<mark>$1</mark>"
           );
-          const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
+          const mermaidRegex = /```[ \t]*mermaid[^\n\r]*\r?\n([\s\S]*?)\r?\n?```/gi;
           const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
-            const escapedCode = code.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-            return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
+            const encodedCode = encodeURIComponent(code.trim());
+            return `<mermaid-diagram code="${encodedCode}"></mermaid-diagram>`;
           });
           const html3 = marked.parse(processedMarkdown, { gfm: true });
           const finalHtml = html3.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
@@ -62636,6 +62645,18 @@ ${innerMarkdown}
             const parser2 = new DOMParser();
             const doc3 = parser2.parseFromString(finalHtml, "text/html");
             if (doc3 && doc3.body) {
+              doc3.querySelectorAll("pre > code").forEach((codeEl) => {
+                var _a2;
+                const className = String(codeEl.className || "").toLowerCase();
+                if (!className.includes("language-mermaid")) return;
+                const pre = codeEl.parentElement;
+                if (!pre) return;
+                const mermaidCode = String(codeEl.textContent || "").trim();
+                if (!mermaidCode) return;
+                const mermaidDiagram = doc3.createElement("mermaid-diagram");
+                mermaidDiagram.setAttribute("code", encodeURIComponent(mermaidCode));
+                (_a2 = pre.parentNode) == null ? void 0 : _a2.replaceChild(mermaidDiagram, pre);
+              });
               doc3.querySelectorAll("a[href]").forEach((anchor) => {
                 var _a2;
                 const el = anchor;

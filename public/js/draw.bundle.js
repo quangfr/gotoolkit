@@ -4332,8 +4332,9 @@
   var Fragment2 = React2 == null ? void 0 : React2.Fragment;
 
   // src/draw-editor/index.tsx
-  var DEFAULT_EXCALIDRAW_TEXT_SIZE = 22;
+  var DEFAULT_EXCALIDRAW_TEXT_SIZE = 20;
   var MERMAID_OPTIONS = { fontSize: 20 };
+  var MERMAID_TEXT_SIZE_OFFSET = 4;
   if (typeof window !== "undefined" && !window.EXCALIDRAW_ASSET_PATH) {
     window.EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6/dist/";
   }
@@ -4835,14 +4836,16 @@
     }
   });
   var applyMermaidDefaults = (elements, options) => elements.map((element) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     const mustForceSolidStroke = element.type === "arrow";
+    const targetFontSize = ((_a = options == null ? void 0 : options.fontSize) != null ? _a : MERMAID_OPTIONS.fontSize) + MERMAID_TEXT_SIZE_OFFSET;
     return {
       ...element,
       locked: false,
-      strokeWidth: (_b = (_a = options == null ? void 0 : options.strokeWidth) != null ? _a : element.strokeWidth) != null ? _b : MERMAID_ELEMENT_STYLE_DEFAULTS.strokeWidth,
-      strokeStyle: mustForceSolidStroke ? "solid" : (_c = element.strokeStyle) != null ? _c : MERMAID_ELEMENT_STYLE_DEFAULTS.strokeStyle,
-      roughness: (_d = options == null ? void 0 : options.roughness) != null ? _d : MERMAID_ELEMENT_STYLE_DEFAULTS.roughness,
+      ...element.type === "text" ? { fontSize: targetFontSize } : {},
+      strokeWidth: (_c = (_b = options == null ? void 0 : options.strokeWidth) != null ? _b : element.strokeWidth) != null ? _c : MERMAID_ELEMENT_STYLE_DEFAULTS.strokeWidth,
+      strokeStyle: mustForceSolidStroke ? "solid" : (_d = element.strokeStyle) != null ? _d : MERMAID_ELEMENT_STYLE_DEFAULTS.strokeStyle,
+      roughness: (_e = options == null ? void 0 : options.roughness) != null ? _e : MERMAID_ELEMENT_STYLE_DEFAULTS.roughness,
       roundness: MERMAID_ELEMENT_STYLE_DEFAULTS.roundness
     };
   });
@@ -4998,12 +5001,22 @@
       }
     }
     async convertMermaid(code, options) {
-      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w;
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
       const trimmed = code == null ? void 0 : code.trim();
       if (!trimmed) {
         return null;
       }
-      const fontSize = (_a = options == null ? void 0 : options.fontSize) != null ? _a : MERMAID_OPTIONS.fontSize;
+      if (!window.mermaid) {
+        try {
+          await ((_b = (_a = window.GoToolkitLazyCdn) == null ? void 0 : _a.loadMermaid) == null ? void 0 : _b.call(_a));
+        } catch (error) {
+          console.error("Failed to lazy-load mermaid runtime", error);
+        }
+      }
+      if (!window.mermaid) {
+        throw new Error("Mermaid runtime unavailable");
+      }
+      const fontSize = (_c = options == null ? void 0 : options.fontSize) != null ? _c : MERMAID_OPTIONS.fontSize;
       const diagramType = detectMermaidDiagramType(trimmed);
       const isFlowchart = diagramType === "flowchart";
       let dbEdgesCount = null;
@@ -5014,13 +5027,13 @@
         },
         flowchart: {
           curve: "linear",
-          padding: (_c = (_b = options == null ? void 0 : options.flowchart) == null ? void 0 : _b.padding) != null ? _c : 24,
-          nodeSpacing: (_e = (_d = options == null ? void 0 : options.flowchart) == null ? void 0 : _d.nodeSpacing) != null ? _e : 80,
-          rankSpacing: (_g = (_f = options == null ? void 0 : options.flowchart) == null ? void 0 : _f.rankSpacing) != null ? _g : 80,
-          htmlLabels: (_i = (_h = options == null ? void 0 : options.flowchart) == null ? void 0 : _h.htmlLabels) != null ? _i : true
+          padding: (_e = (_d = options == null ? void 0 : options.flowchart) == null ? void 0 : _d.padding) != null ? _e : 24,
+          nodeSpacing: (_g = (_f = options == null ? void 0 : options.flowchart) == null ? void 0 : _f.nodeSpacing) != null ? _g : 80,
+          rankSpacing: (_i = (_h = options == null ? void 0 : options.flowchart) == null ? void 0 : _h.rankSpacing) != null ? _i : 80,
+          htmlLabels: (_k = (_j = options == null ? void 0 : options.flowchart) == null ? void 0 : _j.htmlLabels) != null ? _k : true
         },
-        sequence: (_j = options == null ? void 0 : options.sequence) != null ? _j : {},
-        class: (_k = options == null ? void 0 : options.class) != null ? _k : {}
+        sequence: (_l = options == null ? void 0 : options.sequence) != null ? _l : {},
+        class: (_m = options == null ? void 0 : options.class) != null ? _m : {}
       };
       try {
         const mermaidApi = window.mermaid;
@@ -5034,13 +5047,13 @@
             padding: 15
           }
         };
-        if (typeof ((_l = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _l.reset) === "function") {
+        if (typeof ((_n = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _n.reset) === "function") {
           mermaidApi.mermaidAPI.reset();
         }
-        if (typeof ((_m = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _m.updateSiteConfig) === "function") {
+        if (typeof ((_o = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _o.updateSiteConfig) === "function") {
           mermaidApi.mermaidAPI.updateSiteConfig(siteConfig);
         }
-        if (typeof ((_n = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _n.setConfig) === "function") {
+        if (typeof ((_p = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _p.setConfig) === "function") {
           mermaidApi.mermaidAPI.setConfig(siteConfig);
         } else if (typeof (mermaidApi == null ? void 0 : mermaidApi.initialize) === "function") {
           mermaidApi.initialize({
@@ -5057,9 +5070,9 @@
           const mermaidInfo = getMermaidRuntimeInfo();
           const headerLine = getMermaidHeaderLine(trimmed);
           const mermaidApi = window.mermaid;
-          const getDiagramType = typeof ((_o = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _o.getDiagramFromText);
+          const getDiagramType = typeof ((_q = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _q.getDiagramFromText);
           const hasGetDiagram = getDiagramType === "function";
-          const mermaidApiVersion = (mermaidApi == null ? void 0 : mermaidApi.version) || ((_p = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _p.version) || ((_q = mermaidApi == null ? void 0 : mermaidApi.default) == null ? void 0 : _q.version) || null;
+          const mermaidApiVersion = (mermaidApi == null ? void 0 : mermaidApi.version) || ((_r = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _r.version) || ((_s = mermaidApi == null ? void 0 : mermaidApi.default) == null ? void 0 : _s.version) || null;
           let detectType = null;
           try {
             if (typeof (mermaidApi == null ? void 0 : mermaidApi.detectType) === "function") {
@@ -5091,8 +5104,8 @@
               fontSize: (_n2 = (_m2 = cfg.themeVariables) == null ? void 0 : _m2.fontSize) != null ? _n2 : null
             };
           };
-          const apiConfig = typeof ((_r = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _r.getConfig) === "function" ? mermaidApi.mermaidAPI.getConfig() : null;
-          const siteConfig = typeof ((_s = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _s.getSiteConfig) === "function" ? mermaidApi.mermaidAPI.getSiteConfig() : null;
+          const apiConfig = typeof ((_t = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _t.getConfig) === "function" ? mermaidApi.mermaidAPI.getConfig() : null;
+          const siteConfig = typeof ((_u = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _u.getSiteConfig) === "function" ? mermaidApi.mermaidAPI.getSiteConfig() : null;
           console.log("[GoToolkit][MermaidDiagnostics] pre-parse", {
             drawBundleVersion: getDrawBundleVersion(),
             isFlowchart,
@@ -5120,10 +5133,10 @@
       if (isMermaidDiagnosticsEnabled()) {
         try {
           const mermaidApi = window.mermaid;
-          const getDiagramFromText = (_t = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _t.getDiagramFromText;
+          const getDiagramFromText = (_v = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _v.getDiagramFromText;
           if (typeof getDiagramFromText === "function") {
             const diagram = await getDiagramFromText(trimmed);
-            const db = (_u = diagram == null ? void 0 : diagram.db) != null ? _u : null;
+            const db = (_w = diagram == null ? void 0 : diagram.db) != null ? _w : null;
             const edgesData = typeof (db == null ? void 0 : db.getEdges) === "function" ? db.getEdges() : null;
             const verticesData = typeof (db == null ? void 0 : db.getVertices) === "function" ? db.getVertices() : null;
             const edges = Array.isArray(edgesData) ? edgesData : [];
@@ -5152,7 +5165,7 @@
             dbEdgesCount = edges.length;
             dbVerticesCount = verticesCount;
             console.log("[GoToolkit][MermaidDiagnostics] pre-parse db", {
-              diagramType: (_v = diagram == null ? void 0 : diagram.type) != null ? _v : null,
+              diagramType: (_x = diagram == null ? void 0 : diagram.type) != null ? _x : null,
               hasDb: Boolean(db),
               edgesCount: edges.length,
               edgesMissingId,
@@ -5211,7 +5224,7 @@
             });
             try {
               const mermaidApi = window.mermaid;
-              if (typeof ((_w = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _w.reset) === "function") {
+              if (typeof ((_y = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _y.reset) === "function") {
                 mermaidApi.mermaidAPI.reset();
               }
               if (typeof (mermaidApi == null ? void 0 : mermaidApi.initialize) === "function") {
