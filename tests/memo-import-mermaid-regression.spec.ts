@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
@@ -42,6 +43,59 @@ const normalizeSvgText = (value: string) => value
   .normalize("NFKC")
   .replace(/\s+/g, " ")
   .trim();
+
+const decodeRepeatedURIComponent = (value: string) => {
+  let current = String(value || "");
+  for (let i = 0; i < 24; i += 1) {
+    let next = current;
+    if (!/%[0-9a-f]{2}/i.test(current)) break;
+    try {
+      next = decodeURIComponent(current);
+    } catch {
+      break;
+    }
+    const htmlDecoded = next
+      .replace(/&quot;/g, "\"")
+      .replace(/&#39;/g, "'")
+      .replace(/&gt;/g, ">")
+      .replace(/&lt;/g, "<")
+      .replace(/&amp;/g, "&");
+    if (htmlDecoded === current) break;
+    current = htmlDecoded;
+  }
+  return current;
+};
+
+const CLEANED_MERMAID_BLOCKS = MERMAID_BLOCKS.map((block) => decodeRepeatedURIComponent(block).trim());
+const FIRST_CLEANED_MERMAID_BLOCK = CLEANED_MERMAID_BLOCKS[0];
+const CLEANED_EXPORT_LABELS = [
+  "Invitation",
+  "Gestionnaire",
+  "Patient",
+];
+
+const extractSvgTextsFromHtml = (html: string) => {
+  const matches = Array.from(String(html || "").matchAll(/<svg\b[\s\S]*?<\/svg>/gi), match => String(match[0] || ""));
+  const svgTexts = matches
+    .map((svg) => svg
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, "\"")
+      .replace(/&gt;/g, ">")
+      .replace(/&lt;/g, "<")
+      .replace(/&amp;/g, "&")
+      .replace(/\s+/g, " ")
+      .trim())
+    .filter(Boolean);
+  return {
+    svgCount: matches.length,
+    svgTexts,
+    uniqueSvgTexts: Array.from(new Set(svgTexts)),
+  };
+};
 
 test.describe("Memo Mermaid import regression", () => {
   test("imports sample markdown into a blank private doc without OpenRouter and shows modal parity", async ({ page }) => {
@@ -217,7 +271,7 @@ test.describe("Memo Mermaid import regression", () => {
     await expect(modalTextarea).toBeVisible({ timeout: 60_000 });
     await expect(modalCanvas).toBeVisible({ timeout: 60_000 });
 
-    await expect(modalTextarea).toHaveValue(FIRST_MERMAID_BLOCK, { timeout: 30_000 });
+    await expect(modalTextarea).toHaveValue(FIRST_CLEANED_MERMAID_BLOCK, { timeout: 30_000 });
 
     await page.waitForFunction(() => {
       const api = (window as any).GoToolkitDrawMemo?.getApi?.();
@@ -271,6 +325,18 @@ test.describe("Memo Mermaid import regression", () => {
     expect(editorBox).not.toBeNull();
     expect((drawBox?.x || 0) + (drawBox?.width || 0) / 2).toBeLessThan((editorBox?.x || 0) + (editorBox?.width || 0) / 2);
 
+    await page.locator(".mermaid-modal-close").click();
+    await expect(modal).toBeHidden({ timeout: 30_000 });
+    await expect.poll(async () => {
+      return page.evaluate(() => Array.from(document.querySelectorAll(".mermaid-svg-container svg"))
+        .filter((node) => {
+          const el = node as SVGSVGElement;
+          const rect = el.getBoundingClientRect();
+          const style = window.getComputedStyle(el);
+          return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+        }).length);
+    }, { timeout: 30_000 }).toBe(3);
+
     const finalSnapshot = await page.evaluate(() => ({
       wrappers: document.querySelectorAll(".mermaid-diagram-wrapper, mermaid-diagram").length,
       visibleSvgCount: Array.from(document.querySelectorAll(".mermaid-svg-container svg"))
@@ -284,5 +350,70 @@ test.describe("Memo Mermaid import regression", () => {
       modalCode: String((document.querySelector(".mermaid-modal-textarea") as HTMLTextAreaElement | null)?.value || "").slice(0, 1200),
     }));
     logStep("final-snapshot", finalSnapshot);
+
+    await page.locator("#fileMenuBtn").click();
+    await page.locator("#fileMenu .menu-panel-item.has-submenu").filter({ hasText: "Télécharger" }).hover();
+    await expect(page.locator("#fileMenuExportHtml")).toBeVisible({ timeout: 10_000 });
+    const htmlDownloadPromise = page.waitForEvent("download");
+    await page.locator("#fileMenuExportHtml").click();
+    const htmlDownload = await htmlDownloadPromise;
+    const suggestedFilename = htmlDownload.suggestedFilename();
+    const htmlDownloadPath = await htmlDownload.path();
+    expect(htmlDownloadPath).not.toBeNull();
+    const exportedHtml = await readFile(String(htmlDownloadPath), "utf8");
+    const exportSnapshot = extractSvgTextsFromHtml(exportedHtml);
+    logStep("html-export", {
+      suggestedFilename,
+      svgCount: exportSnapshot.svgCount,
+      uniqueSvgTexts: exportSnapshot.uniqueSvgTexts.length,
+    });
+
+    expect(exportSnapshot.svgCount).toBe(3);
+    expect(exportSnapshot.uniqueSvgTexts.length).toBe(3);
+    for (const label of CLEANED_EXPORT_LABELS) {
+      expect(exportSnapshot.svgTexts.join(" | ")).toContain(label);
+    }
+
+    await page.screenshot({ path: "tests/results/mermaid-import-before-reload.png", fullPage: true });
+
+    await page.reload({ waitUntil: "load" });
+
+    await expect.poll(async () => {
+      return page.evaluate(() => ({
+        visibleSvgCount: Array.from(document.querySelectorAll(".mermaid-svg-container svg"))
+          .filter((node) => {
+            const el = node as SVGSVGElement;
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+          }).length,
+        headingTexts: Array.from(document.querySelectorAll("h2"))
+          .map((node) => String(node.textContent || "").replace(/\s+/g, " ").trim())
+          .filter(Boolean),
+      }));
+    }, { timeout: 60_000 }).toMatchObject({
+      visibleSvgCount: 3,
+    });
+
+    const reloadSnapshot = await page.evaluate(() => ({
+      headingTexts: Array.from(document.querySelectorAll("h2"))
+        .map((node) => String(node.textContent || "").replace(/\s+/g, " ").trim())
+        .filter(Boolean),
+      firstModalCode: (() => {
+        const target = document.querySelector(".mermaid-diagram-wrapper .mermaid-diagram-container") as HTMLElement | null;
+        target?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+        return "";
+      })(),
+    }));
+
+    expect(reloadSnapshot.headingTexts).toContain("Diagramme de flux");
+    expect(reloadSnapshot.headingTexts).toContain("Diagramme de séquence");
+    expect(reloadSnapshot.headingTexts).toContain("Diagramme d'objets");
+
+    const firstDiagramAfterReload = page.locator(".mermaid-diagram-wrapper .mermaid-diagram-container:visible").first();
+    await expect(firstDiagramAfterReload).toBeVisible({ timeout: 30_000 });
+    await firstDiagramAfterReload.dblclick();
+    await expect(modalTextarea).toHaveValue(FIRST_CLEANED_MERMAID_BLOCK, { timeout: 30_000 });
+    await page.screenshot({ path: "tests/results/mermaid-import-after-reload.png", fullPage: true });
   });
 });

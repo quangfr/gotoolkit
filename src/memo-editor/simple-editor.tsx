@@ -219,6 +219,17 @@ const hasAncestorNode = ($pos: any, typeName: string) => {
   return false;
 };
 
+const memoHtmlHasMeaningfulContent = (value: string) => {
+  const html = String(value || '').trim();
+  if (!html) return false;
+  return html
+    .replace(/<br\s*\/?>/gi, '')
+    .replace(/<\/?(p|div|section|article|span)[^>]*>/gi, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, '')
+    .length > 0;
+};
+
 const getLinkMarkAtCursor = (editor: Editor) => {
   const linkMark = editor.state.schema.marks.link;
   if (!linkMark) return null;
@@ -371,16 +382,26 @@ const isFlowchartDiagram = (code: string) => {
 const decodeMermaidAttrCode = (value: unknown) => {
   const text = String(value || '');
   if (!text) return '';
-  try {
-    const decoded = decodeURIComponent(text);
-    const textarea = document.createElement('textarea');
-    textarea.innerHTML = decoded;
-    return textarea.value || decoded;
-  } catch {
-    const textarea = document.createElement('textarea');
-    textarea.innerHTML = text;
-    return textarea.value || text;
+  const textarea = document.createElement('textarea');
+  let current = text;
+  for (let i = 0; i < 24; i += 1) {
+    let next = current;
+    try {
+      if (/%[0-9a-f]{2}/i.test(next)) {
+        next = decodeURIComponent(next);
+      }
+    } catch {
+      // Keep the last decodable value.
+    }
+    textarea.innerHTML = next;
+    const htmlDecoded = textarea.value || next;
+    if (htmlDecoded === current) {
+      current = htmlDecoded;
+      break;
+    }
+    current = htmlDecoded;
   }
+  return current;
 };
 
 const hasInlineMarkdownSyntax = (value: string) => {
@@ -4919,6 +4940,30 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   });
 
   React.useEffect(() => {
+    if (!editor || typeof editor.getHTML !== 'function' || typeof editor.commands?.setContent !== 'function') {
+      return;
+    }
+    const expectedContent = String(content || '');
+    const currentContent = String(editor.getHTML() || '');
+    if (currentContent === expectedContent) {
+      lastSerializedHtmlRef.current = currentContent;
+      return;
+    }
+    const currentHasMeaningfulContent = memoHtmlHasMeaningfulContent(currentContent);
+    const expectedHasMeaningfulContent = memoHtmlHasMeaningfulContent(expectedContent);
+    if (currentHasMeaningfulContent && !expectedHasMeaningfulContent) {
+      return;
+    }
+    try {
+      (editor as any).commands.setContent(expectedContent || '<p></p>');
+      lastSerializedHtmlRef.current = String(editor.getHTML() || expectedContent);
+      setEditorHtmlSnapshot(lastSerializedHtmlRef.current);
+    } catch (err) {
+      console.warn('SimpleEditor content hydration failed', err);
+    }
+  }, [content, editor, editorId]);
+
+  React.useEffect(() => {
     return () => {
       clearPendingSaveTasks();
       clearPendingSnapshotTasks();
@@ -6469,16 +6514,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               }
             };
             const liveMermaidSvgs = (() => {
-              const root: HTMLElement | null = editor?.view?.dom || null;
-              if (!root) return [];
               const result: string[] = [];
-              const wrappers = Array.from(root.querySelectorAll('.node-mermaidDiagram'));
-              const diagrams = wrappers.length
-                ? wrappers
-                : Array.from(root.querySelectorAll('mermaid-diagram'));
-              diagrams.forEach((diagram) => {
-                const svg = diagram.querySelector('.mermaid-svg-container svg, svg');
-                if (svg instanceof SVGSVGElement) result.push(svg.outerHTML);
+              editor.state.doc.descendants((node: any, pos: number) => {
+                if (node?.type?.name !== 'mermaidDiagram') return;
+                const dom = editor.view.nodeDOM(pos);
+                const host = dom instanceof HTMLElement ? dom : null;
+                const svg = host?.querySelector('.mermaid-svg-container svg, svg');
+                result.push(svg instanceof SVGSVGElement ? svg.outerHTML : '');
               });
               return result;
             })();
@@ -6931,7 +6973,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         // This catches importer and AI-output flows that both pass through markdown conversion.
         const mermaidRegex = /```[ \t]*mermaid[^\n\r]*\r?\n([\s\S]*?)\r?\n?```/gi;
         const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
-          const encodedCode = encodeURIComponent(code.trim());
+          const encodedCode = encodeURIComponent(decodeMermaidAttrCode(code.trim()));
           return `<mermaid-diagram code="${encodedCode}"></mermaid-diagram>`;
         });
 
@@ -6964,7 +7006,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               const mermaidCode = decodeMermaidAttrCode(codeEl.textContent || '').trim();
               if (!mermaidCode) return;
               const mermaidDiagram = doc.createElement('mermaid-diagram');
-              mermaidDiagram.setAttribute('code', encodeURIComponent(mermaidCode));
+              mermaidDiagram.setAttribute('code', encodeURIComponent(decodeMermaidAttrCode(mermaidCode)));
               pre.parentNode?.replaceChild(mermaidDiagram, pre);
             });
 
@@ -7189,6 +7231,17 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               .focus()
               .insertContentAt(editor.state.doc.content.size, (needsSeparator ? '\n\n' : '') + safeHtml)
               .run();
+            try {
+              window.requestAnimationFrame(() => {
+                try {
+                  (window as any).GoToolkitMemoAfterProgrammaticInsert?.();
+                } catch (persistErr) {
+                  console.warn('GoToolkitMemoAfterProgrammaticInsert failed', persistErr);
+                }
+              });
+            } catch (rafErr) {
+              console.warn('insertEditorMarkdownAtEnd persistence scheduling failed', rafErr);
+            }
           }
         } catch (err) {
           console.warn('insertEditorMarkdownAtEnd failed', err);

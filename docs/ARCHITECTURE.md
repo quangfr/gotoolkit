@@ -1,6 +1,6 @@
 # GoToolkit Data Architecture
 
-Date: 2026-03-09
+Date: 2026-03-12
 Purpose: describe how app data is structured, stored, synced, ingested, and processed so coding agents can modify the right layer without guessing
 Scope: `public/`, `workers/share-proxy`, browser storage, cloud storage
 
@@ -57,10 +57,12 @@ Used for small persistent values:
 - prompt presets
 - cloud sync helper state
 - some integration preferences
+- open-document bootstrap metadata such as active/open document ids
 
 Important point:
 
 - `document-api` and `share-history` previously had `localStorage` keys but current code removes those old keys and uses IndexedDB-backed storage wrappers instead
+- memo document content is not restored from `localStorage`; `localStorage` only helps reopen the right document ids
 
 ## 2.2 IndexedDB
 
@@ -142,6 +144,58 @@ Interpretation:
 - `app` identifies which app owns the content
 - `spaceId` and `shareToken` connect a local record to shared/cloud state
 - `voiceRecordingId` links a memo/document to a local recording in `voice-recordings`
+
+Lifecycle persistence rule:
+
+- the active memo page is flushed from live in-memory editor state to IndexedDB-backed `document-api` on `visibilitychange` when hidden, `pagehide`, and `beforeunload`
+- `beforeunload` also raises a browser warning when the active page changed in memory or cloud sync is still in flight
+- this unload-time flush is intended to reduce refresh/close data loss for the active page, but IndexedDB remains the durable source of truth
+- on bare-root app open (`/` or `/index.html`), the app does not auto-restore or auto-open a private page from bootstrap metadata or IndexedDB recency; it starts on the empty shell and the user chooses a page from the document panel
+
+### 3.1 Fast troubleshooting for generic persistence mismatches
+
+Use this order before changing app code:
+
+- visible editor is already wrong before reload
+  - treat it as an editor, tab-switch, import, or render-path bug first
+  - do not start with IndexedDB or reload bootstrap assumptions
+
+- visible editor is correct, but after reload content is missing
+  - compare three states separately:
+    - live editor HTML
+    - in-memory memo `state.tabs[*].content`
+    - IndexedDB `document-api` record payload
+  - if IndexedDB is wrong too, the bug is in snapshot or save
+  - if IndexedDB is correct but reload is wrong, the bug is in restore/bootstrap or editor hydration
+
+- active document reopens but looks blank while IndexedDB has content
+  - suspect startup editor hydration, not durable persistence
+  - check whether the restored `state.activeTabId` and active document id are correct before touching storage code
+
+- localStorage and IndexedDB disagree
+  - localStorage is only bootstrap metadata for open docs
+  - document content must come from IndexedDB, never from a cached localStorage payload
+
+- imported/programmatic edits survive in memory but not in the record
+  - prefer reading from the live editor instance at save time
+  - suspect stale bridge snapshots or delayed autosave overwrites
+
+### 3.2 Fast troubleshooting for empty-shell vs active-page bugs
+
+Use this when `/` should stay empty, or when a page should reopen the normal memo view:
+
+- if bare root still shows a page shell
+  - inspect both static `public/index.html` and React bridge `src/memo-bridge/index.tsx`
+  - the bridge can render its own `.memo-card` even if the static shell is hidden
+  - do not assume the static HTML alone controls the visible editor area
+
+- if breadcrumb is hidden correctly but `memo-card` is still visible
+  - suspect bridge bootstrap or a default editor instance first
+  - verify whether the memo bridge created an editor without a real active page id
+
+- if page selection from panel/search/UUID does not restore the normal editor area
+  - verify the active-page transition awaits the document-tab/header render
+  - `updateEmptyState()` must run after the active document id is set
 
 ## 4. Share history and cloud drafts
 

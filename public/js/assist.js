@@ -6483,6 +6483,7 @@
         } else {
             window.GoToolkitMemoAppendText?.(value);
         }
+        await window.GoToolkitMemoAfterProgrammaticInsert?.();
         window.GoToolkitMemoToast?.(
             markdownFiles.length === 1 ? "Markdown importé" : markdownFiles.length + " fichiers Markdown importés"
         );
@@ -6730,6 +6731,7 @@
                         } else {
                             window.GoToolkitMemoAppendText?.(mergedImportText + "\n\n");
                         }
+                        await window.GoToolkitMemoAfterProgrammaticInsert?.();
                     }
                 }
 
@@ -6783,12 +6785,13 @@
             }
 
             if (directTextFiles.length && memoId) {
-                var insertMarkdown = function (value) {
+                var insertMarkdown = async function (value) {
                     if (typeof window.insertEditorMarkdownAtEnd === "function") {
                         window.insertEditorMarkdownAtEnd(value);
                     } else if (typeof window.GoToolkitMemoAppendText === "function") {
                         window.GoToolkitMemoAppendText(value);
                     }
+                    await window.GoToolkitMemoAfterProgrammaticInsert?.();
                 };
                 for (var i = 0; i < directTextFiles.length; i++) {
                     var textFile = directTextFiles[i];
@@ -6796,7 +6799,7 @@
                     try {
                         var textContent = await textFile.text();
                         if (textContent) {
-                            insertMarkdown(textContent + "\n\n");
+                            await insertMarkdown(textContent + "\n\n");
                         }
                     } catch (err) {
                         console.warn("Failed to import text file into memo:", textFile?.name || "", err);
@@ -7013,6 +7016,7 @@
                     } else {
                         window.GoToolkitMemoAppendText?.(mergedTranscriptText);
                     }
+                    await window.GoToolkitMemoAfterProgrammaticInsert?.();
                     var toastMsg = readyDocNames.length === 1
                         ? "⤷ " + readyDocNames[0] + " importé"
                         : readyDocNames.length + " documents importés";
@@ -7069,6 +7073,7 @@
                     } else {
                         window.GoToolkitMemoAppendText?.(mergedTranscriptText);
                     }
+                    await window.GoToolkitMemoAfterProgrammaticInsert?.();
                     if (!skipEmbeddings) window.GoToolkitMemoToast?.("Transcription importée.");
                 }
             }
@@ -7161,6 +7166,7 @@
                 } else {
                     window.GoToolkitMemoAppendText?.(fullText);
                 }
+                await window.GoToolkitMemoAfterProgrammaticInsert?.();
                 var toastMsg = readyDocNames.length === 1
                     ? "⤷ " + readyDocNames[0] + " importé"
                     : readyDocNames.length + " documents importés";

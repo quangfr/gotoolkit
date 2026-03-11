@@ -21,6 +21,7 @@ test.describe("Private page switching persistency", () => {
       const docApi = (window as any).goToolkitDocumentApi;
       const privateAId = docApi?.generateId?.() || `private-a-${ts}`;
       const privateBId = docApi?.generateId?.() || `private-b-${ts}`;
+      const privateProgrammatic = `PRIVATE_A_PROGRAMMATIC_${ts}`;
       await docApi?.upsertRecord?.({
         id: privateAId,
         app: "memo",
@@ -46,6 +47,7 @@ test.describe("Private page switching persistency", () => {
         privateAId,
         privateBId,
         privateEdit: `PRIVATE_A_EDIT_${ts}`,
+        privateProgrammatic,
       };
     });
     logStep("seed-private-docs:done", seed);
@@ -55,6 +57,51 @@ test.describe("Private page switching persistency", () => {
     await typeIntoVisibleEditor(page, ` ${seed.privateEdit}`);
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.privateEdit);
     logStep("edit-private-a:done");
+
+    logStep("programmatic-insert-private-a:start");
+    const programmaticSnapshot = await page.evaluate(async ({ privateProgrammatic }) => {
+      const insertValue = `\n\n## Diagramme\n\n${privateProgrammatic}\n`;
+      if (typeof (window as any).insertEditorMarkdownAtEnd === "function") {
+        (window as any).insertEditorMarkdownAtEnd(insertValue);
+      } else if (typeof (window as any).GoToolkitMemoAppendText === "function") {
+        (window as any).GoToolkitMemoAppendText(insertValue);
+      } else {
+        throw new Error("No programmatic memo insert API available");
+      }
+      await (window as any).GoToolkitMemoAfterProgrammaticInsert?.();
+      const activeId = String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "");
+      const html = String((window as any).MemoEditor?.getHTML?.() || (window as any).memoEditor?.getHTML?.() || "");
+      const docApi = (window as any).goToolkitDocumentApi;
+      const record = activeId && docApi?.getRecord ? await docApi.getRecord(activeId) : null;
+      const storedOpenDocsRaw = localStorage.getItem("goToolkit.memo.openDocuments");
+      return {
+        activeId,
+        html,
+        recordPayload: record?.payload || null,
+        storedOpenDocsRaw,
+      };
+    }, { privateProgrammatic: seed.privateProgrammatic });
+    expect(String(programmaticSnapshot.html || "")).toContain(seed.privateProgrammatic);
+    await expect.poll(async () => {
+      return page.evaluate(async ({ privateAId, privateProgrammatic }) => {
+        const docApi = (window as any).goToolkitDocumentApi;
+        const record = privateAId && docApi?.getRecord ? await docApi.getRecord(privateAId) : null;
+        const payloadJson = JSON.stringify(record?.payload || {});
+        return {
+          hasProgrammatic: payloadJson.includes(privateProgrammatic),
+          payloadJson,
+        };
+      }, {
+        privateAId: seed.privateAId,
+        privateProgrammatic: seed.privateProgrammatic,
+      });
+    }, { timeout: 15_000 }).toMatchObject({
+      hasProgrammatic: true,
+    });
+    logStep("programmatic-insert-private-a:done", {
+      activeId: programmaticSnapshot.activeId,
+      storedOpenDocsRaw: programmaticSnapshot.storedOpenDocsRaw,
+    });
 
     logStep("switch-to-private-b:start");
     await clickMemoDoc(page, seed.privateBId, { allowProgrammaticOpen: false });
@@ -68,6 +115,7 @@ test.describe("Private page switching persistency", () => {
     logStep("switch-back-to-private-a:start");
     await clickMemoDoc(page, seed.privateAId, { allowProgrammaticOpen: false });
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.privateEdit);
+    await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.privateProgrammatic);
     logStep("switch-back-to-private-a:done");
 
     logStep("reload:start");
@@ -77,5 +125,25 @@ test.describe("Private page switching persistency", () => {
 
     await clickMemoDoc(page, seed.privateAId, { allowProgrammaticOpen: false });
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(seed.privateEdit);
+    await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(seed.privateProgrammatic);
+
+    const reloadDiagnostics = await page.evaluate(async ({ privateAId }) => {
+      const activeId = String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "");
+      const html = String((window as any).MemoEditor?.getHTML?.() || (window as any).memoEditor?.getHTML?.() || "");
+      const docApi = (window as any).goToolkitDocumentApi;
+      const record = privateAId && docApi?.getRecord ? await docApi.getRecord(privateAId) : null;
+      return {
+        activeId,
+        html,
+        recordPayload: record?.payload || null,
+        storedOpenDocsRaw: localStorage.getItem("goToolkit.memo.openDocuments"),
+      };
+    }, { privateAId: seed.privateAId });
+    logStep("reload-diagnostics", {
+      activeId: reloadDiagnostics.activeId,
+      htmlLength: String(reloadDiagnostics.html || "").length,
+      storedOpenDocsRaw: reloadDiagnostics.storedOpenDocsRaw,
+      recordHasProgrammatic: JSON.stringify(reloadDiagnostics.recordPayload || {}).includes(seed.privateProgrammatic),
+    });
   });
 });

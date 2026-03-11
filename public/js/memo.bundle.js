@@ -50154,14 +50154,16 @@ img.ProseMirror-separator {
     }
   }
   function createDocxExportContext(editor) {
-    var _a;
-    const root2 = ((_a = editor == null ? void 0 : editor.view) == null ? void 0 : _a.dom) || null;
+    var _a, _b;
     const mermaidSvgs = [];
-    if (root2) {
-      const diagrams = root2.querySelectorAll(".node-mermaidDiagram, mermaid-diagram");
-      diagrams.forEach((diagram) => {
-        const svg2 = diagram.querySelector(".mermaid-svg-container svg, svg");
-        if (svg2 && svg2 instanceof SVGSVGElement) {
+    if (((_a = editor == null ? void 0 : editor.state) == null ? void 0 : _a.doc) && ((_b = editor == null ? void 0 : editor.view) == null ? void 0 : _b.nodeDOM)) {
+      editor.state.doc.descendants((node, pos) => {
+        var _a2;
+        if (((_a2 = node == null ? void 0 : node.type) == null ? void 0 : _a2.name) !== "mermaidDiagram") return;
+        const dom = editor.view.nodeDOM(pos);
+        const host = dom instanceof HTMLElement ? dom : null;
+        const svg2 = host == null ? void 0 : host.querySelector(".mermaid-svg-container svg, svg");
+        if (svg2 instanceof SVGSVGElement) {
           mermaidSvgs.push(svg2);
         }
       });
@@ -53168,16 +53170,25 @@ ${content}</tr>
   var decodeMermaidHtmlAttr = (value) => {
     const text2 = String(value || "");
     if (!text2) return "";
-    try {
-      const decoded = decodeURIComponent(text2);
-      const textarea = document.createElement("textarea");
-      textarea.innerHTML = decoded;
-      return textarea.value || decoded;
-    } catch (e) {
-      const textarea = document.createElement("textarea");
-      textarea.innerHTML = text2;
-      return textarea.value || text2;
+    const textarea = document.createElement("textarea");
+    let current = text2;
+    for (let i = 0; i < 24; i += 1) {
+      let next2 = current;
+      try {
+        if (/%[0-9a-f]{2}/i.test(next2)) {
+          next2 = decodeURIComponent(next2);
+        }
+      } catch (e) {
+      }
+      textarea.innerHTML = next2;
+      const htmlDecoded = textarea.value || next2;
+      if (htmlDecoded === current) {
+        current = htmlDecoded;
+        break;
+      }
+      current = htmlDecoded;
     }
+    return current;
   };
   var INLINE_MERMAID_RENDER_CONFIG = {
     startOnLoad: false,
@@ -53520,15 +53531,14 @@ ${promptInput.trim()}`
       if (isEditing) return;
       if (!code && !excalidrawJSON) return;
       if (persistedPreviewSvg || svg2 || lastStableSvgRef.current) return;
-      if (!window.GoToolkitDrawMemo) return;
       const syncKey = contentKey;
       if (lastPreviewSyncKeyRef.current === syncKey) return;
       lastPreviewSyncKeyRef.current = syncKey;
       const syncPreview = async () => {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i;
         setIsPreviewLoading(true);
         try {
-          if (window.GoToolkitDrawMemo.renderPreview) {
+          if ((_a = window.GoToolkitDrawMemo) == null ? void 0 : _a.renderPreview) {
             const previewInput = excalidrawJSON || code;
             const result = await window.GoToolkitDrawMemo.renderPreview(previewInput, "auto", size2);
             if (result == null ? void 0 : result.skipped) {
@@ -53537,7 +53547,7 @@ ${promptInput.trim()}`
             const json2 = result == null ? void 0 : result.json;
             const svgHtml2 = result == null ? void 0 : result.svg;
             if (json2 && !excalidrawJSON) {
-              (_a = updateAttributesRef.current) == null ? void 0 : _a.call(updateAttributesRef, { excalidrawJSON: json2 });
+              (_b = updateAttributesRef.current) == null ? void 0 : _b.call(updateAttributesRef, { excalidrawJSON: json2 });
             }
             if (svgHtml2) {
               const cleanSvg2 = sanitizeRenderedSvg(svgHtml2);
@@ -53545,7 +53555,7 @@ ${promptInput.trim()}`
               setSvg(cleanSvg2);
               setLastValidCode(code);
               setError(null);
-              (_b = updateAttributesRef.current) == null ? void 0 : _b.call(updateAttributesRef, {
+              (_c = updateAttributesRef.current) == null ? void 0 : _c.call(updateAttributesRef, {
                 previewSvg: cleanSvg2,
                 previewKey: syncKey
               });
@@ -53556,7 +53566,7 @@ ${promptInput.trim()}`
             let mermaidApi = getMermaidApi();
             if (!mermaidApi) {
               try {
-                await ((_d = (_c = window.GoToolkitLazyCdn) == null ? void 0 : _c.loadMermaid) == null ? void 0 : _d.call(_c));
+                await ((_e = (_d = window.GoToolkitLazyCdn) == null ? void 0 : _d.loadMermaid) == null ? void 0 : _e.call(_d));
               } catch (loadErr) {
                 console.warn("Mermaid lazy-load failed during preview hydration:", loadErr);
               }
@@ -53573,11 +53583,14 @@ ${promptInput.trim()}`
             setSvg(cleanSvg2);
             setLastValidCode(code);
             setError(null);
-            (_e = updateAttributesRef.current) == null ? void 0 : _e.call(updateAttributesRef, {
+            (_f = updateAttributesRef.current) == null ? void 0 : _f.call(updateAttributesRef, {
               previewSvg: cleanSvg2,
               previewKey: syncKey
             });
             return;
+          }
+          if (!((_g = window.GoToolkitDrawMemo) == null ? void 0 : _g.init)) {
+            throw new Error("Excalidraw preview runtime unavailable");
           }
           const tempDiv = document.createElement("div");
           tempDiv.style.position = "fixed";
@@ -53594,13 +53607,13 @@ ${promptInput.trim()}`
           const json = window.GoToolkitDrawMemo.getSceneJSON();
           const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
           if (!excalidrawJSON) {
-            (_f = updateAttributesRef.current) == null ? void 0 : _f.call(updateAttributesRef, { excalidrawJSON: json });
+            (_h = updateAttributesRef.current) == null ? void 0 : _h.call(updateAttributesRef, { excalidrawJSON: json });
           }
           const cleanSvg = sanitizeRenderedSvg(svgHtml);
           previewSourceRef.current = "excalidraw";
           setSvg(cleanSvg);
           setLastValidCode(code);
-          (_g = updateAttributesRef.current) == null ? void 0 : _g.call(updateAttributesRef, {
+          (_i = updateAttributesRef.current) == null ? void 0 : _i.call(updateAttributesRef, {
             previewSvg: cleanSvg,
             previewKey: syncKey
           });
@@ -57053,6 +57066,11 @@ ${promptInput.trim()}`
     }
     return false;
   };
+  var memoHtmlHasMeaningfulContent = (value) => {
+    const html3 = String(value || "").trim();
+    if (!html3) return false;
+    return html3.replace(/<br\s*\/?>/gi, "").replace(/<\/?(p|div|section|article|span)[^>]*>/gi, "").replace(/&nbsp;/gi, " ").replace(/\s+/g, "").length > 0;
+  };
   var getLinkMarkAtCursor = (editor) => {
     const linkMark = editor.state.schema.marks.link;
     if (!linkMark) return null;
@@ -57185,16 +57203,25 @@ ${promptInput.trim()}`
   var decodeMermaidAttrCode = (value) => {
     const text2 = String(value || "");
     if (!text2) return "";
-    try {
-      const decoded = decodeURIComponent(text2);
-      const textarea = document.createElement("textarea");
-      textarea.innerHTML = decoded;
-      return textarea.value || decoded;
-    } catch (e) {
-      const textarea = document.createElement("textarea");
-      textarea.innerHTML = text2;
-      return textarea.value || text2;
+    const textarea = document.createElement("textarea");
+    let current = text2;
+    for (let i = 0; i < 24; i += 1) {
+      let next2 = current;
+      try {
+        if (/%[0-9a-f]{2}/i.test(next2)) {
+          next2 = decodeURIComponent(next2);
+        }
+      } catch (e) {
+      }
+      textarea.innerHTML = next2;
+      const htmlDecoded = textarea.value || next2;
+      if (htmlDecoded === current) {
+        current = htmlDecoded;
+        break;
+      }
+      current = htmlDecoded;
     }
+    return current;
   };
   var hasInlineMarkdownSyntax = (value) => {
     const text2 = String(value || "");
@@ -60934,6 +60961,30 @@ ${promptInput.trim()}`
       }
     });
     react_shim_default.useEffect(() => {
+      var _a2;
+      if (!editor || typeof editor.getHTML !== "function" || typeof ((_a2 = editor.commands) == null ? void 0 : _a2.setContent) !== "function") {
+        return;
+      }
+      const expectedContent = String(content || "");
+      const currentContent = String(editor.getHTML() || "");
+      if (currentContent === expectedContent) {
+        lastSerializedHtmlRef.current = currentContent;
+        return;
+      }
+      const currentHasMeaningfulContent = memoHtmlHasMeaningfulContent(currentContent);
+      const expectedHasMeaningfulContent = memoHtmlHasMeaningfulContent(expectedContent);
+      if (currentHasMeaningfulContent && !expectedHasMeaningfulContent) {
+        return;
+      }
+      try {
+        editor.commands.setContent(expectedContent || "<p></p>");
+        lastSerializedHtmlRef.current = String(editor.getHTML() || expectedContent);
+        setEditorHtmlSnapshot(lastSerializedHtmlRef.current);
+      } catch (err) {
+        console.warn("SimpleEditor content hydration failed", err);
+      }
+    }, [content, editor, editorId]);
+    react_shim_default.useEffect(() => {
       return () => {
         clearPendingSaveTasks();
         clearPendingSnapshotTasks();
@@ -62285,15 +62336,14 @@ ${innerMarkdown}
                 }
               };
               const liveMermaidSvgs = (() => {
-                var _a2;
-                const root2 = ((_a2 = editor == null ? void 0 : editor.view) == null ? void 0 : _a2.dom) || null;
-                if (!root2) return [];
                 const result = [];
-                const wrappers = Array.from(root2.querySelectorAll(".node-mermaidDiagram"));
-                const diagrams = wrappers.length ? wrappers : Array.from(root2.querySelectorAll("mermaid-diagram"));
-                diagrams.forEach((diagram) => {
-                  const svg2 = diagram.querySelector(".mermaid-svg-container svg, svg");
-                  if (svg2 instanceof SVGSVGElement) result.push(svg2.outerHTML);
+                editor.state.doc.descendants((node, pos) => {
+                  var _a2;
+                  if (((_a2 = node == null ? void 0 : node.type) == null ? void 0 : _a2.name) !== "mermaidDiagram") return;
+                  const dom = editor.view.nodeDOM(pos);
+                  const host = dom instanceof HTMLElement ? dom : null;
+                  const svg2 = host == null ? void 0 : host.querySelector(".mermaid-svg-container svg, svg");
+                  result.push(svg2 instanceof SVGSVGElement ? svg2.outerHTML : "");
                 });
                 return result;
               })();
@@ -62689,7 +62739,7 @@ ${innerMarkdown}
           );
           const mermaidRegex = /```[ \t]*mermaid[^\n\r]*\r?\n([\s\S]*?)\r?\n?```/gi;
           const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
-            const encodedCode = encodeURIComponent(code.trim());
+            const encodedCode = encodeURIComponent(decodeMermaidAttrCode(code.trim()));
             return `<mermaid-diagram code="${encodedCode}"></mermaid-diagram>`;
           });
           const html3 = marked.parse(processedMarkdown, { gfm: true });
@@ -62718,7 +62768,7 @@ ${innerMarkdown}
                 const mermaidCode = decodeMermaidAttrCode(codeEl.textContent || "").trim();
                 if (!mermaidCode) return;
                 const mermaidDiagram = doc3.createElement("mermaid-diagram");
-                mermaidDiagram.setAttribute("code", encodeURIComponent(mermaidCode));
+                mermaidDiagram.setAttribute("code", encodeURIComponent(decodeMermaidAttrCode(mermaidCode)));
                 (_a2 = pre.parentNode) == null ? void 0 : _a2.replaceChild(mermaidDiagram, pre);
               });
               doc3.querySelectorAll("a[href]").forEach((anchor) => {
@@ -62920,6 +62970,18 @@ ${innerMarkdown}
               const currentMarkdown = String(getEditorMarkdown() || "").trim();
               const needsSeparator = currentMarkdown.length > 0;
               editor.chain().focus().insertContentAt(editor.state.doc.content.size, (needsSeparator ? "\n\n" : "") + safeHtml).run();
+              try {
+                window.requestAnimationFrame(() => {
+                  var _a2;
+                  try {
+                    (_a2 = window.GoToolkitMemoAfterProgrammaticInsert) == null ? void 0 : _a2.call(window);
+                  } catch (persistErr) {
+                    console.warn("GoToolkitMemoAfterProgrammaticInsert failed", persistErr);
+                  }
+                });
+              } catch (rafErr) {
+                console.warn("insertEditorMarkdownAtEnd persistence scheduling failed", rafErr);
+              }
             }
           } catch (err) {
             console.warn("insertEditorMarkdownAtEnd failed", err);
@@ -64187,7 +64249,7 @@ ${innerMarkdown}
   var simple_editor_default = SimpleEditor;
 
   // src/memo-bridge/index.tsx
-  var EditorItem = react_shim_default.memo(({ editor, activeId, onEditorChange, handleEditorReady }) => {
+  var EditorItem = react_shim_default.memo(({ editor, activeId, onEditorChange, handleEditorReady, editable, placeholder }) => {
     const onReady = react_shim_default.useCallback((methods) => {
       handleEditorReady(editor.id, methods);
     }, [editor.id, handleEditorReady]);
@@ -64204,7 +64266,9 @@ ${innerMarkdown}
             editorId: editor.id,
             content: editor.content,
             onChange,
-            onReady
+            onReady,
+            editable: Boolean(editable),
+            placeholder: String(placeholder || "")
           }
         )
       }
@@ -64255,15 +64319,27 @@ ${innerMarkdown}
       }
     }, [suppressProgrammaticChange]);
     const handleEditorReady = react_shim_default.useCallback((id, methods) => {
+      var _a, _b, _c, _d;
+      const targetId = String(id || "").trim();
+      const expectedContent = typeof ((_b = (_a = editorsRef.current) == null ? void 0 : _a[targetId]) == null ? void 0 : _b.content) === "string" ? editorsRef.current[targetId].content : "";
+      if (targetId && ((_d = (_c = methods == null ? void 0 : methods.instance) == null ? void 0 : _c.commands) == null ? void 0 : _d.setContent)) {
+        try {
+          const currentContent = typeof methods.instance.getHTML === "function" ? String(methods.instance.getHTML() || "") : "";
+          if (expectedContent && currentContent !== expectedContent) {
+            applyProgrammaticContent(targetId, methods, expectedContent);
+          }
+        } catch (err) {
+        }
+      }
       setEditors((prev) => {
-        var _a;
-        if (((_a = prev[id]) == null ? void 0 : _a.methods) === methods) return prev;
+        var _a2;
+        if (((_a2 = prev[id]) == null ? void 0 : _a2.methods) === methods) return prev;
         return {
           ...prev,
           [id]: { ...prev[id], methods }
         };
       });
-    }, []);
+    }, [applyProgrammaticContent]);
     const handleEditorChange = react_shim_default.useCallback((newContent, id) => {
       const targetId = String(id || "").trim();
       if (!targetId) {
@@ -64330,7 +64406,7 @@ ${innerMarkdown}
           var _a, _b, _c;
           const activeEditorId = String(activeIdRef.current || activeId || "");
           const byActiveId = activeEditorId ? (_a = editorsRef.current) == null ? void 0 : _a[activeEditorId] : null;
-          const editor = ((_b = byActiveId == null ? void 0 : byActiveId.methods) == null ? void 0 : _b.instance) || ((_c = activeInstanceRef.current) == null ? void 0 : _c.instance) || window.MemoEditor;
+          const editor = window.MemoEditor || window.memoEditor || ((_b = byActiveId == null ? void 0 : byActiveId.methods) == null ? void 0 : _b.instance) || ((_c = activeInstanceRef.current) == null ? void 0 : _c.instance);
           if (editor && typeof editor.getHTML === "function") {
             return editor.getHTML();
           }
@@ -64478,13 +64554,6 @@ ${innerMarkdown}
           });
         }
       };
-      setEditors((prev) => {
-        if (Object.keys(prev).length === 0) {
-          return { "default": { id: "default", content: "" } };
-        }
-        return prev;
-      });
-      setActiveId((prev) => prev || "default");
       window.GoToolkitMemoEditorReady = Promise.resolve(api);
       window.GoToolkitMemoInstance = api;
     }, [applyProgrammaticContent, suppressProgrammaticChange]);
@@ -64510,18 +64579,22 @@ ${innerMarkdown}
         window.exportMemoToDocx = methods.exportDocx;
       }
     }, [activeId, editors]);
+    const hasActiveEditor = Boolean(activeId && editors[activeId]);
+    const editorPlaceholder = hasActiveEditor ? "Appuyer sur 'espace' pour l'Assistant ou '/' pour les commandes" : "Choisissez une page dans le panneau Documents";
     return /* @__PURE__ */ jsxs(Fragment3, { children: [
-      /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
+      hasActiveEditor ? /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
         EditorItem,
         {
           editor,
           activeId,
+          editable: hasActiveEditor && editor.id === activeId,
+          placeholder: editorPlaceholder,
           onEditorChange: handleEditorChange,
           handleEditorReady
         },
         editor.id
-      )) }) }),
-      /* @__PURE__ */ jsx("section", { id: "memoSearchCard", className: "memo-card memo-search-card", children: /* @__PURE__ */ jsx("div", { id: "memoSearchResults", className: "memo-search-results" }) })
+      )) }) }) : null,
+      /* @__PURE__ */ jsx("section", { id: "memoSearchCard", className: "memo-card memo-search-card", hidden: true, children: /* @__PURE__ */ jsx("div", { id: "memoSearchResults", className: "memo-search-results" }) })
     ] });
   };
   var container = document.getElementById("app");

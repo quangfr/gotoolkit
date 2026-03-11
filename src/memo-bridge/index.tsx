@@ -25,7 +25,7 @@ interface EditorInstance {
     methods?: any;
 }
 
-const EditorItem = React.memo(({ editor, activeId, onEditorChange, handleEditorReady }: any) => {
+const EditorItem = React.memo(({ editor, activeId, onEditorChange, handleEditorReady, editable, placeholder }: any) => {
     // Stable onReady for this specific editor ID
     const onReady = React.useCallback((methods: any) => {
         handleEditorReady(editor.id, methods);
@@ -44,6 +44,8 @@ const EditorItem = React.memo(({ editor, activeId, onEditorChange, handleEditorR
                 content={editor.content}
                 onChange={onChange}
                 onReady={onReady}
+                editable={Boolean(editable)}
+                placeholder={String(placeholder || '')}
             />
         </div>
     );
@@ -104,6 +106,22 @@ const App = () => {
 
     // Stable callback to prevent render loops
     const handleEditorReady = React.useCallback((id: string, methods: any) => {
+        const targetId = String(id || '').trim();
+        const expectedContent = typeof editorsRef.current?.[targetId]?.content === 'string'
+            ? editorsRef.current[targetId].content
+            : '';
+        if (targetId && methods?.instance?.commands?.setContent) {
+            try {
+                const currentContent = typeof methods.instance.getHTML === 'function'
+                    ? String(methods.instance.getHTML() || '')
+                    : '';
+                if (expectedContent && currentContent !== expectedContent) {
+                    applyProgrammaticContent(targetId, methods, expectedContent);
+                }
+            } catch (err) {
+                // ignore hydration retries and keep the bridge registration
+            }
+        }
         setEditors(prev => {
             // Only update if methods object is actually different
             if (prev[id]?.methods === methods) return prev;
@@ -112,7 +130,7 @@ const App = () => {
                 [id]: { ...prev[id], methods }
             };
         });
-    }, []);
+    }, [applyProgrammaticContent]);
 
     const handleEditorChange = React.useCallback((newContent: string, id?: string) => {
         const targetId = String(id || "").trim();
@@ -180,7 +198,7 @@ const App = () => {
             getValue: () => {
                 const activeEditorId = String(activeIdRef.current || activeId || '');
                 const byActiveId = activeEditorId ? editorsRef.current?.[activeEditorId] : null;
-                const editor = byActiveId?.methods?.instance || activeInstanceRef.current?.instance || (window as any).MemoEditor;
+                const editor = (window as any).MemoEditor || (window as any).memoEditor || byActiveId?.methods?.instance || activeInstanceRef.current?.instance;
                 if (editor && typeof editor.getHTML === 'function') {
                     return editor.getHTML();
                 }
@@ -337,15 +355,6 @@ const App = () => {
             }
         };
 
-        // Initialize default editor (only if no activeId is set yet)
-        setEditors(prev => {
-            if (Object.keys(prev).length === 0) {
-                return { 'default': { id: 'default', content: '' } };
-            }
-            return prev;
-        });
-        setActiveId(prev => prev || 'default');
-
         // Expose the API to the window as expected by index.html
         (window as any).GoToolkitMemoEditorReady = Promise.resolve(api);
         (window as any).GoToolkitMemoInstance = api;
@@ -376,22 +385,31 @@ const App = () => {
         }
     }, [activeId, editors]);
 
+    const hasActiveEditor = Boolean(activeId && editors[activeId]);
+    const editorPlaceholder = hasActiveEditor
+        ? "Appuyer sur 'espace' pour l'Assistant ou '/' pour les commandes"
+        : "Choisissez une page dans le panneau Documents";
+
     return (
         <>
-            <div className="memo-card">
-                <div className="editor-wrap">
-                    {Object.values(editors).map((editor) => (
-                        <EditorItem
-                            key={editor.id}
-                            editor={editor}
-                            activeId={activeId}
-                            onEditorChange={handleEditorChange}
-                            handleEditorReady={handleEditorReady}
-                        />
-                    ))}
+            {hasActiveEditor ? (
+                <div className="memo-card">
+                    <div className="editor-wrap">
+                        {Object.values(editors).map((editor) => (
+                            <EditorItem
+                                key={editor.id}
+                                editor={editor}
+                                activeId={activeId}
+                                editable={hasActiveEditor && editor.id === activeId}
+                                placeholder={editorPlaceholder}
+                                onEditorChange={handleEditorChange}
+                                handleEditorReady={handleEditorReady}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
-            <section id="memoSearchCard" className="memo-card memo-search-card">
+            ) : null}
+            <section id="memoSearchCard" className="memo-card memo-search-card" hidden>
                 <div id="memoSearchResults" className="memo-search-results"></div>
             </section>
         </>

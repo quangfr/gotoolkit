@@ -1287,6 +1287,9 @@
             overflow: visible;
             position: relative;
         }
+        .memo-card--empty {
+            overflow: hidden;
+        }
         .memo-switch-loader {
             position: absolute;
             inset: 0;
@@ -1397,12 +1400,61 @@
 
         .memo-empty-state {
             flex: 1;
-            display: none;
             align-items: center;
             justify-content: center;
+            padding: 24px;
             color: var(--text-main);
             font-size: 16px;
             text-align: center;
+            background:
+                radial-gradient(circle at top, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 42%),
+                linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 84%, var(--color-primary-soft)) 0%, var(--bg-surface) 100%);
+        }
+        .memo-empty-state[hidden] {
+            display: none;
+        }
+        .memo-empty-state__panel {
+            width: min(520px, 100%);
+            margin: 0 auto;
+            padding: 28px 24px;
+            border: 1px solid var(--border-main);
+            border-radius: 18px;
+            background: color-mix(in srgb, var(--bg-surface) 92%, white);
+            box-shadow: var(--shadow-sm);
+            display: grid;
+            gap: 12px;
+            justify-items: center;
+        }
+        .memo-empty-state__icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-primary-soft);
+            color: var(--color-primary);
+        }
+        .memo-empty-state__icon i {
+            width: 24px;
+            height: 24px;
+        }
+        .memo-empty-state__title {
+            margin: 0;
+            font-size: 22px;
+            line-height: 1.2;
+        }
+        .memo-empty-state__text,
+        .memo-empty-state__hint {
+            margin: 0;
+            max-width: 38ch;
+        }
+        .memo-empty-state__text {
+            font-size: 15px;
+        }
+        .memo-empty-state__hint {
+            font-size: 13px;
+            color: var(--text-muted);
         }
 
         .editor-wrap {
@@ -1704,6 +1756,15 @@
             .memo-card {
                 padding: 0;
                 min-width: 0;
+            }
+
+            .memo-empty-state {
+                padding: 12px;
+            }
+
+            .memo-empty-state__panel {
+                padding: 20px 16px;
+                border-radius: 14px;
             }
 
             .editor-wrap {

@@ -1,6 +1,6 @@
 # GoToolkit Security Architecture
 
-Date: 2026-03-09
+Date: 2026-03-12
 Purpose: short technical map of how security works in the current codebase
 Scope: `public/`, `workers/`, `firebase.json`
 
@@ -109,6 +109,7 @@ Current implementation note:
 - `public/js/assist.js` centralizes rich HTML writes via `setTrustedHtml(...)` as a choke point for guarded rendering paths.
 - Dynamic icon/label UI in main surfaces has largely moved to DOM assembly (`createElement`/`textContent`) instead of template-string injection.
 - Google One Tap requires CSP allowance for `https://accounts.google.com` scripts and still must route identity trust through worker-side verification before the app accepts managed-space access.
+- Managed-space page deep links must prompt the Connection modal when auth is missing; if OAuth succeeds but the account is still unauthorized for the target space, keep the deep-link request pending, toast `Page inaccessible`, and reopen the Connection modal instead of silently opening the page.
 
 ## 3. Browser storage
 

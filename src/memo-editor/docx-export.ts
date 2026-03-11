@@ -608,14 +608,14 @@ function getAlertColors(type: string): { border: string, bg: string } {
 }
 
 function createDocxExportContext(editor: any) {
-  const root: HTMLElement | null = editor?.view?.dom || null;
   const mermaidSvgs: SVGSVGElement[] = [];
-  if (root) {
-    // Mermaid NodeViews render as .node-mermaidDiagram in the live editor DOM.
-    const diagrams = root.querySelectorAll('.node-mermaidDiagram, mermaid-diagram');
-    diagrams.forEach((diagram) => {
-      const svg = diagram.querySelector('.mermaid-svg-container svg, svg');
-      if (svg && svg instanceof SVGSVGElement) {
+  if (editor?.state?.doc && editor?.view?.nodeDOM) {
+    editor.state.doc.descendants((node: any, pos: number) => {
+      if (node?.type?.name !== 'mermaidDiagram') return;
+      const dom = editor.view.nodeDOM(pos);
+      const host = dom instanceof HTMLElement ? dom : null;
+      const svg = host?.querySelector('.mermaid-svg-container svg, svg');
+      if (svg instanceof SVGSVGElement) {
         mermaidSvgs.push(svg);
       }
     });

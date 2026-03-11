@@ -17,16 +17,26 @@ const encodeMermaidHtmlAttr = (value: unknown): string => {
 const decodeMermaidHtmlAttr = (value: unknown): string => {
   const text = String(value || "");
   if (!text) return "";
-  try {
-    const decoded = decodeURIComponent(text);
-    const textarea = document.createElement('textarea');
-    textarea.innerHTML = decoded;
-    return textarea.value || decoded;
-  } catch {
-    const textarea = document.createElement('textarea');
-    textarea.innerHTML = text;
-    return textarea.value || text;
+  const textarea = document.createElement('textarea');
+  let current = text;
+  for (let i = 0; i < 24; i += 1) {
+    let next = current;
+    try {
+      if (/%[0-9a-f]{2}/i.test(next)) {
+        next = decodeURIComponent(next);
+      }
+    } catch {
+      // Keep the last decodable value.
+    }
+    textarea.innerHTML = next;
+    const htmlDecoded = textarea.value || next;
+    if (htmlDecoded === current) {
+      current = htmlDecoded;
+      break;
+    }
+    current = htmlDecoded;
   }
+  return current;
 };
 
 const INLINE_MERMAID_RENDER_CONFIG = {
@@ -432,7 +442,6 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     if (isEditing) return;
     if (!code && !excalidrawJSON) return;
     if (persistedPreviewSvg || svg || lastStableSvgRef.current) return;
-    if (!(window as any).GoToolkitDrawMemo) return;
     const syncKey = contentKey;
     if (lastPreviewSyncKeyRef.current === syncKey) return;
     lastPreviewSyncKeyRef.current = syncKey;
@@ -440,7 +449,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     const syncPreview = async () => {
       setIsPreviewLoading(true);
       try {
-        if ((window as any).GoToolkitDrawMemo.renderPreview) {
+        if ((window as any).GoToolkitDrawMemo?.renderPreview) {
           const previewInput = excalidrawJSON || code;
           const result = await (window as any).GoToolkitDrawMemo.renderPreview(previewInput, 'auto', size);
           if (result?.skipped) {
@@ -494,6 +503,9 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
         }
 
         // Fallback: sized offscreen host (do not use display:none)
+        if (!(window as any).GoToolkitDrawMemo?.init) {
+          throw new Error('Excalidraw preview runtime unavailable');
+        }
         const tempDiv = document.createElement('div');
         tempDiv.style.position = 'fixed';
         tempDiv.style.left = '-10000px';

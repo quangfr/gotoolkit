@@ -29,6 +29,7 @@
         var activeDocumentId = d.activeDocumentId;
         if (!activeDocumentId) {
             await d.renderActiveDocumentHeaderMeta?.();
+            d.updateEmptyState?.();
             return;
         }
 

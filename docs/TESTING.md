@@ -1,6 +1,6 @@
 # GoToolkit Test Guide
 
-Date: 2026-03-11
+Date: 2026-03-12
 Purpose: describe how to automate testing, cloud document manipulation, browser-session reuse, worker verification, deployment checks, and CI regression coverage in the current repo
 Audience: coding agents and maintainers working from the repo and terminal
 
@@ -58,6 +58,52 @@ Use this before changing app code:
   - first confirm whether the latest edits are still unsynced local drafts
   - for rapid cloud-switch repros, prefer final reload + sync before asserting remote content
 
+### 0.0.1 Generic persistence triage
+
+For bugs that mention refresh, reload, close, page switch, or "content was visible then disappeared", localize the failure in this order:
+
+- step 1: inspect the visible editor before reload
+  - if wrong already, this is not a reload bug
+
+- step 2: inspect in-page state before reload
+  - check active document id
+  - check active tab id
+  - check `window.__memoState.tabs[*].content`
+
+- step 3: inspect IndexedDB before reload
+  - check `window.goToolkitDocumentApi.getRecord(activeDocumentId)`
+  - if the record is wrong, troubleshoot save/snapshot paths
+  - if the record is correct, troubleshoot restore/bootstrap/editor hydration
+
+- step 4: inspect after reload without interacting first
+  - if content appears only after clicking the page again, suspect startup editor hydration
+  - if content never reappears and the record is now wrong too, suspect a stale overwrite before unload/reload
+
+- step 5: only then tighten assertions
+  - first assert record correctness
+  - then assert visible editor correctness
+  - then assert secondary renderers like Mermaid/Excalidraw previews
+
+### 0.0.2 Root shell and deep-link triage
+
+Use this when `/` should stay empty or a direct page URL should trigger auth/access UX:
+
+- root-shell bugs
+  - reproduce with a focused browser check before changing code
+  - verify:
+    - `window.GoToolkitMemoGetActiveDocumentId?.()` is empty
+    - header breadcrumb is hidden
+    - `memo-card` is hidden
+  - if static HTML looks correct but the browser still shows a card, inspect `src/memo-bridge/index.tsx` for default-editor bootstrap
+
+- direct UUID or shared deep-link auth bugs
+  - prefer checking the real route loader instead of clicking through the UI manually
+  - verify this sequence:
+    - deep link detected
+    - connection modal opens automatically when auth is missing
+    - post-auth space authorization is checked
+    - unauthorized result reopens the modal and shows the `Page inaccessible` toast
+
 ## 0.1 Core rules
 
 - Prefer a real spec under `tests/` over ad hoc scripts for any non-trivial repro.
@@ -66,6 +112,7 @@ Use this before changing app code:
 - Add step logs plus `console`, `pageerror`, `request`, and `response` listeners before rewriting a repro.
 - Use `spaceCode` bootstrap first for cloud coverage; fall back to OAuth UI only when the auth UX itself is under test.
 - For visual regressions, save screenshots in `tests/results/` before tightening assertions further.
+- For root-shell regressions, a tiny focused spec is better than reusing a large persistence suite.
 
 ## 0.2 Screenshot workflow
 
@@ -106,6 +153,7 @@ Current built-in automation hooks in the repo:
 - `tests/cloud-switch-persist.spec.ts`
 - `tests/cloud-rapid-switch-large.spec.ts`
 - `tests/private-switch-persist.spec.ts`
+- `tests/debug/root-empty-shell.spec.ts`
 - `tests/space-code-rotate.spec.ts`
 - `scripts/with-env-local.sh`
 
@@ -145,6 +193,11 @@ Latest targeted Playwright run:
 - `Execution time`: `00:10`
 - `Result`: `1 passed, 0 failed, 0 skipped`
 - `Details`: `Blank private-page Markdown import used the shared picker, made no OpenRouter calls, showed 3 Mermaid SVG previews, and opened the modal with left preview plus right-side source parity.`
+
+Recent troubleshooting note:
+
+- `private-switch-persist.spec.ts` is the primary fast check for generic local-page persistence regressions
+- if that spec passes but a heavier import/reload spec fails, suspect restore hydration or renderer rehydration before suspecting IndexedDB durability
 
 Tier suites:
 
@@ -195,7 +248,7 @@ Tier suites:
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `1 passed, 1 failed, 0 skipped` (`2 tests`, `00:17`) on `2026-03-11 17:46`
+  - results: `0 passed, 2 failed, 0 skipped` (`2 tests`, `01:13`) on `2026-03-11 23:42`
   - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `cloud-history-explicit-sync.spec.ts`
@@ -225,8 +278,8 @@ Tier suites:
 
   - `T2.6` `memo-import-mermaid-regression.spec.ts`
     - description: blank private-page shared-picker Markdown import with no OpenRouter calls, auto-rendered Mermaid SVG previews, and modal code/diagram parity
-    - results: `passing` (`1 test`, `00:16`) on `2026-03-11 17:46`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `failing` (`1 test`, `01:12`) on `2026-03-11 23:42`
+    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 3` admin features
   - description: protected-space administration coverage for space-code rotation and post-rotate readability
