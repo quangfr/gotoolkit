@@ -6286,9 +6286,17 @@
         document.body.appendChild(this.importFileInput);
     };
 
-    AssistSidebar.prototype.openImportFileSelector = function (options) {
+    AssistSidebar.prototype.openImportFileSelector = async function (options) {
         this.createImportFileInput();
         this.importFileOptions = options || null;
+        if (CHAT_APP_ID === "memo" && options?.skipIngestion) {
+            var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
+                ? global.GoToolkitMemoGetActiveDocumentId()
+                : null;
+            if (!activeMemoDocId && typeof global.GoToolkitMemoCreateAutoDocument === "function") {
+                await global.GoToolkitMemoCreateAutoDocument();
+            }
+        }
         if (this.importFileInput) {
             this.importFileInput.click();
         }
@@ -6539,6 +6547,12 @@
         var markdownViaAi = Boolean(options.markdownViaAi) ||
             Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.markdownViaAiEnabled", false));
 
+        if (CHAT_APP_ID === "memo" && skipIngestion && !memoId && typeof global.GoToolkitMemoCreateAutoDocument === "function") {
+            await global.GoToolkitMemoCreateAutoDocument();
+            memoId = this.getActiveMemoId();
+            tabId = memoId || null;
+        }
+
         if (CHAT_APP_ID === "memo" && directMarkdownImport) {
             var allFilesAreMarkdown = originalFileArray.length > 0 && originalFileArray.every(function (file) {
                 var name = String(file?.name || "").toLowerCase();
@@ -6577,7 +6591,7 @@
             this.importInProgress = true;
             this.setSendButtonBusy(true, { scopeId: uiScopeId });
 
-            if (skipIngestion && memoId) {
+            if (skipIngestion && CHAT_APP_ID === "memo") {
                 var importCandidates = directTextFiles.concat(fileArray);
                 var importNames = importCandidates.map(function (file) { return file?.name || ""; }).filter(Boolean);
                 if (importNames.length) {
@@ -6734,10 +6748,11 @@
 
             // Hide generic toast for memo import (skipEmbeddings)
             if (CHAT_APP_ID === "memo" && !skipEmbeddings) {
-                window.GoToolkitMemoToast?.("Import en cours");
+                window.GoToolkitMemoToast?.("Préparation de l'import...");
             }
             // 1. Ingérer les fichiers (parsing, chunking) comme chatAttachFilesBtn
-            console.log("Starting document ingestion for import...");
+            this.setDocumentUploadStatus("Préparation de l'import...");
+            console.log("Preparing document import...");
             var mediaTranscriptMap = new Map();
             var mediaTranscriptTextMap = new Map();
             var mediaIngestResults = [];
