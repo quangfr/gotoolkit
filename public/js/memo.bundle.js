@@ -53205,6 +53205,8 @@ ${content}</tr>
     const containerRef = react_shim_default.useRef(null);
     const excalidrawHostRef = react_shim_default.useRef(null);
     const prevEditableRef = react_shim_default.useRef(null);
+    const lastStableSvgRef = react_shim_default.useRef("");
+    const lastPreviewSyncKeyRef = react_shim_default.useRef("");
     const [promptInput, setPromptInput] = react_shim_default.useState("");
     const [diagramType, setDiagramType] = react_shim_default.useState("flow");
     const [isGenerating, setIsGenerating] = react_shim_default.useState(false);
@@ -53215,6 +53217,16 @@ ${content}</tr>
     const code = node.attrs.code || "";
     const excalidrawJSON = node.attrs.excalidrawJSON || "";
     const autoOpen = node.attrs.autoOpen === true;
+    const visibleSvg = svg2 || lastStableSvgRef.current;
+    react_shim_default.useEffect(() => {
+      if (svg2) {
+        lastStableSvgRef.current = svg2;
+        return;
+      }
+      if (!code.trim() && !excalidrawJSON) {
+        lastStableSvgRef.current = "";
+      }
+    }, [code, excalidrawJSON, svg2]);
     const getAutoResizeHeight = (textarea) => {
       textarea.style.height = "auto";
       const scrollHeight = textarea.scrollHeight;
@@ -53463,47 +53475,53 @@ ${promptInput.trim()}`
     }, [isEditing, draftCode, code, size2]);
     react_shim_default.useEffect(() => {
       if (isEditing) return;
-      if (code && !excalidrawJSON && window.GoToolkitDrawMemo) {
-        const syncPreview = async () => {
-          try {
-            if (window.GoToolkitDrawMemo.renderPreview) {
-              const result = await window.GoToolkitDrawMemo.renderPreview(code, "auto", size2);
-              const json2 = result == null ? void 0 : result.json;
-              const svgHtml2 = result == null ? void 0 : result.svg;
-              if (json2) {
-                updateAttributes2({ excalidrawJSON: json2 });
-              }
-              if (svgHtml2) {
-                setSvg(sanitizeRenderedSvg(svgHtml2));
-              }
-              setLastValidCode(code);
+      if (!code || excalidrawJSON || !window.GoToolkitDrawMemo) return;
+      const syncKey = `${String(code)}::${String(size2)}`;
+      if (lastPreviewSyncKeyRef.current === syncKey) return;
+      lastPreviewSyncKeyRef.current = syncKey;
+      const syncPreview = async () => {
+        try {
+          if (window.GoToolkitDrawMemo.renderPreview) {
+            const result = await window.GoToolkitDrawMemo.renderPreview(code, "auto", size2);
+            if (result == null ? void 0 : result.skipped) {
               return;
             }
-            const tempDiv = document.createElement("div");
-            tempDiv.style.position = "fixed";
-            tempDiv.style.left = "-10000px";
-            tempDiv.style.top = "0";
-            tempDiv.style.width = "1200px";
-            tempDiv.style.height = "800px";
-            tempDiv.style.opacity = "0";
-            tempDiv.style.pointerEvents = "none";
-            document.body.appendChild(tempDiv);
-            await window.GoToolkitDrawMemo.init(tempDiv, code, size2);
-            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
-            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
-            const json = window.GoToolkitDrawMemo.getSceneJSON();
-            const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-            updateAttributes2({ excalidrawJSON: json });
-            setSvg(sanitizeRenderedSvg(svgHtml));
+            const json2 = result == null ? void 0 : result.json;
+            const svgHtml2 = result == null ? void 0 : result.svg;
+            if (json2) {
+              updateAttributes2({ excalidrawJSON: json2 });
+            }
+            if (svgHtml2) {
+              setSvg(sanitizeRenderedSvg(svgHtml2));
+            }
             setLastValidCode(code);
-            document.body.removeChild(tempDiv);
-          } catch (e) {
-            console.warn("Immediate preview failed", e);
+            return;
           }
-        };
-        syncPreview();
-      }
-    }, [code, excalidrawJSON, isEditing, updateAttributes2, size2]);
+          const tempDiv = document.createElement("div");
+          tempDiv.style.position = "fixed";
+          tempDiv.style.left = "-10000px";
+          tempDiv.style.top = "0";
+          tempDiv.style.width = "1200px";
+          tempDiv.style.height = "800px";
+          tempDiv.style.opacity = "0";
+          tempDiv.style.pointerEvents = "none";
+          document.body.appendChild(tempDiv);
+          await window.GoToolkitDrawMemo.init(tempDiv, code, size2);
+          await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+          await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+          const json = window.GoToolkitDrawMemo.getSceneJSON();
+          const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
+          updateAttributes2({ excalidrawJSON: json });
+          setSvg(sanitizeRenderedSvg(svgHtml));
+          setLastValidCode(code);
+          document.body.removeChild(tempDiv);
+        } catch (e) {
+          lastPreviewSyncKeyRef.current = "";
+          console.warn("Immediate preview failed", e);
+        }
+      };
+      syncPreview();
+    }, [code, excalidrawJSON, isEditing, size2]);
     const renderDiagram = react_shim_default.useCallback(async () => {
       if (isEditing) return;
       if (excalidrawJSON) {
@@ -53548,7 +53566,6 @@ ${promptInput.trim()}`
         const mermaidApi = getMermaidApi();
         if (!mermaidApi) {
           setError("Mermaid CDN non charg\xE9");
-          setSvg("");
           return;
         }
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -53563,9 +53580,8 @@ ${promptInput.trim()}`
       } catch (err) {
         console.warn("Mermaid render error:", err);
         setError(err.message || "Invalid mermaid syntax");
-        setSvg("");
       }
-    }, [code, excalidrawJSON, isEditing]);
+    }, [code, excalidrawJSON, isEditing, size2]);
     react_shim_default.useEffect(() => {
       renderDiagram();
     }, [renderDiagram]);
@@ -53586,9 +53602,11 @@ ${promptInput.trim()}`
       setDraftCode(code);
     };
     react_shim_default.useEffect(() => {
+      var _a, _b;
       if (isEditing && excalidrawHostRef.current) {
+        (_b = (_a = window.GoToolkitDrawMemo) == null ? void 0 : _a.beginInteractiveSession) == null ? void 0 : _b.call(_a);
         const initExcalidraw = async () => {
-          var _a, _b, _c, _d;
+          var _a2, _b2, _c, _d;
           try {
             if (window.GoToolkitDrawMemo) {
               const initialData = excalidrawJSON || code;
@@ -53609,15 +53627,15 @@ ${promptInput.trim()}`
                 ro.observe(hostEl);
               }
               try {
-                const api = (_b = (_a = window.GoToolkitDrawMemo) == null ? void 0 : _a.getApi) == null ? void 0 : _b.call(_a);
+                const api = (_b2 = (_a2 = window.GoToolkitDrawMemo) == null ? void 0 : _a2.getApi) == null ? void 0 : _b2.call(_a2);
                 (_c = api == null ? void 0 : api.setActiveTool) == null ? void 0 : _c.call(api, { type: "selection" });
                 (_d = api == null ? void 0 : api.refresh) == null ? void 0 : _d.call(api);
               } catch (e) {
               }
               const t1 = window.setTimeout(() => {
-                var _a2, _b2, _c2, _d2;
+                var _a3, _b3, _c2, _d2;
                 try {
-                  const api = (_b2 = (_a2 = window.GoToolkitDrawMemo) == null ? void 0 : _a2.getApi) == null ? void 0 : _b2.call(_a2);
+                  const api = (_b3 = (_a3 = window.GoToolkitDrawMemo) == null ? void 0 : _a3.getApi) == null ? void 0 : _b3.call(_a3);
                   (_c2 = api == null ? void 0 : api.setActiveTool) == null ? void 0 : _c2.call(api, { type: "selection" });
                   (_d2 = api == null ? void 0 : api.refresh) == null ? void 0 : _d2.call(api);
                   nudge();
@@ -53625,9 +53643,9 @@ ${promptInput.trim()}`
                 }
               }, 150);
               const t2 = window.setTimeout(() => {
-                var _a2, _b2, _c2, _d2;
+                var _a3, _b3, _c2, _d2;
                 try {
-                  const api = (_b2 = (_a2 = window.GoToolkitDrawMemo) == null ? void 0 : _a2.getApi) == null ? void 0 : _b2.call(_a2);
+                  const api = (_b3 = (_a3 = window.GoToolkitDrawMemo) == null ? void 0 : _a3.getApi) == null ? void 0 : _b3.call(_a3);
                   (_c2 = api == null ? void 0 : api.setActiveTool) == null ? void 0 : _c2.call(api, { type: "selection" });
                   (_d2 = api == null ? void 0 : api.refresh) == null ? void 0 : _d2.call(api);
                   nudge();
@@ -53652,7 +53670,9 @@ ${promptInput.trim()}`
           cleanup = typeof fn === "function" ? fn : void 0;
         });
         return () => {
+          var _a2, _b2;
           cleanup == null ? void 0 : cleanup();
+          (_b2 = (_a2 = window.GoToolkitDrawMemo) == null ? void 0 : _a2.endInteractiveSession) == null ? void 0 : _b2.call(_a2);
         };
       }
     }, [isEditing]);
@@ -53859,11 +53879,11 @@ ${promptInput.trim()}`
               /* @__PURE__ */ jsx("div", { className: "mermaid-error-icon", children: "\u26A0\uFE0E" }),
               /* @__PURE__ */ jsx("div", { className: "mermaid-error-text", children: "Erreur de syntaxe" }),
               /* @__PURE__ */ jsx("div", { className: "mermaid-error-hint", children: "Double-cliquez pour corriger" })
-            ] }) : svg2 ? /* @__PURE__ */ jsx(
+            ] }) : visibleSvg ? /* @__PURE__ */ jsx(
               "div",
               {
                 className: "mermaid-svg-container",
-                dangerouslySetInnerHTML: { __html: svg2 }
+                dangerouslySetInnerHTML: { __html: visibleSvg }
               }
             ) : /* @__PURE__ */ jsxs("div", { className: "mermaid-placeholder", children: [
               /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-icon", children: /* @__PURE__ */ jsx(Shapes, { size: 32 }) }),
@@ -54109,7 +54129,17 @@ ${promptInput.trim()}`
       return ["mermaid-diagram", mergeAttributes(HTMLAttributes)];
     },
     addNodeView() {
-      return ReactNodeViewRenderer(MermaidDiagramComponent);
+      return ReactNodeViewRenderer(MermaidDiagramComponent, {
+        update: ({ oldNode, newNode, updateProps }) => {
+          const oldAttrs = oldNode.attrs || {};
+          const newAttrs = newNode.attrs || {};
+          const hasRelevantAttrChange = oldAttrs.code !== newAttrs.code || oldAttrs.excalidrawJSON !== newAttrs.excalidrawJSON || oldAttrs.size !== newAttrs.size || oldAttrs.autoOpen !== newAttrs.autoOpen;
+          if (hasRelevantAttrChange) {
+            updateProps();
+          }
+          return true;
+        }
+      });
     },
     addInputRules() {
       return [
@@ -56940,6 +56970,11 @@ ${promptInput.trim()}`
           ),
           /* @__PURE__ */ jsx(NodeViewContent, { as: tag2, className: "node-text" })
         ] });
+      }, {
+        // Headings must contain phrasing content. The default block-level contentDOM
+        // element is a div, which produces invalid h1/h2/h3 markup and can break
+        // mutation tracking / persistence for edited heading text.
+        contentDOMElementTag: "span"
       });
     }
   });
@@ -58998,7 +59033,7 @@ ${promptInput.trim()}`
           return;
         }
       }
-      if ((typeName === "paragraph" || typeName === "heading") && node.content.size === 0) {
+      if (typeName === "paragraph" && node.content.size === 0) {
         const $pos = tr2.doc.resolve(pos);
         const parentType = (_g = (_f = $pos.parent) == null ? void 0 : _f.type) == null ? void 0 : _g.name;
         if (emptyListItemTypes.has(parentType)) {

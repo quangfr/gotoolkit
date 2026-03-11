@@ -178,6 +178,11 @@ const CustomHeading = Heading.extend({
           <NodeViewContent as={tag} className="node-text" />
         </NodeViewWrapper>
       );
+    }, {
+      // Headings must contain phrasing content. The default block-level contentDOM
+      // element is a div, which produces invalid h1/h2/h3 markup and can break
+      // mutation tracking / persistence for edited heading text.
+      contentDOMElementTag: 'span',
     });
   },
 });
@@ -2488,7 +2493,7 @@ const cleanupEmptyBlocks = (tr: any) => {
       }
     }
 
-    if ((typeName === 'paragraph' || typeName === 'heading') && node.content.size === 0) {
+    if (typeName === 'paragraph' && node.content.size === 0) {
       const $pos = tr.doc.resolve(pos);
       const parentType = $pos.parent?.type?.name;
       if (emptyListItemTypes.has(parentType)) {

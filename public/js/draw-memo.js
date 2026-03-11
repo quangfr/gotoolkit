@@ -7,7 +7,10 @@ window.GoToolkitDrawMemo = (function () {
     let excalidrawInstance = null;
     let isLoaded = false;
     let previewChain = Promise.resolve();
+    let interactiveSessionCount = 0;
     const DEFAULT_EXCALIDRAW_TEXT_SIZE = 22;
+    const PREVIEW_CACHE_LIMIT = 32;
+    const previewCache = new Map();
 
     const PRESETS = {
         small: {
@@ -53,6 +56,40 @@ window.GoToolkitDrawMemo = (function () {
         // Keep the chain alive even if a preview fails
         previewChain = next.catch(() => undefined);
         return next;
+    }
+
+    function makePreviewCacheKey(initialData, zoom, size) {
+        let normalized = '';
+        if (typeof initialData === 'string') {
+            normalized = initialData;
+        } else {
+            try {
+                normalized = JSON.stringify(initialData || null);
+            } catch (err) {
+                normalized = String(initialData || '');
+            }
+        }
+        return `${String(size || 'medium')}::${String(zoom)}::${normalized}`;
+    }
+
+    function getCachedPreview(initialData, zoom, size) {
+        const key = makePreviewCacheKey(initialData, zoom, size);
+        const cached = previewCache.get(key);
+        if (!cached) return null;
+        previewCache.delete(key);
+        previewCache.set(key, cached);
+        return cached;
+    }
+
+    function setCachedPreview(initialData, zoom, size, result) {
+        const key = makePreviewCacheKey(initialData, zoom, size);
+        previewCache.set(key, result);
+        while (previewCache.size > PREVIEW_CACHE_LIMIT) {
+            const oldestKey = previewCache.keys().next().value;
+            if (!oldestKey) break;
+            previewCache.delete(oldestKey);
+        }
+        return result;
     }
 
     function createOffscreenHost() {
@@ -142,6 +179,14 @@ window.GoToolkitDrawMemo = (function () {
     }
 
     return {
+        beginInteractiveSession() {
+            interactiveSessionCount += 1;
+        },
+
+        endInteractiveSession() {
+            interactiveSessionCount = Math.max(0, interactiveSessionCount - 1);
+        },
+
         async init(container, initialData = null, size = 'medium') {
             await loadExcalidraw();
 
@@ -304,6 +349,15 @@ window.GoToolkitDrawMemo = (function () {
         },
 
         async renderPreview(initialData, zoom, size = 'medium') {
+            const cached = getCachedPreview(initialData, zoom, size);
+            if (cached) {
+                return { ...cached, cached: true };
+            }
+
+            if (interactiveSessionCount > 0) {
+                return { json: null, svg: null, skipped: true, reason: 'interactive-session-active' };
+            }
+
             // Serialize preview rendering to avoid clobbering due to singleton host swaps.
             return enqueuePreview(async () => {
                 const host = createOffscreenHost();
@@ -313,7 +367,7 @@ window.GoToolkitDrawMemo = (function () {
                     await waitFrames(2);
                     const json = this.getSceneJSON();
                     const svg = await this.getSVG(typeof zoom === 'number' ? zoom : 0.6);
-                    return { json, svg };
+                    return setCachedPreview(initialData, zoom, size, { json, svg });
                 } finally {
                     host.remove();
                 }

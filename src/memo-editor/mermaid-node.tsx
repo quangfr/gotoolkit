@@ -59,6 +59,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const excalidrawHostRef = React.useRef<HTMLDivElement>(null);
   const prevEditableRef = React.useRef<boolean | null>(null);
+  const lastStableSvgRef = React.useRef('');
+  const lastPreviewSyncKeyRef = React.useRef('');
 
   // AI Generation States
   const [promptInput, setPromptInput] = React.useState('');
@@ -75,6 +77,17 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
   const code = node.attrs.code || '';
   const excalidrawJSON = node.attrs.excalidrawJSON || '';
   const autoOpen = node.attrs.autoOpen === true;
+  const visibleSvg = svg || lastStableSvgRef.current;
+
+  React.useEffect(() => {
+    if (svg) {
+      lastStableSvgRef.current = svg;
+      return;
+    }
+    if (!code.trim() && !excalidrawJSON) {
+      lastStableSvgRef.current = '';
+    }
+  }, [code, excalidrawJSON, svg]);
 
   const getAutoResizeHeight = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = 'auto';
@@ -365,50 +378,58 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
   // Immediate preview on paste/init if excalidrawJSON is missing but code exists
   React.useEffect(() => {
     if (isEditing) return;
-    if (code && !excalidrawJSON && (window as any).GoToolkitDrawMemo) {
-      const syncPreview = async () => {
-        try {
-          // Prefer the bridge preview helper if available (serialized & sized host)
-          if ((window as any).GoToolkitDrawMemo.renderPreview) {
-            const result = await (window as any).GoToolkitDrawMemo.renderPreview(code, 'auto', size);
-            const json = result?.json;
-            const svgHtml = result?.svg;
-            if (json) {
-              updateAttributes({ excalidrawJSON: json });
-            }
-            if (svgHtml) {
-              setSvg(sanitizeRenderedSvg(svgHtml));
-            }
-            setLastValidCode(code);
+    if (!code || excalidrawJSON || !(window as any).GoToolkitDrawMemo) return;
+
+    const syncKey = `${String(code)}::${String(size)}`;
+    if (lastPreviewSyncKeyRef.current === syncKey) return;
+    lastPreviewSyncKeyRef.current = syncKey;
+
+    const syncPreview = async () => {
+      try {
+        // Prefer the bridge preview helper if available (serialized & sized host)
+        if ((window as any).GoToolkitDrawMemo.renderPreview) {
+          const result = await (window as any).GoToolkitDrawMemo.renderPreview(code, 'auto', size);
+          if (result?.skipped) {
             return;
           }
-
-          // Fallback: sized offscreen host (do not use display:none)
-          const tempDiv = document.createElement('div');
-          tempDiv.style.position = 'fixed';
-          tempDiv.style.left = '-10000px';
-          tempDiv.style.top = '0';
-          tempDiv.style.width = '1200px';
-          tempDiv.style.height = '800px';
-          tempDiv.style.opacity = '0';
-          tempDiv.style.pointerEvents = 'none';
-          document.body.appendChild(tempDiv);
-          await (window as any).GoToolkitDrawMemo.init(tempDiv, code, size);
-          await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
-          await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
-          const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-          const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
-          updateAttributes({ excalidrawJSON: json });
-          setSvg(sanitizeRenderedSvg(svgHtml));
+          const json = result?.json;
+          const svgHtml = result?.svg;
+          if (json) {
+            updateAttributes({ excalidrawJSON: json });
+          }
+          if (svgHtml) {
+            setSvg(sanitizeRenderedSvg(svgHtml));
+          }
           setLastValidCode(code);
-          document.body.removeChild(tempDiv);
-        } catch (e) {
-          console.warn("Immediate preview failed", e);
+          return;
         }
-      };
-      syncPreview();
-    }
-  }, [code, excalidrawJSON, isEditing, updateAttributes, size]);
+
+        // Fallback: sized offscreen host (do not use display:none)
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'fixed';
+        tempDiv.style.left = '-10000px';
+        tempDiv.style.top = '0';
+        tempDiv.style.width = '1200px';
+        tempDiv.style.height = '800px';
+        tempDiv.style.opacity = '0';
+        tempDiv.style.pointerEvents = 'none';
+        document.body.appendChild(tempDiv);
+        await (window as any).GoToolkitDrawMemo.init(tempDiv, code, size);
+        await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
+        await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
+        const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
+        const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
+        updateAttributes({ excalidrawJSON: json });
+        setSvg(sanitizeRenderedSvg(svgHtml));
+        setLastValidCode(code);
+        document.body.removeChild(tempDiv);
+      } catch (e) {
+        lastPreviewSyncKeyRef.current = '';
+        console.warn("Immediate preview failed", e);
+      }
+    };
+    syncPreview();
+  }, [code, excalidrawJSON, isEditing, size]);
 
   const renderDiagram = React.useCallback(async () => {
     // Skip preview rendering while editing to avoid competing with the modal view
@@ -461,7 +482,6 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
       const mermaidApi = getMermaidApi();
       if (!mermaidApi) {
         setError('Mermaid CDN non chargé');
-        setSvg('');
         return;
       }
 
@@ -481,9 +501,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     } catch (err: any) {
       console.warn('Mermaid render error:', err);
       setError(err.message || 'Invalid mermaid syntax');
-      setSvg('');
     }
-  }, [code, excalidrawJSON, isEditing]);
+  }, [code, excalidrawJSON, isEditing, size]);
 
   React.useEffect(() => {
     renderDiagram();
@@ -509,6 +528,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
 
   React.useEffect(() => {
     if (isEditing && excalidrawHostRef.current) {
+      (window as any).GoToolkitDrawMemo?.beginInteractiveSession?.();
+
       const initExcalidraw = async () => {
         try {
           if ((window as any).GoToolkitDrawMemo) {
@@ -591,6 +612,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
 
       return () => {
         cleanup?.();
+        (window as any).GoToolkitDrawMemo?.endInteractiveSession?.();
       };
     }
   }, [isEditing]);
@@ -833,10 +855,10 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
               <div className="mermaid-error-text">Erreur de syntaxe</div>
               <div className="mermaid-error-hint">Double-cliquez pour corriger</div>
             </div>
-          ) : svg ? (
+          ) : visibleSvg ? (
             <div 
               className="mermaid-svg-container"
-              dangerouslySetInnerHTML={{ __html: svg }}
+              dangerouslySetInnerHTML={{ __html: visibleSvg }}
             />
           ) : (
             <div className="mermaid-placeholder">
@@ -1084,7 +1106,23 @@ export const MermaidNode = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(MermaidDiagramComponent);
+    return ReactNodeViewRenderer(MermaidDiagramComponent, {
+      update: ({ oldNode, newNode, updateProps }) => {
+        const oldAttrs = oldNode.attrs || {};
+        const newAttrs = newNode.attrs || {};
+        const hasRelevantAttrChange =
+          oldAttrs.code !== newAttrs.code ||
+          oldAttrs.excalidrawJSON !== newAttrs.excalidrawJSON ||
+          oldAttrs.size !== newAttrs.size ||
+          oldAttrs.autoOpen !== newAttrs.autoOpen;
+
+        if (hasRelevantAttrChange) {
+          updateProps();
+        }
+
+        return true;
+      },
+    });
   },
 
   addInputRules() {
