@@ -1580,6 +1580,23 @@ body.table-resize-cursor * {
   margin-bottom: 0.5rem;
 }
 
+.mermaid-placeholder--loading .mermaid-placeholder-icon {
+  color: var(--text-main);
+}
+
+.mermaid-preview-spinner {
+  animation: mermaid-preview-spin 0.9s linear infinite;
+}
+
+@keyframes mermaid-preview-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .mermaid-placeholder-text,
 .mermaid-error-text {
   font-size: 1rem;

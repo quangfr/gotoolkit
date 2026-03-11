@@ -6472,8 +6472,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               const root: HTMLElement | null = editor?.view?.dom || null;
               if (!root) return [];
               const result: string[] = [];
-              // Mermaid NodeViews are rendered as .node-mermaidDiagram in the live editor DOM.
-              root.querySelectorAll('.node-mermaidDiagram, mermaid-diagram').forEach((diagram) => {
+              const wrappers = Array.from(root.querySelectorAll('.node-mermaidDiagram'));
+              const diagrams = wrappers.length
+                ? wrappers
+                : Array.from(root.querySelectorAll('mermaid-diagram'));
+              diagrams.forEach((diagram) => {
                 const svg = diagram.querySelector('.mermaid-svg-container svg, svg');
                 if (svg instanceof SVGSVGElement) result.push(svg.outerHTML);
               });
@@ -6482,7 +6485,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
             // 1. Handle Mermaid diagrams with rendered SVG in export order.
             try {
-              const diagrams = doc.querySelectorAll('mermaid-diagram, .mermaid-diagram');
+              const diagrams = doc.querySelectorAll('mermaid-diagram');
               diagrams.forEach((diag, diagramIndex) => {
                 const code = decodeMermaidAttrCode(diag.getAttribute('code') || diag.getAttribute('data-code') || '').trim();
                 const svgMarkup = liveMermaidSvgs[diagramIndex] || '';

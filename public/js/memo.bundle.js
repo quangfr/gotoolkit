@@ -53225,20 +53225,27 @@ ${content}</tr>
   }
   var MermaidDiagramComponent = ({ node, updateAttributes: updateAttributes2, editor }) => {
     const [isEditing, setIsEditing] = react_shim_default.useState(false);
-    const [svg2, setSvg] = react_shim_default.useState("");
+    const initialCode = decodeMermaidHtmlAttr(node.attrs.code || "");
+    const initialExcalidrawJson = String(node.attrs.excalidrawJSON || "");
+    const initialSize = String(node.attrs.size || "small");
+    const initialPreviewKey = String(node.attrs.previewKey || "");
+    const initialContentKey = `${initialCode}::${initialExcalidrawJson}::${initialSize}`;
+    const initialPreviewSvg = initialPreviewKey === initialContentKey ? decodeMermaidHtmlAttr(node.attrs.previewSvg || "") : "";
+    const [svg2, setSvg] = react_shim_default.useState(initialPreviewSvg);
     const [error, setError] = react_shim_default.useState(null);
     const [modalError, setModalError] = react_shim_default.useState(null);
-    const initialCode = decodeMermaidHtmlAttr(node.attrs.code || "");
     const [lastValidCode, setLastValidCode] = react_shim_default.useState(initialCode);
     const [draftCode, setDraftCode] = react_shim_default.useState(initialCode);
     const [isLoading, setIsLoading] = react_shim_default.useState(false);
+    const [isPreviewLoading, setIsPreviewLoading] = react_shim_default.useState(false);
     const [showToast, setShowToast] = react_shim_default.useState(false);
     const containerRef = react_shim_default.useRef(null);
     const excalidrawHostRef = react_shim_default.useRef(null);
     const prevEditableRef = react_shim_default.useRef(null);
-    const lastStableSvgRef = react_shim_default.useRef("");
+    const lastStableSvgRef = react_shim_default.useRef(initialPreviewSvg);
     const lastPreviewSyncKeyRef = react_shim_default.useRef("");
     const previewSourceRef = react_shim_default.useRef("none");
+    const updateAttributesRef = react_shim_default.useRef(updateAttributes2);
     const [promptInput, setPromptInput] = react_shim_default.useState("");
     const [diagramType, setDiagramType] = react_shim_default.useState("flow");
     const [isGenerating, setIsGenerating] = react_shim_default.useState(false);
@@ -53249,17 +53256,25 @@ ${content}</tr>
     const code = decodeMermaidHtmlAttr(node.attrs.code || "");
     const excalidrawJSON = node.attrs.excalidrawJSON || "";
     const autoOpen = node.attrs.autoOpen === true;
-    const visibleSvg = svg2 || lastStableSvgRef.current;
     react_shim_default.useEffect(() => {
-      if (svg2) {
-        lastStableSvgRef.current = svg2;
+      updateAttributesRef.current = updateAttributes2;
+    }, [updateAttributes2]);
+    react_shim_default.useEffect(() => {
+      if (persistedPreviewSvg) {
+        setSvg((prev) => prev || persistedPreviewSvg);
+        lastStableSvgRef.current = persistedPreviewSvg;
+      }
+    }, [persistedPreviewSvg]);
+    react_shim_default.useEffect(() => {
+      if (visibleSvg) {
+        lastStableSvgRef.current = visibleSvg;
         return;
       }
       if (!code.trim() && !excalidrawJSON) {
         lastStableSvgRef.current = "";
         previewSourceRef.current = "none";
       }
-    }, [code, excalidrawJSON, svg2]);
+    }, [code, excalidrawJSON, visibleSvg]);
     const getAutoResizeHeight = (textarea) => {
       textarea.style.height = "auto";
       const scrollHeight = textarea.scrollHeight;
@@ -53432,6 +53447,9 @@ ${promptInput.trim()}`
     let size2 = directionSize ? directionSize === "TD" ? "large" : "small" : node.attrs.size || getAutoDetectedSize(activeCode);
     if (size2 === "medium") size2 = "small";
     const showSizeSelector = isSizeSelectorVisible(activeCode);
+    const contentKey = `${code}::${excalidrawJSON}::${size2}`;
+    const persistedPreviewSvg = String(node.attrs.previewKey || "") === contentKey ? decodeMermaidHtmlAttr(node.attrs.previewSvg || "") : "";
+    const visibleSvg = svg2 || persistedPreviewSvg || lastStableSvgRef.current;
     const isMermaidDiagnosticsEnabled = () => {
       try {
         if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "0") return false;
@@ -53501,14 +53519,14 @@ ${promptInput.trim()}`
     react_shim_default.useEffect(() => {
       if (isEditing) return;
       if (!code && !excalidrawJSON) return;
-      const hasSettledExcalidrawPreview = !!visibleSvg && (previewSourceRef.current === "excalidraw" || !!excalidrawJSON);
-      if (hasSettledExcalidrawPreview) return;
+      if (persistedPreviewSvg || svg2 || lastStableSvgRef.current) return;
       if (!window.GoToolkitDrawMemo) return;
-      const syncKey = `${String(code)}::${String(excalidrawJSON)}::${String(size2)}`;
+      const syncKey = contentKey;
       if (lastPreviewSyncKeyRef.current === syncKey) return;
       lastPreviewSyncKeyRef.current = syncKey;
       const syncPreview = async () => {
-        var _a, _b;
+        var _a, _b, _c, _d, _e, _f, _g;
+        setIsPreviewLoading(true);
         try {
           if (window.GoToolkitDrawMemo.renderPreview) {
             const previewInput = excalidrawJSON || code;
@@ -53519,13 +53537,18 @@ ${promptInput.trim()}`
             const json2 = result == null ? void 0 : result.json;
             const svgHtml2 = result == null ? void 0 : result.svg;
             if (json2 && !excalidrawJSON) {
-              updateAttributes2({ excalidrawJSON: json2 });
+              (_a = updateAttributesRef.current) == null ? void 0 : _a.call(updateAttributesRef, { excalidrawJSON: json2 });
             }
             if (svgHtml2) {
+              const cleanSvg2 = sanitizeRenderedSvg(svgHtml2);
               previewSourceRef.current = "excalidraw";
-              setSvg(sanitizeRenderedSvg(svgHtml2));
+              setSvg(cleanSvg2);
               setLastValidCode(code);
               setError(null);
+              (_b = updateAttributesRef.current) == null ? void 0 : _b.call(updateAttributesRef, {
+                previewSvg: cleanSvg2,
+                previewKey: syncKey
+              });
               return;
             }
           }
@@ -53533,7 +53556,7 @@ ${promptInput.trim()}`
             let mermaidApi = getMermaidApi();
             if (!mermaidApi) {
               try {
-                await ((_b = (_a = window.GoToolkitLazyCdn) == null ? void 0 : _a.loadMermaid) == null ? void 0 : _b.call(_a));
+                await ((_d = (_c = window.GoToolkitLazyCdn) == null ? void 0 : _c.loadMermaid) == null ? void 0 : _d.call(_c));
               } catch (loadErr) {
                 console.warn("Mermaid lazy-load failed during preview hydration:", loadErr);
               }
@@ -53545,10 +53568,15 @@ ${promptInput.trim()}`
             const id = `mermaid-preview-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
             mermaidApi.initialize(INLINE_MERMAID_RENDER_CONFIG);
             const { svg: svg3 } = await mermaidApi.render(id, code);
+            const cleanSvg2 = sanitizeRenderedSvg(svg3);
             previewSourceRef.current = "mermaid";
-            setSvg(sanitizeRenderedSvg(svg3));
+            setSvg(cleanSvg2);
             setLastValidCode(code);
             setError(null);
+            (_e = updateAttributesRef.current) == null ? void 0 : _e.call(updateAttributesRef, {
+              previewSvg: cleanSvg2,
+              previewKey: syncKey
+            });
             return;
           }
           const tempDiv = document.createElement("div");
@@ -53566,94 +53594,26 @@ ${promptInput.trim()}`
           const json = window.GoToolkitDrawMemo.getSceneJSON();
           const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
           if (!excalidrawJSON) {
-            updateAttributes2({ excalidrawJSON: json });
+            (_f = updateAttributesRef.current) == null ? void 0 : _f.call(updateAttributesRef, { excalidrawJSON: json });
           }
+          const cleanSvg = sanitizeRenderedSvg(svgHtml);
           previewSourceRef.current = "excalidraw";
-          setSvg(sanitizeRenderedSvg(svgHtml));
+          setSvg(cleanSvg);
           setLastValidCode(code);
+          (_g = updateAttributesRef.current) == null ? void 0 : _g.call(updateAttributesRef, {
+            previewSvg: cleanSvg,
+            previewKey: syncKey
+          });
           document.body.removeChild(tempDiv);
         } catch (e) {
           lastPreviewSyncKeyRef.current = "";
           console.warn("Immediate preview failed", e);
+        } finally {
+          setIsPreviewLoading(false);
         }
       };
       syncPreview();
-    }, [code, excalidrawJSON, isEditing, size2, visibleSvg, updateAttributes2]);
-    const renderDiagram = react_shim_default.useCallback(async () => {
-      var _a, _b;
-      if (isEditing) return;
-      if (excalidrawJSON || code.trim()) {
-        try {
-          if (window.GoToolkitDrawMemo) {
-            if (window.GoToolkitDrawMemo.renderPreview) {
-              const previewInput = excalidrawJSON || code;
-              const result = await window.GoToolkitDrawMemo.renderPreview(previewInput, "auto", size2);
-              if ((result == null ? void 0 : result.json) && !excalidrawJSON) {
-                updateAttributes2({ excalidrawJSON: result.json });
-              }
-              if (result == null ? void 0 : result.svg) {
-                previewSourceRef.current = "excalidraw";
-                setSvg(sanitizeRenderedSvg(result.svg));
-                setError(null);
-                return;
-              }
-            }
-            const tempDiv = document.createElement("div");
-            tempDiv.style.position = "fixed";
-            tempDiv.style.left = "-10000px";
-            tempDiv.style.top = "0";
-            tempDiv.style.width = "1200px";
-            tempDiv.style.height = "800px";
-            tempDiv.style.opacity = "0";
-            tempDiv.style.pointerEvents = "none";
-            document.body.appendChild(tempDiv);
-            await window.GoToolkitDrawMemo.init(tempDiv, excalidrawJSON || code, size2);
-            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
-            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
-            const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-            previewSourceRef.current = "excalidraw";
-            setSvg(sanitizeRenderedSvg(svgHtml));
-            document.body.removeChild(tempDiv);
-            setError(null);
-            return;
-          }
-        } catch (err) {
-          console.warn("Excalidraw render error, falling back to mermaid:", err);
-        }
-      }
-      if (!code.trim() && !excalidrawJSON) {
-        setSvg("");
-        setError(null);
-        return;
-      }
-      try {
-        let mermaidApi = getMermaidApi();
-        if (!mermaidApi) {
-          try {
-            await ((_b = (_a = window.GoToolkitLazyCdn) == null ? void 0 : _a.loadMermaid) == null ? void 0 : _b.call(_a));
-          } catch (loadErr) {
-            console.warn("Mermaid lazy-load failed:", loadErr);
-          }
-          mermaidApi = getMermaidApi();
-        }
-        if (!mermaidApi) {
-          setError("Mermaid CDN non charg\xE9");
-          return;
-        }
-        const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        mermaidApi.initialize(INLINE_MERMAID_RENDER_CONFIG);
-        const { svg: svg3 } = await mermaidApi.render(id, code);
-        previewSourceRef.current = "mermaid";
-        setSvg(sanitizeRenderedSvg(svg3));
-        setError(null);
-      } catch (err) {
-        console.warn("Mermaid render error:", err);
-        setError(err.message || "Invalid mermaid syntax");
-      }
-    }, [code, excalidrawJSON, isEditing, size2, updateAttributes2]);
-    react_shim_default.useEffect(() => {
-      renderDiagram();
-    }, [renderDiagram]);
+    }, [code, contentKey, excalidrawJSON, isEditing, persistedPreviewSvg, size2, svg2]);
     react_shim_default.useEffect(() => {
       if (!autoOpen) return;
       setIsEditing(true);
@@ -53764,12 +53724,15 @@ ${promptInput.trim()}`
           const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
           const isExcalidrawEmpty = !json || json === '{"elements":[],"appState":{}}' || json.includes('"elements":[]');
           const finalExcalidrawJSON = finalCode.trim() || !isExcalidrawEmpty ? json : "";
+          const cleanSvg = svgHtml ? sanitizeRenderedSvg(svgHtml) : "";
           updateAttributes2({
-            excalidrawJSON: finalExcalidrawJSON
+            excalidrawJSON: finalExcalidrawJSON,
+            previewSvg: cleanSvg,
+            previewKey: finalCode.trim() || !isExcalidrawEmpty ? `${finalCode}::${finalExcalidrawJSON}::${size2}` : ""
           });
-          if (svgHtml && (finalCode.trim() || !isExcalidrawEmpty)) {
+          if (cleanSvg && (finalCode.trim() || !isExcalidrawEmpty)) {
             previewSourceRef.current = "excalidraw";
-            setSvg(sanitizeRenderedSvg(svgHtml));
+            setSvg(cleanSvg);
           } else {
             previewSourceRef.current = "none";
             setSvg("");
@@ -53941,7 +53904,11 @@ ${promptInput.trim()}`
                 className: "mermaid-svg-container",
                 dangerouslySetInnerHTML: { __html: visibleSvg }
               }
-            ) : /* @__PURE__ */ jsxs("div", { className: "mermaid-placeholder", children: [
+            ) : isPreviewLoading && (code.trim() || excalidrawJSON) ? /* @__PURE__ */ jsxs("div", { className: "mermaid-placeholder mermaid-placeholder--loading", children: [
+              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-icon", children: /* @__PURE__ */ jsx(LoaderCircle, { className: "mermaid-preview-spinner", size: 28 }) }),
+              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-text", children: "Chargement" }),
+              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-hint", children: "Pr\xE9paration de l\u2019aper\xE7u" })
+            ] }) : /* @__PURE__ */ jsxs("div", { className: "mermaid-placeholder", children: [
               /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-icon", children: /* @__PURE__ */ jsx(Shapes, { size: 32 }) }),
               /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-text", children: "Diagramme vide" }),
               /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-hint", children: "Double-cliquez pour \xE9diter" })
@@ -54171,6 +54138,12 @@ ${promptInput.trim()}`
         },
         autoOpen: {
           default: false
+        },
+        previewSvg: {
+          default: ""
+        },
+        previewKey: {
+          default: ""
         }
       };
     },
@@ -54186,7 +54159,9 @@ ${promptInput.trim()}`
               code: decodeMermaidHtmlAttr(node.getAttribute("code") || ""),
               excalidrawJSON: node.getAttribute("excalidrawJSON") || "",
               size: node.getAttribute("size") || "small",
-              autoOpen: node.getAttribute("autoOpen") === "true"
+              autoOpen: node.getAttribute("autoOpen") === "true",
+              previewSvg: decodeMermaidHtmlAttr(node.getAttribute("previewSvg") || ""),
+              previewKey: node.getAttribute("previewKey") || ""
             };
           }
         }
@@ -54195,7 +54170,8 @@ ${promptInput.trim()}`
     renderHTML({ HTMLAttributes }) {
       const attrs = {
         ...HTMLAttributes,
-        code: encodeMermaidHtmlAttr((HTMLAttributes == null ? void 0 : HTMLAttributes.code) || "")
+        code: encodeMermaidHtmlAttr((HTMLAttributes == null ? void 0 : HTMLAttributes.code) || ""),
+        previewSvg: encodeMermaidHtmlAttr((HTMLAttributes == null ? void 0 : HTMLAttributes.previewSvg) || "")
       };
       return ["mermaid-diagram", mergeAttributes(attrs)];
     },
@@ -62313,14 +62289,16 @@ ${innerMarkdown}
                 const root2 = ((_a2 = editor == null ? void 0 : editor.view) == null ? void 0 : _a2.dom) || null;
                 if (!root2) return [];
                 const result = [];
-                root2.querySelectorAll(".node-mermaidDiagram, mermaid-diagram").forEach((diagram) => {
+                const wrappers = Array.from(root2.querySelectorAll(".node-mermaidDiagram"));
+                const diagrams = wrappers.length ? wrappers : Array.from(root2.querySelectorAll("mermaid-diagram"));
+                diagrams.forEach((diagram) => {
                   const svg2 = diagram.querySelector(".mermaid-svg-container svg, svg");
                   if (svg2 instanceof SVGSVGElement) result.push(svg2.outerHTML);
                 });
                 return result;
               })();
               try {
-                const diagrams = doc3.querySelectorAll("mermaid-diagram, .mermaid-diagram");
+                const diagrams = doc3.querySelectorAll("mermaid-diagram");
                 diagrams.forEach((diag, diagramIndex) => {
                   const code = decodeMermaidAttrCode(diag.getAttribute("code") || diag.getAttribute("data-code") || "").trim();
                   const svgMarkup = liveMermaidSvgs[diagramIndex] || "";
@@ -64699,4 +64677,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-                                        
+//# sourceMappingURL=memo.bundle.js.map
