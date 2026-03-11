@@ -66,17 +66,26 @@ test.describe("Debug mermaid markdown import", () => {
             const style = window.getComputedStyle(el);
             return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
           }).length;
+        const visibleSvgCount = Array.from(document.querySelectorAll(".mermaid-svg-container svg"))
+          .filter((node) => {
+            const el = node as SVGSVGElement;
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+          }).length;
         const mermaidCodeBlocks = document.querySelectorAll("pre code.language-mermaid").length;
         const html = String((window as any).GoToolkitMemoInstance?.getValue?.() || "");
         return {
           wrappers,
           visibleContainers,
+          visibleSvgCount,
           mermaidCodeBlocks,
           htmlHasMermaidDiagram: html.includes("mermaid-diagram"),
         };
       });
     }, { timeout: 60_000 }).toMatchObject({
       wrappers: 3,
+      visibleSvgCount: 3,
       htmlHasMermaidDiagram: true,
     });
 
@@ -92,6 +101,13 @@ test.describe("Debug mermaid markdown import", () => {
             const style = window.getComputedStyle(el);
             return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
           }).length,
+        visibleSvgCount: Array.from(document.querySelectorAll(".mermaid-svg-container svg"))
+          .filter((node) => {
+            const el = node as SVGSVGElement;
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+          }).length,
         mermaidCodeBlocks: document.querySelectorAll("pre code.language-mermaid").length,
         htmlSnippet: html.slice(0, 2000),
         markdownSnippet: markdown.slice(0, 2000),
@@ -100,6 +116,67 @@ test.describe("Debug mermaid markdown import", () => {
     logStep("post-import-snapshot", snapshot);
 
     expect(snapshot.wrappers).toBe(3);
+    expect(snapshot.visibleSvgCount).toBe(3);
     expect(snapshot.mermaidCodeBlocks).toBe(0);
+
+    await page.reload({ waitUntil: "commit", timeout: 20_000 });
+    await dismissDocsTour(page).catch(() => null);
+    await waitForMemoReady(page, 60_000);
+    logStep("memo-ready-after-reload");
+
+    await expect.poll(async () => {
+      return page.evaluate(() => {
+        const wrappers = document.querySelectorAll(".mermaid-diagram-wrapper, mermaid-diagram").length;
+        const visibleSvgCount = Array.from(document.querySelectorAll(".mermaid-svg-container svg"))
+          .filter((node) => {
+            const el = node as SVGSVGElement;
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+          }).length;
+        const mermaidCodeBlocks = document.querySelectorAll("pre code.language-mermaid").length;
+        const html = String((window as any).GoToolkitMemoInstance?.getValue?.() || "");
+        return {
+          wrappers,
+          visibleSvgCount,
+          mermaidCodeBlocks,
+          htmlHasMermaidDiagram: html.includes("mermaid-diagram"),
+        };
+      });
+    }, { timeout: 60_000 }).toMatchObject({
+      wrappers: 3,
+      visibleSvgCount: 3,
+      htmlHasMermaidDiagram: true,
+    });
+
+    const reloadSnapshot = await page.evaluate(() => {
+      const html = String((window as any).GoToolkitMemoInstance?.getValue?.() || "");
+      const markdown = String((window as any).getMemoEditorSource?.("markdown") || "");
+      return {
+        wrappers: document.querySelectorAll(".mermaid-diagram-wrapper, mermaid-diagram").length,
+        visibleContainers: Array.from(document.querySelectorAll(".mermaid-diagram-container"))
+          .filter((node) => {
+            const el = node as HTMLElement;
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+          }).length,
+        visibleSvgCount: Array.from(document.querySelectorAll(".mermaid-svg-container svg"))
+          .filter((node) => {
+            const el = node as SVGSVGElement;
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+          }).length,
+        mermaidCodeBlocks: document.querySelectorAll("pre code.language-mermaid").length,
+        htmlSnippet: html.slice(0, 2000),
+        markdownSnippet: markdown.slice(0, 2000),
+      };
+    });
+    logStep("post-reload-snapshot", reloadSnapshot);
+
+    expect(reloadSnapshot.wrappers).toBe(3);
+    expect(reloadSnapshot.visibleSvgCount).toBe(3);
+    expect(reloadSnapshot.mermaidCodeBlocks).toBe(0);
   });
 });

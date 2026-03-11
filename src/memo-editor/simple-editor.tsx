@@ -368,6 +368,21 @@ const isFlowchartDiagram = (code: string) => {
   return header.startsWith('flowchart') || header.startsWith('graph');
 };
 
+const decodeMermaidAttrCode = (value: unknown) => {
+  const text = String(value || '');
+  if (!text) return '';
+  try {
+    const decoded = decodeURIComponent(text);
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = decoded;
+    return textarea.value || decoded;
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value || text;
+  }
+};
+
 const setFlowchartDirection = (code: string, direction: string) => {
   const lines = (code || '').split('\n');
   let updated = false;
@@ -6240,7 +6255,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             return node.nodeName === 'MERMAID-DIAGRAM' || node.tagName === 'MERMAID-DIAGRAM' || node.nodeName === 'mermaid-diagram';
           },
           replacement: function (_content: string, node: any) {
-            const code = node.getAttribute('code') || node.getAttribute('data-code') || '';
+            const code = decodeMermaidAttrCode(node.getAttribute('code') || node.getAttribute('data-code') || '');
             return '\n\n```mermaid\n' + code.trim() + '\n```\n\n';
           }
         });
@@ -6306,7 +6321,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             // 1. Handle Mermaid diagrams
             const diagrams = doc.querySelectorAll('mermaid-diagram');
             diagrams.forEach(diag => {
-              const code = diag.getAttribute('code') || diag.getAttribute('data-code') || '';
+              const code = decodeMermaidAttrCode(diag.getAttribute('code') || diag.getAttribute('data-code') || '');
               const pre = doc.createElement('pre');
               const codeElement = doc.createElement('code');
               codeElement.className = 'language-mermaid';
@@ -6457,7 +6472,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             try {
               const diagrams = doc.querySelectorAll('mermaid-diagram, .mermaid-diagram');
               diagrams.forEach((diag, diagramIndex) => {
-                const code = (diag.getAttribute('code') || diag.getAttribute('data-code') || '').trim();
+                const code = decodeMermaidAttrCode(diag.getAttribute('code') || diag.getAttribute('data-code') || '').trim();
                 const svgMarkup = liveMermaidSvgs[diagramIndex] || '';
                 const svgNode = getSanitizedSvgNode(svgMarkup);
                 if (svgNode) {
@@ -6931,7 +6946,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               if (!className.includes('language-mermaid')) return;
               const pre = codeEl.parentElement;
               if (!pre) return;
-              const mermaidCode = String(codeEl.textContent || '').trim();
+              const mermaidCode = decodeMermaidAttrCode(codeEl.textContent || '').trim();
               if (!mermaidCode) return;
               const mermaidDiagram = doc.createElement('mermaid-diagram');
               mermaidDiagram.setAttribute('code', encodeURIComponent(mermaidCode));

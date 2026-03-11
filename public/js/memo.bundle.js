@@ -53169,9 +53169,22 @@ ${content}</tr>
     const text2 = String(value || "");
     if (!text2) return "";
     try {
-      return decodeURIComponent(text2);
+      const decoded = decodeURIComponent(text2);
+      const textarea = document.createElement("textarea");
+      textarea.innerHTML = decoded;
+      return textarea.value || decoded;
     } catch (e) {
-      return text2;
+      const textarea = document.createElement("textarea");
+      textarea.innerHTML = text2;
+      return textarea.value || text2;
+    }
+  };
+  var INLINE_MERMAID_RENDER_CONFIG = {
+    startOnLoad: false,
+    theme: "default",
+    securityLevel: "strict",
+    flowchart: {
+      htmlLabels: false
     }
   };
   function sanitizeRenderedSvg(svgMarkup) {
@@ -53215,8 +53228,9 @@ ${content}</tr>
     const [svg2, setSvg] = react_shim_default.useState("");
     const [error, setError] = react_shim_default.useState(null);
     const [modalError, setModalError] = react_shim_default.useState(null);
-    const [lastValidCode, setLastValidCode] = react_shim_default.useState(node.attrs.code || "");
-    const [draftCode, setDraftCode] = react_shim_default.useState(node.attrs.code || "");
+    const initialCode = decodeMermaidHtmlAttr(node.attrs.code || "");
+    const [lastValidCode, setLastValidCode] = react_shim_default.useState(initialCode);
+    const [draftCode, setDraftCode] = react_shim_default.useState(initialCode);
     const [isLoading, setIsLoading] = react_shim_default.useState(false);
     const [showToast, setShowToast] = react_shim_default.useState(false);
     const containerRef = react_shim_default.useRef(null);
@@ -53231,7 +53245,7 @@ ${content}</tr>
     const composerTextareaRef = react_shim_default.useRef(null);
     const [editorPanelWidth, setEditorPanelWidth] = react_shim_default.useState(350);
     const resizeStateRef = react_shim_default.useRef(null);
-    const code = node.attrs.code || "";
+    const code = decodeMermaidHtmlAttr(node.attrs.code || "");
     const excalidrawJSON = node.attrs.excalidrawJSON || "";
     const autoOpen = node.attrs.autoOpen === true;
     const visibleSvg = svg2 || lastStableSvgRef.current;
@@ -53484,20 +53498,45 @@ ${promptInput.trim()}`
     }, [isEditing, draftCode, code, size2]);
     react_shim_default.useEffect(() => {
       if (isEditing) return;
-      if (!code || excalidrawJSON || !window.GoToolkitDrawMemo) return;
-      const syncKey = `${String(code)}::${String(size2)}`;
+      if (!code && !excalidrawJSON) return;
+      if (visibleSvg) return;
+      if (!window.GoToolkitDrawMemo) return;
+      const syncKey = `${String(code)}::${String(excalidrawJSON)}::${String(size2)}`;
       if (lastPreviewSyncKeyRef.current === syncKey) return;
       lastPreviewSyncKeyRef.current = syncKey;
       const syncPreview = async () => {
+        var _a, _b;
         try {
+          if (!excalidrawJSON && code) {
+            let mermaidApi = getMermaidApi();
+            if (!mermaidApi) {
+              try {
+                await ((_b = (_a = window.GoToolkitLazyCdn) == null ? void 0 : _a.loadMermaid) == null ? void 0 : _b.call(_a));
+              } catch (loadErr) {
+                console.warn("Mermaid lazy-load failed during preview hydration:", loadErr);
+              }
+              mermaidApi = getMermaidApi();
+            }
+            if (!mermaidApi) {
+              throw new Error("Mermaid CDN non charg\xE9");
+            }
+            const id = `mermaid-preview-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+            mermaidApi.initialize(INLINE_MERMAID_RENDER_CONFIG);
+            const { svg: svg3 } = await mermaidApi.render(id, code);
+            setSvg(sanitizeRenderedSvg(svg3));
+            setLastValidCode(code);
+            setError(null);
+            return;
+          }
           if (window.GoToolkitDrawMemo.renderPreview) {
-            const result = await window.GoToolkitDrawMemo.renderPreview(code, "auto", size2);
+            const previewInput = excalidrawJSON || code;
+            const result = await window.GoToolkitDrawMemo.renderPreview(previewInput, "auto", size2);
             if (result == null ? void 0 : result.skipped) {
               return;
             }
             const json2 = result == null ? void 0 : result.json;
             const svgHtml2 = result == null ? void 0 : result.svg;
-            if (json2) {
+            if (json2 && !excalidrawJSON) {
               updateAttributes2({ excalidrawJSON: json2 });
             }
             if (svgHtml2) {
@@ -53515,12 +53554,14 @@ ${promptInput.trim()}`
           tempDiv.style.opacity = "0";
           tempDiv.style.pointerEvents = "none";
           document.body.appendChild(tempDiv);
-          await window.GoToolkitDrawMemo.init(tempDiv, code, size2);
+          await window.GoToolkitDrawMemo.init(tempDiv, excalidrawJSON || code, size2);
           await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
           await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
           const json = window.GoToolkitDrawMemo.getSceneJSON();
           const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-          updateAttributes2({ excalidrawJSON: json });
+          if (!excalidrawJSON) {
+            updateAttributes2({ excalidrawJSON: json });
+          }
           setSvg(sanitizeRenderedSvg(svgHtml));
           setLastValidCode(code);
           document.body.removeChild(tempDiv);
@@ -53530,8 +53571,9 @@ ${promptInput.trim()}`
         }
       };
       syncPreview();
-    }, [code, excalidrawJSON, isEditing, size2]);
+    }, [code, excalidrawJSON, isEditing, size2, visibleSvg, updateAttributes2]);
     const renderDiagram = react_shim_default.useCallback(async () => {
+      var _a, _b;
       if (isEditing) return;
       if (excalidrawJSON) {
         try {
@@ -53572,17 +53614,21 @@ ${promptInput.trim()}`
         return;
       }
       try {
-        const mermaidApi = getMermaidApi();
+        let mermaidApi = getMermaidApi();
+        if (!mermaidApi) {
+          try {
+            await ((_b = (_a = window.GoToolkitLazyCdn) == null ? void 0 : _a.loadMermaid) == null ? void 0 : _b.call(_a));
+          } catch (loadErr) {
+            console.warn("Mermaid lazy-load failed:", loadErr);
+          }
+          mermaidApi = getMermaidApi();
+        }
         if (!mermaidApi) {
           setError("Mermaid CDN non charg\xE9");
           return;
         }
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        mermaidApi.initialize({
-          startOnLoad: false,
-          theme: "default",
-          securityLevel: "strict"
-        });
+        mermaidApi.initialize(INLINE_MERMAID_RENDER_CONFIG);
         const { svg: svg3 } = await mermaidApi.render(id, code);
         setSvg(sanitizeRenderedSvg(svg3));
         setError(null);
@@ -57143,6 +57189,20 @@ ${promptInput.trim()}`
   var isFlowchartDiagram = (code) => {
     const header = getDiagramHeaderLine(code).toLowerCase();
     return header.startsWith("flowchart") || header.startsWith("graph");
+  };
+  var decodeMermaidAttrCode = (value) => {
+    const text2 = String(value || "");
+    if (!text2) return "";
+    try {
+      const decoded = decodeURIComponent(text2);
+      const textarea = document.createElement("textarea");
+      textarea.innerHTML = decoded;
+      return textarea.value || decoded;
+    } catch (e) {
+      const textarea = document.createElement("textarea");
+      textarea.innerHTML = text2;
+      return textarea.value || text2;
+    }
   };
   var setFlowchartDirection = (code, direction) => {
     const lines = (code || "").split("\n");
@@ -62044,7 +62104,7 @@ ${promptInput.trim()}`
               return node.nodeName === "MERMAID-DIAGRAM" || node.tagName === "MERMAID-DIAGRAM" || node.nodeName === "mermaid-diagram";
             },
             replacement: function(_content, node) {
-              const code = node.getAttribute("code") || node.getAttribute("data-code") || "";
+              const code = decodeMermaidAttrCode(node.getAttribute("code") || node.getAttribute("data-code") || "");
               return "\n\n```mermaid\n" + code.trim() + "\n```\n\n";
             }
           });
@@ -62103,7 +62163,7 @@ ${innerMarkdown}
               const doc3 = parser2.parseFromString(html3, "text/html");
               const diagrams = doc3.querySelectorAll("mermaid-diagram");
               diagrams.forEach((diag) => {
-                const code = diag.getAttribute("code") || diag.getAttribute("data-code") || "";
+                const code = decodeMermaidAttrCode(diag.getAttribute("code") || diag.getAttribute("data-code") || "");
                 const pre = doc3.createElement("pre");
                 const codeElement = doc3.createElement("code");
                 codeElement.className = "language-mermaid";
@@ -62236,7 +62296,7 @@ ${innerMarkdown}
               try {
                 const diagrams = doc3.querySelectorAll("mermaid-diagram, .mermaid-diagram");
                 diagrams.forEach((diag, diagramIndex) => {
-                  const code = (diag.getAttribute("code") || diag.getAttribute("data-code") || "").trim();
+                  const code = decodeMermaidAttrCode(diag.getAttribute("code") || diag.getAttribute("data-code") || "").trim();
                   const svgMarkup = liveMermaidSvgs[diagramIndex] || "";
                   const svgNode = getSanitizedSvgNode(svgMarkup);
                   if (svgNode) {
@@ -62651,7 +62711,7 @@ ${innerMarkdown}
                 if (!className.includes("language-mermaid")) return;
                 const pre = codeEl.parentElement;
                 if (!pre) return;
-                const mermaidCode = String(codeEl.textContent || "").trim();
+                const mermaidCode = decodeMermaidAttrCode(codeEl.textContent || "").trim();
                 if (!mermaidCode) return;
                 const mermaidDiagram = doc3.createElement("mermaid-diagram");
                 mermaidDiagram.setAttribute("code", encodeURIComponent(mermaidCode));

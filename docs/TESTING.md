@@ -1,6 +1,6 @@
 # GoToolkit Test Guide
 
-Date: 2026-03-10
+Date: 2026-03-11
 Purpose: describe how to automate testing, cloud document manipulation, browser-session reuse, worker verification, deployment checks, and CI regression coverage in the current repo
 Audience: coding agents and maintainers working from the repo and terminal
 
@@ -121,12 +121,12 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-10 12:21`
-- `Scope`: `Tier 1`
-- `Execution length`: `5 tests`
-- `Execution time`: `00:57`
-- `Result`: `4 passed, 0 failed, 1 skipped`
-- `Details`: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
+- `Last execution`: `2026-03-11 15:10`
+- `Scope`: `tests/memo-import-mermaid-regression.spec.ts`
+- `Execution length`: `1 test`
+- `Execution time`: `00:10`
+- `Result`: `1 passed, 0 failed, 0 skipped`
+- `Details`: `Blank private-page Markdown import used the shared picker, made no OpenRouter calls, showed 3 Mermaid SVG previews, and opened the modal with left preview plus right-side source parity.`
 
 Tier suites:
 
@@ -177,8 +177,8 @@ Tier suites:
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `1 passed, 3 failed, 1 skipped` (`5 tests`, `00:20`) on `2026-03-10 11:53`
-  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
+  - results: `1 passed, 1 failed, 0 skipped` (`2 tests`, `00:08`) on `2026-03-11 16:23`
+  - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `cloud-history-explicit-sync.spec.ts`
     - description: explicit sync gating for remote `pages-history` writes
@@ -204,6 +204,11 @@ Tier suites:
     - description: private-page import of JPG OCR + PDF in one batch with direct paste into the active document
     - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
     - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
+
+  - `T2.6` `memo-import-mermaid-regression.spec.ts`
+    - description: blank private-page shared-picker Markdown import with no OpenRouter calls, auto-rendered Mermaid SVG previews, and modal code/diagram parity
+    - results: `passing` (`1 test`, `00:07`) on `2026-03-11 16:23`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 3` admin features
   - description: protected-space administration coverage for space-code rotation and post-rotate readability

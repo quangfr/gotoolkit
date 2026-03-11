@@ -18,10 +18,24 @@ const decodeMermaidHtmlAttr = (value: unknown): string => {
   const text = String(value || "");
   if (!text) return "";
   try {
-    return decodeURIComponent(text);
+    const decoded = decodeURIComponent(text);
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = decoded;
+    return textarea.value || decoded;
   } catch {
-    return text;
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value || text;
   }
+};
+
+const INLINE_MERMAID_RENDER_CONFIG = {
+  startOnLoad: false,
+  theme: 'default',
+  securityLevel: 'strict' as const,
+  flowchart: {
+    htmlLabels: false,
+  },
 };
 
 function sanitizeRenderedSvg(svgMarkup: string): string {
@@ -71,8 +85,9 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
   const [svg, setSvg] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const [modalError, setModalError] = React.useState<string | null>(null);
-  const [lastValidCode, setLastValidCode] = React.useState(node.attrs.code || '');
-  const [draftCode, setDraftCode] = React.useState(node.attrs.code || '');
+  const initialCode = decodeMermaidHtmlAttr(node.attrs.code || '');
+  const [lastValidCode, setLastValidCode] = React.useState(initialCode);
+  const [draftCode, setDraftCode] = React.useState(initialCode);
   const [isLoading, setIsLoading] = React.useState(false);
   const [showToast, setShowToast] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -93,7 +108,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     startWidth: number;
   } | null>(null);
 
-  const code = node.attrs.code || '';
+  const code = decodeMermaidHtmlAttr(node.attrs.code || '');
   const excalidrawJSON = node.attrs.excalidrawJSON || '';
   const autoOpen = node.attrs.autoOpen === true;
   const visibleSvg = svg || lastStableSvgRef.current;
@@ -386,26 +401,52 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     };
   }, [isEditing, draftCode, code, size]);
 
-  // Immediate preview on paste/init if excalidrawJSON is missing but code exists
+  // Hydrate the inline preview on mount/load whenever a Mermaid block has source
+  // but no rendered SVG yet. This covers imports, reloads, and cloud-loaded pages.
   React.useEffect(() => {
     if (isEditing) return;
-    if (!code || excalidrawJSON || !(window as any).GoToolkitDrawMemo) return;
+    if (!code && !excalidrawJSON) return;
+    if (visibleSvg) return;
+    if (!(window as any).GoToolkitDrawMemo) return;
 
-    const syncKey = `${String(code)}::${String(size)}`;
+    const syncKey = `${String(code)}::${String(excalidrawJSON)}::${String(size)}`;
     if (lastPreviewSyncKeyRef.current === syncKey) return;
     lastPreviewSyncKeyRef.current = syncKey;
 
     const syncPreview = async () => {
       try {
+        if (!excalidrawJSON && code) {
+          let mermaidApi = getMermaidApi();
+          if (!mermaidApi) {
+            try {
+              await (window as any).GoToolkitLazyCdn?.loadMermaid?.();
+            } catch (loadErr) {
+              console.warn('Mermaid lazy-load failed during preview hydration:', loadErr);
+            }
+            mermaidApi = getMermaidApi();
+          }
+          if (!mermaidApi) {
+            throw new Error('Mermaid CDN non chargé');
+          }
+          const id = `mermaid-preview-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          mermaidApi.initialize(INLINE_MERMAID_RENDER_CONFIG);
+          const { svg } = await mermaidApi.render(id, code);
+          setSvg(sanitizeRenderedSvg(svg));
+          setLastValidCode(code);
+          setError(null);
+          return;
+        }
+
         // Prefer the bridge preview helper if available (serialized & sized host)
         if ((window as any).GoToolkitDrawMemo.renderPreview) {
-          const result = await (window as any).GoToolkitDrawMemo.renderPreview(code, 'auto', size);
+          const previewInput = excalidrawJSON || code;
+          const result = await (window as any).GoToolkitDrawMemo.renderPreview(previewInput, 'auto', size);
           if (result?.skipped) {
             return;
           }
           const json = result?.json;
           const svgHtml = result?.svg;
-          if (json) {
+          if (json && !excalidrawJSON) {
             updateAttributes({ excalidrawJSON: json });
           }
           if (svgHtml) {
@@ -425,12 +466,14 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
         tempDiv.style.opacity = '0';
         tempDiv.style.pointerEvents = 'none';
         document.body.appendChild(tempDiv);
-        await (window as any).GoToolkitDrawMemo.init(tempDiv, code, size);
+        await (window as any).GoToolkitDrawMemo.init(tempDiv, excalidrawJSON || code, size);
         await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
         await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
         const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
         const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
-        updateAttributes({ excalidrawJSON: json });
+        if (!excalidrawJSON) {
+          updateAttributes({ excalidrawJSON: json });
+        }
         setSvg(sanitizeRenderedSvg(svgHtml));
         setLastValidCode(code);
         document.body.removeChild(tempDiv);
@@ -440,7 +483,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
       }
     };
     syncPreview();
-  }, [code, excalidrawJSON, isEditing, size]);
+  }, [code, excalidrawJSON, isEditing, size, visibleSvg, updateAttributes]);
 
   const renderDiagram = React.useCallback(async () => {
     // Skip preview rendering while editing to avoid competing with the modal view
@@ -490,7 +533,15 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     }
 
     try {
-      const mermaidApi = getMermaidApi();
+      let mermaidApi = getMermaidApi();
+      if (!mermaidApi) {
+        try {
+          await (window as any).GoToolkitLazyCdn?.loadMermaid?.();
+        } catch (loadErr) {
+          console.warn('Mermaid lazy-load failed:', loadErr);
+        }
+        mermaidApi = getMermaidApi();
+      }
       if (!mermaidApi) {
         setError('Mermaid CDN non chargé');
         return;
@@ -500,11 +551,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
       const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       // Configure mermaid for this render
-      mermaidApi.initialize({ 
-        startOnLoad: false,
-        theme: 'default',
-        securityLevel: 'strict',
-      });
+      mermaidApi.initialize(INLINE_MERMAID_RENDER_CONFIG);
 
       const { svg } = await mermaidApi.render(id, code);
       setSvg(sanitizeRenderedSvg(svg));

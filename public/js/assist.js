@@ -6494,6 +6494,7 @@
 
         var self = this;
         var fileArray = Array.from(files);
+        var originalFileArray = fileArray.slice();
 
         // Filter out table-like/structured formats not supported for memo import
         var unsupportedImportExtensions = ["xlsx", "csv", "tsv", "ods", "json", "har", "hag"];
@@ -6538,13 +6539,13 @@
         var markdownViaAi = Boolean(options.markdownViaAi) ||
             Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.markdownViaAiEnabled", false));
 
-        if (CHAT_APP_ID === "memo" && memoId && directMarkdownImport) {
-            var allFilesAreMarkdown = fileArray.length > 0 && fileArray.every(function (file) {
+        if (CHAT_APP_ID === "memo" && directMarkdownImport) {
+            var allFilesAreMarkdown = originalFileArray.length > 0 && originalFileArray.every(function (file) {
                 var name = String(file?.name || "").toLowerCase();
                 return name.endsWith(".md") || name.endsWith(".markdown");
             });
             if (allFilesAreMarkdown) {
-                var didImportMarkdown = await this.importMarkdownFilesDirectly(fileArray);
+                var didImportMarkdown = await this.importMarkdownFilesDirectly(originalFileArray);
                 if (didImportMarkdown) {
                     return;
                 }
