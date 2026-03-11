@@ -53259,22 +53259,6 @@ ${content}</tr>
     react_shim_default.useEffect(() => {
       updateAttributesRef.current = updateAttributes2;
     }, [updateAttributes2]);
-    react_shim_default.useEffect(() => {
-      if (persistedPreviewSvg) {
-        setSvg((prev) => prev || persistedPreviewSvg);
-        lastStableSvgRef.current = persistedPreviewSvg;
-      }
-    }, [persistedPreviewSvg]);
-    react_shim_default.useEffect(() => {
-      if (visibleSvg) {
-        lastStableSvgRef.current = visibleSvg;
-        return;
-      }
-      if (!code.trim() && !excalidrawJSON) {
-        lastStableSvgRef.current = "";
-        previewSourceRef.current = "none";
-      }
-    }, [code, excalidrawJSON, visibleSvg]);
     const getAutoResizeHeight = (textarea) => {
       textarea.style.height = "auto";
       const scrollHeight = textarea.scrollHeight;
@@ -53450,6 +53434,22 @@ ${promptInput.trim()}`
     const contentKey = `${code}::${excalidrawJSON}::${size2}`;
     const persistedPreviewSvg = String(node.attrs.previewKey || "") === contentKey ? decodeMermaidHtmlAttr(node.attrs.previewSvg || "") : "";
     const visibleSvg = svg2 || persistedPreviewSvg || lastStableSvgRef.current;
+    react_shim_default.useEffect(() => {
+      if (persistedPreviewSvg) {
+        setSvg((prev) => prev || persistedPreviewSvg);
+        lastStableSvgRef.current = persistedPreviewSvg;
+      }
+    }, [persistedPreviewSvg]);
+    react_shim_default.useEffect(() => {
+      if (visibleSvg) {
+        lastStableSvgRef.current = visibleSvg;
+        return;
+      }
+      if (!code.trim() && !excalidrawJSON) {
+        lastStableSvgRef.current = "";
+        previewSourceRef.current = "none";
+      }
+    }, [code, excalidrawJSON, visibleSvg]);
     const isMermaidDiagnosticsEnabled = () => {
       try {
         if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "0") return false;
