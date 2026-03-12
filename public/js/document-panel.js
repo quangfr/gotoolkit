@@ -421,7 +421,9 @@
         });
 
         function setActiveTab(target, options) {
-            const canUseToc = Boolean(tocPanel && tabBtns.length && Array.from(tabBtns).some(b => b.dataset.tab === "toc"));
+            const forceLibraryTab = appId === "memo";
+            const canUseToc = !forceLibraryTab
+                && Boolean(tocPanel && tabBtns.length && Array.from(tabBtns).some(b => b.dataset.tab === "toc"));
             const nextTarget = (target === "toc" && canUseToc) ? "toc" : "library";
             const shouldRender = options?.renderToc ?? true;
 
@@ -436,6 +438,11 @@
 
         function ensureDefaultTab() {
             if (hasDefaultTabSet) return;
+            if (appId === "memo") {
+                setActiveTab("library", { renderToc: false });
+                hasDefaultTabSet = true;
+                return;
+            }
             const activeId = typeof getActiveId?.() === "string" ? getActiveId().trim() : "";
             const headings = (window.MemoHeadings || []).filter(h => h.level >= 1 && h.level <= 4);
 
