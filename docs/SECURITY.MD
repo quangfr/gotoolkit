@@ -24,6 +24,7 @@ Open this file when you need to answer questions like:
 ## 0.1 Fast map
 
 - CSP lives in app HTML meta tags and must stay aligned with `firebase.json`.
+- App-facing worker allowlists should include both hosted origins: `https://gotoolkit.fr` and `https://gotoolkit.web.app`.
 - Share protection is split between `X-Space-Auth`, `contentKey`, and sync anti-replay headers.
 - `spaceCode` obtains access; it does not act as the bearer token.
 - Worker secrets such as `X-Space-Create-Secret` are for privileged admin/bootstrap routes only.
@@ -63,10 +64,13 @@ Main app pages use CSP that currently allows:
 
 `public/legal.html` has a narrower CSP.
 
+Use relative app links for same-site navigation to GoToolkit pages so `gotoolkit.fr` and `gotoolkit.web.app` behave the same.
+
 When changing network targets, script loading, iframes, or workers, check both:
 
 - page-level CSP in the HTML file
 - hosting CSP in `firebase.json`
+- worker origin allowlists and any env overrides such as `SHARE_ALLOWED_ORIGINS`
 
 ### 2.1 CSP hash update process for inline scripts
 

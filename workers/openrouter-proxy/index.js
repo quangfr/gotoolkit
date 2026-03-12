@@ -1,5 +1,6 @@
 const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
   "https://gotoolkit.fr",
+  "https://gotoolkit.web.app",
   "https://www.gotoolkit.fr",
   "https://gotoolkit.workers.dev"
 ]);

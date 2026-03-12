@@ -35,6 +35,7 @@ const ALLOWED_ASSET_FILE_EXTENSIONS = new Set([
 ]);
 const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
   "https://gotoolkit.fr",
+  "https://gotoolkit.web.app",
   "https://www.gotoolkit.fr",
   "https://gotoolkit.workers.dev"
 ]);
