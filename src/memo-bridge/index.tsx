@@ -76,15 +76,6 @@ const App = () => {
             .trim();
     }, []);
 
-    const stabilizeProgrammaticContent = React.useCallback((content: string) => {
-        const text = String(content || '');
-        if (!text) return '';
-        return text.replace(
-            /(<\/h[1-6]>)(\s*)(?=<(table|mermaid-diagram|pre|blockquote|ul|ol|details)\b)/gi,
-            '$1\u200b'
-        );
-    }, []);
-
     const hashProgrammaticContent = React.useCallback((content: string) => {
         const normalized = normalizeProgrammaticContent(content);
         let hash = 2166136261;
@@ -107,17 +98,17 @@ const App = () => {
     const applyProgrammaticContent = React.useCallback((id: string, methods: any, content: string) => {
         const targetId = String(id || '').trim();
         if (!targetId || !methods?.instance?.commands?.setContent) return;
-        const stabilizedContent = stabilizeProgrammaticContent(content);
-        suppressProgrammaticChange(targetId, stabilizedContent);
+        const normalizedContent = String(content || '');
+        suppressProgrammaticChange(targetId, normalizedContent);
         try {
-            methods.instance.commands.setContent(stabilizedContent);
+            methods.instance.commands.setContent(normalizedContent);
         } catch (err) {
             const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
             delete nextSuppressed[targetId];
             suppressedProgrammaticChangeRef.current = nextSuppressed;
             throw err;
         }
-    }, [stabilizeProgrammaticContent, suppressProgrammaticChange]);
+    }, [suppressProgrammaticChange]);
 
     // Stable callback to prevent render loops
     const handleEditorReady = React.useCallback((id: string, methods: any) => {
@@ -149,25 +140,25 @@ const App = () => {
 
     const handleEditorChange = React.useCallback((newContent: string, id?: string) => {
         const targetId = String(id || "").trim();
-        const stabilizedContent = stabilizeProgrammaticContent(newContent);
+        const nextContent = String(newContent || '');
         if (!targetId) {
-            if (onChangeCb) onChangeCb(stabilizedContent, id);
+            if (onChangeCb) onChangeCb(nextContent, id);
             return;
         }
         const suppressedContentHash = suppressedProgrammaticChangeRef.current[targetId];
-        const nextContentHash = hashProgrammaticContent(stabilizedContent);
+        const nextContentHash = hashProgrammaticContent(nextContent);
         if (typeof suppressedContentHash === 'string' && suppressedContentHash === nextContentHash) {
             const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
             delete nextSuppressed[targetId];
             suppressedProgrammaticChangeRef.current = nextSuppressed;
             setEditors(prev => {
                 const current = prev[targetId];
-                if (!current || current.content === stabilizedContent) return prev;
+                if (!current || current.content === nextContent) return prev;
                 const next = {
                     ...prev,
                     [targetId]: {
                         ...current,
-                        content: stabilizedContent
+                        content: nextContent
                     }
                 };
                 editorsRef.current = next;
@@ -178,34 +169,34 @@ const App = () => {
         setEditors(prev => {
             const current = prev[targetId];
             if (!current) return prev;
-            if (current.content === stabilizedContent) return prev;
+            if (current.content === nextContent) return prev;
             const next = {
                 ...prev,
                 [targetId]: {
                     ...current,
-                    content: stabilizedContent
+                    content: nextContent
                 }
             };
             editorsRef.current = next;
             return next;
         });
-        if (onChangeCb) onChangeCb(stabilizedContent, targetId);
-    }, [hashProgrammaticContent, onChangeCb, stabilizeProgrammaticContent]);
+        if (onChangeCb) onChangeCb(nextContent, targetId);
+    }, [hashProgrammaticContent, onChangeCb]);
 
     useEffect(() => {
         const api: MemoEditorApi = {
             setValue: (newContent: string) => {
                 const methods = activeInstanceRef.current;
-                const stabilizedContent = stabilizeProgrammaticContent(newContent);
-                const contentLength = stabilizedContent?.length || 0;
+                const nextContent = String(newContent || '');
+                const contentLength = nextContent.length || 0;
                 const start = performance.now();
                 if (methods?.instance) {
                     const targetId = String(activeIdRef.current || 'default');
-                    applyProgrammaticContent(targetId, methods, stabilizedContent);
+                    applyProgrammaticContent(targetId, methods, nextContent);
                 } else if ((window as any).MemoEditor) {
                     const targetId = String(activeIdRef.current || 'default');
-                    suppressProgrammaticChange(targetId, stabilizedContent);
-                    (window as any).MemoEditor.commands.setContent(stabilizedContent);
+                    suppressProgrammaticChange(targetId, nextContent);
+                    (window as any).MemoEditor.commands.setContent(nextContent);
                 }
                 const duration = Math.round(performance.now() - start);
                 if (duration > 100) {
@@ -273,7 +264,7 @@ const App = () => {
                 activeIdRef.current = id;
                 setEditors(prev => {
                     const hasExisting = Boolean(prev[id]);
-                    const nextContent = typeof initialContent === 'string' ? stabilizeProgrammaticContent(initialContent) : '';
+                    const nextContent = typeof initialContent === 'string' ? initialContent : '';
                     const existingContent = hasExisting && typeof prev[id]?.content === 'string' ? prev[id].content : '';
                     const resolvedContent = typeof initialContent === 'string'
                         ? nextContent
@@ -372,7 +363,7 @@ const App = () => {
         // Expose the API to the window as expected by index.html
         (window as any).GoToolkitMemoEditorReady = Promise.resolve(api);
         (window as any).GoToolkitMemoInstance = api;
-    }, [applyProgrammaticContent, stabilizeProgrammaticContent, suppressProgrammaticChange]);
+    }, [applyProgrammaticContent, suppressProgrammaticChange]);
 
     // Update global methods whenever active instance changes
     useEffect(() => {

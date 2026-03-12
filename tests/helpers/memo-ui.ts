@@ -1,44 +1,44 @@
 import { expect, Page } from "@playwright/test";
 
+function hasVisibleMemoEditor() {
+  const nodes = Array.from(document.querySelectorAll(".ProseMirror")) as HTMLElement[];
+  return nodes.some(node => {
+    const style = window.getComputedStyle(node);
+    const rect = node.getBoundingClientRect();
+    return style.display !== "none"
+      && style.visibility !== "hidden"
+      && rect.width > 0
+      && rect.height > 0;
+  });
+}
+
 export async function waitForMemoReady(page: Page, timeout = 45_000) {
   await dismissShareAccessGateIfPresent(page, Math.min(timeout, 8_000));
   await page.waitForFunction(() => {
     const w = window as any;
-    const editorVisible = Array.from(document.querySelectorAll(".ProseMirror")).some(node => {
-      const el = node as HTMLElement;
-      const style = window.getComputedStyle(el);
-      const rect = el.getBoundingClientRect();
-      return style.display !== "none"
-        && style.visibility !== "hidden"
-        && rect.width > 0
-        && rect.height > 0;
-    });
-    const hasMemoApis = Boolean(
-      w.GoToolkitMemoCreateAutoDocument
-      && (w.GoToolkitMemoGetActiveDocumentId || w.GoToolkitMemoOpenDocumentByLink)
+    const explorerReady = Boolean(
+      w.GoToolkitMemoDocumentExplorer?.refresh
+      && document.querySelector("#documentExplorer")
     );
+    const emptyStateReady = Boolean(document.getElementById("memoEmptyState"));
     return Boolean(
-      (w.goToolkitDocumentApi?.getRecord && (w.GoToolkitMemoGetActiveDocumentId || w.GoToolkitMemoOpenDocumentByLink))
-      || (hasMemoApis && editorVisible)
+      w.goToolkitDocumentApi?.getRecord
+      && w.GoToolkitMemoCreateAutoDocument
+      && (w.GoToolkitMemoGetActiveDocumentId || w.GoToolkitMemoOpenDocumentByLink)
+      && (explorerReady || emptyStateReady)
     );
   }, null, { timeout });
+  await dismissShareAccessGateIfPresent(page, Math.min(timeout, 2_000));
+}
 
+export async function waitForMemoEditorVisible(page: Page, timeout = 45_000) {
+  await dismissShareAccessGateIfPresent(page, Math.min(timeout, 8_000));
   const deadline = Date.now() + timeout;
   let lastError: unknown = null;
   while (Date.now() < deadline) {
     try {
       await dismissShareAccessGateIfPresent(page, 500);
-      const editorVisible = await page.evaluate(() => {
-        const nodes = Array.from(document.querySelectorAll(".ProseMirror")) as HTMLElement[];
-        return nodes.some(node => {
-          const style = window.getComputedStyle(node);
-          const rect = node.getBoundingClientRect();
-          return style.display !== "none"
-            && style.visibility !== "hidden"
-            && rect.width > 0
-            && rect.height > 0;
-        });
-      });
+      const editorVisible = await page.evaluate(hasVisibleMemoEditor);
       if (editorVisible) return;
     } catch (error) {
       lastError = error;
@@ -48,6 +48,20 @@ export async function waitForMemoReady(page: Page, timeout = 45_000) {
 
   if (lastError) throw lastError;
   throw new Error(`Memo editor did not become visible within ${timeout}ms`);
+}
+
+export async function createLocalMemoPageFromUi(page: Page, timeout = 45_000) {
+  const createButton = page.locator(
+    "#documentExplorer .document-explorer__section-header[data-section='private'] .document-explorer__item-action[title='Créer une page racine'], " +
+    "#documentExplorer .document-explorer__section-header[data-section='private'] .document-explorer__item-action[title='Ajouter une page']"
+  ).first();
+  await expect(createButton).toBeVisible({ timeout });
+  await createButton.click();
+  await page.waitForFunction(() => {
+    const w = window as any;
+    return Boolean(String(w.GoToolkitMemoGetActiveDocumentId?.() || "").trim());
+  }, null, { timeout });
+  await waitForMemoEditorVisible(page, timeout);
 }
 
 export async function refreshMemoExplorer(page: Page, timeout = 45_000) {

@@ -197,6 +197,47 @@ Use this when `/` should stay empty, or when a page should reopen the normal mem
   - verify the active-page transition awaits the document-tab/header render
   - `updateEmptyState()` must run after the active document id is set
 
+### 3.3 Local memo page data flow across page switch and refresh
+
+Use this map when a memo page survives page switch but fails on refresh.
+
+Local layers:
+
+- route or bootstrap metadata
+  - URL doc id
+  - `localStorage["goToolkit.memo.openDocuments"]`
+- in-memory memo state
+  - `window.__memoState.activeTabId`
+  - `window.__memoState.tabs[*].content`
+- durable record
+  - IndexedDB `document-api`
+- visible editor
+  - ProseMirror DOM
+
+Page switch:
+
+1. save current live editor into tab state
+2. change `activeTabId`
+3. hydrate editor from tab content
+
+Refresh:
+
+1. lifecycle flush may write current state to `document-api`
+2. open-doc metadata is written to localStorage
+3. startup restores active doc id
+4. app reads `document-api`
+5. memo state is rebuilt
+6. editor hydrates from rebuilt state
+
+Isolation rules:
+
+- switch passes, refresh fails, record wrong
+  - inspect lifecycle flush and startup overwrite
+- switch passes, refresh fails, record correct
+  - inspect restore and hydration
+- import wrong before refresh
+  - inspect parser or programmatic `setValue(...)`
+
 ## 4. Share history and cloud drafts
 
 Share history store:

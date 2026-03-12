@@ -114,6 +114,20 @@ Treat `scripts/csp-common.js` as canonical for CSP-related checks.
 - Keep ad hoc test/debug scripts in `tests/debug/`.
 - After any requested Playwright execution, verify the coverage-map update in [`docs/TESTING.md`](docs/TESTING.md).
 - If a suite still shows `duration not measured separately`, rerun that suite or tier through the repo wrapper so metrics are written back correctly.
+- For state, refresh, reload, switch, or sync bugs, add temporary step logs before changing logic:
+  - use one stable prefix
+  - log before and after each meaningful step
+  - log identifiers, payload length, and a small content fingerprint
+- Compare the same data across layers before deciding where the bug lives:
+  - visible UI or rendered DOM
+  - in-memory app state
+  - durable local storage such as IndexedDB or `localStorage`
+  - remote state or API payloads when relevant
+- The goal is to find the first step where the layers diverge:
+  - wrong in UI and state before persistence: render, parser, or state bug
+  - wrong only after save: persistence or overwrite bug
+  - correct in storage but wrong after reopen: restore or hydration bug
+- If one fixture reproduces the bug reliably, keep it in `tests/fixtures/` and add one focused spec in `tests/debug/` first.
 
 ## Build and deployment rules
 
@@ -140,5 +154,6 @@ Treat `scripts/csp-common.js` as canonical for CSP-related checks.
 
 - `git status --short`
 - `rg -n "<feature|error|token>" public workers -S`
+- `rg -n "MemoRefreshDebug|goToolkit\\.memo\\.refreshDebug|OPEN_DOCS_STORAGE_KEY" public/index.html public/js src tests -S`
 - `node --check <touched-js-file>`
 - `npm run check:csp`

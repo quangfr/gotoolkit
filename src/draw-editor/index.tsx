@@ -10,9 +10,9 @@ import { parseMermaidToExcalidraw } from "@excalidraw/mermaid-to-excalidraw";
 const DEFAULT_EXCALIDRAW_TEXT_SIZE = 20;
 const MERMAID_OPTIONS = { fontSize: 20 };
 const MERMAID_TEXT_SIZE_OFFSET = 4;
-// Fix for Excalidraw assets version being undefined
+// Excalidraw appends `/dist/excalidraw-assets/` internally for exported fonts.
 if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
-    (window as any).EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6/dist/";
+    (window as any).EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6";
 }
 const getExcalidrawLib = () => {
     const lib = (window as any).ExcalidrawLib;
@@ -36,27 +36,6 @@ const MERMAID_ELEMENT_STYLE_DEFAULTS = {
     roughness: 0,
     roundness: null
 };
-const getDrawBundleVersion = (): string | null => {
-    try {
-        const scripts = Array.from(document.querySelectorAll("script[src]"));
-        const match = scripts.find(script => script.getAttribute("src")?.includes("draw.bundle.js"));
-        const src = match?.getAttribute("src") || "";
-        const params = src.split("?")[1] || "";
-        const vParam = params.split("&").find(part => part.startsWith("v="));
-        return vParam ? vParam.replace("v=", "") : null;
-    } catch {
-        return null;
-    }
-};
-const isMermaidDiagnosticsEnabled = (): boolean => {
-    try {
-        if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "0") return false;
-        if ((window as any).GoToolkitMermaidDiagnostics === false) return false;
-        return true;
-    } catch {
-        return true;
-    }
-};
 const isMermaidSvgFallbackEnabled = (): boolean => {
     try {
         if (localStorage.getItem("goToolkit.mermaidSvgFallback") === "1") return true;
@@ -67,66 +46,6 @@ const isMermaidSvgFallbackEnabled = (): boolean => {
     } catch {
         return false;
     }
-};
-const getMermaidRuntimeInfo = () => {
-    try {
-        const mermaid = (window as any).mermaid;
-        if (!mermaid) {
-            return { loaded: false };
-        }
-        const version =
-            mermaid.version ||
-            mermaid?.default?.version ||
-            mermaid?.mermaidAPI?.version ||
-            null;
-        const config = typeof mermaid.getConfig === "function" ? mermaid.getConfig() : null;
-        return {
-            loaded: true,
-            version,
-            hasRender: typeof mermaid.render === "function",
-            config
-        };
-    } catch (error) {
-        return { loaded: false, error };
-    }
-};
-const getMermaidRawInfo = () => {
-    try {
-        const mermaid = (window as any).mermaid;
-        if (!mermaid) return { loaded: false };
-        return {
-            loaded: true,
-            keys: Object.keys(mermaid || {}),
-            mermaidAPIKeys: Object.keys(mermaid?.mermaidAPI || {}),
-            hasDefault: typeof mermaid?.default === "object",
-            defaultKeys: mermaid?.default ? Object.keys(mermaid.default) : []
-        };
-    } catch (error) {
-        return { loaded: false, error };
-    }
-};
-const getMermaidHeaderLine = (code: string): string => {
-    const lines = code.split(/\r?\n/);
-    for (const rawLine of lines) {
-        const line = rawLine.trim();
-        if (!line) continue;
-        if (line.startsWith("%%{") && line.endsWith("}%%")) continue;
-        if (line.startsWith("%%")) continue;
-        return line;
-    }
-    return "";
-};
-const detectMermaidDiagramType = (code: string): string => {
-    const header = getMermaidHeaderLine(code).toLowerCase();
-    if (header.startsWith("flowchart") || header.startsWith("graph")) return "flowchart";
-    if (header.startsWith("sequencediagram")) return "sequence";
-    if (header.startsWith("classdiagram")) return "class";
-    if (header.startsWith("erdiagram")) return "er";
-    if (header.startsWith("statediagram")) return "state";
-    if (header.startsWith("gantt")) return "gantt";
-    if (header.startsWith("journey")) return "journey";
-    if (header.startsWith("pie")) return "pie";
-    return "unknown";
 };
 const parseSvgPathPoints = (d: string): Array<{ x: number; y: number }> => {
     const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
@@ -163,37 +82,6 @@ const parseSvgPathPoints = (d: string): Array<{ x: number; y: number }> => {
         }
     });
     return points;
-};
-const summarizeMermaidElements = (elements: any[], maxSamples: number = 3) => {
-    const byType: Record<string, number> = {};
-    const linearSamples: Array<{
-        type: string;
-        points: number;
-        startArrowhead: any;
-        endArrowhead: any;
-        strokeWidth: any;
-        strokeStyle: any;
-    }> = [];
-    const hasLineLike = (el: any) => el?.type === "line" || el?.type === "arrow";
-    for (const el of elements || []) {
-        const type = el?.type ?? "unknown";
-        byType[type] = (byType[type] || 0) + 1;
-        if (hasLineLike(el) && linearSamples.length < maxSamples) {
-            linearSamples.push({
-                type,
-                points: Array.isArray(el?.points) ? el.points.length : 0,
-                startArrowhead: (el as any)?.startArrowhead ?? null,
-                endArrowhead: (el as any)?.endArrowhead ?? null,
-                strokeWidth: (el as any)?.strokeWidth ?? null,
-                strokeStyle: (el as any)?.strokeStyle ?? null
-            });
-        }
-    }
-    return {
-        total: elements?.length ?? 0,
-        byType,
-        linearSamples
-    };
 };
 const toFiniteNumber = (value: unknown, fallback = 0): number => {
     const num = Number(value);
@@ -760,10 +648,7 @@ class ExcalidrawBridge {
         }
 
         const fontSize = options?.fontSize ?? MERMAID_OPTIONS.fontSize;
-        const diagramType = detectMermaidDiagramType(trimmed);
-        const isFlowchart = diagramType === "flowchart";
-        let dbEdgesCount: number | null = null;
-        let dbVerticesCount: number | null = null;
+        const isFlowchart = /^\s*(flowchart|graph)\b/i.test(trimmed);
         
         // Build the bridge-compatible config
         const mermaidConfig: any = {
@@ -814,194 +699,7 @@ class ExcalidrawBridge {
         await Promise.resolve();
         await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
 
-        if (isMermaidDiagnosticsEnabled()) {
-            try {
-                const mermaidInfo = getMermaidRuntimeInfo();
-                const headerLine = getMermaidHeaderLine(trimmed);
-                const mermaidApi = (window as any).mermaid;
-                const getDiagramType = typeof mermaidApi?.mermaidAPI?.getDiagramFromText;
-                const hasGetDiagram = getDiagramType === "function";
-                const mermaidApiVersion =
-                    mermaidApi?.version ||
-                    mermaidApi?.mermaidAPI?.version ||
-                    mermaidApi?.default?.version ||
-                    null;
-                let detectType: string | null = null;
-                try {
-                    if (typeof mermaidApi?.detectType === "function") {
-                        detectType = mermaidApi.detectType(trimmed);
-                    }
-                } catch {
-                    detectType = null;
-                }
-                let parseStatus: { ok: boolean; error?: string } | null = null;
-                try {
-                    if (typeof mermaidApi?.parse === "function") {
-                        await mermaidApi.parse(trimmed);
-                        parseStatus = { ok: true };
-                    }
-                } catch (error: any) {
-                    parseStatus = { ok: false, error: error?.message || String(error) };
-                }
-                const pickConfig = (cfg: any) => {
-                    if (!cfg || typeof cfg !== "object") return null;
-                    return {
-                        theme: cfg.theme ?? null,
-                        securityLevel: cfg.securityLevel ?? null,
-                        htmlLabels: cfg.flowchart?.htmlLabels ?? null,
-                        curve: cfg.flowchart?.curve ?? null,
-                        nodeSpacing: cfg.flowchart?.nodeSpacing ?? null,
-                        rankSpacing: cfg.flowchart?.rankSpacing ?? null,
-                        padding: cfg.flowchart?.padding ?? null,
-                        fontSize: cfg.themeVariables?.fontSize ?? null
-                    };
-                };
-                const apiConfig =
-                    typeof mermaidApi?.mermaidAPI?.getConfig === "function"
-                        ? mermaidApi.mermaidAPI.getConfig()
-                        : null;
-                const siteConfig =
-                    typeof mermaidApi?.mermaidAPI?.getSiteConfig === "function"
-                        ? mermaidApi.mermaidAPI.getSiteConfig()
-                        : null;
-                console.log("[GoToolkit][MermaidDiagnostics] pre-parse", {
-                    drawBundleVersion: getDrawBundleVersion(),
-                    isFlowchart,
-                    diagramType,
-                    headerLine,
-                    codeLength: trimmed.length,
-                    mermaid: mermaidInfo,
-                    mermaidApi: {
-                        version: mermaidApiVersion,
-                        mermaidAPIKeys: Object.keys(mermaidApi?.mermaidAPI || {}),
-                        getDiagramFromTextType: getDiagramType,
-                        hasGetDiagramFromText: hasGetDiagram,
-                        hasRender: typeof mermaidApi?.render === "function",
-                        detectType,
-                        parseStatus
-                    },
-                    mermaidConfig,
-                    mermaidRuntimeConfig: pickConfig(apiConfig),
-                    mermaidSiteConfig: pickConfig(siteConfig)
-                });
-            } catch (error) {
-                console.warn("[GoToolkit][MermaidDiagnostics] pre-parse log failed", error);
-            }
-        }
-        if (isMermaidDiagnosticsEnabled()) {
-            try {
-                const mermaidApi = (window as any).mermaid;
-                const getDiagramFromText = mermaidApi?.mermaidAPI?.getDiagramFromText;
-                if (typeof getDiagramFromText === "function") {
-                    const diagram = await getDiagramFromText(trimmed);
-                    const db: any = diagram?.db ?? null;
-                    const edgesData = typeof db?.getEdges === "function" ? db.getEdges() : null;
-                    const verticesData = typeof db?.getVertices === "function" ? db.getVertices() : null;
-                    const edges = Array.isArray(edgesData) ? edgesData : [];
-                    let verticesCount = 0;
-                    let vertices: any[] = [];
-                    if (verticesData instanceof Map) {
-                        verticesCount = verticesData.size;
-                        vertices = Array.from(verticesData.values());
-                    } else if (verticesData && typeof verticesData === "object") {
-                        verticesCount = Object.keys(verticesData).length;
-                        vertices = Object.values(verticesData);
-                    }
-                    const edgesMissingId = edges.filter(edge => !edge?.id).length;
-                    const edgesMissingStartEnd = edges.filter(edge => !edge?.start || !edge?.end).length;
-                    const edgeTypes: Record<string, number> = {};
-                    edges.forEach(edge => {
-                        const type = edge?.type || "unknown";
-                        edgeTypes[type] = (edgeTypes[type] || 0) + 1;
-                    });
-                    const verticesMissingDomId = vertices.filter(v => !v?.domId).length;
-                    const vertexTypes: Record<string, number> = {};
-                    vertices.forEach(vertex => {
-                        const type = vertex?.type || "unknown";
-                        vertexTypes[type] = (vertexTypes[type] || 0) + 1;
-                    });
-                    dbEdgesCount = edges.length;
-                    dbVerticesCount = verticesCount;
-                    console.log("[GoToolkit][MermaidDiagnostics] pre-parse db", {
-                        diagramType: diagram?.type ?? null,
-                        hasDb: Boolean(db),
-                        edgesCount: edges.length,
-                        edgesMissingId,
-                        edgesMissingStartEnd,
-                        edgeTypes,
-                        verticesCount,
-                        verticesMissingDomId,
-                        vertexTypes,
-                        edgesSample: edges.slice(0, 5).map((edge: any) => ({
-                            id: edge?.id ?? null,
-                            start: edge?.start ?? null,
-                            end: edge?.end ?? null,
-                            type: edge?.type ?? null
-                        })),
-                        verticesSample: vertices.slice(0, 5).map((vertex: any) => ({
-                            id: vertex?.id ?? null,
-                            domId: vertex?.domId ?? null,
-                            type: vertex?.type ?? null,
-                            labelType: vertex?.labelType ?? null
-                        }))
-                    });
-                }
-            } catch (error) {
-                console.warn("[GoToolkit][MermaidDiagnostics] pre-parse db failed", error);
-            }
-        }
         let parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
-        if (isMermaidDiagnosticsEnabled()) {
-            try {
-                const bundleVersion = getDrawBundleVersion();
-                const elements = Array.isArray(parsed?.elements) ? parsed.elements : [];
-                const arrowLike = elements.filter((el: any) => el?.type === "arrow" || el?.type === "line");
-                const headerLine = getMermaidHeaderLine(trimmed);
-                console.log("[GoToolkit][MermaidDiagnostics] parsed", {
-                    drawBundleVersion: bundleVersion,
-                    isFlowchart,
-                    diagramType,
-                    headerLine,
-                    parsedKeys: parsed ? Object.keys(parsed) : [],
-                    parsedSummary: summarizeMermaidElements(elements),
-                    elements: elements.length,
-                    arrowLike: arrowLike.length,
-                    hasLineElements: arrowLike.length > 0
-                });
-                if (
-                    typeof dbEdgesCount === "number" &&
-                    dbEdgesCount > 0 &&
-                    arrowLike.length === 0
-                ) {
-                    console.warn("[GoToolkit][MermaidDiagnostics] edge mismatch", {
-                        dbEdgesCount,
-                        dbVerticesCount,
-                        parsedElements: elements.length
-                    });
-                    try {
-                        const mermaidApi = (window as any).mermaid;
-                        if (typeof mermaidApi?.mermaidAPI?.reset === "function") {
-                            mermaidApi.mermaidAPI.reset();
-                        }
-                        if (typeof mermaidApi?.initialize === "function") {
-                            mermaidApi.initialize({
-                                startOnLoad: false,
-                                ...mermaidConfig
-                            });
-                        }
-                        await Promise.resolve();
-                        await new Promise<void>(resolve =>
-                            window.requestAnimationFrame(() => resolve())
-                        );
-                        parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
-                    } catch {
-                        // no-op
-                    }
-                }
-            } catch (error) {
-                console.warn("[GoToolkit][MermaidDiagnostics] parse log failed", error);
-            }
-        }
         const baseSkeleton = Array.isArray(parsed?.elements) ? parsed?.elements : [];
         if (!baseSkeleton.length) {
             return null;
@@ -1010,16 +708,6 @@ class ExcalidrawBridge {
         const hasLineElements = skeleton.some(
             (el: any) => el?.type === "line" || el?.type === "arrow"
         );
-        if (isMermaidDiagnosticsEnabled()) {
-            try {
-                console.log("[GoToolkit][MermaidDiagnostics] skeleton summary", {
-                    hasLineElements,
-                    fallbackEnabled: isMermaidSvgFallbackEnabled()
-                });
-            } catch {
-                // no-op
-            }
-        }
         if (!hasLineElements && isMermaidSvgFallbackEnabled()) {
             try {
                 const mermaidApi = (window as any).mermaid;

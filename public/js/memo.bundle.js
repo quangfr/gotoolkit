@@ -53461,72 +53461,6 @@ ${promptInput.trim()}`
         previewSourceRef.current = "none";
       }
     }, [code, excalidrawJSON, visibleSvg]);
-    const isMermaidDiagnosticsEnabled = () => {
-      try {
-        if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "0") return false;
-        if (window.GoToolkitMermaidDiagnostics === false) return false;
-        return true;
-      } catch (e) {
-        return true;
-      }
-    };
-    react_shim_default.useEffect(() => {
-      if (!isEditing) return;
-      if (!isMermaidDiagnosticsEnabled()) return;
-      const logContainer = (label) => {
-        const container3 = document.querySelector(".mermaid-modal-draw-container");
-        if (!container3) {
-          console.warn("[mermaid-modal]", label, "draw container not found");
-          return;
-        }
-      };
-      const logHost = (label) => {
-        const host = excalidrawHostRef.current;
-        if (!host) {
-          console.warn("[mermaid-modal]", label, "excalidraw host not found");
-          return;
-        }
-      };
-      const logLib = (label) => {
-        const lib2 = window.GoToolkitExcalidraw;
-        if (!lib2) {
-          console.warn("[mermaid-modal]", label, "GoToolkitExcalidraw missing");
-          return;
-        }
-        if (typeof (lib2 == null ? void 0 : lib2.convertMermaid) !== "function") {
-          console.warn("[mermaid-modal]", label, "GoToolkitExcalidraw missing convertMermaid");
-        }
-      };
-      const logScene = (label) => {
-        var _a, _b;
-        try {
-          (_b = (_a = window.GoToolkitDrawMemo) == null ? void 0 : _a.getApi) == null ? void 0 : _b.call(_a);
-        } catch (error2) {
-          console.warn("[mermaid-modal]", label, "scene log failed", error2);
-        }
-      };
-      const logAll = (label) => {
-        logContainer(label);
-        logHost(label);
-        logLib(label);
-        logScene(label);
-      };
-      const frame = window.requestAnimationFrame(() => logAll("open:rAF"));
-      const timer = window.setTimeout(() => logAll("open:300ms"), 300);
-      const timer2 = window.setTimeout(() => logAll("open:1200ms"), 1200);
-      let resizeObserver = null;
-      const container2 = document.querySelector(".mermaid-modal-draw-container");
-      if (container2 && "ResizeObserver" in window) {
-        resizeObserver = new ResizeObserver(() => logContainer("resize"));
-        resizeObserver.observe(container2);
-      }
-      return () => {
-        window.cancelAnimationFrame(frame);
-        window.clearTimeout(timer);
-        window.clearTimeout(timer2);
-        resizeObserver == null ? void 0 : resizeObserver.disconnect();
-      };
-    }, [isEditing, draftCode, code, size2]);
     react_shim_default.useEffect(() => {
       if (isEditing) return;
       if (!code && !excalidrawJSON) return;
@@ -64291,14 +64225,6 @@ ${innerMarkdown}
     const normalizeProgrammaticContent = react_shim_default.useCallback((content) => {
       return String(content || "").replace(/>\s+</g, "><").replace(/\s+/g, " ").trim();
     }, []);
-    const stabilizeProgrammaticContent = react_shim_default.useCallback((content) => {
-      const text2 = String(content || "");
-      if (!text2) return "";
-      return text2.replace(
-        /(<\/h[1-6]>)(\s*)(?=<(table|mermaid-diagram|pre|blockquote|ul|ol|details)\b)/gi,
-        "$1\u200B"
-      );
-    }, []);
     const hashProgrammaticContent = react_shim_default.useCallback((content) => {
       const normalized = normalizeProgrammaticContent(content);
       let hash2 = 2166136261;
@@ -64320,17 +64246,17 @@ ${innerMarkdown}
       var _a, _b;
       const targetId = String(id || "").trim();
       if (!targetId || !((_b = (_a = methods == null ? void 0 : methods.instance) == null ? void 0 : _a.commands) == null ? void 0 : _b.setContent)) return;
-      const stabilizedContent = stabilizeProgrammaticContent(content);
-      suppressProgrammaticChange(targetId, stabilizedContent);
+      const normalizedContent = String(content || "");
+      suppressProgrammaticChange(targetId, normalizedContent);
       try {
-        methods.instance.commands.setContent(stabilizedContent);
+        methods.instance.commands.setContent(normalizedContent);
       } catch (err) {
         const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
         delete nextSuppressed[targetId];
         suppressedProgrammaticChangeRef.current = nextSuppressed;
         throw err;
       }
-    }, [stabilizeProgrammaticContent, suppressProgrammaticChange]);
+    }, [suppressProgrammaticChange]);
     const handleEditorReady = react_shim_default.useCallback((id, methods) => {
       var _a, _b, _c, _d;
       const targetId = String(id || "").trim();
@@ -64355,25 +64281,25 @@ ${innerMarkdown}
     }, [applyProgrammaticContent]);
     const handleEditorChange = react_shim_default.useCallback((newContent, id) => {
       const targetId = String(id || "").trim();
-      const stabilizedContent = stabilizeProgrammaticContent(newContent);
+      const nextContent = String(newContent || "");
       if (!targetId) {
-        if (onChangeCb) onChangeCb(stabilizedContent, id);
+        if (onChangeCb) onChangeCb(nextContent, id);
         return;
       }
       const suppressedContentHash = suppressedProgrammaticChangeRef.current[targetId];
-      const nextContentHash = hashProgrammaticContent(stabilizedContent);
+      const nextContentHash = hashProgrammaticContent(nextContent);
       if (typeof suppressedContentHash === "string" && suppressedContentHash === nextContentHash) {
         const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
         delete nextSuppressed[targetId];
         suppressedProgrammaticChangeRef.current = nextSuppressed;
         setEditors((prev) => {
           const current = prev[targetId];
-          if (!current || current.content === stabilizedContent) return prev;
+          if (!current || current.content === nextContent) return prev;
           const next2 = {
             ...prev,
             [targetId]: {
               ...current,
-              content: stabilizedContent
+              content: nextContent
             }
           };
           editorsRef.current = next2;
@@ -64384,33 +64310,33 @@ ${innerMarkdown}
       setEditors((prev) => {
         const current = prev[targetId];
         if (!current) return prev;
-        if (current.content === stabilizedContent) return prev;
+        if (current.content === nextContent) return prev;
         const next2 = {
           ...prev,
           [targetId]: {
             ...current,
-            content: stabilizedContent
+            content: nextContent
           }
         };
         editorsRef.current = next2;
         return next2;
       });
-      if (onChangeCb) onChangeCb(stabilizedContent, targetId);
-    }, [hashProgrammaticContent, onChangeCb, stabilizeProgrammaticContent]);
+      if (onChangeCb) onChangeCb(nextContent, targetId);
+    }, [hashProgrammaticContent, onChangeCb]);
     useEffect(() => {
       const api = {
         setValue: (newContent) => {
           const methods = activeInstanceRef.current;
-          const stabilizedContent = stabilizeProgrammaticContent(newContent);
-          const contentLength = (stabilizedContent == null ? void 0 : stabilizedContent.length) || 0;
+          const nextContent = String(newContent || "");
+          const contentLength = nextContent.length || 0;
           const start = performance.now();
           if (methods == null ? void 0 : methods.instance) {
             const targetId = String(activeIdRef.current || "default");
-            applyProgrammaticContent(targetId, methods, stabilizedContent);
+            applyProgrammaticContent(targetId, methods, nextContent);
           } else if (window.MemoEditor) {
             const targetId = String(activeIdRef.current || "default");
-            suppressProgrammaticChange(targetId, stabilizedContent);
-            window.MemoEditor.commands.setContent(stabilizedContent);
+            suppressProgrammaticChange(targetId, nextContent);
+            window.MemoEditor.commands.setContent(nextContent);
           }
           const duration = Math.round(performance.now() - start);
           if (duration > 100) {
@@ -64481,7 +64407,7 @@ ${innerMarkdown}
           setEditors((prev) => {
             var _a, _b, _c, _d;
             const hasExisting = Boolean(prev[id]);
-            const nextContent = typeof initialContent === "string" ? stabilizeProgrammaticContent(initialContent) : "";
+            const nextContent = typeof initialContent === "string" ? initialContent : "";
             const existingContent = hasExisting && typeof ((_a = prev[id]) == null ? void 0 : _a.content) === "string" ? prev[id].content : "";
             const resolvedContent = typeof initialContent === "string" ? nextContent : existingContent;
             const next2 = hasExisting ? {
@@ -64570,7 +64496,7 @@ ${innerMarkdown}
       };
       window.GoToolkitMemoEditorReady = Promise.resolve(api);
       window.GoToolkitMemoInstance = api;
-    }, [applyProgrammaticContent, stabilizeProgrammaticContent, suppressProgrammaticChange]);
+    }, [applyProgrammaticContent, suppressProgrammaticChange]);
     useEffect(() => {
       editorsRef.current = editors;
     }, [editors]);

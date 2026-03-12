@@ -190,12 +190,12 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-12 10:32`
-- `Scope`: `tests/debug/sample-refresh-heading-diagnose.spec.ts`
+- `Last execution`: `2026-03-12 14:39`
+- `Scope`: `tests/cloud-private-transfer-sync.spec.ts`
 - `Execution length`: `1 test`
-- `Execution time`: `00:13`
+- `Execution time`: `00:35`
 - `Result`: `1 passed, 0 failed, 0 skipped`
-- `Details`: `Imported tests/fixtures/sample.md survived refresh, startup empty-record overwrites were blocked, and the visible h2 headings after Cas limite were preserved across reload.`
+- `Details`: `Grouped cloud copy, private promote, archived fresh-token promotion, reload, and promoted-page reopen all passed with the empty-shell startup flow.`
 
 Recent troubleshooting note:
 
@@ -204,23 +204,24 @@ Recent troubleshooting note:
 - `tests/debug/sample-refresh-heading-diagnose.spec.ts` is the focused repro for imported Markdown refresh survival plus post-reload heading-title preservation around table and Mermaid-adjacent sections
 - `tests/debug/close-active-page.spec.ts` is the focused repro for the breadcrumb close button returning the app to the empty shell cleanly
 - `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
+- `tests/debug/cloud-open-bootstrap-diagnose.spec.ts` is the focused repro for the new no-active-page startup flow before cloud page open
 
 Tier suites:
 
 - `Tier 1` default gate
   - description: essential feature coverage for cloud persistence and Microsoft-managed space access
-  - results: `0 passed, 4 failed, 1 skipped` (`5 tests`, `00:07`) on `2026-03-10 11:53`
-  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 1 suite results.`
+  - results: `4 passed, 0 failed, 1 skipped` (`5 tests`, `00:57`) on `2026-03-12 14:39`
+  - details: `Latest suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 1 suite results.`
 
   - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `00:23`) on `2026-03-10 12:21`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`1 test`, `00:26`) on `2026-03-12 14:39`
+    - details: `Latest run passed after Playwright readiness was updated for the no-active-page-on-open flow.`
 
   - `T1.2` `cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
-    - results: `passing` (`1 test`, `00:24`) on `2026-03-10 12:21`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`1 test`, `00:30`) on `2026-03-12 14:39`
+    - details: `Latest run passed after Playwright readiness was updated for the no-active-page-on-open flow.`
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse
@@ -229,8 +230,8 @@ Tier suites:
 
 - `Tier 4` essential troubleshooting
   - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers
-  - results: `1 passed, 3 failed, 0 skipped` (`4 tests`, `00:06`) on `2026-03-10 11:53`
-  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
+  - results: `2 passed, 2 failed, 0 skipped` (`4 tests`, `00:39`) on `2026-03-12 14:39`
+  - details: `Latest suite entries are mixed. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
@@ -249,8 +250,8 @@ Tier suites:
 
   - `T4.4` `cloud-private-transfer-sync.spec.ts`
     - description: grouped cloud copy, private promote, and archived fresh-token promotion with reload verification
-    - results: `failing` (`1 test`, `00:02`) on `2026-03-10 11:53`
-    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`1 test`, `00:35`) on `2026-03-12 14:39`
+    - details: `Latest run passed after Playwright readiness was updated for the no-active-page-on-open flow.`
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
@@ -455,6 +456,53 @@ Use this exact workflow for local UI debugging and repros on this repo:
 5. use helpers before writing raw locator flows inline
 6. keep worker setup and worker assertions in helper-backed `page.evaluate(...)` blocks
 7. after a fix, rerun the focused spec first, then rerun the relevant suite slice
+
+### 6.0.1 Memo editor observability
+
+Use this short checklist for memo refresh, reload, import, and page-switch bugs.
+
+Browser console:
+
+- enable staged refresh logs:
+  - `localStorage.setItem("goToolkit.memo.refreshDebug.v1", "1"); location.reload()`
+- disable them:
+  - `localStorage.removeItem("goToolkit.memo.refreshDebug.v1")`
+- active doc id:
+  - `window.GoToolkitMemoGetActiveDocumentId?.()`
+- active tab HTML:
+  - `(() => { const s = window.__memoState; return s?.tabs?.find(t => t.id === s?.activeTabId)?.content || ""; })()`
+- durable record:
+  - `await window.goToolkitDocumentApi.getRecord(window.GoToolkitMemoGetActiveDocumentId?.())`
+- open-doc snapshot:
+  - `localStorage.getItem("goToolkit.memo.openDocuments")`
+- visible headings:
+  - `Array.from(document.querySelectorAll(".ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6")).map(node => node.textContent?.trim() || "")`
+
+Interpretation:
+
+- wrong before reload: import/editor/save path
+- record wrong before reload: snapshot or overwrite path
+- record correct after reload, UI wrong: restore or hydration path
+- active doc id empty after reload: route or open-doc restore path
+
+Playwright:
+
+- attach `console` and `pageerror` listeners before navigation
+- log snapshots:
+  - after import
+  - before reload
+  - after reload
+  - after editor-visible wait
+- each snapshot should log:
+  - active document id
+  - active tab id
+  - active tab HTML length
+  - record HTML length
+  - visible headings
+
+Focused repro:
+
+- `npm run playwright:linux:test -- tests/debug/sample-refresh-heading-diagnose.spec.ts --workers=1 --reporter=line --config=playwright.config.ts`
 
 ### 6.1 Local noise to treat carefully
 
