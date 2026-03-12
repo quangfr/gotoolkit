@@ -901,7 +901,30 @@
 
         function renderTOC() {
             if (!tocEl) return;
-            const headings = (window.MemoHeadings || []).filter(h => h.level >= 1 && h.level <= 4);
+            const getCurrentVisibleHeadings = () => {
+                const editor = window.MemoEditor || window.memoEditor;
+                const editorRoot = editor?.view?.dom || document.querySelector(".editor-wrap .ProseMirror");
+                if (!editorRoot) return [];
+                return Array.from(editorRoot.querySelectorAll("h1,h2,h3,h4"))
+                    .map((node, index) => {
+                        const level = Number(String(node.tagName || "").replace("H", "")) || 0;
+                        let id = String(node.getAttribute("id") || node.getAttribute("data-toc-id") || "").trim();
+                        if (!id) {
+                            id = `memo-live-heading-${index}`;
+                            node.setAttribute("data-toc-id", id);
+                        }
+                        return {
+                            id,
+                            level,
+                            textContent: String(node.textContent || "").trim(),
+                            pos: null
+                        };
+                    })
+                    .filter(h => h.level >= 1 && h.level <= 4 && h.textContent);
+            };
+            const cachedHeadings = (window.MemoHeadings || []).filter(h => h.level >= 1 && h.level <= 4);
+            const liveHeadings = getCurrentVisibleHeadings();
+            const headings = liveHeadings.length ? liveHeadings : cachedHeadings;
 
             if (!headings.length) {
                 tocEl.textContent = "";
@@ -975,7 +998,21 @@
             const editor = window.MemoEditor || window.memoEditor;
             if (!editor) return;
 
-            const headings = (window.MemoHeadings || []).filter(h => h.level >= 1 && h.level <= 4);
+            const headings = Array.from((editor.view?.dom || document).querySelectorAll("h1,h2,h3,h4"))
+                .map((node, index) => {
+                    const level = Number(String(node.tagName || "").replace("H", "")) || 0;
+                    let id = String(node.getAttribute("id") || node.getAttribute("data-toc-id") || "").trim();
+                    if (!id) {
+                        id = `memo-live-heading-${index}`;
+                        node.setAttribute("data-toc-id", id);
+                    }
+                    return {
+                        id,
+                        level,
+                        textContent: String(node.textContent || "").trim()
+                    };
+                })
+                .filter(h => h.level >= 1 && h.level <= 4 && h.textContent);
             if (!headings.length) return;
 
             const scrollArea = document.querySelector(".editor-wrap");
@@ -1019,6 +1056,16 @@
             if (tocPanel?.classList.contains("active")) {
                 renderTOC();
             }
+        });
+
+        document.addEventListener("goToolkitMemoActiveDocumentChanged", () => {
+            hasDefaultTabSet = false;
+            ensureDefaultTab();
+            setTimeout(() => {
+                if (tocPanel?.classList.contains("active")) {
+                    renderTOC();
+                }
+            }, 0);
         });
 
         // Robust scroll listener for active heading using capture phase 

@@ -12104,6 +12104,17 @@
         }
 
         const inlineScopeId = assistInstance.currentConversationScopeId || getConversationScopeId();
+        const inlineConversation = assistInstance.conversation;
+        const inlineTargetTabId = String(
+            (typeof options?.docSnapshotId === "string" && options.docSnapshotId)
+            || (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : "")
+            || window.__memoState?.activeTabId
+            || ""
+        ).trim();
+        const inlineTargetDocumentId = String(
+            (typeof global.GoToolkitMemoGetActiveDocumentId === "function" ? global.GoToolkitMemoGetActiveDocumentId() : "")
+            || ""
+        ).trim();
         assistInstance.setSendButtonBusy(true, { scopeId: inlineScopeId });
 
         let botMessage = null;
@@ -12198,11 +12209,45 @@
             valueStart: -1
         };
 
+        const persistInlineConversation = () => {
+            if (!inlineConversation || !Array.isArray(inlineConversation.messages)) return;
+            inlineConversation.updatedAt = Date.now();
+            persistConversation(inlineConversation, inlineScopeId);
+        };
+
         const clearStreamFlushTimer = () => {
             if (streamFlushTimer) {
                 clearTimeout(streamFlushTimer);
                 streamFlushTimer = null;
             }
+        };
+
+        const finalizeDirectInlineApply = (verifyNeedle) => {
+            setTimeout(() => {
+                try {
+                    const currentHtml = String(global.GoToolkitMemoInstance?.getValue?.() || "");
+                    if (verifyNeedle && currentHtml.indexOf(verifyNeedle) === -1) {
+                        console.log("[AssistScopeDebug] inline-apply-finalize-miss", {
+                            inlineScopeId,
+                            inlineTargetTabId,
+                            inlineTargetDocumentId,
+                            verifyNeedle
+                        });
+                        return;
+                    }
+                    if (typeof global.GoToolkitMemoAfterProgrammaticInsert === "function") {
+                        global.GoToolkitMemoAfterProgrammaticInsert();
+                    }
+                    console.log("[AssistScopeDebug] inline-apply-finalize", {
+                        inlineScopeId,
+                        inlineTargetTabId,
+                        inlineTargetDocumentId,
+                        verifyNeedle
+                    });
+                } catch (err) {
+                    // noop
+                }
+            }, 0);
         };
 
         const setInlineEditorStreamingLock = (locked) => {
@@ -12474,14 +12519,14 @@
             }
             var hasExistingUserMessage = Boolean(editMessage && editMessage.id);
             if (!hasExistingUserMessage) {
-                assistInstance.conversation.messages.push(userMessage);
+                inlineConversation.messages.push(userMessage);
                 assistInstance.appendMessage(userMessage, {
                     selectionExcerpt: selectionExcerpt
                 });
             } else {
                 var existingNode = assistInstance.messageNodes[userMessage.id];
                 if (!existingNode) {
-                    assistInstance.conversation.messages.push(userMessage);
+                    inlineConversation.messages.push(userMessage);
                     assistInstance.appendMessage(userMessage, {
                         selectionExcerpt: selectionExcerpt
                     });
@@ -12494,9 +12539,9 @@
             botMessage.references = [];
             botMessage.suggestions = [];
 
-            assistInstance.conversation.messages.push(botMessage);
+            inlineConversation.messages.push(botMessage);
             assistInstance.appendMessage(botMessage);
-            assistInstance.persist();
+            persistInlineConversation();
 
             // Calculate total payload character count and start toaster
             var totalPayloadChars = 0;
@@ -12686,26 +12731,72 @@
             botMessage._editMetadata = editMetadata;
             // 9. Rendre le message dans le DOM
             const messageEntry = assistInstance.messageNodes[botMessage.id];
-            if (!messageEntry) {
-                return;
-            }
-
-            const contentEl = messageEntry.contentEl || messageEntry.querySelector?.('.chat-message-content');
-            if (contentEl) {
-                setTrustedHtml(contentEl, assistInstance.renderBotContent(botMessage), "bot-message");
-                addCopyButtonsToChatContent(contentEl);
-                assistInstance.syncBotExtras?.(messageEntry, botMessage);
-                assistInstance.scrollToBottom?.();
+            if (messageEntry) {
+                const contentEl = messageEntry.contentEl || messageEntry.querySelector?.('.chat-message-content');
+                if (contentEl) {
+                    setTrustedHtml(contentEl, assistInstance.renderBotContent(botMessage), "bot-message");
+                    addCopyButtonsToChatContent(contentEl);
+                    assistInstance.syncBotExtras?.(messageEntry, botMessage);
+                    assistInstance.scrollToBottom?.();
+                }
+            } else {
+                console.log("[AssistScopeDebug] inline-message-node-missing", {
+                    inlineScopeId: inlineScopeId,
+                    currentScopeId: String(assistInstance.currentConversationScopeId || ""),
+                    botMessageId: String(botMessage.id || "")
+                });
             }
 
             // 10. Mettre à jour l'éditeur selon le type de remplacement (continue dans le pipe)
-            var isScopeActiveAtApply = assistInstance.currentConversationScopeId === inlineScopeId;
-            if (!isScopeActiveAtApply && editMetadata) {
+            var currentScopeAtApply = String(assistInstance.currentConversationScopeId || "");
+            var currentActiveTabIdAtApply = String(
+                (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : "")
+                || window.__memoState?.activeTabId
+                || ""
+            ).trim();
+            var currentActiveDocumentIdAtApply = String(
+                (typeof global.GoToolkitMemoGetActiveDocumentId === "function" ? global.GoToolkitMemoGetActiveDocumentId() : "")
+                || ""
+            ).trim();
+            var isScopeActiveAtApply = currentScopeAtApply === inlineScopeId;
+            var isTargetStillActiveAtApply = true;
+            if (inlineTargetTabId) {
+                isTargetStillActiveAtApply = currentActiveTabIdAtApply === inlineTargetTabId;
+            } else if (inlineTargetDocumentId) {
+                isTargetStillActiveAtApply = currentActiveDocumentIdAtApply === inlineTargetDocumentId;
+            }
+            console.log("[AssistScopeDebug] inline-apply-decision", {
+                inlineScopeId: inlineScopeId,
+                currentScopeId: currentScopeAtApply,
+                inlineTargetTabId: inlineTargetTabId,
+                currentActiveTabId: currentActiveTabIdAtApply,
+                inlineTargetDocumentId: inlineTargetDocumentId,
+                currentActiveDocumentId: currentActiveDocumentIdAtApply,
+                isScopeActiveAtApply: isScopeActiveAtApply,
+                isTargetStillActiveAtApply: isTargetStillActiveAtApply
+            });
+            if ((!(isScopeActiveAtApply && isTargetStillActiveAtApply)) && editMetadata) {
+                console.log("[AssistScopeDebug] inline-apply-queued", {
+                    inlineScopeId: inlineScopeId,
+                    currentScopeId: currentScopeAtApply,
+                    inlineTargetTabId: inlineTargetTabId,
+                    currentActiveTabId: currentActiveTabIdAtApply,
+                    inlineTargetDocumentId: inlineTargetDocumentId,
+                    currentActiveDocumentId: currentActiveDocumentIdAtApply
+                });
                 assistInstance.queuePendingInlineEdit?.(inlineScopeId, {
                     editMetadata: editMetadata,
                     selectionPos: selectionPos || null
                 });
             } else if (editor && editMetadata) {
+                console.log("[AssistScopeDebug] inline-apply-direct", {
+                    inlineScopeId: inlineScopeId,
+                    currentScopeId: currentScopeAtApply,
+                    inlineTargetTabId: inlineTargetTabId,
+                    currentActiveTabId: currentActiveTabIdAtApply,
+                    inlineTargetDocumentId: inlineTargetDocumentId,
+                    currentActiveDocumentId: currentActiveDocumentIdAtApply
+                });
                 clearStreamFlushTimer();
                 if (streamPendingDelta) {
                     flushInlineStreamDelta();
@@ -12738,6 +12829,7 @@
                                 from: streamInsertStart,
                                 to: streamInsertPos
                             });
+                            finalizeDirectInlineApply(editMetadata.sOutput.text.trim());
                             restoreScroll();
                             setTimeout(function () {
                                 assistInstance.refreshMemoSelectionFromEditorSelection(editor);
@@ -12753,6 +12845,7 @@
                                 targetRange = listRange;
                             }
                             window.insertEditorMarkdownAtRange(editMetadata.sOutput.text, targetRange);
+                            finalizeDirectInlineApply(editMetadata.sOutput.text.trim());
                             restoreScroll();
                             setTimeout(function () {
                                 assistInstance.refreshMemoSelectionFromEditorSelection(editor);
@@ -12767,12 +12860,15 @@
                     // Cas DOCUMENT entier: remplacer tout le document avec output
                     if (typeof window.setEditorMarkdown === 'function') {
                         window.setEditorMarkdown(editMetadata.output);
+                        finalizeDirectInlineApply(editMetadata.output.trim());
                         restoreScroll();
                     } else if (typeof window.insertEditorMarkdownAtEnd === 'function') {
                         window.insertEditorMarkdownAtEnd(editMetadata.output);
+                        finalizeDirectInlineApply(editMetadata.output.trim());
                         window.scrollMemoEditorToEnd?.();
                     } else {
                         editor?.commands?.setContent?.(editMetadata.output);
+                        finalizeDirectInlineApply(editMetadata.output.trim());
                         window.scrollMemoEditorToEnd?.();
                     }
                 } else {
@@ -12785,7 +12881,7 @@
             }
 
             // 11. Persister la conversation
-            assistInstance.persist?.();
+            persistInlineConversation();
             stopCharacterCounterToaster();
 
         } catch (error) {

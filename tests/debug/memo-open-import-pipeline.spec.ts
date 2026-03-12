@@ -94,13 +94,18 @@ test.describe("Debug memoOpenImportBtn pipeline", () => {
     await expect.poll(async () => {
       return page.evaluate(() => {
         const editorHtml = String((window as any).GoToolkitMemoInstance?.getValue?.() || "");
+        const editorMarkdown = String((window as any).getEditorMarkdown?.() || "");
         return {
           length: editorHtml.length,
+          markdownStartsWithHeading: /^#\s+\S/.test(editorMarkdown),
+          markdownHasLeadingBlankLine: /^\s*\n#/.test(editorMarkdown),
           hasFixtureHeading: editorHtml.includes("Démarche d'analyse PO"),
         };
       });
     }, { timeout: 60_000 }).toMatchObject({
       hasFixtureHeading: true,
+      markdownStartsWithHeading: true,
+      markdownHasLeadingBlankLine: false,
     });
 
     const eventNames = debugEvents.map(item => item.event);

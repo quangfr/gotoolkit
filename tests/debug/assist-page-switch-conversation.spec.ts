@@ -22,6 +22,11 @@ test.describe("Assist conversation scope across private page switches", () => {
     const logStep = createStepLogger("assist-page-switch-conversation");
 
     attachPageDebugLogging(page, "assist-page-switch-conversation");
+    page.on("console", message => {
+      const text = message.text();
+      if (!/\[AssistScopeDebug\]|\[AssistPendingInline\]/.test(text)) return;
+      console.log(`[assist-page-switch-conversation] browser:${message.type()}`, text);
+    });
 
     logStep("goto:start");
     await page.goto(`${baseUrl}/index.html`, { waitUntil: "commit", timeout: 20_000 });

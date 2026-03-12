@@ -190,13 +190,12 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-12 18:14`
-- `Last execution`: `2026-03-12 18:45`
+- `Last execution`: `2026-03-12 20:41`
 - `Scope`: `tests/debug/memo-open-import-pipeline.spec.ts`
 - `Execution length`: `2 tests`
-- `Execution time`: `00:10`
+- `Execution time`: `00:12`
 - `Result`: `2 passed, 0 failed, 0 skipped`
-- `Details`: `Verified #memoOpenImportBtn stayed on the direct-markdown path in both plain memo and forced presentation app contexts, with presentation also receiving memo-style tab-scoped Assist isolation.`
+- `Details`: `Verified file-menu Markdown import stays on the direct memo path in both memo and presentation contexts, and confirmed the imported markdown no longer starts with a leading blank line.`
 
 Recent troubleshooting note:
 
@@ -232,8 +231,8 @@ Tier suites:
 
 - `Tier 4` essential troubleshooting
   - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers
-  - results: `2 passed, 2 failed, 0 skipped` (`4 tests`, `00:39`) on `2026-03-12 14:39`
-  - details: `Latest suite entries are mixed. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
+  - results: `1 passed, 0 failed, 0 skipped` (`1 test`, `00:35`) on `2026-03-12 14:39`
+  - details: `Latest executed suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival

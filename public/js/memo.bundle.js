@@ -62981,7 +62981,11 @@ ${innerMarkdown}
               const safeHtml = !trimmedHtml || trimmedHtml === "<>" ? "<p></p>" : finalHtml;
               const currentMarkdown = String(getEditorMarkdown() || "").trim();
               const needsSeparator = currentMarkdown.length > 0;
-              editor.chain().focus().insertContentAt(editor.state.doc.content.size, (needsSeparator ? "\n\n" : "") + safeHtml).run();
+              if (!needsSeparator) {
+                editor.commands.setContent(safeHtml);
+              } else {
+                editor.chain().focus().insertContentAt(editor.state.doc.content.size, "\n\n" + safeHtml).run();
+              }
               try {
                 window.requestAnimationFrame(() => {
                   var _a2;
