@@ -23,6 +23,7 @@
         var nextRenderToken = typeof d.nextRenderToken === "function" ? d.nextRenderToken : function () { return 0; };
         var getRenderToken = typeof d.getRenderToken === "function" ? d.getRenderToken : function () { return 0; };
         var renderToken = nextRenderToken();
+        var closeActivePageBtn = documentBreadcrumbEl.querySelector("#closeActivePageBtn");
 
         documentBreadcrumbEl.textContent = "";
 
@@ -127,6 +128,10 @@
                 documentBreadcrumbEl.appendChild(sep);
             }
         });
+
+        if (closeActivePageBtn) {
+            documentBreadcrumbEl.appendChild(closeActivePageBtn);
+        }
 
         await d.updateCurrentDocumentIconButton?.();
         await d.renderActiveDocumentHeaderMeta?.();

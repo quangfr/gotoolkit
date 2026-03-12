@@ -64609,32 +64609,34 @@ ${innerMarkdown}
     }, []);
     return /* @__PURE__ */ jsxs(Fragment3, { children: [
       !hasActiveEditor && !isSearchMode ? /* @__PURE__ */ jsx("section", { id: "memoEmptyState", className: "memo-empty-state", children: /* @__PURE__ */ jsxs("div", { className: "memo-empty-state__panel", children: [
-        /* @__PURE__ */ jsx("h2", { className: "memo-empty-state__title", children: "Ouvrir une page" }),
-        /* @__PURE__ */ jsxs(
-          "button",
-          {
-            id: "memoEmptyStateCreateBtn",
-            type: "button",
-            className: "btn btn-secondary memo-empty-state__create",
-            onClick: handleCreateRootPage,
-            children: [
-              /* @__PURE__ */ jsx("i", { "data-lucide": "plus", "aria-hidden": "true" }),
-              /* @__PURE__ */ jsx("span", { children: "Cr\xE9er une page" })
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxs("form", { id: "memoEmptyStateSearchForm", className: "memo-empty-state__search", role: "search", children: [
-          /* @__PURE__ */ jsx("i", { className: "document-explorer__search-icon", "data-lucide": "search", "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(
-            "input",
+        /* @__PURE__ */ jsxs("div", { className: "memo-empty-state__actions", children: [
+          /* @__PURE__ */ jsxs(
+            "button",
             {
-              id: "memoEmptyStateSearchInput",
-              type: "search",
-              className: "document-explorer__search-input memo-empty-state__search-input",
-              placeholder: "Rechercher dans vos documents",
-              autoComplete: "off"
+              id: "memoEmptyStateCreateBtn",
+              type: "button",
+              className: "btn btn-secondary memo-empty-state__create",
+              onClick: handleCreateRootPage,
+              "aria-label": "Cr\xE9er une page",
+              title: "Cr\xE9er une page",
+              children: [
+                /* @__PURE__ */ jsx("i", { "data-lucide": "plus", "aria-hidden": "true" }),
+                /* @__PURE__ */ jsx("span", { children: "Cr\xE9er une page" })
+              ]
             }
-          )
+          ),
+          /* @__PURE__ */ jsxs("form", { id: "memoEmptyStateSearchForm", className: "memo-empty-state__search", role: "search", children: [
+            /* @__PURE__ */ jsx("i", { className: "document-explorer__search-icon", "data-lucide": "search", "aria-hidden": "true" }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                id: "memoEmptyStateSearchInput",
+                type: "search",
+                className: "document-explorer__search-input memo-empty-state__search-input",
+                autoComplete: "off"
+              }
+            )
+          ] })
         ] }),
         /* @__PURE__ */ jsxs("div", { id: "memoEmptyStateRecent", className: "memo-empty-state__recent", hidden: true, children: [
           /* @__PURE__ */ jsx("div", { className: "memo-empty-state__recent-title", children: "Recemment ouverts" }),
@@ -64809,4 +64811,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-                                        
+//# sourceMappingURL=memo.bundle.js.map

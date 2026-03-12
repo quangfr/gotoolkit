@@ -422,26 +422,28 @@ const App = () => {
             {!hasActiveEditor && !isSearchMode ? (
                 <section id="memoEmptyState" className="memo-empty-state">
                     <div className="memo-empty-state__panel">
-                        <h2 className="memo-empty-state__title">Ouvrir une page</h2>
-                        <button
-                            id="memoEmptyStateCreateBtn"
-                            type="button"
-                            className="btn btn-secondary memo-empty-state__create"
-                            onClick={handleCreateRootPage}
-                        >
-                            <i data-lucide="plus" aria-hidden="true"></i>
-                            <span>Créer une page</span>
-                        </button>
-                        <form id="memoEmptyStateSearchForm" className="memo-empty-state__search" role="search">
-                            <i className="document-explorer__search-icon" data-lucide="search" aria-hidden="true"></i>
-                            <input
-                                id="memoEmptyStateSearchInput"
-                                type="search"
-                                className="document-explorer__search-input memo-empty-state__search-input"
-                                placeholder="Rechercher dans vos documents"
-                                autoComplete="off"
-                            />
-                        </form>
+                        <div className="memo-empty-state__actions">
+                            <button
+                                id="memoEmptyStateCreateBtn"
+                                type="button"
+                                className="btn btn-secondary memo-empty-state__create"
+                                onClick={handleCreateRootPage}
+                                aria-label="Créer une page"
+                                title="Créer une page"
+                            >
+                                <i data-lucide="plus" aria-hidden="true"></i>
+                                <span>Créer une page</span>
+                            </button>
+                            <form id="memoEmptyStateSearchForm" className="memo-empty-state__search" role="search">
+                                <i className="document-explorer__search-icon" data-lucide="search" aria-hidden="true"></i>
+                                <input
+                                    id="memoEmptyStateSearchInput"
+                                    type="search"
+                                    className="document-explorer__search-input memo-empty-state__search-input"
+                                    autoComplete="off"
+                                />
+                            </form>
+                        </div>
                         <div id="memoEmptyStateRecent" className="memo-empty-state__recent" hidden>
                             <div className="memo-empty-state__recent-title">Recemment ouverts</div>
                             <div id="memoEmptyStateRecentList" className="memo-empty-state__recent-list"></div>

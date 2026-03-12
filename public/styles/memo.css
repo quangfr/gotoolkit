@@ -1052,10 +1052,17 @@
         }
 
         #document-breadcrumb {
-            flex: 1;
+            flex: 0 1 auto;
             min-width: 0;
             padding-right: 0;
-            width: 100%;
+            width: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 0;
+            white-space: nowrap;
+        }
+        .document-breadcrumb__items {
+            min-width: 0;
             display: flex;
             align-items: center;
             gap: 0;
@@ -1458,17 +1465,35 @@
             width: 24px;
             height: 24px;
         }
-        .memo-empty-state__title {
-            margin: 0;
-            font-size: 22px;
-            line-height: 1.2;
+        .memo-empty-state__actions {
+            width: min(700px, 100%);
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         .memo-empty-state__create {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            align-self: center;
+            height: 54px;
+            padding: 0 18px;
+            border-radius: 16px;
+            flex: 0 0 auto;
+            border: 1px solid var(--border-main);
+            background: color-mix(in srgb, var(--bg-surface) 96%, white);
+            box-shadow: var(--shadow-sm);
+            color: var(--text-main);
+        }
+        .memo-empty-state__create i {
+            width: 20px;
+            height: 20px;
+        }
+        .memo-empty-state__create:hover,
+        .memo-empty-state__create:focus-visible {
+            background: color-mix(in srgb, var(--bg-surface) 98%, white);
+            border-color: var(--border-strong);
+            color: var(--text-main);
         }
         .memo-empty-state__text,
         .memo-empty-state__hint {
@@ -1484,8 +1509,9 @@
         }
         .memo-empty-state__search {
             position: relative;
-            width: min(620px, 100%);
-            margin-top: 4px;
+            flex: 1 1 auto;
+            width: auto;
+            margin-top: 0;
         }
         .memo-empty-state__search-input.document-explorer__search-input {
             height: 54px;
@@ -1553,6 +1579,10 @@
             }
             .memo-empty-state__panel {
                 padding: 24px 18px;
+            }
+            .memo-empty-state__actions {
+                width: 100%;
+                gap: 10px;
             }
             .memo-empty-state__search-input.document-explorer__search-input {
                 height: 48px;
