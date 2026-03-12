@@ -3953,6 +3953,34 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     return () => clearScheduledTocSync();
   }, [clearScheduledTocSync]);
 
+  const forceVisibleTocSync = React.useCallback(() => {
+    const globalEditor = ((window as any).memoEditor || (window as any).MemoEditor || null) as Editor | null;
+    const root = globalEditor?.view?.dom as HTMLElement | null;
+    const headingNodes = root
+      ? Array.from(root.querySelectorAll('h1,h2,h3,h4'))
+      : [];
+    const fallbackHeadings = headingNodes.map((node, index) => {
+      const element = node as HTMLElement;
+      const level = Number(String(element.tagName || '').replace('H', '')) || 0;
+      let id = String(element.getAttribute('id') || element.getAttribute('data-toc-id') || '').trim();
+      if (!id) {
+        id = `memo-force-toc-${index}`;
+        element.setAttribute('data-toc-id', id);
+      }
+      return {
+        id,
+        anchor: id,
+        level,
+        textContent: String(element.textContent || '').trim(),
+      };
+    }).filter((heading) => heading.level >= 1 && heading.level <= 4 && heading.textContent);
+
+    clearScheduledTocSync();
+    tocPendingRef.current = fallbackHeadings;
+    flushTocSync();
+    return fallbackHeadings;
+  }, [clearScheduledTocSync, flushTocSync]);
+
   const resolveActiveMemoSpaceId = React.useCallback(async () => {
     const globalScope = window as any;
     const currentActiveDocumentId = typeof globalScope.GoToolkitMemoGetActiveDocumentId === 'function'
@@ -7296,6 +7324,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         insertMarkdownAtRange: insertEditorMarkdownAtRange,
         insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
         applyStructuredOps,
+        forceTocSync: forceVisibleTocSync,
         getSource: getMemoEditorSource,
         exportDocx: (title?: string) => exportEditorToDocx(editor, title),
         setEditable: (nextEditable: boolean) => {
@@ -7308,7 +7337,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         onReady(methods);
       }
     }
-  }, [editor, onReady]);
+  }, [editor, forceVisibleTocSync, onReady]);
 
   const handleAssist = () => {
     if (selectionData) {

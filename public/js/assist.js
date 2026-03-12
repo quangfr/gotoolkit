@@ -1672,6 +1672,7 @@
         this.isStreaming = false;
         this.controller = null;
         this.scopeRuntimeState = new Map();
+        this.pendingInlineEditsByScope = new Map();
         this.messageNodes = {};
         this.throttledPersist = throttle(this.persist.bind(this), 500);
         this.docManager = global.GoToolkitDocumentManager;
@@ -1852,6 +1853,150 @@
         this.renderQueuedMessages();
         this.refreshAiRequestToaster?.();
         this.updateHeaderDocumentCount();
+        setTimeout(function () {
+            this.applyPendingInlineEditForScope(nextScopeId, 0);
+        }.bind(this), 220);
+        return true;
+    };
+
+    AssistSidebar.prototype.queuePendingInlineEdit = function (scopeId, payload) {
+        var normalizedScopeId = String(scopeId || "").trim();
+        if (!normalizedScopeId || !payload || typeof payload !== "object") return;
+        console.log("[AssistPendingInline] queue", {
+            scopeId: normalizedScopeId,
+            hasSelection: Boolean(payload?.editMetadata?.sOutput?.text),
+            hasOutput: Boolean(payload?.editMetadata?.output)
+        });
+        this.pendingInlineEditsByScope.set(normalizedScopeId, payload);
+    };
+
+    AssistSidebar.prototype.applyPendingInlineEditForScope = function (scopeId, attempt) {
+        var normalizedScopeId = String(scopeId || this.currentConversationScopeId || "").trim();
+        if (!normalizedScopeId) return false;
+        if (normalizedScopeId !== String(this.currentConversationScopeId || "").trim()) return false;
+        var pending = this.pendingInlineEditsByScope.get(normalizedScopeId);
+        if (!pending) {
+            console.log("[AssistPendingInline] missing", {
+                scopeId: normalizedScopeId,
+                currentScopeId: String(this.currentConversationScopeId || "")
+            });
+            return false;
+        }
+        var editor = global.memoEditor || global.MemoEditor || null;
+        if (!editor || !editor.state || !editor.view) {
+            var nextAttempt = Number(attempt || 0) + 1;
+            console.log("[AssistPendingInline] editor-not-ready", {
+                scopeId: normalizedScopeId,
+                attempt: nextAttempt
+            });
+            if (nextAttempt <= 6) {
+                setTimeout(function () {
+                    this.applyPendingInlineEditForScope(normalizedScopeId, nextAttempt);
+                }.bind(this), 120);
+            }
+            return false;
+        }
+
+        var applied = false;
+        var editMetadata = pending.editMetadata || null;
+        var selectionPos = pending.selectionPos || null;
+
+        try {
+            if (editMetadata?.sOutput && typeof editMetadata.sOutput.text === "string") {
+                var selectionFrom = Number(selectionPos?.from);
+                var selectionTo = Number(selectionPos?.to);
+                if (
+                    Number.isFinite(selectionFrom)
+                    && Number.isFinite(selectionTo)
+                    && selectionFrom >= 0
+                    && selectionTo >= selectionFrom
+                    && typeof global.insertEditorMarkdownAtRange === "function"
+                ) {
+                    global.insertEditorMarkdownAtRange(editMetadata.sOutput.text, {
+                        from: selectionFrom,
+                        to: selectionTo
+                    });
+                    applied = true;
+                }
+            } else if (typeof editMetadata?.output === "string" && editMetadata.output.trim()) {
+                if (typeof global.setEditorMarkdown === "function") {
+                    global.setEditorMarkdown(editMetadata.output);
+                    applied = true;
+                } else if (typeof global.insertEditorMarkdownAtEnd === "function") {
+                    global.insertEditorMarkdownAtEnd(editMetadata.output);
+                    applied = true;
+                }
+            }
+        } catch (err) {
+            applied = false;
+        }
+
+        if (!applied) {
+            var retryAttempt = Number(attempt || 0) + 1;
+            console.log("[AssistPendingInline] apply-failed", {
+                scopeId: normalizedScopeId,
+                attempt: retryAttempt,
+                selectionPos: selectionPos || null,
+                hasSelection: Boolean(editMetadata?.sOutput?.text),
+                hasOutput: Boolean(editMetadata?.output)
+            });
+            if (retryAttempt <= 6) {
+                setTimeout(function () {
+                    this.applyPendingInlineEditForScope(normalizedScopeId, retryAttempt);
+                }.bind(this), 120);
+            }
+            return false;
+        }
+
+        console.log("[AssistPendingInline] applied", {
+            scopeId: normalizedScopeId,
+            selectionPos: selectionPos || null
+        });
+        var verifyNeedle = "";
+        if (typeof editMetadata?.sOutput?.text === "string") {
+            verifyNeedle = editMetadata.sOutput.text.trim();
+        } else if (typeof editMetadata?.output === "string") {
+            verifyNeedle = editMetadata.output.trim();
+        }
+        setTimeout(function () {
+            if (normalizedScopeId !== String(this.currentConversationScopeId || "").trim()) return;
+            var currentHtml = "";
+            try {
+                currentHtml = String(global.GoToolkitMemoInstance?.getValue?.() || "");
+            } catch (err) {
+                currentHtml = "";
+            }
+            var isVerified = !verifyNeedle || currentHtml.indexOf(verifyNeedle) !== -1;
+            if (isVerified) {
+                this.pendingInlineEditsByScope.delete(normalizedScopeId);
+                try {
+                    if (typeof global.GoToolkitMemoAfterProgrammaticInsert === "function") {
+                        global.GoToolkitMemoAfterProgrammaticInsert();
+                    }
+                } catch (err) {
+                    // noop
+                }
+                try {
+                    this.refreshMemoSelectionFromEditorSelection(editor);
+                } catch (err) {
+                    // noop
+                }
+                console.log("[AssistPendingInline] verified", {
+                    scopeId: normalizedScopeId,
+                    verifyNeedle: verifyNeedle
+                });
+                return;
+            }
+            console.log("[AssistPendingInline] verify-miss", {
+                scopeId: normalizedScopeId,
+                verifyNeedle: verifyNeedle,
+                currentHtmlPreview: currentHtml.slice(0, 240)
+            });
+            var retryAttempt = Number(attempt || 0) + 1;
+            if (retryAttempt <= 6) {
+                this.applyPendingInlineEditForScope(normalizedScopeId, retryAttempt);
+            }
+        }.bind(this), 180);
         return true;
     };
 
@@ -6289,6 +6434,14 @@
     AssistSidebar.prototype.openImportFileSelector = async function (options) {
         this.createImportFileInput();
         this.importFileOptions = options || null;
+        this.logMemoImportDebug("selector-open", {
+            appId: CHAT_APP_ID,
+            skipEmbeddings: Boolean(options?.skipEmbeddings),
+            skipIngestion: Boolean(options?.skipIngestion),
+            directMarkdownImport: Boolean(options?.directMarkdownImport),
+            directPasteMode: Boolean(options?.directPasteMode),
+            markdownViaAi: Boolean(options?.markdownViaAi)
+        });
         if (CHAT_APP_ID === "memo" && options?.skipIngestion) {
             var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
@@ -6299,6 +6452,26 @@
         }
         if (this.importFileInput) {
             this.importFileInput.click();
+        }
+    };
+
+    AssistSidebar.prototype.openMemoImportFileSelector = function () {
+        this.logMemoImportDebug("memo-open-import-btn", {
+            appId: CHAT_APP_ID
+        });
+        return this.openImportFileSelector({
+            skipEmbeddings: true,
+            skipIngestion: true,
+            directMarkdownImport: true
+        });
+    };
+
+    AssistSidebar.prototype.logMemoImportDebug = function (event, payload) {
+        var safePayload = payload && typeof payload === "object" ? payload : {};
+        try {
+            console.log("[MemoImportDebug] " + String(event || "unknown") + " " + JSON.stringify(safePayload));
+        } catch (err) {
+            console.log("[MemoImportDebug] " + String(event || "unknown"));
         }
     };
 
@@ -6441,6 +6614,16 @@
         if (!files || !files.length) return;
         var options = this.importFileOptions || {};
         this.importFileOptions = null;
+        this.logMemoImportDebug("files-selected", {
+            appId: CHAT_APP_ID,
+            count: files.length,
+            names: Array.from(files).map(function (file) { return file?.name || ""; }).filter(Boolean),
+            skipEmbeddings: Boolean(options.skipEmbeddings),
+            skipIngestion: Boolean(options.skipIngestion),
+            directMarkdownImport: Boolean(options.directMarkdownImport),
+            directPasteMode: Boolean(options.directPasteMode),
+            markdownViaAi: Boolean(options.markdownViaAi)
+        });
         this.sendImportedDocuments(Array.from(files), options);
         event.target.value = "";
     };
@@ -6449,6 +6632,10 @@
         var markdownFiles = Array.from(files || []).filter(function (file) {
             var name = String(file?.name || "").toLowerCase();
             return name.endsWith(".md") || name.endsWith(".markdown");
+        });
+        this.logMemoImportDebug("direct-markdown:start", {
+            count: markdownFiles.length,
+            names: markdownFiles.map(function (file) { return file?.name || ""; }).filter(Boolean)
         });
         if (!markdownFiles.length) return false;
 
@@ -6459,6 +6646,11 @@
             try {
                 var markdownContent = await markdownFile.text();
                 if (markdownContent && String(markdownContent).trim()) {
+                    this.logMemoImportDebug("direct-markdown:file-read", {
+                        name: markdownFile?.name || "",
+                        length: String(markdownContent).length,
+                        preview: String(markdownContent).replace(/\s+/g, " ").slice(0, 80)
+                    });
                     importedMarkdownParts.push(String(markdownContent));
                 }
             } catch (err) {
@@ -6478,12 +6670,21 @@
         }
 
         var value = mergedMarkdown + "\n\n";
+        this.logMemoImportDebug("direct-markdown:insert", {
+            count: markdownFiles.length,
+            mergedLength: mergedMarkdown.length,
+            preview: mergedMarkdown.replace(/\s+/g, " ").slice(0, 120)
+        });
         if (typeof window.insertEditorMarkdownAtEnd === "function") {
             window.insertEditorMarkdownAtEnd(value);
         } else {
             window.GoToolkitMemoAppendText?.(value);
         }
         await window.GoToolkitMemoAfterProgrammaticInsert?.();
+        this.logMemoImportDebug("direct-markdown:complete", {
+            count: markdownFiles.length,
+            insertedLength: value.length
+        });
         window.GoToolkitMemoToast?.(
             markdownFiles.length === 1 ? "Markdown importé" : markdownFiles.length + " fichiers Markdown importés"
         );
@@ -6547,6 +6748,18 @@
             Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.directPasteEnabled", false));
         var markdownViaAi = Boolean(options.markdownViaAi) ||
             Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.markdownViaAiEnabled", false));
+        this.logMemoImportDebug("pipeline:start", {
+            appId: CHAT_APP_ID,
+            originalCount: originalFileArray.length,
+            originalNames: originalFileArray.map(function (file) { return file?.name || ""; }).filter(Boolean),
+            filteredCount: fileArray.length,
+            directTextCount: directTextFiles.length,
+            skipEmbeddings: skipEmbeddings,
+            skipIngestion: skipIngestion,
+            directMarkdownImport: directMarkdownImport,
+            directPasteMode: directPasteMode,
+            markdownViaAi: markdownViaAi
+        });
 
         if (CHAT_APP_ID === "memo" && skipIngestion && !memoId && typeof global.GoToolkitMemoCreateAutoDocument === "function") {
             await global.GoToolkitMemoCreateAutoDocument();
@@ -6559,9 +6772,16 @@
                 var name = String(file?.name || "").toLowerCase();
                 return name.endsWith(".md") || name.endsWith(".markdown");
             });
+            this.logMemoImportDebug("direct-markdown:check", {
+                allFilesAreMarkdown: allFilesAreMarkdown,
+                originalCount: originalFileArray.length
+            });
             if (allFilesAreMarkdown) {
                 var didImportMarkdown = await this.importMarkdownFilesDirectly(originalFileArray);
                 if (didImportMarkdown) {
+                    this.logMemoImportDebug("pipeline:return-direct-markdown", {
+                        originalCount: originalFileArray.length
+                    });
                     return;
                 }
             }
@@ -6591,8 +6811,18 @@
         try {
             this.importInProgress = true;
             this.setSendButtonBusy(true, { scopeId: uiScopeId });
+            this.logMemoImportDebug("pipeline:busy-on", {
+                scopeId: uiScopeId,
+                memoId: memoId || "",
+                tabId: tabId || ""
+            });
 
             if (skipIngestion && CHAT_APP_ID === "memo") {
+                this.logMemoImportDebug("skip-ingestion:enter", {
+                    importCandidateCount: directTextFiles.length + fileArray.length,
+                    directTextCount: directTextFiles.length,
+                    binaryCount: fileArray.length
+                });
                 var importCandidates = directTextFiles.concat(fileArray);
                 var importNames = importCandidates.map(function (file) { return file?.name || ""; }).filter(Boolean);
                 if (importNames.length) {
@@ -6614,8 +6844,16 @@
                     var directFile = directTextFiles[directIndex];
                     if (!directFile) continue;
                     try {
+                        this.logMemoImportDebug("skip-ingestion:direct-text-read:start", {
+                            name: directFile?.name || ""
+                        });
                         var directContent = await directFile.text();
                         if (directContent && String(directContent).trim()) {
+                            this.logMemoImportDebug("skip-ingestion:direct-text-read:done", {
+                                name: directFile?.name || "",
+                                length: String(directContent).length,
+                                preview: String(directContent).replace(/\s+/g, " ").slice(0, 80)
+                            });
                             parsedEntries.push({
                                 name: directFile.name || ("Document " + (parsedEntries.length + 1)),
                                 content: normalizeImportedMemoContent(directFile.name, directContent)
@@ -6634,6 +6872,10 @@
                 });
 
                 if (mediaFiles.length) {
+                    this.logMemoImportDebug("skip-ingestion:media-transcript:start", {
+                        count: mediaFiles.length,
+                        names: mediaFiles.map(function (file) { return file?.name || ""; }).filter(Boolean)
+                    });
                     hadMediaTranscription = true;
                     this.deferSendButtonRestoreUntilAI = true;
                     this.setTranscriptionUiState(true, { scopeId: uiScopeId });
@@ -6657,15 +6899,29 @@
                             }
                         });
                     }
+                    this.logMemoImportDebug("skip-ingestion:media-transcript:done", {
+                        count: mediaFiles.length,
+                        parsedEntryCount: parsedEntries.length,
+                        errorCount: transcriptResult.errors?.length || 0
+                    });
                 }
 
                 for (var docIndex = 0; docIndex < docFiles.length; docIndex++) {
                     var docFile = docFiles[docIndex];
                     if (!docFile) continue;
                     try {
+                        this.logMemoImportDebug("skip-ingestion:extract:start", {
+                            name: docFile?.name || "",
+                            mime: docFile?.type || ""
+                        });
                         var extraction = await this.docManager.extractText(docFile);
                         var extractedText = String(extraction?.text || "");
                         if (extractedText.trim()) {
+                            this.logMemoImportDebug("skip-ingestion:extract:done", {
+                                name: docFile?.name || "",
+                                length: extractedText.length,
+                                preview: extractedText.replace(/\s+/g, " ").slice(0, 80)
+                            });
                             parsedEntries.push({
                                 name: docFile.name || ("Document " + (parsedEntries.length + 1)),
                                 content: extractedText
@@ -6677,11 +6933,16 @@
                 }
 
                 if (!parsedEntries.length) {
+                    this.logMemoImportDebug("skip-ingestion:no-importable-content", {});
                     this.setDocumentUploadStatus("Erreur : aucun contenu importable");
                     return;
                 }
 
                 if (parsedEntries.length > 1 && !directPasteMode) {
+                    this.logMemoImportDebug("skip-ingestion:create-subpages", {
+                        parsedCount: parsedEntries.length,
+                        parentDocumentId: memoId || ""
+                    });
                     var parentDocumentId = memoId;
                     var toChildPageTitle = function (fileName, index) {
                         var base = String(fileName || "").trim();
@@ -6726,6 +6987,11 @@
                 } else {
                     var mergedImportText = String(parsedEntries[0]?.content || "").trim();
                     if (mergedImportText) {
+                        this.logMemoImportDebug("skip-ingestion:append-merged", {
+                            parsedCount: parsedEntries.length,
+                            length: mergedImportText.length,
+                            preview: mergedImportText.replace(/\s+/g, " ").slice(0, 120)
+                        });
                         if (typeof window.insertEditorMarkdownAtEnd === "function") {
                             window.insertEditorMarkdownAtEnd(mergedImportText + "\n\n");
                         } else {
@@ -6744,6 +7010,10 @@
                 this.appendMessage(confirmationMessage);
                 this.persist();
                 this.scrollToBottom();
+                this.logMemoImportDebug("skip-ingestion:complete", {
+                    parsedCount: parsedEntries.length,
+                    confirmation: confirmationMessage.content
+                });
                 window.GoToolkitMemoToast?.("Import terminé");
                 return;
             }
@@ -6754,6 +7024,11 @@
             }
             // 1. Ingérer les fichiers (parsing, chunking) comme chatAttachFilesBtn
             this.setDocumentUploadStatus("Préparation de l'import...");
+            this.logMemoImportDebug("ingestion-route:enter", {
+                fileCount: fileArray.length,
+                directTextCount: directTextFiles.length,
+                skipEmbeddings: skipEmbeddings
+            });
             console.log("Preparing document import...");
             var mediaTranscriptMap = new Map();
             var mediaTranscriptTextMap = new Map();
@@ -6865,6 +7140,11 @@
                         var tabId = memoId || null;
 
                         // Ingest with skipEmbeddings=true
+                        this.logMemoImportDebug("ingestion-route:media-ingest:start", {
+                            name: entry?.file?.name || "",
+                            sourceName: entry?.sourceFile?.name || "",
+                            transcriptLength: String(entry?.transcriptText || "").length
+                        });
                         var results = await this.docManager.ingestFiles([entry.file], this.conversation.id, {
                             onProgress: this.handleDocumentProgress.bind(this),
                             sourceType: "context",
@@ -6874,6 +7154,10 @@
                             skipEmbeddings: true
                         });
                         mediaIngestResults.push.apply(mediaIngestResults, results);
+                        this.logMemoImportDebug("ingestion-route:media-ingest:done", {
+                            name: entry?.file?.name || "",
+                            resultCount: results.length
+                        });
 
                         // If NOT in memo import skipEmbeddings mode, we might want individual requests
                         // but for memo import we wait for all to be ready or handle them here?
@@ -6893,6 +7177,11 @@
                                 stream: false,
                                 model: this.getConfiguredChatModel()
                             };
+                            this.logMemoImportDebug("ai-in:dispatch", {
+                                reason: "media-transcript",
+                                messageChars: String(entry?.transcriptText || "").length,
+                                systemChars: String(systemPrompt || "").length
+                            });
                             this.sendAIRequest(payload);
                         }
                     }.bind(this)
@@ -6933,6 +7222,11 @@
                     });
                 });
 
+                this.logMemoImportDebug("ingestion-route:doc-ingest:start", {
+                    count: fileArray.length,
+                    names: fileArray.map(function (file) { return file?.name || ""; }).filter(Boolean),
+                    skipEmbeddings: skipEmbeddings
+                });
                 results = await this.docManager.ingestFiles(fileArray, this.conversation.id, {
                     onProgress: this.handleDocumentProgress.bind(this),
                     sourceType: "context",
@@ -6940,6 +7234,11 @@
                     memoId: memoId,
                     tabId: tabId,
                     skipEmbeddings: skipEmbeddings
+                });
+                this.logMemoImportDebug("ingestion-route:doc-ingest:done", {
+                    resultCount: results.length,
+                    successCount: results.filter(function (item) { return item?.success; }).length,
+                    duplicateCount: results.filter(function (item) { return item?.duplicate; }).length
                 });
             }
             if (mediaIngestResults.length) {
@@ -6983,6 +7282,10 @@
                 });
 
             console.log("Documents ready for import:", readyDocNames);
+            this.logMemoImportDebug("ingestion-route:ready-docs", {
+                count: readyDocNames.length,
+                names: readyDocNames
+            });
             if (memoId) {
                 if (readyDocNames.length) {
                     this.markMemoAttachmentsPending(memoId);
@@ -7222,6 +7525,12 @@
                 stream: false,
                 model: this.getConfiguredChatModel()
             };
+            this.logMemoImportDebug("ai-in:dispatch", {
+                reason: "import-prompt",
+                readyDocCount: readyDocNames.length,
+                userPromptChars: userPrompt.length,
+                systemChars: String(systemPrompt || "").length
+            });
 
             // Create user message in chat
             if (!createdImportBubble) {
@@ -7263,6 +7572,10 @@
             if (this.importInProgress && !didSendAI) {
                 this.importInProgress = false;
                 this.setSendButtonBusy(false, { scopeId: uiScopeId });
+                this.logMemoImportDebug("pipeline:busy-off", {
+                    scopeId: uiScopeId,
+                    didSendAI: didSendAI
+                });
                 if (CHAT_APP_ID === "memo") {
                     window.GoToolkitMemoToast?.("");
                 }
@@ -12376,7 +12689,13 @@
             }
 
             // 10. Mettre à jour l'éditeur selon le type de remplacement (continue dans le pipe)
-            if (editor && editMetadata) {
+            var isScopeActiveAtApply = assistInstance.currentConversationScopeId === inlineScopeId;
+            if (!isScopeActiveAtApply && editMetadata) {
+                assistInstance.queuePendingInlineEdit?.(inlineScopeId, {
+                    editMetadata: editMetadata,
+                    selectionPos: selectionPos || null
+                });
+            } else if (editor && editMetadata) {
                 clearStreamFlushTimer();
                 if (streamPendingDelta) {
                     flushInlineStreamDelta();

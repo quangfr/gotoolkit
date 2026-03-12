@@ -33,3 +33,7 @@ export const EPICONCEPT_SPACE_ID = "epiconcept";
 export const EPICONCEPT_SPACE_CODE = String(
   process.env.EPICONCEPT_SPACE_CODE || readEnvLocalValue("EPICONCEPT_SPACE_CODE") || ""
 ).trim().toLowerCase();
+export const GOLIVE_SPACE_ID = "golive";
+export const GOLIVE_SPACE_CODE = String(
+  process.env.GOLIVE_SPACE_CODE || readEnvLocalValue("GOLIVE_SPACE_CODE") || ""
+).trim().toLowerCase();

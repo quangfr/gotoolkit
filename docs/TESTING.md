@@ -190,18 +190,19 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-12 14:39`
-- `Scope`: `tests/cloud-private-transfer-sync.spec.ts`
+- `Last execution`: `2026-03-12 18:14`
+- `Scope`: `tests/debug/memo-open-import-pipeline.spec.ts`
 - `Execution length`: `1 test`
-- `Execution time`: `00:35`
+- `Execution time`: `00:08`
 - `Result`: `1 passed, 0 failed, 0 skipped`
-- `Details`: `Grouped cloud copy, private promote, archived fresh-token promotion, reload, and promoted-page reopen all passed with the empty-shell startup flow.`
+- `Details`: `Verified #memoOpenImportBtn emitted only direct-markdown debug markers and did not hit ingestion-route or ai-in dispatch markers for tests/fixtures/sample.md.`
 
 Recent troubleshooting note:
 
 - `private-switch-persist.spec.ts` is the primary fast check for generic local-page persistence regressions
 - if that spec passes but a heavier import/reload spec fails, suspect restore hydration or renderer rehydration before suspecting IndexedDB durability
 - `tests/debug/sample-refresh-heading-diagnose.spec.ts` is the focused repro for imported Markdown refresh survival plus post-reload heading-title preservation around table and Mermaid-adjacent sections
+- `tests/debug/assist-page-switch-conversation.spec.ts` is the focused repro for per-page Assist conversation scoping plus summary-tab alignment during private page switches with one delayed inline edit and one send-button edit
 - `tests/debug/close-active-page.spec.ts` is the focused repro for the breadcrumb close button returning the app to the empty shell cleanly
 - `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
 - `tests/debug/cloud-open-bootstrap-diagnose.spec.ts` is the focused repro for the new no-active-page startup flow before cloud page open
@@ -255,7 +256,7 @@ Tier suites:
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `1 passed, 2 failed, 0 skipped` (`3 tests`, `01:31`) on `2026-03-12 16:21`
+  - results: `1 passed, 2 failed, 0 skipped` (`3 tests`, `01:38`) on `2026-03-12 16:31`
   - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `cloud-history-explicit-sync.spec.ts`
@@ -270,7 +271,7 @@ Tier suites:
 
   - `T2.3` `excalidraw-regression.spec.ts`
     - description: grouped Excalidraw/Mermaid regression across flowchart, sequence, and class docs with manual edit, switch, and reload checks
-    - results: `passing` (`1 test`, `00:17`) on `2026-03-12 16:21`
+    - results: `passing` (`1 test`, `00:24`) on `2026-03-12 16:31`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T2.4` `voice-recording-assemblyai-live.spec.ts`

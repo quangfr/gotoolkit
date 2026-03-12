@@ -1,25 +1,47 @@
 import { expect, test } from "@playwright/test";
+import fs from "node:fs";
 import path from "node:path";
 
 const BASE_URL = "http://127.0.0.1:5000/index.html";
 const TEST_TIMEOUT = 180_000;
 const SAMPLE_MARKDOWN_PATH = path.resolve(process.cwd(), "tests/fixtures/sample.md");
 const DEBUG_PREFIX = "[MemoRefreshDebug]";
-const EXPECTED_VISIBLE_H2S = [
-  "Spécifications fonctionnelles",
-  "Spécifications techniques",
-  "Cas limite",
-  "Diagramme des flux",
-  "Diagramme de séquence",
-  "Diagramme d'objet",
-  "Diagramme de structure",
-  "Requêtes API",
-];
 
 type RefreshDebugEvent = {
   event: string;
   payload: Record<string, unknown>;
 };
+
+type VisibleHeadingsSnapshot = {
+  h1: string[];
+  h2: string[];
+  h3: string[];
+};
+
+function normalizeHeadingText(text: string) {
+  return String(text || "")
+    .replace(/\*\*/g, "")
+    .replace(/__/g, "")
+    .replace(/[`*_~]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function collectExpectedHeadingsFromSample(): VisibleHeadingsSnapshot {
+  const markdown = fs.readFileSync(SAMPLE_MARKDOWN_PATH, "utf8");
+  const headings: VisibleHeadingsSnapshot = { h1: [], h2: [], h3: [] };
+  for (const match of markdown.matchAll(/^(#{1,3})\s+(.+)$/gm)) {
+    const level = match[1].length;
+    const text = normalizeHeadingText(match[2]);
+    if (!text) continue;
+    if (level === 1) headings.h1.push(text);
+    if (level === 2) headings.h2.push(text);
+    if (level === 3) headings.h3.push(text);
+  }
+  return headings;
+}
+
+const EXPECTED_VISIBLE_HEADINGS = collectExpectedHeadingsFromSample();
 
 async function waitForMemoBootstrap(page: any, timeout = 60_000) {
   await page.waitForFunction(() => Boolean(
@@ -76,7 +98,11 @@ async function collectSnapshot(page: any, activeDocId = "") {
       editorHasRequetes: editorHtml.includes("Requêtes API"),
       recordHasTableaux: recordHtml.includes("Tableaux des définitions"),
       recordHasRequetes: recordHtml.includes("Requêtes API"),
-      visibleHeadings: Array.from((liveRoot || document).querySelectorAll?.("h2") || []).map((el: any) => String(el.textContent || "").trim()),
+      visibleHeadings: {
+        h1: Array.from((liveRoot || document).querySelectorAll?.("h1") || []).map((el: any) => String(el.textContent || "").trim()).filter(Boolean),
+        h2: Array.from((liveRoot || document).querySelectorAll?.("h2") || []).map((el: any) => String(el.textContent || "").trim()).filter(Boolean),
+        h3: Array.from((liveRoot || document).querySelectorAll?.("h3") || []).map((el: any) => String(el.textContent || "").trim()).filter(Boolean),
+      },
     };
   }, activeDocId);
 }
@@ -162,8 +188,9 @@ test.describe("Debug sample refresh heading diagnosis", () => {
     console.log(JSON.stringify(relevantEvents, null, 2));
 
     expect(beforeRefresh.recordHtmlLength).toBeGreaterThan(0);
+    expect(beforeRefresh.visibleHeadings).toEqual(EXPECTED_VISIBLE_HEADINGS);
     expect(relevantEvents.length).toBeGreaterThan(0);
     expect(afterRefresh.recordHtmlLength).toBeGreaterThan(20_000);
-    expect(afterRefresh.visibleHeadings).toEqual(EXPECTED_VISIBLE_H2S);
+    expect(afterRefresh.visibleHeadings).toEqual(EXPECTED_VISIBLE_HEADINGS);
   });
 });
