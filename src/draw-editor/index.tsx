@@ -12,7 +12,7 @@ const MERMAID_OPTIONS = { fontSize: 20 };
 const MERMAID_TEXT_SIZE_OFFSET = 4;
 // Excalidraw appends `/dist/excalidraw-assets/` internally for exported fonts.
 if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
-    (window as any).EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6";
+    (window as any).EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.6";
 }
 const getExcalidrawLib = () => {
     const lib = (window as any).ExcalidrawLib;

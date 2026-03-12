@@ -4367,7 +4367,7 @@
   var MERMAID_OPTIONS = { fontSize: 20 };
   var MERMAID_TEXT_SIZE_OFFSET = 4;
   if (typeof window !== "undefined" && !window.EXCALIDRAW_ASSET_PATH) {
-    window.EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6";
+    window.EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.6";
   }
   var getExcalidrawLib = () => {
     const lib = window.ExcalidrawLib;

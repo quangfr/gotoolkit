@@ -425,6 +425,7 @@ RÈGLES
 - Produis un code strictement Mermaid.
 - Les intitulés font moins de 4 mots pour rester lisible.
 - Ajoute un titre en commentaire %% Title au début du code.
+- Si tu génères un flowchart ou un classDiagram, ajoute \`direction LR\` par défaut pour une mise en page plus large.
 - Pas d'introduction ni de conclusion, uniquement le JSON.
 
 FORMAT DE SORTIE (JSON strict)

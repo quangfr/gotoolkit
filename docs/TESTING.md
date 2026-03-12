@@ -255,7 +255,7 @@ Tier suites:
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `0 passed, 2 failed, 0 skipped` (`2 tests`, `01:14`) on `2026-03-12 08:15`
+  - results: `1 passed, 2 failed, 0 skipped` (`3 tests`, `01:31`) on `2026-03-12 16:21`
   - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `cloud-history-explicit-sync.spec.ts`
@@ -270,8 +270,8 @@ Tier suites:
 
   - `T2.3` `excalidraw-regression.spec.ts`
     - description: grouped Excalidraw/Mermaid regression across flowchart, sequence, and class docs with manual edit, switch, and reload checks
-    - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
-    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`1 test`, `00:17`) on `2026-03-12 16:21`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T2.4` `voice-recording-assemblyai-live.spec.ts`
     - description: real AssemblyAI proxy coverage using `tests/fixtures/sample.wav` during an actual recording, with live transcript mutation, cross-page stop/switch return to the origin page, saved transcript polling, badge state, and video playback verification

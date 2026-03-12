@@ -17,19 +17,43 @@ window.GoToolkitDrawMemo = (function () {
             fontSize: 16,
             strokeWidth: 1.2,
             roughness: 0,
-            flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 }
+            flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 },
+            sequence: {
+                diagramMarginX: 40,
+                actorMargin: 80,
+                width: 180,
+                boxMargin: 12,
+                boxTextMargin: 6,
+                messageMargin: 28
+            }
         },
         medium: {
             fontSize: 16,
             strokeWidth: 1.2,
             roughness: 0,
-            flowchart: { padding: 3, nodeSpacing: 35, rankSpacing: 35 }
+            flowchart: { padding: 3, nodeSpacing: 35, rankSpacing: 35 },
+            sequence: {
+                diagramMarginX: 70,
+                actorMargin: 120,
+                width: 220,
+                boxMargin: 16,
+                boxTextMargin: 8,
+                messageMargin: 32
+            }
         },
         large: {
             fontSize: 16,
             strokeWidth: 1.2,
             roughness: 0,
-            flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 }
+            flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 },
+            sequence: {
+                diagramMarginX: 90,
+                actorMargin: 140,
+                width: 240,
+                boxMargin: 18,
+                boxTextMargin: 10,
+                messageMargin: 36
+            }
         }
     };
 

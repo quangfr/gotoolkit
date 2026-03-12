@@ -1,7 +1,7 @@
 import { Node, mergeAttributes, InputRule, Editor } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
-import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, Send, Loader2, ChevronUp, Copy, CircleX, Sparkles } from 'lucide-react';
+import { Shapes, RectangleHorizontal, Square, GitCompareArrows, TrendingUpDown, Workflow, Send, Loader2, ChevronUp, Copy, CircleX, Sparkles, Wand2 } from 'lucide-react';
 
 const getMermaidApi = () => (window as any).mermaid;
 
@@ -118,7 +118,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
 
   // AI Generation States
   const [promptInput, setPromptInput] = React.useState('');
-  const [diagramType, setDiagramType] = React.useState('flow');
+  const [diagramType, setDiagramType] = React.useState('auto');
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [isTypeMenuOpen, setIsTypeMenuOpen] = React.useState(false);
   const composerTextareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -150,9 +150,10 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
   };
 
   const diagramTypes = [
-    { id: 'sequence', label: 'Échange', promptValue: 'sequenceDiagram', Icon: ArrowLeftRight },
-    { id: 'flow', label: 'Processus', promptValue: 'flowchart', Icon: Workflow },
-    { id: 'class', label: 'Structure', promptValue: 'classDiagram', Icon: Boxes }
+    { id: 'auto', label: 'Auto', promptValue: 'auto', Icon: Wand2 },
+    { id: 'sequence', label: 'Séquence', promptValue: 'sequenceDiagram', Icon: GitCompareArrows },
+    { id: 'flow', label: 'Flux', promptValue: 'flowchart', Icon: TrendingUpDown },
+    { id: 'class', label: 'Objet', promptValue: 'classDiagram', Icon: Workflow }
   ];
 
   const getDiagramTypeFromCode = (c: string) => {
@@ -162,15 +163,6 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     if (header.startsWith('flowchart') || header.startsWith('graph')) return 'flow';
     return null;
   };
-
-  React.useEffect(() => {
-    const nextType = getDiagramTypeFromCode(draftCode || code);
-    if (nextType && nextType !== diagramType) {
-      setDiagramType(nextType);
-    }
-  }, [code, draftCode]);
-
-
 
   const handleDrawSend = async () => {
     if (!promptInput.trim() || isGenerating) return;
@@ -184,7 +176,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
       const template = presets?.defaultPrompt || presets?.prompt || "";
       
       const selectedType = diagramTypes.find(t => t.id === diagramType);
-      const drawTypeValue = selectedType?.promptValue || 'flowchart';
+      const drawTypeValue = selectedType?.promptValue || 'auto';
 
       // Get full document markdown for context
       const documentMarkdown = (window as any).getEditorMarkdown?.() || "Contenu du document non disponible.";
@@ -236,17 +228,9 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
         }
 
         if (cleanCode) {
+          cleanCode = normalizeDiagramDirection(cleanCode);
           // Auto-detect size
-          const lowerCode = cleanCode.toLowerCase();
-          let newSize = 'small';
-          if (lowerCode.includes('flowchart td') || lowerCode.includes('graph td')) {
-            newSize = 'large';
-          }
-          const nextType = getDiagramTypeFromCode(cleanCode);
-          if (nextType) {
-            setDiagramType(nextType);
-          }
-
+          const newSize = getAutoDetectedSize(cleanCode);
           setDraftCode(cleanCode);
           setPromptInput('');
           if (composerTextareaRef.current) {
@@ -317,26 +301,90 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     return { code: lines.join('\n'), updated };
   };
 
+  const getClassDiagramDirection = (c: string) => {
+    const lines = (c || '').split('\n');
+    let sawClassDiagram = false;
+    for (let i = 0; i < Math.min(lines.length, 12); i++) {
+      const line = lines[i].trim();
+      if (!line || line.startsWith('%%')) continue;
+      if (!sawClassDiagram) {
+        if (/^classdiagram\b/i.test(line)) {
+          sawClassDiagram = true;
+        }
+        continue;
+      }
+      const match = line.match(/^direction\s+(LR|TD|TB|BT|RL)\b/i);
+      if (match) {
+        return match[1].toUpperCase();
+      }
+      break;
+    }
+    return null;
+  };
+
+  const setClassDiagramDirection = (c: string, direction: string) => {
+    const lines = (c || '').split('\n');
+    let updated = false;
+    for (let i = 0; i < Math.min(lines.length, 12); i++) {
+      const rawLine = lines[i];
+      const line = rawLine.trim();
+      if (!line || line.startsWith('%%')) continue;
+      if (/^classdiagram\b/i.test(line)) {
+        const nextIndex = i + 1;
+        const nextRawLine = lines[nextIndex] || '';
+        const nextLine = nextRawLine.trim();
+        if (/^direction\s+(LR|TD|TB|BT|RL)\b/i.test(nextLine)) {
+          lines[nextIndex] = nextRawLine.replace(/^(\s*)direction\s+(LR|TD|TB|BT|RL)\b/i, `$1direction ${direction}`);
+        } else {
+          lines.splice(nextIndex, 0, `direction ${direction}`);
+        }
+        updated = true;
+        break;
+      }
+    }
+    return { code: lines.join('\n'), updated };
+  };
+
+  const normalizeDiagramDirection = (c: string) => {
+    const header = getDiagramHeaderLine(c).toLowerCase();
+    if (header.startsWith('flowchart') || header.startsWith('graph')) {
+      const preferredDirection = getFlowchartDirection(c) || 'LR';
+      return setFlowchartDirection(c, preferredDirection).code;
+    }
+    if (header.startsWith('classdiagram')) {
+      const preferredDirection = getClassDiagramDirection(c) || 'LR';
+      return setClassDiagramDirection(c, preferredDirection).code;
+    }
+    return c;
+  };
+
   const getAutoDetectedSize = (c: string) => {
     const header = getDiagramHeaderLine(c).toLowerCase();
-    if (header.startsWith('classdiagram')) return 'large';
+    if (header.startsWith('classdiagram')) {
+      return getClassDiagramDirection(c) === 'TD' ? 'large' : 'small';
+    }
     if (header.startsWith('sequencediagram')) return 'small';
     const direction = getFlowchartDirection(c);
     if (direction === 'TD') return 'large';
     if (direction === 'LR') return 'small';
-    if (header.includes('flowchart td') || header.includes('graph td')) return 'large';
     return 'small';
   };
 
   const isSizeSelectorVisible = (c: string) => {
     const header = getDiagramHeaderLine(c).toLowerCase();
-    if (header.startsWith('sequencediagram') || header.startsWith('classdiagram')) return false;
+    if (header.startsWith('sequencediagram')) return false;
+    if (header.startsWith('classdiagram')) return true;
     return header.startsWith('flowchart') || header.startsWith('graph');
   };
 
   const activeCode = isEditing ? draftCode : code;
   const directionSize = getFlowchartDirection(activeCode);
-  let size = directionSize ? (directionSize === 'TD' ? 'large' : 'small') : node.attrs.size || getAutoDetectedSize(activeCode);
+  const classDirectionSize = getClassDiagramDirection(activeCode);
+  let size = directionSize
+    ? (directionSize === 'TD' ? 'large' : 'small')
+    : classDirectionSize
+      ? (classDirectionSize === 'TD' ? 'large' : 'small')
+      : node.attrs.size || getAutoDetectedSize(activeCode);
   if (size === 'medium') size = 'small'; 
   const showSizeSelector = isSizeSelectorVisible(activeCode);
   const contentKey = `${code}::${excalidrawJSON}::${size}`;
@@ -581,7 +629,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
       if ((window as any).GoToolkitDrawMemo) {
         // If there's a modal error, we must revert to the last valid code as requested
         const hasError = !!modalError;
-        const finalCode = hasError ? lastValidCode : draftCode;
+        const finalCode = hasError ? lastValidCode : normalizeDiagramDirection(draftCode);
 
         if (hasError) {
           updateAttributes({ code: lastValidCode });
@@ -593,7 +641,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           }
         } else {
           // Persist the current draft when closing normally
-          updateAttributes({ code: draftCode });
+          updateAttributes({ code: finalCode });
         }
 
         const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
@@ -701,15 +749,18 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     if (!(window as any).GoToolkitDrawMemo) return;
     setIsLoading(true);
     try {
-      // Use forced size for sequence/class diagrams
-      const targetSize = !isSizeSelectorVisible(draftCode) ? getAutoDetectedSize(draftCode) : size;
+      const normalizedCode = normalizeDiagramDirection(draftCode);
+      if (normalizedCode !== draftCode) {
+        setDraftCode(normalizedCode);
+      }
+      const targetSize = getAutoDetectedSize(normalizedCode);
 
       // Do not update node attrs here: TipTap attribute updates can remount the node view
       // and steal the Excalidraw singleton away from the modal. Commit on close only.
-      await (window as any).GoToolkitDrawMemo.updateFromMermaid(draftCode, targetSize);
+      await (window as any).GoToolkitDrawMemo.updateFromMermaid(normalizedCode, targetSize);
 
       setModalError(null);
-      setLastValidCode(draftCode);
+      setLastValidCode(normalizedCode);
     } catch (err: any) {
       if (draftCode?.trim()) {
         setModalError(err.message || 'Syntaxe Mermaid invalide');
@@ -738,12 +789,19 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     if (newSize === size) return;
     
     setIsLoading(true);
-    let updatedCode = sourceCode || draftCode || code;
+    let updatedCode = normalizeDiagramDirection(sourceCode || draftCode || code);
     const headerLine = getDiagramHeaderLine(updatedCode).toLowerCase();
     const isFlowchart = headerLine.startsWith('flowchart') || headerLine.startsWith('graph');
+    const isClassDiagram = headerLine.startsWith('classdiagram');
     if (isFlowchart) {
       const direction = newSize === 'large' ? 'TD' : 'LR';
       const { code: nextCode, updated } = setFlowchartDirection(updatedCode, direction);
+      if (updated) {
+        updatedCode = nextCode;
+      }
+    } else if (isClassDiagram) {
+      const direction = newSize === 'large' ? 'TD' : 'LR';
+      const { code: nextCode, updated } = setClassDiagramDirection(updatedCode, direction);
       if (updated) {
         updatedCode = nextCode;
       }
@@ -958,8 +1016,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
                         >
                           {(() => {
                             const current = diagramTypes.find(t => t.id === diagramType);
-                            const Icon = current?.Icon || Workflow;
-                            const label = current?.label || 'Processus';
+                            const Icon = current?.Icon || Wand2;
+                            const label = current?.label || 'Auto';
                             return <><Icon size={14} /> <span>{label}</span></>;
                           })()}
                           <ChevronUp size={12} style={{ transform: isTypeMenuOpen ? 'rotate(180deg)' : '' }} />

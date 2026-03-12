@@ -16,7 +16,7 @@
             test: () => Boolean(global.ExcalidrawLib),
             beforeLoad: () => {
                 // Excalidraw export code appends `/dist/excalidraw-assets/` itself for font URLs.
-                global.EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6";
+                global.EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.6";
             },
             src: "/vendor/excalidraw/0.17.6/dist/excalidraw.production.min.js"
         },

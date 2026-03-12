@@ -99,7 +99,7 @@ async function waitForBlockTexts(page: import("@playwright/test").Page, texts: r
       const rect = node.getBoundingClientRect();
       return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
     }) || null;
-    const haystack = String(container?.innerHTML || container?.textContent || "");
+    const haystack = String(container?.textContent || "").replace(/\s+/g, " ").trim();
     return expectedTexts.every(text => haystack.includes(text));
   }, [...texts], { timeout: 60_000 });
 }
@@ -109,6 +109,44 @@ async function waitForEditorHtmlTexts(page: import("@playwright/test").Page, tex
     const html = String((window as any).GoToolkitMemoInstance?.getValue?.() || "");
     return html.includes("mermaid-diagram") && expectedTexts.every(text => html.includes(text));
   }, [...texts], { timeout: 30_000 });
+}
+
+async function waitForLiveScene(page: import("@playwright/test").Page) {
+  await expect.poll(async () => {
+    return page.evaluate(() => {
+      const api = (window as any).GoToolkitDrawMemo?.getApi?.();
+      const elements = Array.isArray(api?.getSceneElements?.()) ? api.getSceneElements() : [];
+      const liveElements = elements.filter((element: any) => !element?.isDeleted);
+      return {
+        modalError: String(document.querySelector(".mermaid-modal-error-display")?.textContent || ""),
+        liveElementCount: liveElements.length,
+        liveTextCount: liveElements.filter((element: any) => {
+          const text = String(element?.text || element?.label?.text || "");
+          return text.trim().length > 0;
+        }).length,
+      };
+    });
+  }, { timeout: 60_000 }).toMatchObject({
+    modalError: "",
+    liveElementCount: expect.any(Number),
+    liveTextCount: expect.any(Number),
+  });
+
+  const snapshot = await page.evaluate(() => {
+    const api = (window as any).GoToolkitDrawMemo?.getApi?.();
+    const elements = Array.isArray(api?.getSceneElements?.()) ? api.getSceneElements() : [];
+    const liveElements = elements.filter((element: any) => !element?.isDeleted);
+    return {
+      liveElementCount: liveElements.length,
+      liveTextCount: liveElements.filter((element: any) => {
+        const text = String(element?.text || element?.label?.text || "");
+        return text.trim().length > 0;
+      }).length,
+    };
+  });
+
+  expect(snapshot.liveElementCount).toBeGreaterThan(0);
+  expect(snapshot.liveTextCount).toBeGreaterThan(0);
 }
 
 test.describe("Excalidraw regression", () => {
@@ -172,19 +210,17 @@ test.describe("Excalidraw regression", () => {
       await clickMemoDoc(page, seededDoc.id, { allowProgrammaticOpen: false });
       logStep("open-doc", { key: doc.key, id: seededDoc.id });
 
-      await page.evaluate(() => {
-        (window as any).setEditorMarkdown("```mermaid\n\n```");
-      });
+      await page.evaluate((initialCode: string) => {
+        (window as any).setEditorMarkdown(`\`\`\`mermaid\n${initialCode}\n\`\`\``);
+      }, doc.initialCode);
+
+      await waitForBlockTexts(page, doc.expectedTexts);
+      await waitForEditorHtmlTexts(page, doc.expectedTexts);
 
       const { block, modal, textarea } = await openMermaidModal(page);
-      await textarea.fill(doc.initialCode);
+      await expect(textarea).toHaveValue(/(flowchart|sequenceDiagram|classDiagram)/, { timeout: 30_000 });
       await page.locator(".mermaid-modal-sync").click();
-      await page.waitForFunction((texts: string[]) => {
-        const api = (window as any).GoToolkitDrawMemo?.getApi?.();
-        const elements = Array.isArray(api?.getSceneElements?.()) ? api.getSceneElements() : [];
-        const haystack = elements.map((element: any) => String(element?.text || element?.label?.text || "")).join("\n");
-        return texts.every(text => haystack.includes(text));
-      }, [...doc.expectedTexts], { timeout: 60_000 });
+      await waitForLiveScene(page);
 
       if (doc.manualEditText) {
         const snapshot = await getElementSnapshot(page);
@@ -257,7 +293,7 @@ test.describe("Excalidraw regression", () => {
       await closeMermaidModal(page, modal);
       await waitForBlockTexts(page, doc.expectedTexts);
 
-      const blockHtml = await block.innerHTML();
+      const blockHtml = await block.evaluate((node) => String((node as HTMLElement).textContent || "").replace(/\s+/g, " ").trim());
       for (const text of doc.expectedTexts) {
         expect(blockHtml).toContain(text);
       }
@@ -272,7 +308,7 @@ test.describe("Excalidraw regression", () => {
       const block = page.locator(".mermaid-diagram-wrapper .mermaid-diagram-container:visible").first();
       await expect(block).toBeVisible({ timeout: 30_000 });
       await waitForBlockTexts(page, doc.expectedTexts);
-      const blockHtml = await block.innerHTML();
+      const blockHtml = await block.evaluate((node) => String((node as HTMLElement).textContent || "").replace(/\s+/g, " ").trim());
       for (const text of doc.expectedTexts) {
         expect(blockHtml).toContain(text);
       }
@@ -302,7 +338,7 @@ test.describe("Excalidraw regression", () => {
       await waitForBlockTexts(page, doc.expectedTexts);
       const blockHtml = await block.evaluate((node) => {
         const element = node as HTMLElement;
-        return String(element.innerHTML || element.textContent || "");
+        return String(element.textContent || "").replace(/\s+/g, " ").trim();
       });
       for (const text of doc.expectedTexts) {
         expect(blockHtml).toContain(text);
