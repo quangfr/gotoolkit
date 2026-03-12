@@ -156,6 +156,7 @@ Current built-in automation hooks in the repo:
 - `tests/debug/root-empty-shell.spec.ts`
 - `tests/debug/close-active-page.spec.ts`
 - `tests/debug/empty-shell-search.spec.ts`
+- `tests/debug/sample-refresh-heading-diagnose.spec.ts`
 - `tests/space-code-rotate.spec.ts`
 - `scripts/with-env-local.sh`
 
@@ -189,17 +190,18 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-11 15:10`
-- `Scope`: `tests/memo-import-mermaid-regression.spec.ts`
+- `Last execution`: `2026-03-12 10:32`
+- `Scope`: `tests/debug/sample-refresh-heading-diagnose.spec.ts`
 - `Execution length`: `1 test`
-- `Execution time`: `00:10`
+- `Execution time`: `00:13`
 - `Result`: `1 passed, 0 failed, 0 skipped`
-- `Details`: `Blank private-page Markdown import used the shared picker, made no OpenRouter calls, showed 3 Mermaid SVG previews, and opened the modal with left preview plus right-side source parity.`
+- `Details`: `Imported tests/fixtures/sample.md survived refresh, startup empty-record overwrites were blocked, and the visible h2 headings after Cas limite were preserved across reload.`
 
 Recent troubleshooting note:
 
 - `private-switch-persist.spec.ts` is the primary fast check for generic local-page persistence regressions
 - if that spec passes but a heavier import/reload spec fails, suspect restore hydration or renderer rehydration before suspecting IndexedDB durability
+- `tests/debug/sample-refresh-heading-diagnose.spec.ts` is the focused repro for imported Markdown refresh survival plus post-reload heading-title preservation around table and Mermaid-adjacent sections
 - `tests/debug/close-active-page.spec.ts` is the focused repro for the breadcrumb close button returning the app to the empty shell cleanly
 - `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
 
@@ -252,7 +254,7 @@ Tier suites:
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `0 passed, 2 failed, 0 skipped` (`2 tests`, `01:13`) on `2026-03-11 23:42`
+  - results: `0 passed, 2 failed, 0 skipped` (`2 tests`, `01:14`) on `2026-03-12 08:15`
   - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `cloud-history-explicit-sync.spec.ts`
@@ -282,7 +284,7 @@ Tier suites:
 
   - `T2.6` `memo-import-mermaid-regression.spec.ts`
     - description: blank private-page shared-picker Markdown import with no OpenRouter calls, auto-rendered Mermaid SVG previews, and modal code/diagram parity
-    - results: `failing` (`1 test`, `01:12`) on `2026-03-11 23:42`
+    - results: `failing` (`1 test`, `01:13`) on `2026-03-12 08:15`
     - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 3` admin features

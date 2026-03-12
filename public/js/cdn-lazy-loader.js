@@ -15,8 +15,8 @@
             key: "excalidraw",
             test: () => Boolean(global.ExcalidrawLib),
             beforeLoad: () => {
-                // Excalidraw runtime assets (JS chunks/fonts) are resolved from this base.
-                global.EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6/dist/";
+                // Excalidraw export code appends `/dist/excalidraw-assets/` itself for font URLs.
+                global.EXCALIDRAW_ASSET_PATH = "/vendor/excalidraw/0.17.6";
             },
             src: "/vendor/excalidraw/0.17.6/dist/excalidraw.production.min.js"
         },

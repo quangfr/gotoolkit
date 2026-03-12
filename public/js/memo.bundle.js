@@ -64291,6 +64291,14 @@ ${innerMarkdown}
     const normalizeProgrammaticContent = react_shim_default.useCallback((content) => {
       return String(content || "").replace(/>\s+</g, "><").replace(/\s+/g, " ").trim();
     }, []);
+    const stabilizeProgrammaticContent = react_shim_default.useCallback((content) => {
+      const text2 = String(content || "");
+      if (!text2) return "";
+      return text2.replace(
+        /(<\/h[1-6]>)(\s*)(?=<(table|mermaid-diagram|pre|blockquote|ul|ol|details)\b)/gi,
+        "$1\u200B"
+      );
+    }, []);
     const hashProgrammaticContent = react_shim_default.useCallback((content) => {
       const normalized = normalizeProgrammaticContent(content);
       let hash2 = 2166136261;
@@ -64312,16 +64320,17 @@ ${innerMarkdown}
       var _a, _b;
       const targetId = String(id || "").trim();
       if (!targetId || !((_b = (_a = methods == null ? void 0 : methods.instance) == null ? void 0 : _a.commands) == null ? void 0 : _b.setContent)) return;
-      suppressProgrammaticChange(targetId, content);
+      const stabilizedContent = stabilizeProgrammaticContent(content);
+      suppressProgrammaticChange(targetId, stabilizedContent);
       try {
-        methods.instance.commands.setContent(content);
+        methods.instance.commands.setContent(stabilizedContent);
       } catch (err) {
         const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
         delete nextSuppressed[targetId];
         suppressedProgrammaticChangeRef.current = nextSuppressed;
         throw err;
       }
-    }, [suppressProgrammaticChange]);
+    }, [stabilizeProgrammaticContent, suppressProgrammaticChange]);
     const handleEditorReady = react_shim_default.useCallback((id, methods) => {
       var _a, _b, _c, _d;
       const targetId = String(id || "").trim();
@@ -64346,24 +64355,25 @@ ${innerMarkdown}
     }, [applyProgrammaticContent]);
     const handleEditorChange = react_shim_default.useCallback((newContent, id) => {
       const targetId = String(id || "").trim();
+      const stabilizedContent = stabilizeProgrammaticContent(newContent);
       if (!targetId) {
-        if (onChangeCb) onChangeCb(newContent, id);
+        if (onChangeCb) onChangeCb(stabilizedContent, id);
         return;
       }
       const suppressedContentHash = suppressedProgrammaticChangeRef.current[targetId];
-      const nextContentHash = hashProgrammaticContent(newContent);
+      const nextContentHash = hashProgrammaticContent(stabilizedContent);
       if (typeof suppressedContentHash === "string" && suppressedContentHash === nextContentHash) {
         const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
         delete nextSuppressed[targetId];
         suppressedProgrammaticChangeRef.current = nextSuppressed;
         setEditors((prev) => {
           const current = prev[targetId];
-          if (!current || current.content === newContent) return prev;
+          if (!current || current.content === stabilizedContent) return prev;
           const next2 = {
             ...prev,
             [targetId]: {
               ...current,
-              content: newContent
+              content: stabilizedContent
             }
           };
           editorsRef.current = next2;
@@ -64374,32 +64384,33 @@ ${innerMarkdown}
       setEditors((prev) => {
         const current = prev[targetId];
         if (!current) return prev;
-        if (current.content === newContent) return prev;
+        if (current.content === stabilizedContent) return prev;
         const next2 = {
           ...prev,
           [targetId]: {
             ...current,
-            content: newContent
+            content: stabilizedContent
           }
         };
         editorsRef.current = next2;
         return next2;
       });
-      if (onChangeCb) onChangeCb(newContent, targetId);
-    }, [hashProgrammaticContent, onChangeCb]);
+      if (onChangeCb) onChangeCb(stabilizedContent, targetId);
+    }, [hashProgrammaticContent, onChangeCb, stabilizeProgrammaticContent]);
     useEffect(() => {
       const api = {
         setValue: (newContent) => {
           const methods = activeInstanceRef.current;
-          const contentLength = (newContent == null ? void 0 : newContent.length) || 0;
+          const stabilizedContent = stabilizeProgrammaticContent(newContent);
+          const contentLength = (stabilizedContent == null ? void 0 : stabilizedContent.length) || 0;
           const start = performance.now();
           if (methods == null ? void 0 : methods.instance) {
             const targetId = String(activeIdRef.current || "default");
-            applyProgrammaticContent(targetId, methods, newContent);
+            applyProgrammaticContent(targetId, methods, stabilizedContent);
           } else if (window.MemoEditor) {
             const targetId = String(activeIdRef.current || "default");
-            suppressProgrammaticChange(targetId, newContent);
-            window.MemoEditor.commands.setContent(newContent);
+            suppressProgrammaticChange(targetId, stabilizedContent);
+            window.MemoEditor.commands.setContent(stabilizedContent);
           }
           const duration = Math.round(performance.now() - start);
           if (duration > 100) {
@@ -64468,9 +64479,9 @@ ${innerMarkdown}
           setActiveId(id);
           activeIdRef.current = id;
           setEditors((prev) => {
-            var _a, _b, _c, _d, _e, _f;
+            var _a, _b, _c, _d;
             const hasExisting = Boolean(prev[id]);
-            const nextContent = typeof initialContent === "string" ? initialContent : "";
+            const nextContent = typeof initialContent === "string" ? stabilizeProgrammaticContent(initialContent) : "";
             const existingContent = hasExisting && typeof ((_a = prev[id]) == null ? void 0 : _a.content) === "string" ? prev[id].content : "";
             const resolvedContent = typeof initialContent === "string" ? nextContent : existingContent;
             const next2 = hasExisting ? {
@@ -64501,15 +64512,6 @@ ${innerMarkdown}
               window.applyEditorStructuredOps = existingMethods.applyStructuredOps;
               window.getMemoEditorSource = existingMethods.getSource;
               window.exportMemoToDocx = existingMethods.exportDocx;
-            }
-            if (!hasExisting) {
-              const currentMethods = activeInstanceRef.current;
-              if ((_f = (_e = currentMethods == null ? void 0 : currentMethods.instance) == null ? void 0 : _e.commands) == null ? void 0 : _f.setContent) {
-                try {
-                  applyProgrammaticContent(id, currentMethods, resolvedContent);
-                } catch (err) {
-                }
-              }
             }
             let nextOrder = editorOrderRef.current.filter((editorId) => Boolean(next2[editorId]));
             nextOrder = nextOrder.filter((editorId) => editorId !== id);
@@ -64568,7 +64570,7 @@ ${innerMarkdown}
       };
       window.GoToolkitMemoEditorReady = Promise.resolve(api);
       window.GoToolkitMemoInstance = api;
-    }, [applyProgrammaticContent, suppressProgrammaticChange]);
+    }, [applyProgrammaticContent, stabilizeProgrammaticContent, suppressProgrammaticChange]);
     useEffect(() => {
       editorsRef.current = editors;
     }, [editors]);
