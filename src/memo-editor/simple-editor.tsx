@@ -3833,6 +3833,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const saveIdleRef = React.useRef<number | null>(null);
   const snapshotTimeoutRef = React.useRef<number | null>(null);
   const lastSerializedHtmlRef = React.useRef<string>(String(content || ''));
+  const pendingHydrationContentRef = React.useRef<string | null>(null);
   const blockDragMovedRef = React.useRef(false);
   const tableLayoutRafRef = React.useRef<number | null>(null);
   const isAutoLayoutRef = React.useRef(false);
@@ -3889,6 +3890,43 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   React.useEffect(() => {
     lastSerializedHtmlRef.current = String(content || '');
   }, [content, editorId]);
+
+  const applyQueuedHydration = React.useCallback((editorInstance: Editor) => {
+    const queuedContent = pendingHydrationContentRef.current;
+    if (queuedContent === null) return false;
+    const editorDom = editorInstance.view?.dom as HTMLElement | undefined;
+    const isFocusedEditor =
+      Boolean(editorInstance.isFocused)
+      || Boolean(editorDom && document.activeElement && editorDom.contains(document.activeElement));
+    if (isFocusedEditor) return false;
+    const currentContent = String(editorInstance.getHTML?.() || '');
+    if (currentContent === queuedContent) {
+      pendingHydrationContentRef.current = null;
+      lastSerializedHtmlRef.current = currentContent;
+      setEditorHtmlSnapshot((prev) => (prev === currentContent ? prev : currentContent));
+      return false;
+    }
+    const currentHasMeaningfulContent = memoHtmlHasMeaningfulContent(currentContent);
+    const expectedHasMeaningfulContent = memoHtmlHasMeaningfulContent(queuedContent);
+    if (currentHasMeaningfulContent && !expectedHasMeaningfulContent) {
+      pendingHydrationContentRef.current = null;
+      return false;
+    }
+    try {
+      (editorInstance as any).commands.setContent(queuedContent || '<p></p>');
+      const hydrated = String(editorInstance.getHTML?.() || queuedContent);
+      pendingHydrationContentRef.current = null;
+      lastSerializedHtmlRef.current = hydrated;
+      setEditorHtmlSnapshot((prev) => (prev === hydrated ? prev : hydrated));
+      if (onChange) {
+        onChange(hydrated, editorId);
+      }
+      return true;
+    } catch (err) {
+      console.warn('SimpleEditor queued hydration failed', err);
+      return false;
+    }
+  }, [editorId, onChange]);
 
   const clearScheduledTocSync = React.useCallback(() => {
     if (tocThrottleTimerRef.current !== null) {
@@ -4962,8 +5000,17 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
     },
     onBlur: ({ editor }) => {
-      scheduleEditorSnapshot(editor, { delayMs: 0 });
-      scheduleEditorSync(editor, { delayMs: 0 });
+      const flushQueuedHydration = () => {
+        if (!applyQueuedHydration(editor)) {
+          scheduleEditorSnapshot(editor, { delayMs: 0 });
+          scheduleEditorSync(editor, { delayMs: 0 });
+        }
+      };
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => flushQueuedHydration());
+      } else {
+        window.setTimeout(flushQueuedHydration, 0);
+      }
     },
   });
 
@@ -4977,6 +5024,16 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       lastSerializedHtmlRef.current = currentContent;
       return;
     }
+    const editorDom = editor.view?.dom as HTMLElement | undefined;
+    const isFocusedEditor =
+      Boolean(editor.isFocused)
+      || Boolean(editorDom && document.activeElement && editorDom.contains(document.activeElement));
+    if (isFocusedEditor) {
+      // Avoid re-hydrating the active editor while the user is typing in the same tab.
+      // Tab/document switches still remount or change editorId and will hydrate normally.
+      pendingHydrationContentRef.current = expectedContent;
+      return;
+    }
     const currentHasMeaningfulContent = memoHtmlHasMeaningfulContent(currentContent);
     const expectedHasMeaningfulContent = memoHtmlHasMeaningfulContent(expectedContent);
     if (currentHasMeaningfulContent && !expectedHasMeaningfulContent) {
@@ -4984,6 +5041,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     }
     try {
       (editor as any).commands.setContent(expectedContent || '<p></p>');
+      pendingHydrationContentRef.current = null;
       lastSerializedHtmlRef.current = String(editor.getHTML() || expectedContent);
       setEditorHtmlSnapshot(lastSerializedHtmlRef.current);
     } catch (err) {

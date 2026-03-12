@@ -59947,6 +59947,7 @@ ${promptInput.trim()}`
     const saveIdleRef = react_shim_default.useRef(null);
     const snapshotTimeoutRef = react_shim_default.useRef(null);
     const lastSerializedHtmlRef = react_shim_default.useRef(String(content || ""));
+    const pendingHydrationContentRef = react_shim_default.useRef(null);
     const blockDragMovedRef = react_shim_default.useRef(false);
     const tableLayoutRafRef = react_shim_default.useRef(null);
     const isAutoLayoutRef = react_shim_default.useRef(false);
@@ -60000,6 +60001,41 @@ ${promptInput.trim()}`
     react_shim_default.useEffect(() => {
       lastSerializedHtmlRef.current = String(content || "");
     }, [content, editorId]);
+    const applyQueuedHydration = react_shim_default.useCallback((editorInstance) => {
+      var _a2, _b2, _c2;
+      const queuedContent = pendingHydrationContentRef.current;
+      if (queuedContent === null) return false;
+      const editorDom = (_a2 = editorInstance.view) == null ? void 0 : _a2.dom;
+      const isFocusedEditor = Boolean(editorInstance.isFocused) || Boolean(editorDom && document.activeElement && editorDom.contains(document.activeElement));
+      if (isFocusedEditor) return false;
+      const currentContent = String(((_b2 = editorInstance.getHTML) == null ? void 0 : _b2.call(editorInstance)) || "");
+      if (currentContent === queuedContent) {
+        pendingHydrationContentRef.current = null;
+        lastSerializedHtmlRef.current = currentContent;
+        setEditorHtmlSnapshot((prev) => prev === currentContent ? prev : currentContent);
+        return false;
+      }
+      const currentHasMeaningfulContent = memoHtmlHasMeaningfulContent(currentContent);
+      const expectedHasMeaningfulContent = memoHtmlHasMeaningfulContent(queuedContent);
+      if (currentHasMeaningfulContent && !expectedHasMeaningfulContent) {
+        pendingHydrationContentRef.current = null;
+        return false;
+      }
+      try {
+        editorInstance.commands.setContent(queuedContent || "<p></p>");
+        const hydrated = String(((_c2 = editorInstance.getHTML) == null ? void 0 : _c2.call(editorInstance)) || queuedContent);
+        pendingHydrationContentRef.current = null;
+        lastSerializedHtmlRef.current = hydrated;
+        setEditorHtmlSnapshot((prev) => prev === hydrated ? prev : hydrated);
+        if (onChange) {
+          onChange(hydrated, editorId);
+        }
+        return true;
+      } catch (err) {
+        console.warn("SimpleEditor queued hydration failed", err);
+        return false;
+      }
+    }, [editorId, onChange]);
     const clearScheduledTocSync = react_shim_default.useCallback(() => {
       if (tocThrottleTimerRef.current !== null) {
         window.clearTimeout(tocThrottleTimerRef.current);
@@ -60968,12 +61004,21 @@ ${promptInput.trim()}`
         }
       },
       onBlur: ({ editor: editor2 }) => {
-        scheduleEditorSnapshot(editor2, { delayMs: 0 });
-        scheduleEditorSync(editor2, { delayMs: 0 });
+        const flushQueuedHydration = () => {
+          if (!applyQueuedHydration(editor2)) {
+            scheduleEditorSnapshot(editor2, { delayMs: 0 });
+            scheduleEditorSync(editor2, { delayMs: 0 });
+          }
+        };
+        if (typeof requestAnimationFrame === "function") {
+          requestAnimationFrame(() => flushQueuedHydration());
+        } else {
+          window.setTimeout(flushQueuedHydration, 0);
+        }
       }
     });
     react_shim_default.useEffect(() => {
-      var _a2;
+      var _a2, _b2;
       if (!editor || typeof editor.getHTML !== "function" || typeof ((_a2 = editor.commands) == null ? void 0 : _a2.setContent) !== "function") {
         return;
       }
@@ -60983,6 +61028,12 @@ ${promptInput.trim()}`
         lastSerializedHtmlRef.current = currentContent;
         return;
       }
+      const editorDom = (_b2 = editor.view) == null ? void 0 : _b2.dom;
+      const isFocusedEditor = Boolean(editor.isFocused) || Boolean(editorDom && document.activeElement && editorDom.contains(document.activeElement));
+      if (isFocusedEditor) {
+        pendingHydrationContentRef.current = expectedContent;
+        return;
+      }
       const currentHasMeaningfulContent = memoHtmlHasMeaningfulContent(currentContent);
       const expectedHasMeaningfulContent = memoHtmlHasMeaningfulContent(expectedContent);
       if (currentHasMeaningfulContent && !expectedHasMeaningfulContent) {
@@ -60990,6 +61041,7 @@ ${promptInput.trim()}`
       }
       try {
         editor.commands.setContent(expectedContent || "<p></p>");
+        pendingHydrationContentRef.current = null;
         lastSerializedHtmlRef.current = String(editor.getHTML() || expectedContent);
         setEditorHtmlSnapshot(lastSerializedHtmlRef.current);
       } catch (err) {
@@ -64820,4 +64872,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map
