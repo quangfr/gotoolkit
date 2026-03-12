@@ -64278,6 +64278,10 @@ ${innerMarkdown}
     const MAX_CACHED_EDITORS = 8;
     const [editors, setEditors] = useState({});
     const [activeId, setActiveId] = useState("");
+    const [isSearchMode, setIsSearchMode] = useState(() => {
+      if (typeof document === "undefined" || !document.body) return false;
+      return document.body.classList.contains("memo-search-mode");
+    });
     const [onChangeCb, setOnChangeCb] = useState(null);
     const editorOrderRef = react_shim_default.useRef([]);
     const editorsRef = react_shim_default.useRef({});
@@ -64523,11 +64527,19 @@ ${innerMarkdown}
           setTimeout(() => {
           }, 0);
         },
+        clearActive: () => {
+          setActiveId("");
+          activeIdRef.current = "";
+          activeInstanceRef.current = null;
+          window.MemoEditor = null;
+          window.memoEditor = null;
+        },
         removeInstance: (id) => {
           setEditors((prev) => {
             const next2 = { ...prev };
             delete next2[id];
             editorOrderRef.current = editorOrderRef.current.filter((editorId) => editorId !== id);
+            editorsRef.current = next2;
             return next2;
           });
         },
@@ -64564,6 +64576,16 @@ ${innerMarkdown}
       activeIdRef.current = activeId;
     }, [activeId]);
     useEffect(() => {
+      if (typeof document === "undefined" || !document.body || typeof MutationObserver === "undefined") return;
+      const syncSearchMode = () => {
+        setIsSearchMode(document.body.classList.contains("memo-search-mode"));
+      };
+      syncSearchMode();
+      const observer = new MutationObserver(syncSearchMode);
+      observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      return () => observer.disconnect();
+    }, []);
+    useEffect(() => {
       var _a;
       const methods = (_a = editors[activeId]) == null ? void 0 : _a.methods;
       if (methods) {
@@ -64581,7 +64603,44 @@ ${innerMarkdown}
     }, [activeId, editors]);
     const hasActiveEditor = Boolean(activeId && editors[activeId]);
     const editorPlaceholder = hasActiveEditor ? "Appuyer sur 'espace' pour l'Assistant ou '/' pour les commandes" : "Choisissez une page dans le panneau Documents";
+    const handleCreateRootPage = react_shim_default.useCallback(() => {
+      var _a;
+      (_a = window.GoToolkitMemoCreateRootDocument) == null ? void 0 : _a.call(window);
+    }, []);
     return /* @__PURE__ */ jsxs(Fragment3, { children: [
+      !hasActiveEditor && !isSearchMode ? /* @__PURE__ */ jsx("section", { id: "memoEmptyState", className: "memo-empty-state", children: /* @__PURE__ */ jsxs("div", { className: "memo-empty-state__panel", children: [
+        /* @__PURE__ */ jsx("h2", { className: "memo-empty-state__title", children: "Ouvrir une page" }),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            id: "memoEmptyStateCreateBtn",
+            type: "button",
+            className: "btn btn-secondary memo-empty-state__create",
+            onClick: handleCreateRootPage,
+            children: [
+              /* @__PURE__ */ jsx("i", { "data-lucide": "plus", "aria-hidden": "true" }),
+              /* @__PURE__ */ jsx("span", { children: "Cr\xE9er une page" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs("form", { id: "memoEmptyStateSearchForm", className: "memo-empty-state__search", role: "search", children: [
+          /* @__PURE__ */ jsx("i", { className: "document-explorer__search-icon", "data-lucide": "search", "aria-hidden": "true" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              id: "memoEmptyStateSearchInput",
+              type: "search",
+              className: "document-explorer__search-input memo-empty-state__search-input",
+              placeholder: "Rechercher dans vos documents",
+              autoComplete: "off"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { id: "memoEmptyStateRecent", className: "memo-empty-state__recent", hidden: true, children: [
+          /* @__PURE__ */ jsx("div", { className: "memo-empty-state__recent-title", children: "Recemment ouverts" }),
+          /* @__PURE__ */ jsx("div", { id: "memoEmptyStateRecentList", className: "memo-empty-state__recent-list" })
+        ] })
+      ] }) }) : null,
       hasActiveEditor ? /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
         EditorItem,
         {
@@ -64750,4 +64809,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map
+                                        

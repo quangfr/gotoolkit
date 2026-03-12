@@ -14,6 +14,7 @@ interface MemoEditorApi {
     setEditorState: (state: any) => void;
     setEditable: (editable: boolean) => void;
     switchTo: (id: string, initialContent?: string) => void;
+    clearActive: () => void;
     removeInstance: (id: string) => void;
     applyOutputTo: (id: string, output: string, mode: 'edit' | 'suggest') => void;
     applyStructuredOpsTo: (id: string, ops: Array<{ action?: string; type?: string; start?: number; end?: number; text?: string; content?: string }>) => void;
@@ -55,6 +56,10 @@ const App = () => {
     const MAX_CACHED_EDITORS = 8;
     const [editors, setEditors] = useState<Record<string, EditorInstance>>({});
     const [activeId, setActiveId] = useState<string>('');
+    const [isSearchMode, setIsSearchMode] = useState<boolean>(() => {
+        if (typeof document === 'undefined' || !document.body) return false;
+        return document.body.classList.contains('memo-search-mode');
+    });
     const [onChangeCb, setOnChangeCb] = useState<((content: string, id?: string) => void) | null>(null);
     const editorOrderRef = React.useRef<string[]>([]);
     const editorsRef = React.useRef<Record<string, EditorInstance>>({});
@@ -323,11 +328,19 @@ const App = () => {
                     // no-op
                 }, 0);
             },
+            clearActive: () => {
+                setActiveId('');
+                activeIdRef.current = '';
+                activeInstanceRef.current = null;
+                (window as any).MemoEditor = null;
+                (window as any).memoEditor = null;
+            },
             removeInstance: (id: string) => {
                 setEditors(prev => {
                     const next = { ...prev };
                     delete next[id];
                     editorOrderRef.current = editorOrderRef.current.filter(editorId => editorId !== id);
+                    editorsRef.current = next;
                     return next;
                 });
             },
@@ -370,6 +383,17 @@ const App = () => {
     }, [activeId]);
 
     useEffect(() => {
+        if (typeof document === 'undefined' || !document.body || typeof MutationObserver === 'undefined') return;
+        const syncSearchMode = () => {
+            setIsSearchMode(document.body.classList.contains('memo-search-mode'));
+        };
+        syncSearchMode();
+        const observer = new MutationObserver(syncSearchMode);
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
         const methods = editors[activeId]?.methods;
         if (methods) {
             activeInstanceRef.current = methods;
@@ -389,9 +413,42 @@ const App = () => {
     const editorPlaceholder = hasActiveEditor
         ? "Appuyer sur 'espace' pour l'Assistant ou '/' pour les commandes"
         : "Choisissez une page dans le panneau Documents";
+    const handleCreateRootPage = React.useCallback(() => {
+        (window as any).GoToolkitMemoCreateRootDocument?.();
+    }, []);
 
     return (
         <>
+            {!hasActiveEditor && !isSearchMode ? (
+                <section id="memoEmptyState" className="memo-empty-state">
+                    <div className="memo-empty-state__panel">
+                        <h2 className="memo-empty-state__title">Ouvrir une page</h2>
+                        <button
+                            id="memoEmptyStateCreateBtn"
+                            type="button"
+                            className="btn btn-secondary memo-empty-state__create"
+                            onClick={handleCreateRootPage}
+                        >
+                            <i data-lucide="plus" aria-hidden="true"></i>
+                            <span>Créer une page</span>
+                        </button>
+                        <form id="memoEmptyStateSearchForm" className="memo-empty-state__search" role="search">
+                            <i className="document-explorer__search-icon" data-lucide="search" aria-hidden="true"></i>
+                            <input
+                                id="memoEmptyStateSearchInput"
+                                type="search"
+                                className="document-explorer__search-input memo-empty-state__search-input"
+                                placeholder="Rechercher dans vos documents"
+                                autoComplete="off"
+                            />
+                        </form>
+                        <div id="memoEmptyStateRecent" className="memo-empty-state__recent" hidden>
+                            <div className="memo-empty-state__recent-title">Recemment ouverts</div>
+                            <div id="memoEmptyStateRecentList" className="memo-empty-state__recent-list"></div>
+                        </div>
+                    </div>
+                </section>
+            ) : null}
             {hasActiveEditor ? (
                 <div className="memo-card">
                     <div className="editor-wrap">

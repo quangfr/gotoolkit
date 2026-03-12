@@ -154,6 +154,8 @@ Current built-in automation hooks in the repo:
 - `tests/cloud-rapid-switch-large.spec.ts`
 - `tests/private-switch-persist.spec.ts`
 - `tests/debug/root-empty-shell.spec.ts`
+- `tests/debug/close-active-page.spec.ts`
+- `tests/debug/empty-shell-search.spec.ts`
 - `tests/space-code-rotate.spec.ts`
 - `scripts/with-env-local.sh`
 
@@ -198,6 +200,8 @@ Recent troubleshooting note:
 
 - `private-switch-persist.spec.ts` is the primary fast check for generic local-page persistence regressions
 - if that spec passes but a heavier import/reload spec fails, suspect restore hydration or renderer rehydration before suspecting IndexedDB durability
+- `tests/debug/close-active-page.spec.ts` is the focused repro for the breadcrumb close button returning the app to the empty shell cleanly
+- `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
 
 Tier suites:
 

@@ -111,6 +111,11 @@
                     return;
                 }
                 if (!targetId) return;
+                const openDocumentByLink = d.openDocumentByLink;
+                if (typeof openDocumentByLink === "function") {
+                    openDocumentByLink(targetId);
+                    return;
+                }
                 d.setActiveDocument?.(targetId);
                 });
             }
