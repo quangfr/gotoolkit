@@ -321,6 +321,10 @@
     var CHAT_APP_ID = resolveChatAppId();
     var DEFAULT_CONVERSATION_SCOPE = "default";
 
+    function isMemoAssistContext() {
+        return CHAT_APP_ID === "memo" || CHAT_APP_ID.indexOf("presentation-") === 0;
+    }
+
     function scopedKey(base) {
         return base + "." + CHAT_APP_ID;
     }
@@ -368,7 +372,7 @@
     }
 
     function getActiveMemoDocumentId() {
-        if (CHAT_APP_ID !== "memo") return null;
+        if (!isMemoAssistContext()) return null;
         try {
             var docIdFromApi = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
@@ -383,7 +387,7 @@
     }
 
     function getActiveMemoTabId() {
-        if (CHAT_APP_ID !== "memo") return null;
+        if (!isMemoAssistContext()) return null;
         try {
             var tabIdFromApi = typeof global.getMemoActiveTabId === "function"
                 ? global.getMemoActiveTabId()
@@ -397,7 +401,7 @@
     }
 
     function getConversationScopeId() {
-        if (CHAT_APP_ID !== "memo") return DEFAULT_CONVERSATION_SCOPE;
+        if (!isMemoAssistContext()) return DEFAULT_CONVERSATION_SCOPE;
         var tabId = getActiveMemoTabId();
         if (tabId) return "tab:" + tabId;
         var docId = getActiveMemoDocumentId();
@@ -406,7 +410,7 @@
     }
 
     function getConversationScopeIdForDocument(documentId) {
-        if (CHAT_APP_ID !== "memo") return DEFAULT_CONVERSATION_SCOPE;
+        if (!isMemoAssistContext()) return DEFAULT_CONVERSATION_SCOPE;
         var activeTabId = getActiveMemoTabId();
         if (activeTabId) return "tab:" + activeTabId;
         var docId = (documentId || "").toString().trim();
@@ -415,7 +419,7 @@
     }
 
     function getTargetTabIdFromConversationScope(scopeId) {
-        if (CHAT_APP_ID !== "memo") return null;
+        if (!isMemoAssistContext()) return null;
         var scoped = (scopeId || "").toString().trim();
         if (!scoped) return null;
         if (scoped.indexOf("tab:") === 0) {
@@ -724,7 +728,7 @@
     }
 
     function getAllowedPromptPresetIds() {
-        if (CHAT_APP_ID === "memo") return ["edit", "advice", "suggest", "import", "draw"];
+        if (isMemoAssistContext()) return ["edit", "advice", "suggest", "import", "draw"];
         if (CHAT_APP_ID === "index") return ["edit", "advice", "suggest"];
         return ["edit", "advice", "suggest"];
     }
@@ -734,7 +738,7 @@
         var defaultPreset = allowed.includes("edit") ? "edit" : (allowed[0] || "advice");
         var scoped = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString();
         try {
-            if (CHAT_APP_ID === "memo") {
+            if (isMemoAssistContext()) {
                 var rawStore = global.localStorage.getItem(PROMPT_PRESET_KEY);
                 var parsedStore = safeParseConversationStore(rawStore);
                 var scopedValue = parsedStore?.[scoped];
@@ -756,7 +760,7 @@
     function persistPromptPreset(value, scopeId) {
         var scoped = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString();
         try {
-            if (CHAT_APP_ID === "memo") {
+            if (isMemoAssistContext()) {
                 var rawStore = global.localStorage.getItem(PROMPT_PRESET_KEY);
                 var parsedStore = safeParseConversationStore(rawStore);
                 parsedStore[scoped] = value;
@@ -2005,7 +2009,7 @@
     };
 
     AssistSidebar.prototype.setupConversationScopeAutoSync = function () {
-        if (CHAT_APP_ID !== "memo") return;
+        if (!isMemoAssistContext()) return;
         if (this.scopeSyncIntervalId) {
             clearInterval(this.scopeSyncIntervalId);
             this.scopeSyncIntervalId = null;
@@ -4278,7 +4282,7 @@
         ]);
         var memoId = this.getActiveMemoId();
         var memoDocIds = null;
-        if (memoId && CHAT_APP_ID === "memo" && conversationId === this.conversation.id) {
+        if (memoId && isMemoAssistContext() && conversationId === this.conversation.id) {
             var memoEntries = await this.docManager.getMemoEmbeddings(memoId);
             memoDocIds = new Set((memoEntries || []).map(function (entry) {
                 if (entry?.enabled === false) return null;
@@ -4795,7 +4799,7 @@
         this.scrollToBottom();
 
         try {
-        if (CHAT_APP_ID === "memo") {
+        if (isMemoAssistContext()) {
             var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
                 : null;
@@ -5289,7 +5293,7 @@
             this.updateComposerState();
             if (this.importInProgress) {
                 this.importInProgress = false;
-                if (CHAT_APP_ID === "memo") {
+                if (isMemoAssistContext()) {
                     window.GoToolkitMemoToast?.("");
                 }
             }
@@ -6006,7 +6010,7 @@
         this.pendingAttachmentList = document.createElement("div");
         this.pendingAttachmentList.className = "chat-composer-attachments__list";
         pendingAttachmentRow.appendChild(this.pendingAttachmentList);
-        if (CHAT_APP_ID !== "memo") {
+        if (!isMemoAssistContext()) {
             this.sidebar.appendChild(pendingAttachmentRow);
         }
         var memoAttachmentRow = document.createElement("div");
@@ -6228,7 +6232,7 @@
         setElementIconOnly(this.scrollButton, "paperclip");
         this.scrollButton.setAttribute("title", "Fichiers");
         this.scrollButton.addEventListener("click", this.openDocumentSelector.bind(this));
-        if (CHAT_APP_ID === "memo") {
+        if (isMemoAssistContext()) {
             memoAttachmentRow.insertBefore(this.scrollButton, this.memoContextAttachmentList);
         } else {
             pendingAttachmentRow.insertBefore(this.scrollButton, this.pendingAttachmentList);
@@ -6405,7 +6409,7 @@
     };
 
     AssistSidebar.prototype.openDocumentSelector = async function () {
-        if (CHAT_APP_ID === "memo") {
+        if (isMemoAssistContext()) {
             var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
                 : null;
@@ -6436,13 +6440,14 @@
         this.importFileOptions = options || null;
         this.logMemoImportDebug("selector-open", {
             appId: CHAT_APP_ID,
+            memoTarget: Boolean(options?.memoTarget),
             skipEmbeddings: Boolean(options?.skipEmbeddings),
             skipIngestion: Boolean(options?.skipIngestion),
             directMarkdownImport: Boolean(options?.directMarkdownImport),
             directPasteMode: Boolean(options?.directPasteMode),
             markdownViaAi: Boolean(options?.markdownViaAi)
         });
-        if (CHAT_APP_ID === "memo" && options?.skipIngestion) {
+        if ((isMemoAssistContext() || options?.memoTarget) && options?.skipIngestion) {
             var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
                 : null;
@@ -6460,6 +6465,7 @@
             appId: CHAT_APP_ID
         });
         return this.openImportFileSelector({
+            memoTarget: true,
             skipEmbeddings: true,
             skipIngestion: true,
             directMarkdownImport: true
@@ -6718,8 +6724,18 @@
         }
         fileArray = filteredFiles;
 
+        var memoTarget = Boolean(options.memoTarget);
+        var skipEmbeddings = Boolean(options.skipEmbeddings);
+        var skipIngestion = Boolean(options.skipIngestion);
+        var directMarkdownImport = Boolean(options.directMarkdownImport);
+        var directPasteMode = Boolean(options.directPasteMode) ||
+            Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.directPasteEnabled", false));
+        var markdownViaAi = Boolean(options.markdownViaAi) ||
+            Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.markdownViaAiEnabled", false));
+        var useMemoDirectImport = Boolean(memoTarget || skipIngestion || directMarkdownImport);
+
         var directTextFiles = [];
-        if (CHAT_APP_ID === "memo") {
+        if (useMemoDirectImport) {
             var remainingFiles = [];
             fileArray.forEach(function (file) {
                 var name = (file?.name || "").toLowerCase();
@@ -6740,20 +6756,14 @@
         var createdImportBubble = false;
         var hadMediaTranscription = false;
         var didSendAI = false;
-        // Options for import behavior
-        var skipEmbeddings = Boolean(options.skipEmbeddings);
-        var skipIngestion = Boolean(options.skipIngestion);
-        var directMarkdownImport = Boolean(options.directMarkdownImport);
-        var directPasteMode = Boolean(options.directPasteMode) ||
-            Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.directPasteEnabled", false));
-        var markdownViaAi = Boolean(options.markdownViaAi) ||
-            Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.markdownViaAiEnabled", false));
         this.logMemoImportDebug("pipeline:start", {
             appId: CHAT_APP_ID,
             originalCount: originalFileArray.length,
             originalNames: originalFileArray.map(function (file) { return file?.name || ""; }).filter(Boolean),
             filteredCount: fileArray.length,
             directTextCount: directTextFiles.length,
+            memoTarget: memoTarget,
+            useMemoDirectImport: useMemoDirectImport,
             skipEmbeddings: skipEmbeddings,
             skipIngestion: skipIngestion,
             directMarkdownImport: directMarkdownImport,
@@ -6761,13 +6771,13 @@
             markdownViaAi: markdownViaAi
         });
 
-        if (CHAT_APP_ID === "memo" && skipIngestion && !memoId && typeof global.GoToolkitMemoCreateAutoDocument === "function") {
+        if (useMemoDirectImport && skipIngestion && !memoId && typeof global.GoToolkitMemoCreateAutoDocument === "function") {
             await global.GoToolkitMemoCreateAutoDocument();
             memoId = this.getActiveMemoId();
             tabId = memoId || null;
         }
 
-        if (CHAT_APP_ID === "memo" && directMarkdownImport) {
+        if (useMemoDirectImport && directMarkdownImport) {
             var allFilesAreMarkdown = originalFileArray.length > 0 && originalFileArray.every(function (file) {
                 var name = String(file?.name || "").toLowerCase();
                 return name.endsWith(".md") || name.endsWith(".markdown");
@@ -6817,7 +6827,7 @@
                 tabId: tabId || ""
             });
 
-            if (skipIngestion && CHAT_APP_ID === "memo") {
+            if (skipIngestion && useMemoDirectImport) {
                 this.logMemoImportDebug("skip-ingestion:enter", {
                     importCandidateCount: directTextFiles.length + fileArray.length,
                     directTextCount: directTextFiles.length,
@@ -7019,7 +7029,7 @@
             }
 
             // Hide generic toast for memo import (skipEmbeddings)
-            if (CHAT_APP_ID === "memo" && !skipEmbeddings) {
+            if (isMemoAssistContext() && !skipEmbeddings) {
                 window.GoToolkitMemoToast?.("Préparation de l'import...");
             }
             // 1. Ingérer les fichiers (parsing, chunking) comme chatAttachFilesBtn
@@ -7576,7 +7586,7 @@
                     scopeId: uiScopeId,
                     didSendAI: didSendAI
                 });
-                if (CHAT_APP_ID === "memo") {
+                if (isMemoAssistContext()) {
                     window.GoToolkitMemoToast?.("");
                 }
             }
@@ -7586,7 +7596,7 @@
     AssistSidebar.prototype.setDocumentUploadStatus = function (message) {
         this.documentUploadStatus = message || "";
         this.syncDocumentIndicatorTitle(this.documentChunkCount);
-        if (CHAT_APP_ID === "memo" && message) {
+        if (isMemoAssistContext() && message) {
             var isError = /Erreur|indisponible|échec/i.test(message);
             if (isError) {
                 try {
@@ -7674,7 +7684,7 @@
     };
 
     AssistSidebar.prototype.renderPendingDocumentAttachments = function () {
-        if (CHAT_APP_ID === "memo") {
+        if (isMemoAssistContext()) {
             this.renderMemoContextAttachments();
             return;
         }
@@ -7856,7 +7866,7 @@
     };
 
     AssistSidebar.prototype.getActiveMemoId = function () {
-        if (CHAT_APP_ID !== "memo") return null;
+        if (!isMemoAssistContext()) return null;
         return window.__memoState?.activeTabId || null;
     };
 
@@ -7902,7 +7912,7 @@
         var pendingNames = Array.isArray(this.pendingDocumentAttachments)
             ? this.pendingDocumentAttachments.filter(Boolean)
             : [];
-        if (CHAT_APP_ID !== "memo") {
+        if (!isMemoAssistContext()) {
             this.memoContextAttachmentRow.style.display = "none";
             clearElementContent(this.memoContextAttachmentList);
             return;
@@ -11170,7 +11180,7 @@
             }
             if (self.importInProgress) {
                 self.importInProgress = false;
-                if (CHAT_APP_ID === "memo") {
+                if (isMemoAssistContext()) {
                     window.GoToolkitMemoToast?.("");
                 }
             }
@@ -11194,7 +11204,7 @@
             }
             if (self.importInProgress) {
                 self.importInProgress = false;
-                if (CHAT_APP_ID === "memo") {
+                if (isMemoAssistContext()) {
                     window.GoToolkitMemoToast?.("", true);
                 }
             }

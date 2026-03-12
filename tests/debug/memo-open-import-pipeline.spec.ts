@@ -123,4 +123,71 @@ test.describe("Debug memoOpenImportBtn pipeline", () => {
     expect(eventNames).not.toContain("ingestion-route:media-ingest:start");
     expect(eventNames).not.toContain("ai-in:dispatch");
   });
+
+  test("uses memo-like direct markdown path under presentation app id", async ({ page }) => {
+    test.setTimeout(180_000);
+
+    await page.addInitScript(() => {
+      (window as any).GoToolkitChatAppId = "presentation-test";
+    });
+
+    const debugEvents: DebugEvent[] = [];
+    page.on("console", msg => {
+      const text = msg.text();
+      if (!text.includes(DEBUG_PREFIX)) return;
+      const match = text.match(/^\[MemoImportDebug\]\s+([^\s]+)\s*(.*)$/);
+      if (!match) return;
+      const [, event, rawPayload] = match;
+      let payload: Record<string, unknown> = {};
+      if (rawPayload) {
+        try {
+          payload = JSON.parse(rawPayload);
+        } catch {
+          payload = { raw: rawPayload };
+        }
+      }
+      debugEvents.push({ event, payload });
+    });
+
+    await page.goto(BASE_URL, { waitUntil: "load", timeout: 30_000 });
+    await page.evaluate(() => {
+      try {
+        localStorage.setItem("go-toolkit-docs-tour-seen.v1", "1");
+      } catch {
+        // ignore
+      }
+    });
+
+    await waitForMemoBootstrap(page);
+    await ensureAssist(page);
+
+    const scopeSnapshot = await page.evaluate(async () => {
+      const w = window as any;
+      await w.GoToolkitMemoCreateAutoDocument();
+      w.GoToolkitMemoInstance?.setValue?.("");
+      return {
+        appId: String(w.GoToolkitChatAppId || ""),
+        scopeId: String(w.GoToolkitAssistInstance?.currentConversationScopeId || ""),
+      };
+    });
+
+    await page.locator("#fileMenuBtn").click();
+    const chooserPromise = page.waitForEvent("filechooser");
+    await page.locator("#memoOpenImportBtn").click();
+    const chooser = await chooserPromise;
+    await chooser.setFiles(SAMPLE_MARKDOWN_PATH);
+
+    await expect.poll(() => debugEvents.map(item => item.event), { timeout: 60_000 }).toContain("direct-markdown:complete");
+
+    const eventNames = debugEvents.map(item => item.event);
+    console.log("=== presentation-memo-import-debug-events ===");
+    console.log(JSON.stringify({ scopeSnapshot, debugEvents }, null, 2));
+
+    expect(scopeSnapshot.appId).toBe("presentation-test");
+    expect(scopeSnapshot.scopeId).toMatch(/^(tab:|doc:)/);
+    expect(eventNames).toContain("memo-open-import-btn");
+    expect(eventNames).toContain("pipeline:return-direct-markdown");
+    expect(eventNames).not.toContain("ingestion-route:enter");
+    expect(eventNames).not.toContain("ai-in:dispatch");
+  });
 });

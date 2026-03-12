@@ -64,6 +64,31 @@ Important point:
 - `document-api` and `share-history` previously had `localStorage` keys but current code removes those old keys and uses IndexedDB-backed storage wrappers instead
 - memo document content is not restored from `localStorage`; `localStorage` only helps reopen the right document ids
 
+### 2.1.1 Assist app namespace vs memo-like scope
+
+Assist uses two related but different concepts:
+
+- `CHAT_APP_ID`
+  - app namespace for storage and conversation ids
+  - examples: `memo`, `index`, `presentation-<uuid>`
+- conversation scope id
+  - per-surface or per-document conversation target inside the app namespace
+  - memo-like surfaces use `tab:<id>`, `doc:<id>`, or `default`
+
+Important point:
+
+- do not treat `CHAT_APP_ID` as the only switch for memo behavior
+- `presentation-*` pages keep their own app namespace, but current Assist behavior treats them as memo-like for:
+  - per-document/per-tab conversation scoping
+  - memo prompt preset availability
+  - memo attachment/context rendering
+  - direct markdown import from the file menu
+
+Practical rule:
+
+- use the memo-like context helper in `public/js/assist.js` when the behavior depends on memo document semantics
+- use raw `CHAT_APP_ID` when the behavior depends on storage namespace or app identity
+
 ## 2.2 IndexedDB
 
 Main DB in `public/js/document-storage.js`:

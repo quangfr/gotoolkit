@@ -191,11 +191,12 @@ Coverage-map maintenance rule:
 Latest targeted Playwright run:
 
 - `Last execution`: `2026-03-12 18:14`
+- `Last execution`: `2026-03-12 18:45`
 - `Scope`: `tests/debug/memo-open-import-pipeline.spec.ts`
-- `Execution length`: `1 test`
-- `Execution time`: `00:08`
-- `Result`: `1 passed, 0 failed, 0 skipped`
-- `Details`: `Verified #memoOpenImportBtn emitted only direct-markdown debug markers and did not hit ingestion-route or ai-in dispatch markers for tests/fixtures/sample.md.`
+- `Execution length`: `2 tests`
+- `Execution time`: `00:10`
+- `Result`: `2 passed, 0 failed, 0 skipped`
+- `Details`: `Verified #memoOpenImportBtn stayed on the direct-markdown path in both plain memo and forced presentation app contexts, with presentation also receiving memo-style tab-scoped Assist isolation.`
 
 Recent troubleshooting note:
 
