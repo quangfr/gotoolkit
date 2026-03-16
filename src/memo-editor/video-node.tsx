@@ -603,7 +603,6 @@ const EmbedNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
           loading="lazy"
           allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
           referrerPolicy="strict-origin-when-cross-origin"
-          allowFullScreen
         />
         <div className="memo-video-embed-overlay" aria-hidden="true">
           <span className="memo-video-embed-overlay__icon">
@@ -733,7 +732,6 @@ export const ExternalVideoEmbed = Node.create({
         {
           'data-type': 'external-video-embed',
           loading: 'lazy',
-          allowfullscreen: 'true',
           allow: 'autoplay; fullscreen; picture-in-picture; clipboard-write',
           referrerpolicy: 'strict-origin-when-cross-origin',
         },

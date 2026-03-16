@@ -1004,11 +1004,6 @@ function resolveAllowedSpacesForEmail(emailRaw) {
     allowed.add("epiconcept");
     return Array.from(allowed);
   }
-  if (email === "maximepispisa@gmail.com") {
-    allowed.add("golive");
-    allowed.add("epiconcept");
-    return Array.from(allowed);
-  }
   const domain = email.split("@")[1] || "";
   if (domain === "savane-group.com") {
     allowed.add("golive");

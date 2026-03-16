@@ -1,6 +1,6 @@
 # GoToolkit Security Architecture
 
-Date: 2026-03-12
+Date: 2026-03-16
 Purpose: short technical map of how security works in the current codebase
 Scope: `public/`, `workers/`, `firebase.json`
 
@@ -348,7 +348,7 @@ Frontend definitions in `public/index.html`:
 
 - `golive`
   - domains: `savane-group.com`, `safrangroup.com`
-  - explicit email allowlist includes `quang.tran@savane-group.com`, `maximepispisa@gmail.com`
+  - explicit email allowlist includes `quang.tran@savane-group.com`, `tranxq@gmail.com`, `oliver.tholance@savane-group.com`, `otholance@gmail.com`
 - `safran`
   - domains: `safrangroup.com`
   - explicit email allowlist includes `quang.tran@savane-group.com`

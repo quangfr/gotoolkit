@@ -56533,8 +56533,7 @@ ${promptInput.trim()}`
           title: title || "Embedded video",
           loading: "lazy",
           allow: "autoplay; fullscreen; picture-in-picture; clipboard-write",
-          referrerPolicy: "strict-origin-when-cross-origin",
-          allowFullScreen: true
+          referrerPolicy: "strict-origin-when-cross-origin"
         }
       ),
       /* @__PURE__ */ jsxs("div", { className: "memo-video-embed-overlay", "aria-hidden": "true", children: [
@@ -56656,7 +56655,6 @@ ${promptInput.trim()}`
           {
             "data-type": "external-video-embed",
             loading: "lazy",
-            allowfullscreen: "true",
             allow: "autoplay; fullscreen; picture-in-picture; clipboard-write",
             referrerpolicy: "strict-origin-when-cross-origin"
           },
@@ -64872,4 +64870,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map

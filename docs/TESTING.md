@@ -216,13 +216,13 @@ Tier suites:
 
   - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `00:26`) on `2026-03-12 14:39`
-    - details: `Latest run passed after Playwright readiness was updated for the no-active-page-on-open flow.`
+    - results: `passing` (`1 test`, `00:28`) on `2026-03-12 21:29`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.2` `cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
-    - results: `passing` (`1 test`, `00:30`) on `2026-03-12 14:39`
-    - details: `Latest run passed after Playwright readiness was updated for the no-active-page-on-open flow.`
+    - results: `passing` (`1 test`, `00:25`) on `2026-03-12 21:29`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse

@@ -421,9 +421,7 @@
         });
 
         function setActiveTab(target, options) {
-            const forceLibraryTab = appId === "memo";
-            const canUseToc = !forceLibraryTab
-                && Boolean(tocPanel && tabBtns.length && Array.from(tabBtns).some(b => b.dataset.tab === "toc"));
+            const canUseToc = Boolean(tocPanel && tabBtns.length && Array.from(tabBtns).some(b => b.dataset.tab === "toc"));
             const nextTarget = (target === "toc" && canUseToc) ? "toc" : "library";
             const shouldRender = options?.renderToc ?? true;
 
@@ -1068,11 +1066,7 @@
         document.addEventListener("goToolkitMemoActiveDocumentChanged", () => {
             hasDefaultTabSet = false;
             ensureDefaultTab();
-            setTimeout(() => {
-                if (tocPanel?.classList.contains("active")) {
-                    renderTOC();
-                }
-            }, 0);
+            setActiveTab("library", { renderToc: false });
         });
 
         // Robust scroll listener for active heading using capture phase 

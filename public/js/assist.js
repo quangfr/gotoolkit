@@ -1880,10 +1880,6 @@
         if (normalizedScopeId !== String(this.currentConversationScopeId || "").trim()) return false;
         var pending = this.pendingInlineEditsByScope.get(normalizedScopeId);
         if (!pending) {
-            console.log("[AssistPendingInline] missing", {
-                scopeId: normalizedScopeId,
-                currentScopeId: String(this.currentConversationScopeId || "")
-            });
             return false;
         }
         var editor = global.memoEditor || global.MemoEditor || null;
