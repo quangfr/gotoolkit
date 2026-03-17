@@ -265,7 +265,17 @@ export async function typeIntoVisibleEditor(
   const editor = page.locator(".ProseMirror:visible").first();
   await expect(editor).toBeVisible({ timeout });
   if (clickBeforeType) {
-    await editor.click();
+    const box = await editor.boundingBox();
+    if (box) {
+      await editor.click({
+        position: {
+          x: Math.max(4, Math.floor(box.width) - 12),
+          y: Math.max(4, Math.floor(box.height) - 12),
+        }
+      });
+    } else {
+      await editor.click();
+    }
   }
   await page.keyboard.type(text);
 }

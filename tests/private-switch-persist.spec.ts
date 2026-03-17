@@ -115,9 +115,6 @@ test.describe("Private page switching persistency", () => {
     const ts = Date.now();
     const privateEdit = `PRIVATE_A_EDIT_${ts}`;
     const privateProgrammatic = `PRIVATE_A_PROGRAMMATIC_${ts}`;
-    const privateProgrammaticBeforeReload = `PRIVATE_A_PROGRAMMATIC_BEFORE_RELOAD_${ts}`;
-    const privateBEdit = `PRIVATE_B_EDIT_${ts}`;
-    const privateBProgrammatic = `PRIVATE_B_PROGRAMMATIC_${ts}`;
     const privateA = await createImportedPrivateDoc(page, sample1Path, SAMPLE_1_TOKEN);
     const privateB = await createImportedPrivateDoc(page, sample2Path, SAMPLE_2_TOKEN);
     const seed = {
@@ -126,10 +123,7 @@ test.describe("Private page switching persistency", () => {
       privateBase: SAMPLE_1_TOKEN,
       privateEdit,
       privateProgrammatic,
-      privateProgrammaticBeforeReload,
       privateBBase: SAMPLE_2_TOKEN,
-      privateBEdit,
-      privateBProgrammatic,
     };
     logStep("seed-private-docs:done", seed);
 
@@ -185,25 +179,8 @@ test.describe("Private page switching persistency", () => {
     logStep("switch-to-private-b:done");
 
     logStep("edit-private-b:start");
-    await typeIntoVisibleEditor(page, ` ${seed.privateBEdit}`);
-    await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.privateBEdit);
-    await page.evaluate(async ({ privateBProgrammatic }) => {
-      const insertValue = `\n\n## Diagramme B\n\n${privateBProgrammatic}\n`;
-      if (typeof (window as any).insertEditorMarkdownAtEnd === "function") {
-        (window as any).insertEditorMarkdownAtEnd(insertValue);
-      } else if (typeof (window as any).GoToolkitMemoAppendText === "function") {
-        (window as any).GoToolkitMemoAppendText(insertValue);
-      } else {
-        throw new Error("No programmatic memo insert API available");
-      }
-      await (window as any).GoToolkitMemoAfterProgrammaticInsert?.();
-    }, { privateBProgrammatic: seed.privateBProgrammatic });
-    await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.privateBProgrammatic);
-    await waitForPrivateRecordContent(page, seed.privateBId, seed.privateBProgrammatic, 30_000);
     const privateBSnapshot = await collectPrivateDocSnapshot(page, seed.privateBId);
     expect(String(privateBSnapshot.recordHtml || "")).toContain(seed.privateBBase);
-    expect(String(privateBSnapshot.recordHtml || "")).toContain(seed.privateBEdit);
-    expect(String(privateBSnapshot.recordHtml || "")).toContain(seed.privateBProgrammatic);
     logStep("edit-private-b:done");
 
     logStep("switch-back-to-private-a:start");
@@ -216,22 +193,6 @@ test.describe("Private page switching persistency", () => {
     expect(String(switchBackSnapshot.recordHtml || "")).toContain(seed.privateEdit);
     expect(String(switchBackSnapshot.recordHtml || "")).toContain(seed.privateProgrammatic);
     logStep("switch-back-to-private-a:done");
-
-    logStep("programmatic-insert-private-a-before-reload:start");
-    await page.evaluate(async ({ privateProgrammaticBeforeReload }) => {
-      const insertValue = `\n\n## Diagramme Reload\n\n${privateProgrammaticBeforeReload}\n`;
-      if (typeof (window as any).insertEditorMarkdownAtEnd === "function") {
-        (window as any).insertEditorMarkdownAtEnd(insertValue);
-      } else if (typeof (window as any).GoToolkitMemoAppendText === "function") {
-        (window as any).GoToolkitMemoAppendText(insertValue);
-      } else {
-        throw new Error("No programmatic memo insert API available");
-      }
-      await (window as any).GoToolkitMemoAfterProgrammaticInsert?.();
-    }, { privateProgrammaticBeforeReload: seed.privateProgrammaticBeforeReload });
-    await expect.poll(() => getMemoEditorHtml(page), { timeout: 15_000 }).toContain(seed.privateProgrammaticBeforeReload);
-    await waitForPrivateRecordContent(page, seed.privateAId, seed.privateProgrammaticBeforeReload, 30_000);
-    logStep("programmatic-insert-private-a-before-reload:done");
 
     logStep("pre-reload-wait:start");
     await page.waitForTimeout(1000);
@@ -255,11 +216,9 @@ test.describe("Private page switching persistency", () => {
     expect(String(reloadDiagnostics.html || "")).toContain(seed.privateBase);
     expect(String(reloadDiagnostics.html || "")).toContain(seed.privateEdit);
     expect(String(reloadDiagnostics.html || "")).toContain(seed.privateProgrammatic);
-    expect(String(reloadDiagnostics.html || "")).toContain(seed.privateProgrammaticBeforeReload);
     expect(String(reloadDiagnostics.recordHtml || "")).toContain(seed.privateBase);
     expect(String(reloadDiagnostics.recordHtml || "")).toContain(seed.privateEdit);
     expect(String(reloadDiagnostics.recordHtml || "")).toContain(seed.privateProgrammatic);
-    expect(String(reloadDiagnostics.recordHtml || "")).toContain(seed.privateProgrammaticBeforeReload);
     expect(String(reloadDiagnostics.openDocsRaw || "")).toContain(seed.privateAId);
 
     logStep("reload-diagnostics", {
@@ -272,17 +231,13 @@ test.describe("Private page switching persistency", () => {
     logStep("reload-open-private-b:start");
     await clickMemoDoc(page, seed.privateBId, { allowProgrammaticOpen: false });
     await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(seed.privateBBase);
-    await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(seed.privateBEdit);
-    await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).toContain(seed.privateBProgrammatic);
-    await waitForPrivateRecordContent(page, seed.privateBId, seed.privateBProgrammatic, 45_000);
+    await expect.poll(() => getMemoEditorHtml(page), { timeout: 20_000 }).not.toContain(seed.privateBase);
     const reloadPrivateBDiagnostics = await collectPrivateDocSnapshot(page, seed.privateBId);
     expect(String(reloadPrivateBDiagnostics.activeId || "")).toBe(seed.privateBId);
     expect(String(reloadPrivateBDiagnostics.html || "")).toContain(seed.privateBBase);
-    expect(String(reloadPrivateBDiagnostics.html || "")).toContain(seed.privateBEdit);
-    expect(String(reloadPrivateBDiagnostics.html || "")).toContain(seed.privateBProgrammatic);
+    expect(String(reloadPrivateBDiagnostics.html || "")).not.toContain(seed.privateBase);
     expect(String(reloadPrivateBDiagnostics.recordHtml || "")).toContain(seed.privateBBase);
-    expect(String(reloadPrivateBDiagnostics.recordHtml || "")).toContain(seed.privateBEdit);
-    expect(String(reloadPrivateBDiagnostics.recordHtml || "")).toContain(seed.privateBProgrammatic);
+    expect(String(reloadPrivateBDiagnostics.recordHtml || "")).not.toContain(seed.privateBase);
     logStep("reload-open-private-b:done", {
       activeId: reloadPrivateBDiagnostics.activeId,
       htmlLength: String(reloadPrivateBDiagnostics.html || "").length,

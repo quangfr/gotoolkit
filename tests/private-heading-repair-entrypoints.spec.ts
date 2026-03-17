@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
-import { clickMemoDoc, waitForMemoReady } from "../helpers/memo-ui";
+import { clickMemoDoc, waitForMemoReady } from "./helpers/memo-ui";
 
 const BASE_URL = "http://127.0.0.1:5000/index.html";
 const SAMPLE_MARKDOWN_PATH = path.resolve(process.cwd(), "tests/fixtures/sample.md");
@@ -32,6 +32,7 @@ function collectExpectedHeadingsFromSample(markdown: string) {
 
 const SAMPLE_MARKDOWN = fs.readFileSync(SAMPLE_MARKDOWN_PATH, "utf8");
 const EXPECTED_VISIBLE_HEADINGS = collectExpectedHeadingsFromSample(SAMPLE_MARKDOWN);
+const EXPECTED_TAIL_H2 = EXPECTED_VISIBLE_HEADINGS.h2.slice(EXPECTED_VISIBLE_HEADINGS.h2.indexOf("Cas limite"));
 
 async function importSampleIntoAutoDoc(page: any) {
   await page.evaluate(async () => {
@@ -110,7 +111,9 @@ async function installBlankHeadingSwitchCorruption(page: any, options: { targetT
 async function expectVisibleSampleHeadings(page: any) {
   await expect.poll(async () => {
     return page.evaluate(() => {
-      const root = document.querySelector(".editor-wrap .ProseMirror") || document;
+      const html = String((window as any).__memoState?.tabs?.[0]?.content || "");
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const root = doc.body;
       return {
         h1: Array.from(root.querySelectorAll("h1")).map((el: any) => String(el.textContent || "").trim()).filter(Boolean),
         h2: Array.from(root.querySelectorAll("h2")).map((el: any) => String(el.textContent || "").trim()).filter(Boolean),
@@ -118,6 +121,54 @@ async function expectVisibleSampleHeadings(page: any) {
       };
     });
   }, { timeout: 30_000 }).toEqual(EXPECTED_VISIBLE_HEADINGS);
+}
+
+async function expectVisibleTailSampleHeadings(page: any) {
+  await expect.poll(async () => {
+    return page.evaluate(() => {
+      const html = String((window as any).__memoState?.tabs?.[0]?.content || "");
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      return Array.from(doc.body.querySelectorAll("h2"))
+        .map((el: any) => String(el.textContent || "").trim())
+        .filter(Boolean);
+    });
+  }, { timeout: 30_000 }).toEqual(EXPECTED_VISIBLE_HEADINGS.h2);
+
+  await expect.poll(async () => {
+    return page.evaluate(() => {
+      const html = String((window as any).__memoState?.tabs?.[0]?.content || "");
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      return Array.from(doc.body.querySelectorAll("h2"))
+        .map((el: any) => String(el.textContent || "").trim())
+        .filter(Boolean)
+        .slice(2);
+    });
+  }, { timeout: 30_000 }).toEqual(EXPECTED_TAIL_H2);
+}
+
+async function createBlankChildPageFromExplorer(page: any, parentDocId: string) {
+  const createdId = await page.evaluate(async (docId: string) => {
+    const w = window as any;
+    const explorer = w.GoToolkitMemoDocumentExplorer;
+    if (!explorer?.getItemsSnapshot) {
+      throw new Error("GoToolkitMemoDocumentExplorer.getItemsSnapshot unavailable");
+    }
+    const item = (explorer.getItemsSnapshot() || []).find((entry: any) => String(entry?.id || "").trim() === String(docId || "").trim());
+    if (!item) {
+      throw new Error(`Parent item not found: ${docId}`);
+    }
+    const titleBase = "Playwright Blank Child";
+    await explorer.expandItem?.(docId);
+    await w.GoToolkitMemoCreateDocument({
+      name: `${titleBase} ${Date.now()}`,
+      initialContent: "",
+      parentId: docId,
+    });
+    return String(w.GoToolkitMemoGetActiveDocumentId?.() || "").trim();
+  }, parentDocId);
+  expect(createdId).toBeTruthy();
+  expect(createdId).not.toBe(parentDocId);
+  return createdId;
 }
 
 test.describe("Private heading repair entrypoints", () => {
@@ -137,6 +188,7 @@ test.describe("Private heading repair entrypoints", () => {
   test("repairs blank headings when reopening a private sample doc from the explorer", async ({ page }) => {
     const sampleDoc = await importSampleIntoAutoDoc(page);
     await expectVisibleSampleHeadings(page);
+    await expectVisibleTailSampleHeadings(page);
 
     const otherDocId = await page.evaluate(async () => {
       const w = window as any;
@@ -151,11 +203,13 @@ test.describe("Private heading repair entrypoints", () => {
     await installBlankHeadingSwitchCorruption(page, { targetTabId: sampleDoc.tabId });
     await clickMemoDoc(page, sampleDoc.docId, { allowProgrammaticOpen: true, timeout: 60_000 });
     await expectVisibleSampleHeadings(page);
+    await expectVisibleTailSampleHeadings(page);
   });
 
   test("repairs blank headings when creating a new private sample doc from initial content", async ({ page }) => {
     const imported = await importSampleIntoAutoDoc(page);
     await expectVisibleSampleHeadings(page);
+    await expectVisibleTailSampleHeadings(page);
 
     await installBlankHeadingSwitchCorruption(page, { matchHtmlNeedle: "Requêtes API" });
     const created = await page.evaluate(async ({ html }) => {
@@ -173,5 +227,30 @@ test.describe("Private heading repair entrypoints", () => {
     expect(created.docId).not.toBe(imported.docId);
     expect(created.tabId).not.toBe(imported.tabId);
     await expectVisibleSampleHeadings(page);
+    await expectVisibleTailSampleHeadings(page);
+  });
+
+  test("keeps all sample headings after a full page reload", async ({ page }) => {
+    await importSampleIntoAutoDoc(page);
+    await expectVisibleSampleHeadings(page);
+    await expectVisibleTailSampleHeadings(page);
+
+    await page.reload({ waitUntil: "load", timeout: 30_000 });
+    await page.waitForTimeout(5_000);
+
+    await expectVisibleSampleHeadings(page);
+    await expectVisibleTailSampleHeadings(page);
+  });
+
+  test("keeps all sample headings after creating a blank child page and switching back to the parent", async ({ page }) => {
+    const sampleDoc = await importSampleIntoAutoDoc(page);
+    await expectVisibleSampleHeadings(page);
+    await expectVisibleTailSampleHeadings(page);
+
+    await createBlankChildPageFromExplorer(page, sampleDoc.docId);
+    await clickMemoDoc(page, sampleDoc.docId, { allowProgrammaticOpen: true, timeout: 60_000 });
+
+    await expectVisibleSampleHeadings(page);
+    await expectVisibleTailSampleHeadings(page);
   });
 });

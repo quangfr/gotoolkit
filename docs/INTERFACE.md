@@ -179,6 +179,23 @@ Practical rule:
 - if the seam is wrong, fix the producer
 - if the seam is correct but the caller misuses it, fix the shell consumer
 
+Memo bridge do and don't:
+
+- do start with `public/index.html` and `src/memo-bridge/index.tsx` together when a memo page looks wrong after reload or page switch
+  - the shell may be selecting the right page while the bridge hydrates the wrong editor instance, or the inverse
+
+- do verify which bridge/global actually represents the active editor before patching shell logic
+  - confirm active document id, active tab id, and the editor instance the bridge will read for save/restore
+
+- do treat the memo bridge active-id cache as more authoritative than stale legacy globals when the two disagree
+  - the shell can outlive an older `window.MemoEditor` reference
+
+- don't assume DOM visibility alone tells you which cached editor instance the shell is using
+  - visible markup and bridge save targets can diverge during delayed hydration or tab restore
+
+- don't change `public/index.html` hydration timing in isolation when the issue might be stale bridge instance selection
+  - check both the shell timing and bridge cache behavior in the same investigation
+
 ## 4. Where to edit first
 
 Use this routing before changing code:

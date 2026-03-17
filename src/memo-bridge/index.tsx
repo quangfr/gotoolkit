@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { SimpleEditor } from '@/memo-editor';
 import { exportEditorToDocx } from '@/memo-editor/docx-export';
 import { EditorState } from '@tiptap/pm/state';
+import { DOMParser as PMDOMParser } from '@tiptap/pm/model';
 
 // Bridge to maintain compatibility with index.html
 interface MemoEditorApi {
@@ -84,6 +85,22 @@ function hasProgrammaticEmptyHeadingMarkup(content: string) {
     }
 }
 
+function convertProgrammaticHtmlToJson(content: string, schema: any) {
+    const normalizedContent = String(content || '');
+    if (!normalizedContent.trim() || typeof DOMParser === 'undefined' || !schema?.nodes?.doc) return null;
+    try {
+        const htmlDoc = new DOMParser().parseFromString(normalizedContent, 'text/html');
+        const emptyHeadingJson = normalizedContent.includes('<h')
+            ? convertProgrammaticHtmlWithEmptyHeadingsToJson(normalizedContent, schema)
+            : null;
+        if (emptyHeadingJson) return emptyHeadingJson;
+        const parsedDoc = PMDOMParser.fromSchema(schema).parse(htmlDoc.body);
+        return parsedDoc?.toJSON?.() || null;
+    } catch (err) {
+        return null;
+    }
+}
+
 const EditorItem = React.memo(({ editor, activeId, onEditorChange, handleEditorReady, editable, placeholder }: any) => {
     // Stable onReady for this specific editor ID
     const onReady = React.useCallback((methods: any) => {
@@ -161,10 +178,10 @@ const App = () => {
         try {
             const editor = methods.instance;
             const schema = editor?.state?.schema;
-            const emptyHeadingJson = typeof normalizedContent === 'string' && normalizedContent.includes('<h')
-                ? convertProgrammaticHtmlWithEmptyHeadingsToJson(normalizedContent, schema)
+            const programmaticJson = typeof normalizedContent === 'string' && normalizedContent.includes('<')
+                ? convertProgrammaticHtmlToJson(normalizedContent, schema)
                 : null;
-            methods.instance.commands.setContent(emptyHeadingJson || normalizedContent);
+            methods.instance.commands.setContent(programmaticJson || normalizedContent);
         } catch (err) {
             const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
             delete nextSuppressed[targetId];
@@ -276,7 +293,7 @@ const App = () => {
             getValue: () => {
                 const activeEditorId = String(activeIdRef.current || activeId || '');
                 const byActiveId = activeEditorId ? editorsRef.current?.[activeEditorId] : null;
-                const editor = (window as any).MemoEditor || (window as any).memoEditor || byActiveId?.methods?.instance || activeInstanceRef.current?.instance;
+                const editor = byActiveId?.methods?.instance || activeInstanceRef.current?.instance || (window as any).MemoEditor || (window as any).memoEditor;
                 if (editor && typeof editor.getHTML === 'function') {
                     return editor.getHTML();
                 }
@@ -297,7 +314,9 @@ const App = () => {
             },
             getEditorState: () => {
                 try {
-                    const editor = activeInstanceRef.current?.instance || (window as any).MemoEditor;
+                    const activeEditorId = String(activeIdRef.current || activeId || '');
+                    const byActiveId = activeEditorId ? editorsRef.current?.[activeEditorId] : null;
+                    const editor = byActiveId?.methods?.instance || activeInstanceRef.current?.instance || (window as any).MemoEditor;
                     if (editor?.state?.toJSON) {
                         return editor.state.toJSON();
                     }
@@ -308,7 +327,9 @@ const App = () => {
             },
             setEditorState: (state: any) => {
                 try {
-                    const editor = activeInstanceRef.current?.instance || (window as any).MemoEditor;
+                    const activeEditorId = String(activeIdRef.current || activeId || '');
+                    const byActiveId = activeEditorId ? editorsRef.current?.[activeEditorId] : null;
+                    const editor = byActiveId?.methods?.instance || activeInstanceRef.current?.instance || (window as any).MemoEditor;
                     if (!editor?.view?.updateState || !state) return;
                     const nextState = EditorState.fromJSON(editor.state.schema, state, editor.state.plugins);
                     editor.view.updateState(nextState);
@@ -317,7 +338,9 @@ const App = () => {
                 }
             },
             setEditable: (editable: boolean) => {
-                const methods = activeInstanceRef.current;
+                const activeEditorId = String(activeIdRef.current || activeId || '');
+                const byActiveId = activeEditorId ? editorsRef.current?.[activeEditorId] : null;
+                const methods = byActiveId?.methods || activeInstanceRef.current;
                 if (methods?.setEditable) {
                     methods.setEditable(editable);
                     return;
@@ -371,6 +394,10 @@ const App = () => {
                         (window as any).applyEditorStructuredOps = existingMethods.applyStructuredOps;
                         (window as any).getMemoEditorSource = existingMethods.getSource;
                         (window as any).exportMemoToDocx = existingMethods.exportDocx;
+                    } else {
+                        activeInstanceRef.current = null;
+                        (window as any).MemoEditor = null;
+                        (window as any).memoEditor = null;
                     }
                     let nextOrder = editorOrderRef.current.filter(editorId => Boolean(next[editorId]));
                     nextOrder = nextOrder.filter(editorId => editorId !== id);

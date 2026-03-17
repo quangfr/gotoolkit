@@ -144,6 +144,37 @@ Use these rules to shorten the next investigation:
 - once a cross-layer invariant becomes clear, document it in the repo docs in the same task
   - keep the note synthetic and local to the affected subsystem
 
+### 0.0.4 Memo refresh and repair do and don't
+
+Use these rules for local memo refresh, reload, and page-switch regressions:
+
+- do compare the same content across all four layers before deciding where the bug lives
+  - visible headings in `.ProseMirror`
+  - `window.__memoState.tabs[*].content`
+  - `window.goToolkitDocumentApi.getRecord(activeDocumentId)`
+  - bridge/editor HTML such as `MemoEditor.getHTML()` or bridge `getValue()`
+
+- do keep one focused fixture when the bug clusters around one imported document
+  - for example, keep `sample.md`-style regressions in one debug spec instead of widening a generic persistence suite first
+
+- do strengthen the first passing debug repro into a reusable guard once the real failing path is isolated
+  - prefer one explicit reload or switch invariant over many loosely related assertions
+
+- do log payload lengths and a small heading fingerprint before and after reload
+  - this catches "record is correct but editor hydration inflated or truncated content" quickly
+
+- don't assume the first visible `.ProseMirror` is the same editor instance the shell bridge will read or save
+  - confirm the active memo bridge/editor instance when multiple cached editors exist
+
+- don't blame IndexedDB first when the record stays correct and only the reopened editor is wrong
+  - that pattern points to restore/bootstrap/hydration instead of durable persistence
+
+- don't keep adding unstable typing markers to a persistence spec if the actual regression is document isolation or reload restoration
+  - reduce the assertion set to the real contract, then add a separate focused typing repro if needed
+
+- don't change the reload wait sequence casually once a diagnose spec proves a stable order
+  - keep the same reload timing in the strengthened guard unless the timing itself is the subject under test
+
 ## 0.1 Core rules
 
 - Prefer a real spec under `tests/` over ad hoc scripts for any non-trivial repro.
@@ -194,11 +225,13 @@ Current built-in automation hooks in the repo:
 - `tests/cloud-private-transfer-sync.spec.ts`
 - `tests/cloud-switch-persist.spec.ts`
 - `tests/cloud-rapid-switch-large.spec.ts`
+- `tests/close-active-page.spec.ts`
+- `tests/private-delete-switch-regression.spec.ts`
+- `tests/private-heading-repair-entrypoints.spec.ts`
 - `tests/private-switch-persist.spec.ts`
+- `tests/sample-refresh-heading-diagnose.spec.ts`
 - `tests/debug/root-empty-shell.spec.ts`
-- `tests/debug/close-active-page.spec.ts`
 - `tests/debug/empty-shell-search.spec.ts`
-- `tests/debug/sample-refresh-heading-diagnose.spec.ts`
 - `tests/space-code-rotate.spec.ts`
 - `scripts/with-env-local.sh`
 
@@ -232,22 +265,24 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-17 08:34`
-- `Scope`: `tests/debug/private-delete-switch-regression.spec.ts`
-- `Execution length`: `1 test`
-- `Execution time`: `00:14`
-- `Result`: `1 passed, 0 failed, 0 skipped`
-- `Details`: `Verified deleting an active private page clears stale active/open-document state before reopening other private pages, then stress-switched remaining pages without blank or duplicated content.`
+- `Last execution`: `2026-03-17 21:35`
+- `Scope`: `tests/close-active-page.spec.ts tests/private-delete-switch-regression.spec.ts tests/private-heading-repair-entrypoints.spec.ts tests/private-switch-persist.spec.ts tests/sample-refresh-heading-diagnose.spec.ts`
+- `Execution length`: `8 tests`
+- `Execution time`: `02:12`
+- `Result`: `8 passed, 0 failed, 0 skipped`
+- `Details`: `Validated the promoted local troubleshooting tier for shell close recovery, private delete/switch isolation, private heading repair entrypoints, private switch persistence, and full sample.md refresh heading survival.`
 
 Recent troubleshooting note:
 
 - `private-switch-persist.spec.ts` is the primary fast check for generic local-page persistence regressions
 - if that spec passes but a heavier import/reload spec fails, suspect restore hydration or renderer rehydration before suspecting IndexedDB durability
-- `tests/debug/sample-refresh-heading-diagnose.spec.ts` is the focused repro for imported Markdown refresh survival plus post-reload heading-title preservation around table and Mermaid-adjacent sections
+- `tests/sample-refresh-heading-diagnose.spec.ts` is the maintained repro for imported Markdown refresh survival plus post-reload heading-title preservation around table and Mermaid-adjacent sections
 - keep non-tier or one-off repro specs under `tests/debug/` by default; only promote a spec to the top-level `tests/` directory when it is intentionally part of a maintained tier below
 - `tests/debug/assist-page-switch-conversation.spec.ts` is the focused repro for per-page Assist conversation scoping plus summary-tab alignment during private page switches with one delayed inline edit and one send-button edit
-- `tests/debug/private-delete-switch-regression.spec.ts` is the focused repro for deleting an active private page, reopening another private page, and verifying no blank or duplicated content across repeated switches
-- `tests/debug/close-active-page.spec.ts` is the focused repro for the breadcrumb close button returning the app to the empty shell cleanly
+- `tests/private-delete-switch-regression.spec.ts` is the maintained repro for deleting an active private page, reopening another private page, and verifying no blank or duplicated content across repeated switches
+- `tests/close-active-page.spec.ts` is the maintained repro for the breadcrumb close button returning the app to the empty shell cleanly
+- `tests/private-heading-repair-entrypoints.spec.ts` is the maintained guard for private `sample.md` reopen/create/reload heading repair, including headings after `Artefacts PO`
+- keep `tests/debug/private-immediate-reload-persist.spec.ts` and `tests/debug/empty-shell-search.spec.ts` in debug until their immediate-reload and empty-search result contracts are stable
 - `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
 - `tests/debug/cloud-open-bootstrap-diagnose.spec.ts` is the focused repro for the new no-active-page startup flow before cloud page open
 
@@ -274,26 +309,46 @@ Tier suites:
     - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
 - `Tier 4` essential troubleshooting
-  - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers
-  - results: `3 passed, 1 failed, 0 skipped` (`4 tests`, `00:58`) on `2026-03-17 19:11`
-  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
+  - description: maintained troubleshooting coverage for shell recovery, private persistence/repair, plus cloud draft/transfer stress guards
+  - results: `10 passed, 1 failed, 0 skipped` (`11 tests`, `02:51`) on `2026-03-17 21:35`
+  - details: `The promoted local troubleshooting slice is fully passing; Tier 4 still carries one older failing cloud stress suite that remains under investigation.`
 
-  - `T4.1` `private-switch-persist.spec.ts`
+  - `T4.1` `close-active-page.spec.ts`
+    - description: closing the active page returns to the empty shell without leaving shell chrome visible
+    - results: `passing` (`1 test`, part of `02:12` grouped local troubleshooting run) on `2026-03-17 21:35`
+    - details: `Latest promoted run passed as part of the maintained local troubleshooting slice.`
+
+  - `T4.2` `private-delete-switch-regression.spec.ts`
+    - description: deleting an active private page does not blank or duplicate remaining private pages during repeated switches
+    - results: `passing` (`1 test`, part of `02:12` grouped local troubleshooting run) on `2026-03-17 21:35`
+    - details: `Latest promoted run passed as part of the maintained local troubleshooting slice.`
+
+  - `T4.3` `private-heading-repair-entrypoints.spec.ts`
+    - description: private reopen/create/reload heading repair for `sample.md`, including headings after `Artefacts PO`
+    - results: `passing` (`4 tests`, part of `02:12` grouped local troubleshooting run) on `2026-03-17 21:35`
+    - details: `Latest promoted run passed as part of the maintained local troubleshooting slice.`
+
+  - `T4.4` `private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
-    - results: `passing` (`1 test`, `00:19`) on `2026-03-17 19:11`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`1 test`, part of `02:12` grouped local troubleshooting run) on `2026-03-17 21:35`
+    - details: `Latest promoted run passed as part of the maintained local troubleshooting slice.`
 
-  - `T4.2` `cloud-rapid-switch-large.spec.ts`
+  - `T4.5` `sample-refresh-heading-diagnose.spec.ts`
+    - description: imported `sample.md` refresh survival plus heading visibility across editor, state, and durable record layers
+    - results: `passing` (`1 test`, part of `02:12` grouped local troubleshooting run) on `2026-03-17 21:35`
+    - details: `Latest promoted run passed as part of the maintained local troubleshooting slice.`
+
+  - `T4.6` `cloud-rapid-switch-large.spec.ts`
     - description: large cloud stress switch/edit flow with pre-sync write suppression and post-sync isolation
     - results: `failing` (`1 test`, `00:02`) on `2026-03-10 11:53`
     - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
-  - `T4.3` `cloud-draft-archive-ops.spec.ts`
+  - `T4.7` `cloud-draft-archive-ops.spec.ts`
     - description: local draft archive/delete terminal semantics
     - results: `passing` (`1 test`, `00:02`) on `2026-03-17 17:52`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `T4.4` `cloud-private-transfer-sync.spec.ts`
+  - `T4.8` `cloud-private-transfer-sync.spec.ts`
     - description: grouped cloud copy, private promote, and archived fresh-token promotion with reload verification
     - results: `passing` (`1 test`, `00:35`) on `2026-03-12 14:39`
     - details: `Latest run passed after Playwright readiness was updated for the no-active-page-on-open flow.`

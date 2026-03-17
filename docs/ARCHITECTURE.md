@@ -215,6 +215,26 @@ Use this order before changing app code:
   - prefer reading from the live editor instance at save time
   - suspect stale bridge snapshots or delayed autosave overwrites
 
+Do and don't:
+
+- do treat memo bridge/editor hydration as a separate layer from IndexedDB durability
+  - a correct `document-api` record with a wrong reopened page is a restore or editor-hydration bug, not a storage-loss bug
+
+- do compare the active live editor, memo state tab content, and durable record independently
+  - the first divergence tells you whether the bug is save, restore, or render/hydration
+
+- do prefer the active bridge/editor instance over legacy globals when reading or writing programmatic content
+  - stale cached globals can make the shell save or restore the wrong page
+
+- do route fragile programmatic HTML through schema-aware JSON conversion when heading structure must survive parser normalization
+  - this is safer than assuming raw HTML ingestion preserves empty or synthetic heading nodes
+
+- don't assume a correct durable record means the user is seeing the correct document
+  - refresh bugs can still come from the bridge selecting or hydrating the wrong editor instance
+
+- don't blame persistence first when a simple page switch works but full reload fails
+  - that pattern usually means bootstrap metadata, restore ordering, or delayed hydration
+
 ### 3.2 Fast troubleshooting for empty-shell vs active-page bugs
 
 Use this when `/` should stay empty, or when a page should reopen the normal memo view:
@@ -272,6 +292,19 @@ Isolation rules:
   - inspect restore and hydration
 - import wrong before refresh
   - inspect parser or programmatic `setValue(...)`
+
+Do and don't:
+
+- do expect refresh bugs to split cleanly between:
+  - bootstrap metadata choosing the right page
+  - state reconstruction building the right tab content
+  - editor hydration attaching that content to the active editor instance
+
+- do keep a guarded restore path for newly created docs when initial HTML content can lose a race against first editor hydration
+  - restore from the tab/state payload, then force the active editor to rehydrate
+
+- don't assume the old `window.MemoEditor` global is always the active editor on reload or after tab creation
+  - the memo bridge may have a newer active instance cached by document or tab id
 
 ## 4. Share history and cloud drafts
 

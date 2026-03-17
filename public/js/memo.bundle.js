@@ -57076,12 +57076,26 @@ ${promptInput.trim()}`
       return null;
     }
   }
+  function convertHtmlToEditorJson(content, schema) {
+    var _a, _b;
+    const normalizedContent = String(content || "");
+    if (!normalizedContent.trim() || typeof DOMParser === "undefined" || !((_a = schema == null ? void 0 : schema.nodes) == null ? void 0 : _a.doc)) return null;
+    try {
+      const emptyHeadingJson = normalizedContent.includes("<h") ? convertHtmlWithEmptyHeadingsToJson(normalizedContent) : null;
+      if (emptyHeadingJson) return emptyHeadingJson;
+      const htmlDoc = new DOMParser().parseFromString(normalizedContent, "text/html");
+      const parsedDoc = DOMParser2.fromSchema(schema).parse(htmlDoc.body);
+      return ((_b = parsedDoc == null ? void 0 : parsedDoc.toJSON) == null ? void 0 : _b.call(parsedDoc)) || null;
+    } catch (err) {
+      return null;
+    }
+  }
   function setEditorContentPreservingEmptyHeadings(editorInstance, content) {
-    var _a;
+    var _a, _b;
     if (!((_a = editorInstance == null ? void 0 : editorInstance.commands) == null ? void 0 : _a.setContent)) return;
     const normalizedContent = String(content || "");
-    const emptyHeadingJson = normalizedContent.includes("<h") ? convertHtmlWithEmptyHeadingsToJson(normalizedContent) : null;
-    editorInstance.commands.setContent(emptyHeadingJson || normalizedContent || "<p></p>");
+    const programmaticJson = normalizedContent.includes("<") ? convertHtmlToEditorJson(normalizedContent, (_b = editorInstance == null ? void 0 : editorInstance.state) == null ? void 0 : _b.schema) : null;
+    editorInstance.commands.setContent(programmaticJson || normalizedContent || "<p></p>");
   }
   var CustomParagraph = Paragraph.extend({
     addAttributes() {
@@ -57115,6 +57129,39 @@ ${promptInput.trim()}`
     const html3 = String(value || "").trim();
     if (!html3) return false;
     return html3.replace(/<br\s*\/?>/gi, "").replace(/<\/?(p|div|section|article|span)[^>]*>/gi, "").replace(/&nbsp;/gi, " ").replace(/\s+/g, "").length > 0;
+  };
+  var normalizeMemoHtmlText = (value) => {
+    return String(value || "").replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/\s+/g, " ").trim();
+  };
+  var getMemoHtmlHeadingIntegritySnapshot = (value) => {
+    const html3 = String(value || "").trim();
+    if (!html3 || typeof DOMParser === "undefined") {
+      return { total: 0, nonEmpty: 0, empty: 0 };
+    }
+    try {
+      const doc3 = new DOMParser().parseFromString(html3, "text/html");
+      const headings = Array.from(doc3.body.querySelectorAll("h1, h2, h3, h4, h5, h6"));
+      let nonEmpty = 0;
+      let empty2 = 0;
+      headings.forEach((heading2) => {
+        if (normalizeMemoHtmlText(heading2.textContent || "")) nonEmpty += 1;
+        else empty2 += 1;
+      });
+      return {
+        total: headings.length,
+        nonEmpty,
+        empty: empty2
+      };
+    } catch (err) {
+      return { total: 0, nonEmpty: 0, empty: 0 };
+    }
+  };
+  var hasMemoHeadingRegression = (currentContent, expectedContent) => {
+    const currentSnapshot = getMemoHtmlHeadingIntegritySnapshot(currentContent);
+    const expectedSnapshot = getMemoHtmlHeadingIntegritySnapshot(expectedContent);
+    if (expectedSnapshot.nonEmpty < 3) return false;
+    if (currentSnapshot.nonEmpty >= expectedSnapshot.nonEmpty) return false;
+    return currentSnapshot.empty > 0 || currentSnapshot.total < expectedSnapshot.total;
   };
   var getLinkMarkAtCursor = (editor) => {
     const linkMark = editor.state.schema.marks.link;
@@ -60002,6 +60049,7 @@ ${promptInput.trim()}`
     const saveTimeoutRef = react_shim_default.useRef(null);
     const saveIdleRef = react_shim_default.useRef(null);
     const snapshotTimeoutRef = react_shim_default.useRef(null);
+    const delayedHydrationTimersRef = react_shim_default.useRef([]);
     const lastSerializedHtmlRef = react_shim_default.useRef(String(content || ""));
     const pendingHydrationContentRef = react_shim_default.useRef(null);
     const blockDragMovedRef = react_shim_default.useRef(false);
@@ -60033,6 +60081,12 @@ ${promptInput.trim()}`
         window.clearTimeout(snapshotTimeoutRef.current);
         snapshotTimeoutRef.current = null;
       }
+    }, []);
+    const clearDelayedHydrationTimers = react_shim_default.useCallback(() => {
+      delayedHydrationTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      delayedHydrationTimersRef.current = [];
     }, []);
     const refreshEditorHtmlSnapshot = react_shim_default.useCallback((editorInstance) => {
       const html3 = editorInstance.getHTML();
@@ -60464,18 +60518,6 @@ ${promptInput.trim()}`
       ],
       content: initialEditorContent,
       editable,
-      onCreate: ({ editor: editor2 }) => {
-        var _a2;
-        const expectedContent = String(content || "");
-        if (!expectedContent || !expectedContent.includes("<h")) return;
-        const repairedJson = convertHtmlWithEmptyHeadingsToJson(expectedContent);
-        if (!repairedJson) return;
-        const currentJson = (_a2 = editor2.getJSON) == null ? void 0 : _a2.call(editor2);
-        const currentContent = Array.isArray(currentJson == null ? void 0 : currentJson.content) ? currentJson.content : [];
-        const hasEmptyHeading = currentContent.some((node) => (node == null ? void 0 : node.type) === "heading" && !Array.isArray(node == null ? void 0 : node.content));
-        if (hasEmptyHeading) return;
-        setEditorContentPreservingEmptyHeadings(editor2, expectedContent);
-      },
       editorProps: {
         handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
         handlePaste: (_view, event) => {
@@ -61127,7 +61169,8 @@ ${promptInput.trim()}`
       }
       const editorDom = (_b2 = editor.view) == null ? void 0 : _b2.dom;
       const isFocusedEditor = Boolean(editor.isFocused) || Boolean(editorDom && document.activeElement && editorDom.contains(document.activeElement));
-      if (isFocusedEditor) {
+      const shouldForceHydrateFocusedRegression = isFocusedEditor && hasMemoHeadingRegression(currentContent, expectedContent);
+      if (isFocusedEditor && !shouldForceHydrateFocusedRegression) {
         pendingHydrationContentRef.current = expectedContent;
         return;
       }
@@ -61146,11 +61189,42 @@ ${promptInput.trim()}`
       }
     }, [content, editor, editorId]);
     react_shim_default.useEffect(() => {
+      var _a2;
+      if (!editor || typeof editor.getHTML !== "function" || typeof ((_a2 = editor.commands) == null ? void 0 : _a2.setContent) !== "function") {
+        return;
+      }
+      clearDelayedHydrationTimers();
+      const expectedContent = String(content || "");
+      if (!expectedContent || !expectedContent.includes("<")) {
+        return () => {
+          clearDelayedHydrationTimers();
+        };
+      }
+      const scheduleHydrationPass = (delayMs) => {
+        const timerId = window.setTimeout(() => {
+          var _a3, _b2;
+          delayedHydrationTimersRef.current = delayedHydrationTimersRef.current.filter((id) => id !== timerId);
+          const currentHtml = String(((_a3 = editor.getHTML) == null ? void 0 : _a3.call(editor)) || "");
+          if (currentHtml === expectedContent) return;
+          setEditorContentPreservingEmptyHeadings(editor, expectedContent);
+          lastSerializedHtmlRef.current = String(((_b2 = editor.getHTML) == null ? void 0 : _b2.call(editor)) || expectedContent);
+          setEditorHtmlSnapshot((prev) => prev === lastSerializedHtmlRef.current ? prev : lastSerializedHtmlRef.current);
+        }, delayMs);
+        delayedHydrationTimersRef.current.push(timerId);
+      };
+      scheduleHydrationPass(0);
+      scheduleHydrationPass(180);
+      return () => {
+        clearDelayedHydrationTimers();
+      };
+    }, [clearDelayedHydrationTimers, content, editor, editorId]);
+    react_shim_default.useEffect(() => {
       return () => {
         clearPendingSaveTasks();
         clearPendingSnapshotTasks();
+        clearDelayedHydrationTimers();
       };
-    }, [clearPendingSaveTasks, clearPendingSnapshotTasks]);
+    }, [clearDelayedHydrationTimers, clearPendingSaveTasks, clearPendingSnapshotTasks]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       const syncSpellcheck = () => {
@@ -64490,6 +64564,20 @@ ${innerMarkdown}
       return false;
     }
   }
+  function convertProgrammaticHtmlToJson(content, schema) {
+    var _a, _b;
+    const normalizedContent = String(content || "");
+    if (!normalizedContent.trim() || typeof DOMParser === "undefined" || !((_a = schema == null ? void 0 : schema.nodes) == null ? void 0 : _a.doc)) return null;
+    try {
+      const htmlDoc = new DOMParser().parseFromString(normalizedContent, "text/html");
+      const emptyHeadingJson = normalizedContent.includes("<h") ? convertProgrammaticHtmlWithEmptyHeadingsToJson(normalizedContent, schema) : null;
+      if (emptyHeadingJson) return emptyHeadingJson;
+      const parsedDoc = DOMParser2.fromSchema(schema).parse(htmlDoc.body);
+      return ((_b = parsedDoc == null ? void 0 : parsedDoc.toJSON) == null ? void 0 : _b.call(parsedDoc)) || null;
+    } catch (err) {
+      return null;
+    }
+  }
   var EditorItem = react_shim_default.memo(({ editor, activeId, onEditorChange, handleEditorReady, editable, placeholder }) => {
     const onReady = react_shim_default.useCallback((methods) => {
       handleEditorReady(editor.id, methods);
@@ -64558,8 +64646,8 @@ ${innerMarkdown}
       try {
         const editor = methods.instance;
         const schema = (_c = editor == null ? void 0 : editor.state) == null ? void 0 : _c.schema;
-        const emptyHeadingJson = typeof normalizedContent === "string" && normalizedContent.includes("<h") ? convertProgrammaticHtmlWithEmptyHeadingsToJson(normalizedContent, schema) : null;
-        methods.instance.commands.setContent(emptyHeadingJson || normalizedContent);
+        const programmaticJson = typeof normalizedContent === "string" && normalizedContent.includes("<") ? convertProgrammaticHtmlToJson(normalizedContent, schema) : null;
+        methods.instance.commands.setContent(programmaticJson || normalizedContent);
       } catch (err) {
         const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
         delete nextSuppressed[targetId];
@@ -64660,7 +64748,7 @@ ${innerMarkdown}
           var _a, _b, _c;
           const activeEditorId = String(activeIdRef.current || activeId || "");
           const byActiveId = activeEditorId ? (_a = editorsRef.current) == null ? void 0 : _a[activeEditorId] : null;
-          const editor = window.MemoEditor || window.memoEditor || ((_b = byActiveId == null ? void 0 : byActiveId.methods) == null ? void 0 : _b.instance) || ((_c = activeInstanceRef.current) == null ? void 0 : _c.instance);
+          const editor = ((_b = byActiveId == null ? void 0 : byActiveId.methods) == null ? void 0 : _b.instance) || ((_c = activeInstanceRef.current) == null ? void 0 : _c.instance) || window.MemoEditor || window.memoEditor;
           if (editor && typeof editor.getHTML === "function") {
             return editor.getHTML();
           }
@@ -64681,10 +64769,12 @@ ${innerMarkdown}
           return null;
         },
         getEditorState: () => {
-          var _a, _b;
+          var _a, _b, _c, _d;
           try {
-            const editor = ((_a = activeInstanceRef.current) == null ? void 0 : _a.instance) || window.MemoEditor;
-            if ((_b = editor == null ? void 0 : editor.state) == null ? void 0 : _b.toJSON) {
+            const activeEditorId = String(activeIdRef.current || activeId || "");
+            const byActiveId = activeEditorId ? (_a = editorsRef.current) == null ? void 0 : _a[activeEditorId] : null;
+            const editor = ((_b = byActiveId == null ? void 0 : byActiveId.methods) == null ? void 0 : _b.instance) || ((_c = activeInstanceRef.current) == null ? void 0 : _c.instance) || window.MemoEditor;
+            if ((_d = editor == null ? void 0 : editor.state) == null ? void 0 : _d.toJSON) {
               return editor.state.toJSON();
             }
           } catch (err) {
@@ -64692,10 +64782,12 @@ ${innerMarkdown}
           return null;
         },
         setEditorState: (state2) => {
-          var _a, _b;
+          var _a, _b, _c, _d;
           try {
-            const editor = ((_a = activeInstanceRef.current) == null ? void 0 : _a.instance) || window.MemoEditor;
-            if (!((_b = editor == null ? void 0 : editor.view) == null ? void 0 : _b.updateState) || !state2) return;
+            const activeEditorId = String(activeIdRef.current || activeId || "");
+            const byActiveId = activeEditorId ? (_a = editorsRef.current) == null ? void 0 : _a[activeEditorId] : null;
+            const editor = ((_b = byActiveId == null ? void 0 : byActiveId.methods) == null ? void 0 : _b.instance) || ((_c = activeInstanceRef.current) == null ? void 0 : _c.instance) || window.MemoEditor;
+            if (!((_d = editor == null ? void 0 : editor.view) == null ? void 0 : _d.updateState) || !state2) return;
             const nextState = EditorState.fromJSON(editor.state.schema, state2, editor.state.plugins);
             editor.view.updateState(nextState);
           } catch (err) {
@@ -64703,7 +64795,10 @@ ${innerMarkdown}
           }
         },
         setEditable: (editable) => {
-          const methods = activeInstanceRef.current;
+          var _a;
+          const activeEditorId = String(activeIdRef.current || activeId || "");
+          const byActiveId = activeEditorId ? (_a = editorsRef.current) == null ? void 0 : _a[activeEditorId] : null;
+          const methods = (byActiveId == null ? void 0 : byActiveId.methods) || activeInstanceRef.current;
           if (methods == null ? void 0 : methods.setEditable) {
             methods.setEditable(editable);
             return;
@@ -64751,6 +64846,10 @@ ${innerMarkdown}
               window.applyEditorStructuredOps = existingMethods.applyStructuredOps;
               window.getMemoEditorSource = existingMethods.getSource;
               window.exportMemoToDocx = existingMethods.exportDocx;
+            } else {
+              activeInstanceRef.current = null;
+              window.MemoEditor = null;
+              window.memoEditor = null;
             }
             let nextOrder = editorOrderRef.current.filter((editorId) => Boolean(next2[editorId]));
             nextOrder = nextOrder.filter((editorId) => editorId !== id);

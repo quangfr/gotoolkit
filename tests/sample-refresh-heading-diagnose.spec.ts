@@ -107,7 +107,7 @@ async function collectSnapshot(page: any, activeDocId = "") {
   }, activeDocId);
 }
 
-test.describe("Debug sample refresh heading diagnosis", () => {
+test.describe("Sample refresh heading diagnosis", () => {
   test("captures IndexedDB/state/editor/visible heading snapshots through refresh", async ({ page }) => {
     test.setTimeout(TEST_TIMEOUT);
 

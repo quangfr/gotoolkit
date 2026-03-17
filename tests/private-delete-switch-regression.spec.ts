@@ -6,8 +6,8 @@ import {
   refreshMemoExplorer,
   typeIntoVisibleEditor,
   waitForMemoReady,
-} from "../helpers/memo-ui";
-import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
+} from "./helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 async function getDocSnapshot(page: any, docId: string) {
   return page.evaluate(async (targetId: string) => {

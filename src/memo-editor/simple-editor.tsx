@@ -15,7 +15,7 @@ import TiptapLink from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { computePosition, offset, shift } from '@floating-ui/dom';
-import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
+import { DOMSerializer, DOMParser as PMDOMParser, Node as PMNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { NodeSelection, TextSelection } from 'prosemirror-state';
@@ -269,13 +269,29 @@ function convertHtmlWithEmptyHeadingsToJson(content: string) {
   }
 }
 
+function convertHtmlToEditorJson(content: string, schema: any) {
+  const normalizedContent = String(content || '');
+  if (!normalizedContent.trim() || typeof DOMParser === 'undefined' || !schema?.nodes?.doc) return null;
+  try {
+    const emptyHeadingJson = normalizedContent.includes('<h')
+      ? convertHtmlWithEmptyHeadingsToJson(normalizedContent)
+      : null;
+    if (emptyHeadingJson) return emptyHeadingJson;
+    const htmlDoc = new DOMParser().parseFromString(normalizedContent, 'text/html');
+    const parsedDoc = PMDOMParser.fromSchema(schema).parse(htmlDoc.body);
+    return parsedDoc?.toJSON?.() || null;
+  } catch (err) {
+    return null;
+  }
+}
+
 function setEditorContentPreservingEmptyHeadings(editorInstance: any, content: string) {
   if (!editorInstance?.commands?.setContent) return;
   const normalizedContent = String(content || '');
-  const emptyHeadingJson = normalizedContent.includes('<h')
-    ? convertHtmlWithEmptyHeadingsToJson(normalizedContent)
+  const programmaticJson = normalizedContent.includes('<')
+    ? convertHtmlToEditorJson(normalizedContent, editorInstance?.state?.schema)
     : null;
-  editorInstance.commands.setContent(emptyHeadingJson || normalizedContent || '<p></p>');
+  editorInstance.commands.setContent(programmaticJson || normalizedContent || '<p></p>');
 }
 
 const CustomParagraph = Paragraph.extend({
@@ -319,6 +335,45 @@ const memoHtmlHasMeaningfulContent = (value: string) => {
     .replace(/&nbsp;/gi, ' ')
     .replace(/\s+/g, '')
     .length > 0;
+};
+
+const normalizeMemoHtmlText = (value: string) => {
+  return String(value || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const getMemoHtmlHeadingIntegritySnapshot = (value: string) => {
+  const html = String(value || '').trim();
+  if (!html || typeof DOMParser === 'undefined') {
+    return { total: 0, nonEmpty: 0, empty: 0 };
+  }
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const headings = Array.from(doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+    let nonEmpty = 0;
+    let empty = 0;
+    headings.forEach((heading) => {
+      if (normalizeMemoHtmlText(heading.textContent || '')) nonEmpty += 1;
+      else empty += 1;
+    });
+    return {
+      total: headings.length,
+      nonEmpty,
+      empty,
+    };
+  } catch (err) {
+    return { total: 0, nonEmpty: 0, empty: 0 };
+  }
+};
+
+const hasMemoHeadingRegression = (currentContent: string, expectedContent: string) => {
+  const currentSnapshot = getMemoHtmlHeadingIntegritySnapshot(currentContent);
+  const expectedSnapshot = getMemoHtmlHeadingIntegritySnapshot(expectedContent);
+  if (expectedSnapshot.nonEmpty < 3) return false;
+  if (currentSnapshot.nonEmpty >= expectedSnapshot.nonEmpty) return false;
+  return currentSnapshot.empty > 0 || currentSnapshot.total < expectedSnapshot.total;
 };
 
 const getLinkMarkAtCursor = (editor: Editor) => {
@@ -3921,6 +3976,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const saveTimeoutRef = React.useRef<number | null>(null);
   const saveIdleRef = React.useRef<number | null>(null);
   const snapshotTimeoutRef = React.useRef<number | null>(null);
+  const delayedHydrationTimersRef = React.useRef<number[]>([]);
   const lastSerializedHtmlRef = React.useRef<string>(String(content || ''));
   const pendingHydrationContentRef = React.useRef<string | null>(null);
   const blockDragMovedRef = React.useRef(false);
@@ -3954,6 +4010,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       window.clearTimeout(snapshotTimeoutRef.current);
       snapshotTimeoutRef.current = null;
     }
+  }, []);
+
+  const clearDelayedHydrationTimers = React.useCallback(() => {
+    delayedHydrationTimersRef.current.forEach((timerId) => {
+      window.clearTimeout(timerId);
+    });
+    delayedHydrationTimersRef.current = [];
   }, []);
 
   const refreshEditorHtmlSnapshot = React.useCallback((editorInstance: Editor) => {
@@ -4409,20 +4472,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     ],
     content: initialEditorContent,
     editable,
-    onCreate: ({ editor }) => {
-      const expectedContent = String(content || '');
-      if (!expectedContent || !expectedContent.includes('<h')) return;
-      const repairedJson = convertHtmlWithEmptyHeadingsToJson(expectedContent);
-      if (!repairedJson) return;
-      const currentJson = editor.getJSON?.();
-      const currentContent = Array.isArray(currentJson?.content) ? currentJson.content : [];
-      const hasEmptyHeading = currentContent.some((node: any) => (
-        node?.type === 'heading'
-        && !Array.isArray(node?.content)
-      ));
-      if (hasEmptyHeading) return;
-      setEditorContentPreservingEmptyHeadings(editor as any, expectedContent);
-    },
     editorProps: {
       handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
       handlePaste: (_view, event) => {
@@ -5166,7 +5215,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     const isFocusedEditor =
       Boolean(editor.isFocused)
       || Boolean(editorDom && document.activeElement && editorDom.contains(document.activeElement));
-    if (isFocusedEditor) {
+    const shouldForceHydrateFocusedRegression = isFocusedEditor && hasMemoHeadingRegression(currentContent, expectedContent);
+    if (isFocusedEditor && !shouldForceHydrateFocusedRegression) {
       // Avoid re-hydrating the active editor while the user is typing in the same tab.
       // Tab/document switches still remount or change editorId and will hydrate normally.
       pendingHydrationContentRef.current = expectedContent;
@@ -5188,11 +5238,41 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   }, [content, editor, editorId]);
 
   React.useEffect(() => {
+    if (!editor || typeof editor.getHTML !== 'function' || typeof editor.commands?.setContent !== 'function') {
+      return;
+    }
+    clearDelayedHydrationTimers();
+    const expectedContent = String(content || '');
+    if (!expectedContent || !expectedContent.includes('<')) {
+      return () => {
+        clearDelayedHydrationTimers();
+      };
+    }
+    const scheduleHydrationPass = (delayMs: number) => {
+      const timerId = window.setTimeout(() => {
+        delayedHydrationTimersRef.current = delayedHydrationTimersRef.current.filter((id) => id !== timerId);
+        const currentHtml = String(editor.getHTML?.() || '');
+        if (currentHtml === expectedContent) return;
+        setEditorContentPreservingEmptyHeadings(editor as any, expectedContent);
+        lastSerializedHtmlRef.current = String(editor.getHTML?.() || expectedContent);
+        setEditorHtmlSnapshot((prev) => (prev === lastSerializedHtmlRef.current ? prev : lastSerializedHtmlRef.current));
+      }, delayMs);
+      delayedHydrationTimersRef.current.push(timerId);
+    };
+    scheduleHydrationPass(0);
+    scheduleHydrationPass(180);
+    return () => {
+      clearDelayedHydrationTimers();
+    };
+  }, [clearDelayedHydrationTimers, content, editor, editorId]);
+
+  React.useEffect(() => {
     return () => {
       clearPendingSaveTasks();
       clearPendingSnapshotTasks();
+      clearDelayedHydrationTimers();
     };
-  }, [clearPendingSaveTasks, clearPendingSnapshotTasks]);
+  }, [clearDelayedHydrationTimers, clearPendingSaveTasks, clearPendingSnapshotTasks]);
 
   React.useEffect(() => {
     if (!editor) return;
