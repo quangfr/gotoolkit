@@ -44,15 +44,16 @@ function convertProgrammaticHtmlWithEmptyHeadingsToJson(content: string, schema:
                 const text = String(node.textContent || '');
                 if (!text.trim()) {
                     foundEmptyHeading = true;
-                    return {
-                        type: 'heading',
-                        attrs: {
-                            level,
-                            id: String(node.getAttribute('id') || '').trim() || null,
-                            collapsed: node.getAttribute('data-collapsed') === 'true',
-                            textAlign: null,
-                        },
-                    };
+            return {
+                type: 'heading',
+                attrs: {
+                    level,
+                    id: String(node.getAttribute('id') || node.getAttribute('data-toc-id') || '').trim() || null,
+                    'data-toc-id': String(node.getAttribute('data-toc-id') || node.getAttribute('id') || '').trim() || null,
+                    collapsed: node.getAttribute('data-collapsed') === 'true',
+                    textAlign: null,
+                },
+            };
                 }
             }
             return null;

@@ -197,6 +197,8 @@ const CustomHeading = Heading.extend({
         }
       };
 
+      const headingId = String(node.attrs.id || '').trim();
+
       return (
         <NodeViewWrapper className={`node-heading-wrapper ${collapsed ? 'is-collapsed' : ''}`}>
           <button 
@@ -207,7 +209,13 @@ const CustomHeading = Heading.extend({
           >
             {collapsed ? '▶' : '◢'}
           </button>
-          <NodeViewContent as={tag} className="node-text" />
+          <NodeViewContent
+            as={tag}
+            className="node-text"
+            id={headingId || undefined}
+            data-toc-id={headingId || undefined}
+            data-collapsed={collapsed ? 'true' : 'false'}
+          />
         </NodeViewWrapper>
       );
     }, {
@@ -242,7 +250,8 @@ function convertHtmlWithEmptyHeadingsToJson(content: string) {
         type: 'heading',
         attrs: {
           level,
-          id: String(node.getAttribute('id') || '').trim() || null,
+          id: String(node.getAttribute('id') || node.getAttribute('data-toc-id') || '').trim() || null,
+          'data-toc-id': String(node.getAttribute('data-toc-id') || node.getAttribute('id') || '').trim() || null,
           collapsed: node.getAttribute('data-collapsed') === 'true',
           textAlign: null,
         },

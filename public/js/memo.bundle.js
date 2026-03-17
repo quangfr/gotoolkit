@@ -57006,6 +57006,7 @@ ${promptInput.trim()}`
             }));
           }
         };
+        const headingId = String(node.attrs.id || "").trim();
         return /* @__PURE__ */ jsxs(NodeViewWrapper, { className: `node-heading-wrapper ${collapsed ? "is-collapsed" : ""}`, children: [
           /* @__PURE__ */ jsx(
             "button",
@@ -57017,7 +57018,16 @@ ${promptInput.trim()}`
               children: collapsed ? "\u25B6" : "\u25E2"
             }
           ),
-          /* @__PURE__ */ jsx(NodeViewContent, { as: tag2, className: "node-text" })
+          /* @__PURE__ */ jsx(
+            NodeViewContent,
+            {
+              as: tag2,
+              className: "node-text",
+              id: headingId || void 0,
+              "data-toc-id": headingId || void 0,
+              "data-collapsed": collapsed ? "true" : "false"
+            }
+          )
         ] });
       }, {
         // Headings must contain phrasing content. The default block-level contentDOM
@@ -57049,7 +57059,8 @@ ${promptInput.trim()}`
           type: "heading",
           attrs: {
             level,
-            id: String(node.getAttribute("id") || "").trim() || null,
+            id: String(node.getAttribute("id") || node.getAttribute("data-toc-id") || "").trim() || null,
+            "data-toc-id": String(node.getAttribute("data-toc-id") || node.getAttribute("id") || "").trim() || null,
             collapsed: node.getAttribute("data-collapsed") === "true",
             textAlign: null
           }
@@ -64446,7 +64457,8 @@ ${innerMarkdown}
               type: "heading",
               attrs: {
                 level,
-                id: String(node.getAttribute("id") || "").trim() || null,
+                id: String(node.getAttribute("id") || node.getAttribute("data-toc-id") || "").trim() || null,
+                "data-toc-id": String(node.getAttribute("data-toc-id") || node.getAttribute("id") || "").trim() || null,
                 collapsed: node.getAttribute("data-collapsed") === "true",
                 textAlign: null
               }
