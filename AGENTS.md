@@ -4,6 +4,7 @@ This file is the short operational guide for AI agents and contributors working 
 
 Use it for the default workflow and repo-specific rules. For deeper detail, open the canonical docs:
 
+- UI fast paths, shell structure, entry points: [`docs/INTERFACE.md`](docs/INTERFACE.md)
 - Architecture, storage, sync, cloud flows: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Security, CSP, OAuth, protected spaces: [`docs/SECURITY.MD`](docs/SECURITY.MD)
 - Playwright, repro workflow, coverage map: [`docs/TESTING.md`](docs/TESTING.md)
@@ -25,6 +26,12 @@ When the user asks for a change, follow this order unless the task clearly does 
   - sync
   - cloud/shared pages
   - worker responsibilities
+
+- Open [`docs/INTERFACE.md`](docs/INTERFACE.md) for:
+  - UI fast paths
+  - shell structure
+  - entry points and surface routing
+  - interface-level repro context
 
 - Open [`docs/SECURITY.MD`](docs/SECURITY.MD) for:
   - DOM rendering

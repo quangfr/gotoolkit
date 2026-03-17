@@ -348,8 +348,21 @@
             var activeId = "share:" + normalizedToken;
             var existingDraft = getCloudDraft(activeId) || {};
             var existingOpType = String(existingDraft?.opType || "").trim().toLowerCase();
+            if (typeof window !== "undefined" && window.GO_TOOLKIT_DEBUG_MEMO_REFRESH === true) {
+                try {
+                    console.log("[MemoRefreshDebug]", "schedule-shared-delete:before", {
+                        docId: activeId,
+                        token: normalizedToken,
+                        existingOpType: existingOpType,
+                        existingTitle: String(existingDraft?.title || "").trim(),
+                        spaceId: String(options.spaceId || existingDraft?.spaceId || "").trim()
+                    });
+                } catch (err) {
+                    // ignore logging failures
+                }
+            }
             if (existingOpType === "create") {
-                clearCloudDraft(activeId);
+                clearCloudDraft(activeId, { reason: "cancel-create-delete", source: "scheduleSharedDeleteSave" });
                 setStatus?.("Création cloud annulée localement");
                 return;
             }
@@ -365,6 +378,18 @@
                 spaceId: targetSpaceId,
                 updatedAt: new Date().toISOString()
             });
+            if (typeof window !== "undefined" && window.GO_TOOLKIT_DEBUG_MEMO_REFRESH === true) {
+                try {
+                    console.log("[MemoRefreshDebug]", "schedule-shared-delete:after", {
+                        docId: activeId,
+                        token: normalizedToken,
+                        targetSpaceId: targetSpaceId,
+                        title: String(options.title || "").trim()
+                    });
+                } catch (err) {
+                    // ignore logging failures
+                }
+            }
         }
 
         function scheduleSharedArchiveSave(token, options) {

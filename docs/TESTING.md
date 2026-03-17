@@ -18,16 +18,19 @@ Open this file when you need to answer questions like:
 Use these as the default entry points before reading the full guide.
 
 - UI repro on this machine
+  - read [`docs/INTERFACE.md`](docs/INTERFACE.md) first for UI fast-paths, shell structure, and interaction entry points
   - `npm run start:test`
   - `npm run playwright:linux:test -- tests/<spec>.spec.ts --workers=1 --reporter=line --config=playwright.config.ts`
 
 - Cloud/share repro
   - bootstrap with `spaceCode` first
   - prefer direct worker setup + focused Playwright verification
+  - read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) first for sync ordering, tombstones, and shared `pages` vs `pages-meta` expectations
 
 - Worker auth or share-route repro
   - verify the route directly with `curl` or `fetch`
   - then run one focused Playwright spec only if UI confirmation matters
+  - read [`docs/SECURITY.MD`](docs/SECURITY.MD) first for worker auth, protected share routes, and required headers
 
 - Iterating on inline-script UI bugs
   - run `npm run csp:inline:sync`
@@ -217,12 +220,12 @@ Tier suites:
 
   - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `00:28`) on `2026-03-12 21:29`
+    - results: `passing` (`1 test`, `00:25`) on `2026-03-17 17:31`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.2` `cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
-    - results: `passing` (`1 test`, `00:25`) on `2026-03-12 21:29`
+    - results: `passing` (`1 test`, `00:28`) on `2026-03-17 17:29`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
@@ -232,12 +235,12 @@ Tier suites:
 
 - `Tier 4` essential troubleshooting
   - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers
-  - results: `3 passed, 1 failed, 0 skipped` (`4 tests`, `01:05`) on `2026-03-17 16:26`
+  - results: `3 passed, 1 failed, 0 skipped` (`4 tests`, `01:01`) on `2026-03-17 16:37`
   - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
-    - results: `passing` (`1 test`, `00:27`) on `2026-03-17 16:26`
+    - results: `passing` (`1 test`, `00:23`) on `2026-03-17 16:37`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T4.2` `cloud-rapid-switch-large.spec.ts`

@@ -234,7 +234,7 @@ test.describe("Private page switching persistency", () => {
     logStep("programmatic-insert-private-a-before-reload:done");
 
     logStep("pre-reload-wait:start");
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1000);
     logStep("pre-reload-wait:done");
 
     logStep("reload:start");
