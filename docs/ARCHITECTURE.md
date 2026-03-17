@@ -172,10 +172,20 @@ Interpretation:
 
 Lifecycle persistence rule:
 
-- the active memo page is flushed from live in-memory editor state to IndexedDB-backed `document-api` on `visibilitychange` when hidden, `pagehide`, and `beforeunload`
+- normal private memo edits persist through the debounced editor change path, which updates in-memory tab content, persists memo UI state, and then writes the private record to IndexedDB-backed `document-api`
+- local autosave also schedules `saveDocument()` for private pages on a timer; this is a secondary save path, not the only one
+- the active memo page is flushed from live in-memory editor state to IndexedDB-backed `document-api` on `pagehide` and `beforeunload`
+- the current `visibilitychange` hidden handler does not write content; it intentionally leaves unload persistence to `pagehide` and `beforeunload`
 - `beforeunload` also raises a browser warning when the active page changed in memory or cloud sync is still in flight
 - this unload-time flush is intended to reduce refresh/close data loss for the active page, but IndexedDB remains the durable source of truth
+- an emergency active-page snapshot is also written to `localStorage` during normal persistence and unload so the next startup can recover the newest active private page if the IndexedDB flush loses the race
 - on bare-root app open (`/` or `/index.html`), the app does not auto-restore or auto-open a private page from bootstrap metadata or IndexedDB recency; it starts on the empty shell and the user chooses a page from the document panel
+
+Simplification note:
+
+- the current private memo save model has overlapping persistence paths: debounced editor change writes, scheduled autosave, explicit `saveDocument()`, unload flush, and emergency snapshot fallback
+- this overlap is defensive, but it also makes timing bugs and tests harder to reason about
+- if this area is simplified, the safest direction is one primary private save path for normal editing plus one explicit lifecycle flush path, while keeping the synchronous emergency snapshot only as crash/reload protection
 
 ### 3.1 Fast troubleshooting for generic persistence mismatches
 

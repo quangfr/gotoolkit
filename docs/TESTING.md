@@ -232,12 +232,12 @@ Tier suites:
 
 - `Tier 4` essential troubleshooting
   - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers
-  - results: `3 passed, 1 failed, 0 skipped` (`4 tests`, `00:45`) on `2026-03-17 13:55`
+  - results: `3 passed, 1 failed, 0 skipped` (`4 tests`, `01:05`) on `2026-03-17 16:26`
   - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
-    - results: `passing` (`1 test`, `00:07`) on `2026-03-17 13:55`
+    - results: `passing` (`1 test`, `00:27`) on `2026-03-17 16:26`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T4.2` `cloud-rapid-switch-large.spec.ts`

@@ -59302,7 +59302,6 @@ ${promptInput.trim()}`
     react_shim_default.useEffect(() => {
       if (!editor) return;
       const updateHandler = () => forceUpdate();
-      editor.on("update", updateHandler);
       editor.on("selectionUpdate", updateHandler);
       const handleClickOutside = (event) => {
         if (toolbarRef.current && !toolbarRef.current.contains(event.target)) {
@@ -59311,7 +59310,6 @@ ${promptInput.trim()}`
       };
       document.addEventListener("mousedown", handleClickOutside);
       return () => {
-        editor.off("update", updateHandler);
         editor.off("selectionUpdate", updateHandler);
         document.removeEventListener("mousedown", handleClickOutside);
       };
@@ -59954,6 +59952,8 @@ ${promptInput.trim()}`
     const tocThrottleTimerRef = react_shim_default.useRef(null);
     const tocIdleTimerRef = react_shim_default.useRef(null);
     const tocLastRunAtRef = react_shim_default.useRef(0);
+    const tableChromeFingerprintRef = react_shim_default.useRef("");
+    const detailsFingerprintRef = react_shim_default.useRef("");
     const activeDocumentId = String(editorId || window.__memoActiveDocumentId || "").trim();
     const clearPendingSaveTasks = react_shim_default.useCallback(() => {
       if (saveTimeoutRef.current) {
@@ -59974,6 +59974,12 @@ ${promptInput.trim()}`
         snapshotTimeoutRef.current = null;
       }
     }, []);
+    const refreshEditorHtmlSnapshot = react_shim_default.useCallback((editorInstance) => {
+      const html3 = editorInstance.getHTML();
+      lastSerializedHtmlRef.current = html3;
+      setEditorHtmlSnapshot((prev) => prev === html3 ? prev : html3);
+      return html3;
+    }, []);
     const scheduleEditorSync = react_shim_default.useCallback((editorInstance, options2 = {}) => {
       var _a2;
       clearPendingSaveTasks();
@@ -59981,9 +59987,7 @@ ${promptInput.trim()}`
       const runSync = () => {
         saveTimeoutRef.current = null;
         saveIdleRef.current = window.setTimeout(() => {
-          const html3 = editorInstance.getHTML();
-          lastSerializedHtmlRef.current = html3;
-          setEditorHtmlSnapshot((prev) => prev === html3 ? prev : html3);
+          const html3 = refreshEditorHtmlSnapshot(editorInstance);
           if (onChange) {
             onChange(html3, editorId);
           }
@@ -59995,7 +59999,7 @@ ${promptInput.trim()}`
         return;
       }
       saveTimeoutRef.current = window.setTimeout(runSync, 0);
-    }, [clearPendingSaveTasks, editorId, onChange]);
+    }, [clearPendingSaveTasks, editorId, onChange, refreshEditorHtmlSnapshot]);
     react_shim_default.useEffect(() => {
       lastSerializedHtmlRef.current = String(content || "");
     }, [content, editorId]);
@@ -60051,12 +60055,10 @@ ${promptInput.trim()}`
       const delayMs = Math.max(0, Number((_a2 = options2.delayMs) != null ? _a2 : 250) || 0);
       const runSnapshot = () => {
         snapshotTimeoutRef.current = null;
-        const html3 = editorInstance.getHTML();
-        lastSerializedHtmlRef.current = html3;
-        setEditorHtmlSnapshot((prev) => prev === html3 ? prev : html3);
+        refreshEditorHtmlSnapshot(editorInstance);
       };
       snapshotTimeoutRef.current = window.setTimeout(runSnapshot, delayMs);
-    }, [clearPendingSnapshotTasks]);
+    }, [clearPendingSnapshotTasks, refreshEditorHtmlSnapshot]);
     const computeTocHash = react_shim_default.useCallback((rawContent) => {
       const rows = Array.isArray(rawContent) ? rawContent : [];
       let out = `${rows.length}|`;
@@ -60995,7 +60997,6 @@ ${promptInput.trim()}`
       },
       onUpdate: ({ editor: editor2 }) => {
         const start = performance.now();
-        scheduleEditorSnapshot(editor2, { delayMs: 180 });
         scheduleEditorSync(editor2, { delayMs: 500 });
         const totalDuration = Math.round(performance.now() - start);
         if (totalDuration > 10) {
@@ -61015,6 +61016,30 @@ ${promptInput.trim()}`
         }
       }
     });
+    const computeTableChromeFingerprint = react_shim_default.useCallback(() => {
+      var _a2;
+      const root2 = (_a2 = editor == null ? void 0 : editor.view) == null ? void 0 : _a2.dom;
+      if (!root2) return "";
+      const tables2 = Array.from(root2.querySelectorAll(".tableWrapper table, table"));
+      return tables2.map((table) => {
+        const rowCount = table.querySelectorAll("tr").length;
+        const colCount = Array.from(table.querySelectorAll("tr")).reduce((max3, row) => {
+          const width = Array.from(row.children).reduce((sum, cell2) => sum + Number(cell2.colSpan || 1), 0);
+          return Math.max(max3, width);
+        }, 0);
+        return `${rowCount}x${colCount}`;
+      }).join("|");
+    }, [editor]);
+    const computeDetailsFingerprint = react_shim_default.useCallback(() => {
+      var _a2;
+      const root2 = (_a2 = editor == null ? void 0 : editor.view) == null ? void 0 : _a2.dom;
+      if (!root2) return "";
+      return Array.from(root2.querySelectorAll("details.details, .details.node-details")).map((el) => {
+        const detailsEl = el;
+        const dataOpen = detailsEl.getAttribute("data-open");
+        return `${detailsEl.getAttribute("data-type") || "details"}:${dataOpen != null ? dataOpen : ""}:${detailsEl.open ? "1" : "0"}`;
+      }).join("|");
+    }, [editor]);
     react_shim_default.useEffect(() => {
       var _a2, _b2;
       if (!editor || typeof editor.getHTML !== "function" || typeof ((_a2 = editor.commands) == null ? void 0 : _a2.setContent) !== "function") {
@@ -61318,24 +61343,37 @@ ${promptInput.trim()}`
           el.classList.add("node-table");
         });
       };
-      syncTableWrappers();
-      editor.on("update", syncTableWrappers);
-      return () => {
-        editor.off("update", syncTableWrappers);
+      const maybeSyncTableChrome = () => {
+        const nextFingerprint = computeTableChromeFingerprint();
+        if (nextFingerprint === tableChromeFingerprintRef.current) return;
+        tableChromeFingerprintRef.current = nextFingerprint;
+        syncTableWrappers();
       };
-    }, [editor]);
+      syncTableWrappers();
+      tableChromeFingerprintRef.current = computeTableChromeFingerprint();
+      editor.on("update", maybeSyncTableChrome);
+      return () => {
+        editor.off("update", maybeSyncTableChrome);
+      };
+    }, [computeTableChromeFingerprint, editor]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       syncTableScrollbars();
-      editor.on("update", syncTableScrollbars);
+      const maybeSyncTableScrollbars = () => {
+        const nextFingerprint = computeTableChromeFingerprint();
+        if (nextFingerprint === tableChromeFingerprintRef.current) return;
+        tableChromeFingerprintRef.current = nextFingerprint;
+        syncTableScrollbars();
+      };
+      editor.on("update", maybeSyncTableScrollbars);
       window.addEventListener("resize", syncTableScrollbars);
       window.addEventListener("scroll", syncTableScrollbars, { passive: true });
       return () => {
-        editor.off("update", syncTableScrollbars);
+        editor.off("update", maybeSyncTableScrollbars);
         window.removeEventListener("resize", syncTableScrollbars);
         window.removeEventListener("scroll", syncTableScrollbars);
       };
-    }, [editor]);
+    }, [computeTableChromeFingerprint, editor, syncTableScrollbars]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       let isAdjusting = false;
@@ -61376,13 +61414,20 @@ ${promptInput.trim()}`
         target.classList.toggle("is-open", isOpen);
       };
       syncDetailsState();
+      detailsFingerprintRef.current = computeDetailsFingerprint();
       editor.view.dom.addEventListener("toggle", handleToggle, true);
-      editor.on("update", syncDetailsState);
+      const maybeSyncDetailsState = () => {
+        const nextFingerprint = computeDetailsFingerprint();
+        if (nextFingerprint === detailsFingerprintRef.current) return;
+        detailsFingerprintRef.current = nextFingerprint;
+        syncDetailsState();
+      };
+      editor.on("update", maybeSyncDetailsState);
       return () => {
         editor.view.dom.removeEventListener("toggle", handleToggle, true);
-        editor.off("update", syncDetailsState);
+        editor.off("update", maybeSyncDetailsState);
       };
-    }, [editor]);
+    }, [computeDetailsFingerprint, editor]);
     react_shim_default.useEffect(() => {
       if (!editor || !containerRef.current) return;
       let selectionBoxRaf = null;
@@ -61464,17 +61509,23 @@ ${promptInput.trim()}`
     react_shim_default.useEffect(() => {
       if (!editor) return;
       scheduleTableLayout();
-      editor.on("update", scheduleTableLayout);
+      const maybeScheduleTableLayout = () => {
+        const nextFingerprint = computeTableChromeFingerprint();
+        if (nextFingerprint === tableChromeFingerprintRef.current) return;
+        tableChromeFingerprintRef.current = nextFingerprint;
+        scheduleTableLayout();
+      };
+      editor.on("update", maybeScheduleTableLayout);
       window.addEventListener("resize", scheduleTableLayout);
       return () => {
-        editor.off("update", scheduleTableLayout);
+        editor.off("update", maybeScheduleTableLayout);
         window.removeEventListener("resize", scheduleTableLayout);
         if (tableLayoutRafRef.current) {
           cancelAnimationFrame(tableLayoutRafRef.current);
           tableLayoutRafRef.current = null;
         }
       };
-    }, [editor, scheduleTableLayout]);
+    }, [computeTableChromeFingerprint, editor, scheduleTableLayout]);
     react_shim_default.useEffect(() => {
       if (!editor || !tableSelectionResize) return;
       const handleMouseMove3 = (event) => {
@@ -63262,11 +63313,9 @@ ${innerMarkdown}
           }
         }, 300);
       };
-      editor.on("update", handleSelectionChange);
       editor.on("selectionUpdate", handleSelectionChange);
       return () => {
         clearTimeout(selectionTimeout);
-        editor.off("update", handleSelectionChange);
         editor.off("selectionUpdate", handleSelectionChange);
       };
     }, [editor]);
@@ -63291,11 +63340,9 @@ ${innerMarkdown}
           setLinkTooltip(null);
         }
       };
-      editor.on("update", updateLinkTooltip);
       editor.on("selectionUpdate", updateLinkTooltip);
       updateLinkTooltip();
       return () => {
-        editor.off("update", updateLinkTooltip);
         editor.off("selectionUpdate", updateLinkTooltip);
       };
     }, [editor]);
@@ -63422,11 +63469,9 @@ ${innerMarkdown}
         }
         setSlashActionQuery(query);
       };
-      editor.on("update", syncSlashQuery);
       editor.on("selectionUpdate", syncSlashQuery);
       syncSlashQuery();
       return () => {
-        editor.off("update", syncSlashQuery);
         editor.off("selectionUpdate", syncSlashQuery);
       };
     }, [editor, showSlashActionMenu, getSlashTriggerQuery]);

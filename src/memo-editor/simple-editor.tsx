@@ -3008,16 +3008,15 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
   onInsertVideo: () => void,
   onInsertFile: () => void,
 }) => {
-  // Force re-render when editor state changes
+  // Re-render the toolbar when selection state changes; content-only edits do not
+  // need to rebuild the whole toolbar.
   const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (!editor) return;
 
-    // Update component on any editor change
     const updateHandler = () => forceUpdate();
-    editor.on('update', updateHandler);
     editor.on('selectionUpdate', updateHandler);
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -3028,7 +3027,6 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
     document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      editor.off('update', updateHandler);
       editor.off('selectionUpdate', updateHandler);
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -3842,6 +3840,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const tocThrottleTimerRef = React.useRef<number | null>(null);
   const tocIdleTimerRef = React.useRef<number | null>(null);
   const tocLastRunAtRef = React.useRef<number>(0);
+  const tableChromeFingerprintRef = React.useRef<string>('');
+  const detailsFingerprintRef = React.useRef<string>('');
   const activeDocumentId = String(editorId || (window as any).__memoActiveDocumentId || '').trim();
 
   const clearPendingSaveTasks = React.useCallback(() => {
@@ -3865,15 +3865,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     }
   }, []);
 
+  const refreshEditorHtmlSnapshot = React.useCallback((editorInstance: Editor) => {
+    const html = editorInstance.getHTML();
+    lastSerializedHtmlRef.current = html;
+    setEditorHtmlSnapshot((prev) => (prev === html ? prev : html));
+    return html;
+  }, []);
+
   const scheduleEditorSync = React.useCallback((editorInstance: Editor, options: { delayMs?: number } = {}) => {
     clearPendingSaveTasks();
     const delayMs = Math.max(0, Number(options.delayMs ?? 500) || 0);
     const runSync = () => {
       saveTimeoutRef.current = null;
       saveIdleRef.current = window.setTimeout(() => {
-        const html = editorInstance.getHTML();
-        lastSerializedHtmlRef.current = html;
-        setEditorHtmlSnapshot((prev) => (prev === html ? prev : html));
+        const html = refreshEditorHtmlSnapshot(editorInstance);
         if (onChange) {
           onChange(html, editorId);
         }
@@ -3885,7 +3890,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       return;
     }
     saveTimeoutRef.current = window.setTimeout(runSync, 0);
-  }, [clearPendingSaveTasks, editorId, onChange]);
+  }, [clearPendingSaveTasks, editorId, onChange, refreshEditorHtmlSnapshot]);
 
   React.useEffect(() => {
     lastSerializedHtmlRef.current = String(content || '');
@@ -3945,12 +3950,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     const delayMs = Math.max(0, Number(options.delayMs ?? 250) || 0);
     const runSnapshot = () => {
       snapshotTimeoutRef.current = null;
-      const html = editorInstance.getHTML();
-      lastSerializedHtmlRef.current = html;
-      setEditorHtmlSnapshot((prev) => (prev === html ? prev : html));
+      refreshEditorHtmlSnapshot(editorInstance);
     };
     snapshotTimeoutRef.current = window.setTimeout(runSnapshot, delayMs);
-  }, [clearPendingSnapshotTasks]);
+  }, [clearPendingSnapshotTasks, refreshEditorHtmlSnapshot]);
 
   const computeTocHash = React.useCallback((rawContent: any[]) => {
     const rows = Array.isArray(rawContent) ? rawContent : [];
@@ -4992,7 +4995,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     },
     onUpdate: ({ editor }) => {
       const start = performance.now();
-      scheduleEditorSnapshot(editor, { delayMs: 180 });
       scheduleEditorSync(editor, { delayMs: 500 });
       const totalDuration = Math.round(performance.now() - start);
       if (totalDuration > 10) {
@@ -5013,6 +5015,36 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
     },
   });
+
+  const computeTableChromeFingerprint = React.useCallback(() => {
+    const root = editor?.view?.dom as HTMLElement | undefined;
+    if (!root) return '';
+    const tables = Array.from(root.querySelectorAll('.tableWrapper table, table'));
+    return tables
+      .map((table) => {
+        const rowCount = table.querySelectorAll('tr').length;
+        const colCount = Array.from(table.querySelectorAll('tr')).reduce((max, row) => {
+          const width = Array.from(row.children).reduce((sum, cell) => (
+            sum + Number((cell as HTMLTableCellElement).colSpan || 1)
+          ), 0);
+          return Math.max(max, width);
+        }, 0);
+        return `${rowCount}x${colCount}`;
+      })
+      .join('|');
+  }, [editor]);
+
+  const computeDetailsFingerprint = React.useCallback(() => {
+    const root = editor?.view?.dom as HTMLElement | undefined;
+    if (!root) return '';
+    return Array.from(root.querySelectorAll('details.details, .details.node-details'))
+      .map((el) => {
+        const detailsEl = el as HTMLElement & { open?: boolean };
+        const dataOpen = detailsEl.getAttribute('data-open');
+        return `${detailsEl.getAttribute('data-type') || 'details'}:${dataOpen ?? ''}:${detailsEl.open ? '1' : '0'}`;
+      })
+      .join('|');
+  }, [editor]);
 
   React.useEffect(() => {
     if (!editor || typeof editor.getHTML !== 'function' || typeof editor.commands?.setContent !== 'function') {
@@ -5359,25 +5391,38 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         el.classList.add('node-table');
       });
     };
-    syncTableWrappers();
-    editor.on('update', syncTableWrappers);
-    return () => {
-      editor.off('update', syncTableWrappers);
+    const maybeSyncTableChrome = () => {
+      const nextFingerprint = computeTableChromeFingerprint();
+      if (nextFingerprint === tableChromeFingerprintRef.current) return;
+      tableChromeFingerprintRef.current = nextFingerprint;
+      syncTableWrappers();
     };
-  }, [editor]);
+    syncTableWrappers();
+    tableChromeFingerprintRef.current = computeTableChromeFingerprint();
+    editor.on('update', maybeSyncTableChrome);
+    return () => {
+      editor.off('update', maybeSyncTableChrome);
+    };
+  }, [computeTableChromeFingerprint, editor]);
 
   React.useEffect(() => {
     if (!editor) return;
     syncTableScrollbars();
-    editor.on('update', syncTableScrollbars);
+    const maybeSyncTableScrollbars = () => {
+      const nextFingerprint = computeTableChromeFingerprint();
+      if (nextFingerprint === tableChromeFingerprintRef.current) return;
+      tableChromeFingerprintRef.current = nextFingerprint;
+      syncTableScrollbars();
+    };
+    editor.on('update', maybeSyncTableScrollbars);
     window.addEventListener('resize', syncTableScrollbars);
     window.addEventListener('scroll', syncTableScrollbars, { passive: true });
     return () => {
-      editor.off('update', syncTableScrollbars);
+      editor.off('update', maybeSyncTableScrollbars);
       window.removeEventListener('resize', syncTableScrollbars);
       window.removeEventListener('scroll', syncTableScrollbars);
     };
-  }, [editor]);
+  }, [computeTableChromeFingerprint, editor, syncTableScrollbars]);
 
   React.useEffect(() => {
     if (!editor) return;
@@ -5427,14 +5472,21 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     };
 
     syncDetailsState();
+    detailsFingerprintRef.current = computeDetailsFingerprint();
     editor.view.dom.addEventListener('toggle', handleToggle, true);
-    editor.on('update', syncDetailsState);
+    const maybeSyncDetailsState = () => {
+      const nextFingerprint = computeDetailsFingerprint();
+      if (nextFingerprint === detailsFingerprintRef.current) return;
+      detailsFingerprintRef.current = nextFingerprint;
+      syncDetailsState();
+    };
+    editor.on('update', maybeSyncDetailsState);
 
     return () => {
       editor.view.dom.removeEventListener('toggle', handleToggle, true);
-      editor.off('update', syncDetailsState);
+      editor.off('update', maybeSyncDetailsState);
     };
-  }, [editor]);
+  }, [computeDetailsFingerprint, editor]);
 
   React.useEffect(() => {
     if (!editor || !containerRef.current) return;
@@ -5530,17 +5582,23 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   React.useEffect(() => {
     if (!editor) return;
     scheduleTableLayout();
-    editor.on('update', scheduleTableLayout);
+    const maybeScheduleTableLayout = () => {
+      const nextFingerprint = computeTableChromeFingerprint();
+      if (nextFingerprint === tableChromeFingerprintRef.current) return;
+      tableChromeFingerprintRef.current = nextFingerprint;
+      scheduleTableLayout();
+    };
+    editor.on('update', maybeScheduleTableLayout);
     window.addEventListener('resize', scheduleTableLayout);
     return () => {
-      editor.off('update', scheduleTableLayout);
+      editor.off('update', maybeScheduleTableLayout);
       window.removeEventListener('resize', scheduleTableLayout);
       if (tableLayoutRafRef.current) {
         cancelAnimationFrame(tableLayoutRafRef.current);
         tableLayoutRafRef.current = null;
       }
     };
-  }, [editor, scheduleTableLayout]);
+  }, [computeTableChromeFingerprint, editor, scheduleTableLayout]);
 
   React.useEffect(() => {
     if (!editor || !tableSelectionResize) return;
@@ -7591,12 +7649,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     };
 
     // Écouter les changements de sélection
-    editor.on('update', handleSelectionChange);
     editor.on('selectionUpdate', handleSelectionChange);
 
     return () => {
       clearTimeout(selectionTimeout);
-      editor.off('update', handleSelectionChange);
       editor.off('selectionUpdate', handleSelectionChange);
     };
   }, [editor]);
@@ -7624,12 +7680,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
     };
 
-    editor.on('update', updateLinkTooltip);
     editor.on('selectionUpdate', updateLinkTooltip);
     updateLinkTooltip();
 
     return () => {
-      editor.off('update', updateLinkTooltip);
       editor.off('selectionUpdate', updateLinkTooltip);
     };
   }, [editor]);
@@ -7772,11 +7826,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
       setSlashActionQuery(query);
     };
-    editor.on('update', syncSlashQuery);
     editor.on('selectionUpdate', syncSlashQuery);
     syncSlashQuery();
     return () => {
-      editor.off('update', syncSlashQuery);
       editor.off('selectionUpdate', syncSlashQuery);
     };
   }, [editor, showSlashActionMenu, getSlashTriggerQuery]);
