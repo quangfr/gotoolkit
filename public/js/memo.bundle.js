@@ -53511,7 +53511,7 @@ ${promptInput.trim()}`
       if (lastPreviewSyncKeyRef.current === syncKey) return;
       lastPreviewSyncKeyRef.current = syncKey;
       const syncPreview = async () => {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+        var _a, _b, _c, _d;
         setIsPreviewLoading(true);
         try {
           if ((_a = window.GoToolkitDrawMemo) == null ? void 0 : _a.renderPreview) {
@@ -53522,19 +53522,12 @@ ${promptInput.trim()}`
             }
             const json2 = result == null ? void 0 : result.json;
             const svgHtml2 = result == null ? void 0 : result.svg;
-            if (json2 && !excalidrawJSON) {
-              (_b = updateAttributesRef.current) == null ? void 0 : _b.call(updateAttributesRef, { excalidrawJSON: json2 });
-            }
             if (svgHtml2) {
               const cleanSvg2 = sanitizeRenderedSvg(svgHtml2);
               previewSourceRef.current = "excalidraw";
               setSvg(cleanSvg2);
               setLastValidCode(code);
               setError(null);
-              (_c = updateAttributesRef.current) == null ? void 0 : _c.call(updateAttributesRef, {
-                previewSvg: cleanSvg2,
-                previewKey: syncKey
-              });
               return;
             }
           }
@@ -53542,7 +53535,7 @@ ${promptInput.trim()}`
             let mermaidApi = getMermaidApi();
             if (!mermaidApi) {
               try {
-                await ((_e = (_d = window.GoToolkitLazyCdn) == null ? void 0 : _d.loadMermaid) == null ? void 0 : _e.call(_d));
+                await ((_c = (_b = window.GoToolkitLazyCdn) == null ? void 0 : _b.loadMermaid) == null ? void 0 : _c.call(_b));
               } catch (loadErr) {
                 console.warn("Mermaid lazy-load failed during preview hydration:", loadErr);
               }
@@ -53559,13 +53552,9 @@ ${promptInput.trim()}`
             setSvg(cleanSvg2);
             setLastValidCode(code);
             setError(null);
-            (_f = updateAttributesRef.current) == null ? void 0 : _f.call(updateAttributesRef, {
-              previewSvg: cleanSvg2,
-              previewKey: syncKey
-            });
             return;
           }
-          if (!((_g = window.GoToolkitDrawMemo) == null ? void 0 : _g.init)) {
+          if (!((_d = window.GoToolkitDrawMemo) == null ? void 0 : _d.init)) {
             throw new Error("Excalidraw preview runtime unavailable");
           }
           const tempDiv = document.createElement("div");
@@ -53582,17 +53571,10 @@ ${promptInput.trim()}`
           await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
           const json = window.GoToolkitDrawMemo.getSceneJSON();
           const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-          if (!excalidrawJSON) {
-            (_h = updateAttributesRef.current) == null ? void 0 : _h.call(updateAttributesRef, { excalidrawJSON: json });
-          }
           const cleanSvg = sanitizeRenderedSvg(svgHtml);
           previewSourceRef.current = "excalidraw";
           setSvg(cleanSvg);
           setLastValidCode(code);
-          (_i = updateAttributesRef.current) == null ? void 0 : _i.call(updateAttributesRef, {
-            previewSvg: cleanSvg,
-            previewKey: syncKey
-          });
           document.body.removeChild(tempDiv);
         } catch (e) {
           lastPreviewSyncKeyRef.current = "";
@@ -54170,9 +54152,10 @@ ${promptInput.trim()}`
     renderHTML({ HTMLAttributes }) {
       const attrs = {
         ...HTMLAttributes,
-        code: encodeMermaidHtmlAttr((HTMLAttributes == null ? void 0 : HTMLAttributes.code) || ""),
-        previewSvg: encodeMermaidHtmlAttr((HTMLAttributes == null ? void 0 : HTMLAttributes.previewSvg) || "")
+        code: encodeMermaidHtmlAttr((HTMLAttributes == null ? void 0 : HTMLAttributes.code) || "")
       };
+      delete attrs.previewSvg;
+      delete attrs.previewKey;
       return ["mermaid-diagram", mergeAttributes(attrs)];
     },
     addNodeView() {
@@ -56930,19 +56913,40 @@ ${promptInput.trim()}`
     addProseMirrorPlugins() {
       return [
         new Plugin({
-          appendTransaction: (transactions, _oldState, newState) => {
+          appendTransaction: (transactions, oldState, newState) => {
+            var _a, _b;
             const { tr: tr2 } = newState;
             let modified = false;
+            const previousHeadings = [];
+            (_b = (_a = oldState == null ? void 0 : oldState.doc) == null ? void 0 : _a.descendants) == null ? void 0 : _b.call(_a, (node) => {
+              var _a2, _b2, _c;
+              if (((_a2 = node == null ? void 0 : node.type) == null ? void 0 : _a2.name) !== "heading") return true;
+              const id = String(((_b2 = node == null ? void 0 : node.attrs) == null ? void 0 : _b2.id) || "").trim();
+              previousHeadings.push({
+                level: Number(((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.level) || 0),
+                id
+              });
+              return true;
+            });
             if (transactions.some((transaction) => transaction.docChanged)) {
+              let headingIndex = -1;
               newState.doc.descendants((node, pos) => {
-                if (node.type.name === "heading" && !node.attrs.id) {
-                  const id = `h-${Math.random().toString(36).substr(2, 6)}`;
+                var _a2, _b2, _c, _d, _e;
+                if (node.type.name !== "heading") return true;
+                headingIndex += 1;
+                if (!node.attrs.id) {
+                  const previousNode = (_b2 = (_a2 = oldState == null ? void 0 : oldState.doc) == null ? void 0 : _a2.nodeAt) == null ? void 0 : _b2.call(_a2, pos);
+                  const previousId = ((_c = previousNode == null ? void 0 : previousNode.type) == null ? void 0 : _c.name) === "heading" && ((_d = previousNode == null ? void 0 : previousNode.attrs) == null ? void 0 : _d.level) === node.attrs.level && String(((_e = previousNode == null ? void 0 : previousNode.attrs) == null ? void 0 : _e.id) || "").trim() ? String(previousNode.attrs.id).trim() : "";
+                  const previousHeadingByIndex = previousHeadings[headingIndex];
+                  const fallbackId = !previousId && previousHeadingByIndex && previousHeadingByIndex.level === node.attrs.level && previousHeadingByIndex.id ? previousHeadingByIndex.id : "";
+                  const id = previousId || fallbackId || `h-${Math.random().toString(36).substr(2, 6)}`;
                   tr2.setNodeMarkup(pos, void 0, {
                     ...node.attrs,
                     id
                   });
                   modified = true;
                 }
+                return true;
               });
             }
             return modified ? tr2 : null;
@@ -57023,6 +57027,51 @@ ${promptInput.trim()}`
       });
     }
   });
+  function convertHtmlWithEmptyHeadingsToJson(content) {
+    const normalizedContent = String(content || "");
+    if (!normalizedContent.trim() || typeof DOMParser === "undefined") return null;
+    try {
+      const doc3 = new DOMParser().parseFromString(normalizedContent, "text/html");
+      const topLevelNodes = Array.from(doc3.body.childNodes || []);
+      if (!topLevelNodes.length) return null;
+      let foundEmptyHeading = false;
+      const jsonContent = topLevelNodes.map((node) => {
+        if (!(node instanceof HTMLElement)) return null;
+        const tagName = String(node.tagName || "").toLowerCase();
+        const headingMatch = tagName.match(/^h([1-6])$/);
+        if (!headingMatch) return null;
+        const level = Number(headingMatch[1] || 0);
+        if (!level) return null;
+        const text2 = String(node.textContent || "");
+        if (text2.trim()) return null;
+        foundEmptyHeading = true;
+        return {
+          type: "heading",
+          attrs: {
+            level,
+            id: String(node.getAttribute("id") || "").trim() || null,
+            collapsed: node.getAttribute("data-collapsed") === "true",
+            textAlign: null
+          }
+        };
+      });
+      if (!foundEmptyHeading) return null;
+      if (jsonContent.some((node) => node === null)) return null;
+      return {
+        type: "doc",
+        content: jsonContent
+      };
+    } catch (err) {
+      return null;
+    }
+  }
+  function setEditorContentPreservingEmptyHeadings(editorInstance, content) {
+    var _a;
+    if (!((_a = editorInstance == null ? void 0 : editorInstance.commands) == null ? void 0 : _a.setContent)) return;
+    const normalizedContent = String(content || "");
+    const emptyHeadingJson = normalizedContent.includes("<h") ? convertHtmlWithEmptyHeadingsToJson(normalizedContent) : null;
+    editorInstance.commands.setContent(emptyHeadingJson || normalizedContent || "<p></p>");
+  }
   var CustomParagraph = Paragraph.extend({
     addAttributes() {
       return {
@@ -60024,7 +60073,7 @@ ${promptInput.trim()}`
         return false;
       }
       try {
-        editorInstance.commands.setContent(queuedContent || "<p></p>");
+        setEditorContentPreservingEmptyHeadings(editorInstance, queuedContent || "<p></p>");
         const hydrated = String(((_c2 = editorInstance.getHTML) == null ? void 0 : _c2.call(editorInstance)) || queuedContent);
         pendingHydrationContentRef.current = null;
         lastSerializedHtmlRef.current = hydrated;
@@ -60336,6 +60385,10 @@ ${promptInput.trim()}`
       if (hasPersistedNavigationBlock(editorHtmlSnapshot)) return false;
       return isHtmlEffectivelyEmptyForInitialNavigation(editorHtmlSnapshot);
     }, [activeDocumentId, editable, editorHtmlSnapshot, initialNavigationChildren.length, isInitialNavigationDismissed]);
+    const initialEditorContent = react_shim_default.useMemo(() => {
+      const normalizedContent = String(content || "");
+      return convertHtmlWithEmptyHeadingsToJson(normalizedContent) || normalizedContent;
+    }, [content]);
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
@@ -60398,9 +60451,19 @@ ${promptInput.trim()}`
           includeChildren: true
         })
       ],
-      content,
+      content: initialEditorContent,
       editable,
-      onCreate: () => {
+      onCreate: ({ editor: editor2 }) => {
+        var _a2;
+        const expectedContent = String(content || "");
+        if (!expectedContent || !expectedContent.includes("<h")) return;
+        const repairedJson = convertHtmlWithEmptyHeadingsToJson(expectedContent);
+        if (!repairedJson) return;
+        const currentJson = (_a2 = editor2.getJSON) == null ? void 0 : _a2.call(editor2);
+        const currentContent = Array.isArray(currentJson == null ? void 0 : currentJson.content) ? currentJson.content : [];
+        const hasEmptyHeading = currentContent.some((node) => (node == null ? void 0 : node.type) === "heading" && !Array.isArray(node == null ? void 0 : node.content));
+        if (hasEmptyHeading) return;
+        setEditorContentPreservingEmptyHeadings(editor2, expectedContent);
       },
       editorProps: {
         handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
@@ -61063,7 +61126,7 @@ ${promptInput.trim()}`
         return;
       }
       try {
-        editor.commands.setContent(expectedContent || "<p></p>");
+        setEditorContentPreservingEmptyHeadings(editor, expectedContent || "<p></p>");
         pendingHydrationContentRef.current = null;
         lastSerializedHtmlRef.current = String(editor.getHTML() || expectedContent);
         setEditorHtmlSnapshot(lastSerializedHtmlRef.current);
@@ -64361,6 +64424,60 @@ ${innerMarkdown}
   var simple_editor_default = SimpleEditor;
 
   // src/memo-bridge/index.tsx
+  function convertProgrammaticHtmlWithEmptyHeadingsToJson(content, schema) {
+    var _a;
+    const normalizedContent = String(content || "");
+    if (!normalizedContent.trim() || typeof DOMParser === "undefined" || !((_a = schema == null ? void 0 : schema.nodes) == null ? void 0 : _a.doc)) return null;
+    try {
+      const doc3 = new DOMParser().parseFromString(normalizedContent, "text/html");
+      const topLevelNodes = Array.from(doc3.body.childNodes || []);
+      if (!topLevelNodes.length) return null;
+      let foundEmptyHeading = false;
+      const jsonContent = topLevelNodes.map((node) => {
+        if (!(node instanceof HTMLElement)) return null;
+        const tagName = String(node.tagName || "").toLowerCase();
+        const headingMatch = tagName.match(/^h([1-6])$/);
+        if (headingMatch) {
+          const level = Number(headingMatch[1] || 0);
+          const text2 = String(node.textContent || "");
+          if (!text2.trim()) {
+            foundEmptyHeading = true;
+            return {
+              type: "heading",
+              attrs: {
+                level,
+                id: String(node.getAttribute("id") || "").trim() || null,
+                collapsed: node.getAttribute("data-collapsed") === "true",
+                textAlign: null
+              }
+            };
+          }
+        }
+        return null;
+      });
+      if (!foundEmptyHeading) return null;
+      if (jsonContent.some((node) => node === null)) return null;
+      return {
+        type: "doc",
+        content: jsonContent
+      };
+    } catch (err) {
+      return null;
+    }
+  }
+  function hasProgrammaticEmptyHeadingMarkup(content) {
+    const normalizedContent = String(content || "");
+    if (!normalizedContent.trim() || typeof DOMParser === "undefined") return false;
+    try {
+      const doc3 = new DOMParser().parseFromString(normalizedContent, "text/html");
+      return Array.from(doc3.body.querySelectorAll("h1,h2,h3,h4,h5,h6")).some((node) => {
+        const text2 = String(node.textContent || "").trim();
+        return !text2;
+      });
+    } catch (err) {
+      return false;
+    }
+  }
   var EditorItem = react_shim_default.memo(({ editor, activeId, onEditorChange, handleEditorReady, editable, placeholder }) => {
     const onReady = react_shim_default.useCallback((methods) => {
       handleEditorReady(editor.id, methods);
@@ -64421,13 +64538,16 @@ ${innerMarkdown}
       };
     }, [hashProgrammaticContent]);
     const applyProgrammaticContent = react_shim_default.useCallback((id, methods, content) => {
-      var _a, _b;
+      var _a, _b, _c;
       const targetId = String(id || "").trim();
       if (!targetId || !((_b = (_a = methods == null ? void 0 : methods.instance) == null ? void 0 : _a.commands) == null ? void 0 : _b.setContent)) return;
       const normalizedContent = String(content || "");
       suppressProgrammaticChange(targetId, normalizedContent);
       try {
-        methods.instance.commands.setContent(normalizedContent);
+        const editor = methods.instance;
+        const schema = (_c = editor == null ? void 0 : editor.state) == null ? void 0 : _c.schema;
+        const emptyHeadingJson = typeof normalizedContent === "string" && normalizedContent.includes("<h") ? convertProgrammaticHtmlWithEmptyHeadingsToJson(normalizedContent, schema) : null;
+        methods.instance.commands.setContent(emptyHeadingJson || normalizedContent);
       } catch (err) {
         const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
         delete nextSuppressed[targetId];
@@ -64488,6 +64608,9 @@ ${innerMarkdown}
       setEditors((prev) => {
         const current = prev[targetId];
         if (!current) return prev;
+        if (hasProgrammaticEmptyHeadingMarkup(current.content) && !hasProgrammaticEmptyHeadingMarkup(nextContent) && normalizeProgrammaticContent(nextContent) === '<p class="node-text node-paragraph"></p>') {
+          return prev;
+        }
         if (current.content === nextContent) return prev;
         const next2 = {
           ...prev,

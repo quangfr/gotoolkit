@@ -26,6 +26,63 @@ interface EditorInstance {
     methods?: any;
 }
 
+function convertProgrammaticHtmlWithEmptyHeadingsToJson(content: string, schema: any) {
+    const normalizedContent = String(content || '');
+    if (!normalizedContent.trim() || typeof DOMParser === 'undefined' || !schema?.nodes?.doc) return null;
+    try {
+        const doc = new DOMParser().parseFromString(normalizedContent, 'text/html');
+        const topLevelNodes = Array.from(doc.body.childNodes || []);
+        if (!topLevelNodes.length) return null;
+
+        let foundEmptyHeading = false;
+        const jsonContent = topLevelNodes.map((node) => {
+            if (!(node instanceof HTMLElement)) return null;
+            const tagName = String(node.tagName || '').toLowerCase();
+            const headingMatch = tagName.match(/^h([1-6])$/);
+            if (headingMatch) {
+                const level = Number(headingMatch[1] || 0);
+                const text = String(node.textContent || '');
+                if (!text.trim()) {
+                    foundEmptyHeading = true;
+                    return {
+                        type: 'heading',
+                        attrs: {
+                            level,
+                            id: String(node.getAttribute('id') || '').trim() || null,
+                            collapsed: node.getAttribute('data-collapsed') === 'true',
+                            textAlign: null,
+                        },
+                    };
+                }
+            }
+            return null;
+        });
+
+        if (!foundEmptyHeading) return null;
+        if (jsonContent.some((node) => node === null)) return null;
+        return {
+            type: 'doc',
+            content: jsonContent,
+        };
+    } catch (err) {
+        return null;
+    }
+}
+
+function hasProgrammaticEmptyHeadingMarkup(content: string) {
+    const normalizedContent = String(content || '');
+    if (!normalizedContent.trim() || typeof DOMParser === 'undefined') return false;
+    try {
+        const doc = new DOMParser().parseFromString(normalizedContent, 'text/html');
+        return Array.from(doc.body.querySelectorAll('h1,h2,h3,h4,h5,h6')).some((node) => {
+            const text = String(node.textContent || '').trim();
+            return !text;
+        });
+    } catch (err) {
+        return false;
+    }
+}
+
 const EditorItem = React.memo(({ editor, activeId, onEditorChange, handleEditorReady, editable, placeholder }: any) => {
     // Stable onReady for this specific editor ID
     const onReady = React.useCallback((methods: any) => {
@@ -101,7 +158,12 @@ const App = () => {
         const normalizedContent = String(content || '');
         suppressProgrammaticChange(targetId, normalizedContent);
         try {
-            methods.instance.commands.setContent(normalizedContent);
+            const editor = methods.instance;
+            const schema = editor?.state?.schema;
+            const emptyHeadingJson = typeof normalizedContent === 'string' && normalizedContent.includes('<h')
+                ? convertProgrammaticHtmlWithEmptyHeadingsToJson(normalizedContent, schema)
+                : null;
+            methods.instance.commands.setContent(emptyHeadingJson || normalizedContent);
         } catch (err) {
             const nextSuppressed = { ...suppressedProgrammaticChangeRef.current };
             delete nextSuppressed[targetId];
@@ -169,6 +231,13 @@ const App = () => {
         setEditors(prev => {
             const current = prev[targetId];
             if (!current) return prev;
+            if (
+                hasProgrammaticEmptyHeadingMarkup(current.content)
+                && !hasProgrammaticEmptyHeadingMarkup(nextContent)
+                && normalizeProgrammaticContent(nextContent) === '<p class="node-text node-paragraph"></p>'
+            ) {
+                return prev;
+            }
             if (current.content === nextContent) return prev;
             const next = {
                 ...prev,

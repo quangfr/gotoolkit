@@ -64,6 +64,15 @@ export async function createLocalMemoPageFromUi(page: Page, timeout = 45_000) {
   await waitForMemoEditorVisible(page, timeout);
 }
 
+export async function createLocalMemoPageFromUiAndReturnId(page: Page, timeout = 45_000) {
+  await createLocalMemoPageFromUi(page, timeout);
+  return getActiveMemoDocId(page);
+}
+
+export async function getActiveMemoDocId(page: Page) {
+  return page.evaluate(() => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "").trim());
+}
+
 export async function refreshMemoExplorer(page: Page, timeout = 45_000) {
   await page.evaluate(async () => {
     await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
@@ -215,6 +224,20 @@ export async function deleteActiveMemoDoc(
       await page.waitForTimeout(settleDelay);
     }
   }
+}
+
+export async function openMemoFileMenu(page: Page, timeout = 30_000) {
+  const button = page.locator("#fileMenuBtn");
+  await expect(button).toBeVisible({ timeout });
+  await button.click();
+}
+
+export async function importMemoFileViaMenu(page: Page, filePath: string, timeout = 30_000) {
+  await openMemoFileMenu(page, timeout);
+  const chooserPromise = page.waitForEvent("filechooser", { timeout });
+  await page.locator("#memoOpenImportBtn").click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles(filePath);
 }
 
 export function captureShareRequests(page: Page, options: { includeSpaces?: boolean } = {}) {

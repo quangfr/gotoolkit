@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { dismissDocsTour, waitForMemoReady } from "../helpers/memo-ui";
+import { dismissDocsTour, importMemoFileViaMenu, waitForMemoReady } from "../helpers/memo-ui";
 import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 const BASE_URL = "http://127.0.0.1:5000";
@@ -49,11 +49,7 @@ test.describe("Debug mermaid markdown import", () => {
     });
     logStep("assist-ready");
 
-    await page.locator("#fileMenuBtn").click();
-    const fileChooserPromise = page.waitForEvent("filechooser");
-    await page.locator("#memoOpenImportBtn").click();
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(IMPORT_FILE);
+    await importMemoFileViaMenu(page, IMPORT_FILE);
     logStep("file-selected", { file: IMPORT_FILE });
 
     await expect.poll(async () => {

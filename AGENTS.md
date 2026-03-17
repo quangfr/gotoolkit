@@ -73,6 +73,8 @@ When the user asks for a change, follow this order unless the task clearly does 
 - Keep the IndexedDB repair version in `public/js/assist.js` aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - Reuse existing colors/classes from `public/styles/style.css` before adding new CSS.
 - Only `public/js` should attach application globals to `window`.
+- For generic troubleshooting, read the matching contract doc first and only then form a hypothesis.
+- When one debug session reveals a reusable invariant or pitfall, update the smallest matching repo doc in the same task.
 
 ## Local commands
 
@@ -119,12 +121,15 @@ Treat `scripts/csp-common.js` as canonical for CSP-related checks.
 - Keep Playwright local artifacts in `tests/results/`.
 - Save visual-debug screenshots needed for investigation in `tests/results/` with scenario-specific names.
 - Keep ad hoc test/debug scripts in `tests/debug/`.
+- Create new Playwright specs in `tests/debug/` by default.
+- Only place a new Playwright spec at the top level `tests/` directory when the user explicitly asks to add or maintain tier coverage documented in [`docs/TESTING.md`](docs/TESTING.md).
 - After any requested Playwright execution, verify the coverage-map update in [`docs/TESTING.md`](docs/TESTING.md).
 - If a suite still shows `duration not measured separately`, rerun that suite or tier through the repo wrapper so metrics are written back correctly.
 - For state, refresh, reload, switch, or sync bugs, add temporary step logs before changing logic:
   - use one stable prefix
   - log before and after each meaningful step
   - log identifiers, payload length, and a small content fingerprint
+- Prefer logging skip paths and clear/remove reasons in queue-building code, not just happy-path writes.
 - Compare the same data across layers before deciding where the bug lives:
   - visible UI or rendered DOM
   - in-memory app state
@@ -134,7 +139,14 @@ Treat `scripts/csp-common.js` as canonical for CSP-related checks.
   - wrong in UI and state before persistence: render, parser, or state bug
   - wrong only after save: persistence or overwrite bug
   - correct in storage but wrong after reopen: restore or hydration bug
+- For cloud/share bugs, check this order before blaming the worker:
+  - local `share-history`
+  - local `cloud-drafts`
+  - remote `pages-meta`
+  - remote `pages`
+- For delete/archive bugs, verify destructive drafts are preserved until explicit sync acknowledgement.
 - If one fixture reproduces the bug reliably, keep it in `tests/fixtures/` and add one focused spec in `tests/debug/` first.
+- After the first useful signal, narrow the repro instead of expanding a large suite further.
 
 ## Build and deployment rules
 

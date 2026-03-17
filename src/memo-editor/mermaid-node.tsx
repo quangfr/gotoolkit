@@ -430,19 +430,12 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           }
           const json = result?.json;
           const svgHtml = result?.svg;
-          if (json && !excalidrawJSON) {
-            updateAttributesRef.current?.({ excalidrawJSON: json });
-          }
           if (svgHtml) {
             const cleanSvg = sanitizeRenderedSvg(svgHtml);
             previewSourceRef.current = 'excalidraw';
             setSvg(cleanSvg);
             setLastValidCode(code);
             setError(null);
-            updateAttributesRef.current?.({
-              previewSvg: cleanSvg,
-              previewKey: syncKey,
-            });
             return;
           }
         }
@@ -468,10 +461,6 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           setSvg(cleanSvg);
           setLastValidCode(code);
           setError(null);
-          updateAttributesRef.current?.({
-            previewSvg: cleanSvg,
-            previewKey: syncKey,
-          });
           return;
         }
 
@@ -493,17 +482,10 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
         await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
         const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
         const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
-        if (!excalidrawJSON) {
-          updateAttributesRef.current?.({ excalidrawJSON: json });
-        }
         const cleanSvg = sanitizeRenderedSvg(svgHtml);
         previewSourceRef.current = 'excalidraw';
         setSvg(cleanSvg);
         setLastValidCode(code);
-        updateAttributesRef.current?.({
-          previewSvg: cleanSvg,
-          previewKey: syncKey,
-        });
         document.body.removeChild(tempDiv);
       } catch (e) {
         lastPreviewSyncKeyRef.current = '';
@@ -1136,8 +1118,9 @@ export const MermaidNode = Node.create({
     const attrs = {
       ...HTMLAttributes,
       code: encodeMermaidHtmlAttr(HTMLAttributes?.code || ''),
-      previewSvg: encodeMermaidHtmlAttr(HTMLAttributes?.previewSvg || ''),
     };
+    delete (attrs as any).previewSvg;
+    delete (attrs as any).previewKey;
     return ['mermaid-diagram', mergeAttributes(attrs)];
   },
 

@@ -4,7 +4,7 @@ import {
   dismissDocsTour,
   getMemoEditorHtml,
   waitForMemoReady
-} from "./helpers/memo-ui";
+} from "../helpers/memo-ui";
 
 test.describe("Memo idle resume guards", () => {
   test("ignores transient empty snapshots after focus loss", async ({ page }) => {

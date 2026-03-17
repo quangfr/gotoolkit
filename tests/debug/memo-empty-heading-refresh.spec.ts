@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { clickMemoDoc, waitForMemoReady } from "./helpers/memo-ui";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
+import { clickMemoDoc, waitForMemoReady } from "../helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 const BASE_URL = "http://127.0.0.1:5000";
 const TEST_TIMEOUT = 180_000;

@@ -107,15 +107,54 @@ Use this when `/` should stay empty or a direct page URL should trigger auth/acc
     - post-auth space authorization is checked
     - unauthorized result reopens the modal and shows the `Page inaccessible` toast
 
+### 0.0.3 Fast troubleshooting heuristics
+
+Use these rules to shorten the next investigation:
+
+- read the contract doc first, not after the first failed hypothesis
+  - UI shell, route, or surface-entry bug: read [`docs/INTERFACE.md`](docs/INTERFACE.md)
+  - storage, sync, cloud/share bug: read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+  - worker auth, protected route, CSP bug: read [`docs/SECURITY.MD`](docs/SECURITY.MD)
+
+- do not start with broad suites when one fixture can reproduce the issue
+  - first add or reuse one focused spec in `tests/debug/` or a single targeted suite
+  - only rerun the broader tier after the first divergence is isolated
+
+- for cloud/share bugs, compare these layers in order
+  - visible tree/editor state
+  - local `share-history`
+  - local `cloud-drafts`
+  - remote `pages-meta`
+  - remote `pages`
+
+- if a delete or archive bug is involved, check draft preservation before remote behavior
+  - confirm the destructive draft exists before sync
+  - confirm it remains queued until explicit delete/archive acknowledgement
+  - only then blame worker-side delete handling
+
+- when a remote result looks wrong, distinguish these three states
+  - unsynced local draft
+  - synced remote tombstone in `pages-meta`
+  - content removal in `pages`
+
+- log skip reasons, not only success paths
+  - for queue-building code, log why an item was skipped
+  - for clear/remove helpers, log reason and caller/source
+
+- once a cross-layer invariant becomes clear, document it in the repo docs in the same task
+  - keep the note synthetic and local to the affected subsystem
+
 ## 0.1 Core rules
 
 - Prefer a real spec under `tests/` over ad hoc scripts for any non-trivial repro.
 - On WSL, run Playwright from the Linux mirror, not `/mnt/c/...`.
 - Dismiss the docs tour unless it is the subject of the test.
 - Add step logs plus `console`, `pageerror`, `request`, and `response` listeners before rewriting a repro.
+- Keep one stable log prefix per investigation and include doc ids, token ids, payload length, and a short fingerprint.
 - Use `spaceCode` bootstrap first for cloud coverage; fall back to OAuth UI only when the auth UX itself is under test.
 - For visual regressions, save screenshots in `tests/results/` before tightening assertions further.
 - For root-shell regressions, a tiny focused spec is better than reusing a large persistence suite.
+- After the first real signal, narrow the spec instead of adding more unrelated assertions.
 
 ## 0.2 Screenshot workflow
 
@@ -205,6 +244,7 @@ Recent troubleshooting note:
 - `private-switch-persist.spec.ts` is the primary fast check for generic local-page persistence regressions
 - if that spec passes but a heavier import/reload spec fails, suspect restore hydration or renderer rehydration before suspecting IndexedDB durability
 - `tests/debug/sample-refresh-heading-diagnose.spec.ts` is the focused repro for imported Markdown refresh survival plus post-reload heading-title preservation around table and Mermaid-adjacent sections
+- keep non-tier or one-off repro specs under `tests/debug/` by default; only promote a spec to the top-level `tests/` directory when it is intentionally part of a maintained tier below
 - `tests/debug/assist-page-switch-conversation.spec.ts` is the focused repro for per-page Assist conversation scoping plus summary-tab alignment during private page switches with one delayed inline edit and one send-button edit
 - `tests/debug/private-delete-switch-regression.spec.ts` is the focused repro for deleting an active private page, reopening another private page, and verifying no blank or duplicated content across repeated switches
 - `tests/debug/close-active-page.spec.ts` is the focused repro for the breadcrumb close button returning the app to the empty shell cleanly
@@ -220,7 +260,7 @@ Tier suites:
 
   - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `00:25`) on `2026-03-17 17:31`
+    - results: `passing` (`1 test`, `00:25`) on `2026-03-17 17:42`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.2` `cloud-sync-persist.spec.ts`
@@ -235,12 +275,12 @@ Tier suites:
 
 - `Tier 4` essential troubleshooting
   - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers
-  - results: `3 passed, 1 failed, 0 skipped` (`4 tests`, `01:01`) on `2026-03-17 16:37`
+  - results: `3 passed, 1 failed, 0 skipped` (`4 tests`, `00:59`) on `2026-03-17 18:50`
   - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
-    - results: `passing` (`1 test`, `00:23`) on `2026-03-17 16:37`
+    - results: `passing` (`1 test`, `00:20`) on `2026-03-17 18:50`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T4.2` `cloud-rapid-switch-large.spec.ts`
@@ -250,7 +290,7 @@ Tier suites:
 
   - `T4.3` `cloud-draft-archive-ops.spec.ts`
     - description: local draft archive/delete terminal semantics
-    - results: `passing` (`1 test`, `00:01`) on `2026-03-10 11:53`
+    - results: `passing` (`1 test`, `00:02`) on `2026-03-17 17:52`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T4.4` `cloud-private-transfer-sync.spec.ts`
@@ -312,10 +352,13 @@ Shared test helpers:
   - exposes the configured Playwright test space ID and code from the environment
 
 - `helpers/memo-ui.ts`
-  - provides common memo UI operations used by Playwright specs: waiting for the editor, opening a document, renaming/deleting from the explorer or file menu, typing into the visible editor, interacting with the history modal, capturing share requests, refreshing the explorer, dismissing the docs tour, and triggering cloud sync
+  - provides common memo UI operations used by Playwright specs: waiting for the editor, creating/opening a document, opening the file menu, importing through the file menu, renaming/deleting from the explorer or file menu, typing into the visible editor, interacting with the history modal, capturing share requests, refreshing the explorer, dismissing the docs tour, and triggering cloud sync
 
 - `helpers/cloud-state.ts`
-  - provides cloud-state setup and verification primitives: seed shared memo docs, read local cloud draft/history state, and read remote `pages` / `pages-meta` / `pages-history` state
+  - provides cloud-state setup and verification primitives: wait for cloud memo APIs, seed shared memo docs, read local cloud draft/history state, and read remote `pages` / `pages-meta` / `pages-history` state
+
+- `helpers/test-debug.ts`
+  - provides reusable spec logging primitives: stable step-log prefixes and shared page debug listeners for `console`, `pageerror`, `request`, `requestfailed`, and `response`
 
 Recent fixes now covered by the suite:
 
@@ -566,16 +609,6 @@ Generic step-logging pattern:
 
 The goal is to learn exactly where the scenario stopped without rewriting the test harness on every rerun.
 
-Fast isolation rules from the latest cloud-sync investigation:
-
-- for rapid cloud-switch repros, treat pre-reload remote `pages` reads as potentially stale when the last edits are still unsynced drafts
-- if the failure appears only in remote assertions, compare all three layers before changing app code:
-  - editor content
-  - local `share-history` / cloud drafts
-  - remote `pages`
-- when a batch write reports success, verify whether the bug is on write, sync timing, or read/materialization before assuming rate limiting
-- disable unrelated subsystems in the repro first when they add noise, for example remote `pages-history` writes
-
 Important CSP constraint:
 
 - `npm run start:test` does not disable CSP
@@ -584,7 +617,7 @@ Important CSP constraint:
 - if you changed an inline script in `public/index.html`, `public/grid.html`, or `public/mobile.html`, run `npm run csp:inline:sync` before local browser repros
 - reserve `npm run check:csp` for merge/release validation and for any `bump` / `commit` / `push` request; it should not be part of every Playwright iteration loop
 
-### 6.1 UI testing workflow for local/private pages
+### 7.1 UI testing workflow for local/private pages
 
 For fast local/private UI debugging:
 
@@ -598,13 +631,11 @@ Practical guidance:
 
 - prefer the repo-local Playwright runtime over the bundled Codex wrapper
 - on WSL, use the Linux mirror
-- prefer a real spec under `tests/` over an ad hoc script
-- attach listeners before navigation
 - use explicit readiness selectors such as visible controls or feature APIs
 - suppress the docs tour and set local state directly when the repro allows it
 - distinguish “browser never sent the request” from “worker rejected it” through network events
 
-### 6.2 Visual capture workflow (video + step screenshots)
+### 7.2 Visual capture workflow (video + step screenshots)
 
 Use one consistent capture style:
 
@@ -616,7 +647,7 @@ Use one consistent capture style:
 - screenshot name: `test-screenshots/step-XX-<step-name>-<test-name>-<YYYY-MM-DD-HHMMSS>.png`
 - keep artifacts untracked unless explicitly requested
 
-## 7. Programmatic access to browser-local persisted state
+## 8. Programmatic access to browser-local persisted state
 
 The app stores important state in:
 
@@ -653,7 +684,7 @@ Useful assertions:
 - a voice recording linked to a memo exists in `voice-recordings`
 - RAG ingestion created `documents` and `chunks`
 
-## 8. Automating local/cloud edit flows
+## 9. Automating local/cloud edit flows
 
 The most reliable pattern is:
 
@@ -663,7 +694,7 @@ The most reliable pattern is:
 4. verify both UI state and underlying storage/API state
 
 
-## 9. Worker development automation
+## 10. Worker development automation
 
 Worker automation sequence after changes:
 
@@ -672,7 +703,7 @@ Worker automation sequence after changes:
 3. smoke it with `curl`
 4. run one focused UI or API regression on the changed path
 
-## 10. Worker verification patterns
+## 11. Worker verification patterns
 
 ### `share-proxy`
 
@@ -704,7 +735,7 @@ Automate these checks:
 - rate-limited route rejects excess requests
 - configured secret/env path succeeds when present
 
-## 11. Playwright performance improvements
+## 12. Playwright performance improvements
 
 Current repo guidance is already good. The next useful improvements are:
 
@@ -714,7 +745,7 @@ Current repo guidance is already good. The next useful improvements are:
 - collect traces/screenshots/videos on failure in CI and on-demand locally, not on every passing run
 - keep running Playwright from the Linux mirror on WSL instead of `/mnt/c/...`
 
-## 12. Conditional checks on worker changes
+## 13. Conditional checks on worker changes
 
 If `workers/share-proxy/**` changed:
 
@@ -733,7 +764,7 @@ If `workers/openrouter-proxy/**`, `workers/googletts-proxy/**`, or `workers/asse
 - rate-limit smoke
 - happy-path env check
 
-## 13. High-value regression suites to add
+## 14. High-value regression suites to add
 
 The repo already has cloud/private persistence coverage. The best additions would be:
 
@@ -744,7 +775,7 @@ The repo already has cloud/private persistence coverage. The best additions woul
 - worker contract tests for key status codes, headers, and minimal response shapes
 - space auth rotation regression for managed-space D1 hash alignment
 
-## 14. Possible implementation helpers
+## 15. Possible implementation helpers
 
 These would materially improve automation productivity:
 
@@ -754,7 +785,7 @@ These would materially improve automation productivity:
 - `tests/helpers/oauth-bootstrap.ts` to capture or inject reusable managed-space OAuth identity state
 - `scripts/worker-smoke.mjs` to run standardized post-deploy worker smoke checks
 
-## 15. Practical defaults for agents
+## 16. Practical defaults for agents
 
 When automating work in this repo:
 

@@ -77,6 +77,11 @@ export async function seedCloudMemoDocs(
   }, options);
 }
 
+export async function waitForCloudMemoApis(page: Page, timeout = 45_000) {
+  await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout });
+  await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout });
+}
+
 export async function readCloudMemoRemoteState(
   page: Page,
   options: { token: string; spaceId: string }

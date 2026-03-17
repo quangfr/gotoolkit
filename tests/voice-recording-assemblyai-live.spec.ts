@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { clickMemoDoc, getMemoDocItem, getMemoEditorHtml, waitForMemoReady } from "./helpers/memo-ui";
+import { clickMemoDoc, createLocalMemoPageFromUiAndReturnId, getMemoDocItem, getMemoEditorHtml, waitForMemoReady } from "./helpers/memo-ui";
 import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
 
 const BASE_URL = "http://127.0.0.1:5000";
@@ -129,17 +129,7 @@ async function installLiveAudioHarness(page: import("@playwright/test").Page) {
 }
 
 async function createPrivatePage(page: import("@playwright/test").Page, logStep: ReturnType<typeof createStepLogger>) {
-  const previousActiveDocumentId = await page.evaluate(() => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || ""));
-  const addPageButton = page.locator(
-    "#documentExplorer .document-explorer__section-header[data-section='private'] .document-explorer__item-action[title='Créer une page racine'], #documentExplorer .document-explorer__section-header[data-section='private'] .document-explorer__item-action[title='Ajouter une page']",
-  ).first();
-  await expect(addPageButton).toBeVisible({ timeout: 20_000 });
-  await addPageButton.click();
-  await page.waitForFunction(previousId => {
-    const nextId = String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "");
-    return Boolean(nextId && nextId !== String(previousId || ""));
-  }, previousActiveDocumentId, { timeout: 20_000 });
-  const docId = await page.evaluate(() => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || ""));
+  const docId = await createLocalMemoPageFromUiAndReturnId(page, 20_000);
   expect(docId).not.toBe("");
   logStep("private-page-created", { docId });
   return docId;

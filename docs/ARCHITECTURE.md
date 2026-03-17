@@ -607,6 +607,17 @@ Delete semantics:
 - legacy records may still contain `archived` and should be treated as removed
 - UI sync should treat both `deleted` and legacy `archived` statuses as removed from the active tree
 
+Browser-side draft invariant:
+
+- local destructive drafts such as `delete` and `archive` are part of the sync contract, not just transient UI state
+- they must survive generic local cleanup until the explicit sync flush acknowledges them
+- if a seeded or existing shared page appears to "undelete" after sync, inspect local cloud-draft preservation before assuming a worker-side delete failure
+- during debugging, compare:
+  - local `cloud-drafts`
+  - local `share-history`
+  - remote `pages-meta` tombstone status
+  - remote `pages` content removal
+
 This section complements `8.4`:
 
 - `8.4` describes what the worker enforces on each protected write

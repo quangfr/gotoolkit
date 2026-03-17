@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { dismissDocsTour, waitForMemoReady } from '../helpers/memo-ui';
+import { dismissDocsTour, importMemoFileViaMenu, waitForMemoReady } from '../helpers/memo-ui';
 const BASE_URL='http://127.0.0.1:5000';
 const SAMPLE=path.resolve(process.cwd(),'tests/fixtures/sample.md');
 const MD=readFileSync(SAMPLE,'utf8');
@@ -11,7 +11,7 @@ test('debug raw mermaid after import', async ({ page }) => {
   await dismissDocsTour(page).catch(()=>null);
   await waitForMemoReady(page, 60000);
   await page.evaluate(async()=>{ const w:any=window; if (!w.GoToolkitAssistInstance?.openImportFileSelector) { const root=document.getElementById('chat-root'); if (w.GoToolkitAssist?.mount && root) { w.GoToolkitAssistInstance=w.GoToolkitAssist.mount(root); try { w.GoToolkitAssistInstance?.close?.(); } catch {} } } await w.GoToolkitMemoCreateAutoDocument(); w.GoToolkitMemoInstance?.setValue?.('');});
-  await page.locator('#fileMenuBtn').click(); const cp=page.waitForEvent('filechooser'); await page.locator('#memoOpenImportBtn').click(); const c=await cp; await c.setFiles(SAMPLE);
+  await importMemoFileViaMenu(page, SAMPLE);
   await expect.poll(async()=>page.locator('.mermaid-svg-container svg').count(), { timeout:60000 }).toBe(3);
   const result = await page.evaluate(async (code) => {
     const w:any=window;

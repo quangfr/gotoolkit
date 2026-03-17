@@ -84,20 +84,52 @@ const CustomHeading = Heading.extend({
   addProseMirrorPlugins() {
     return [
       new Plugin({
-        appendTransaction: (transactions, _oldState, newState) => {
+        appendTransaction: (transactions, oldState, newState) => {
           const { tr } = newState;
           let modified = false;
+          const previousHeadings: Array<{ level: number; id: string }> = [];
+
+          oldState?.doc?.descendants?.((node: any) => {
+            if (node?.type?.name !== 'heading') return true;
+            const id = String(node?.attrs?.id || '').trim();
+            previousHeadings.push({
+              level: Number(node?.attrs?.level || 0),
+              id,
+            });
+            return true;
+          });
 
           if (transactions.some(transaction => transaction.docChanged)) {
+            let headingIndex = -1;
             newState.doc.descendants((node, pos) => {
-              if (node.type.name === 'heading' && !node.attrs.id) {
-                const id = `h-${Math.random().toString(36).substr(2, 6)}`;
+              if (node.type.name !== 'heading') return true;
+              headingIndex += 1;
+              if (!node.attrs.id) {
+                const previousNode = oldState?.doc?.nodeAt?.(pos);
+                const previousId = (
+                  previousNode?.type?.name === 'heading'
+                  && previousNode?.attrs?.level === node.attrs.level
+                  && String(previousNode?.attrs?.id || '').trim()
+                )
+                  ? String(previousNode.attrs.id).trim()
+                  : '';
+                const previousHeadingByIndex = previousHeadings[headingIndex];
+                const fallbackId = (
+                  !previousId
+                  && previousHeadingByIndex
+                  && previousHeadingByIndex.level === node.attrs.level
+                  && previousHeadingByIndex.id
+                )
+                  ? previousHeadingByIndex.id
+                  : '';
+                const id = previousId || fallbackId || `h-${Math.random().toString(36).substr(2, 6)}`;
                 tr.setNodeMarkup(pos, undefined, {
                   ...node.attrs,
                   id,
                 });
                 modified = true;
               }
+              return true;
             });
           }
 
@@ -186,6 +218,56 @@ const CustomHeading = Heading.extend({
     });
   },
 });
+
+function convertHtmlWithEmptyHeadingsToJson(content: string) {
+  const normalizedContent = String(content || '');
+  if (!normalizedContent.trim() || typeof DOMParser === 'undefined') return null;
+  try {
+    const doc = new DOMParser().parseFromString(normalizedContent, 'text/html');
+    const topLevelNodes = Array.from(doc.body.childNodes || []);
+    if (!topLevelNodes.length) return null;
+
+    let foundEmptyHeading = false;
+    const jsonContent = topLevelNodes.map((node) => {
+      if (!(node instanceof HTMLElement)) return null;
+      const tagName = String(node.tagName || '').toLowerCase();
+      const headingMatch = tagName.match(/^h([1-6])$/);
+      if (!headingMatch) return null;
+      const level = Number(headingMatch[1] || 0);
+      if (!level) return null;
+      const text = String(node.textContent || '');
+      if (text.trim()) return null;
+      foundEmptyHeading = true;
+      return {
+        type: 'heading',
+        attrs: {
+          level,
+          id: String(node.getAttribute('id') || '').trim() || null,
+          collapsed: node.getAttribute('data-collapsed') === 'true',
+          textAlign: null,
+        },
+      };
+    });
+
+    if (!foundEmptyHeading) return null;
+    if (jsonContent.some((node) => node === null)) return null;
+    return {
+      type: 'doc',
+      content: jsonContent,
+    };
+  } catch (err) {
+    return null;
+  }
+}
+
+function setEditorContentPreservingEmptyHeadings(editorInstance: any, content: string) {
+  if (!editorInstance?.commands?.setContent) return;
+  const normalizedContent = String(content || '');
+  const emptyHeadingJson = normalizedContent.includes('<h')
+    ? convertHtmlWithEmptyHeadingsToJson(normalizedContent)
+    : null;
+  editorInstance.commands.setContent(emptyHeadingJson || normalizedContent || '<p></p>');
+}
 
 const CustomParagraph = Paragraph.extend({
   addAttributes() {
@@ -3918,7 +4000,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       return false;
     }
     try {
-      (editorInstance as any).commands.setContent(queuedContent || '<p></p>');
+      setEditorContentPreservingEmptyHeadings(editorInstance as any, queuedContent || '<p></p>');
       const hydrated = String(editorInstance.getHTML?.() || queuedContent);
       pendingHydrationContentRef.current = null;
       lastSerializedHtmlRef.current = hydrated;
@@ -4251,6 +4333,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (hasPersistedNavigationBlock(editorHtmlSnapshot)) return false;
     return isHtmlEffectivelyEmptyForInitialNavigation(editorHtmlSnapshot);
   }, [activeDocumentId, editable, editorHtmlSnapshot, initialNavigationChildren.length, isInitialNavigationDismissed]);
+  const initialEditorContent = React.useMemo(() => {
+    const normalizedContent = String(content || '');
+    return convertHtmlWithEmptyHeadingsToJson(normalizedContent) || normalizedContent;
+  }, [content]);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -4312,10 +4398,21 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         includeChildren: true,
       }),
     ],
-    content,
+    content: initialEditorContent,
     editable,
-    onCreate: () => {
-      // no-op
+    onCreate: ({ editor }) => {
+      const expectedContent = String(content || '');
+      if (!expectedContent || !expectedContent.includes('<h')) return;
+      const repairedJson = convertHtmlWithEmptyHeadingsToJson(expectedContent);
+      if (!repairedJson) return;
+      const currentJson = editor.getJSON?.();
+      const currentContent = Array.isArray(currentJson?.content) ? currentJson.content : [];
+      const hasEmptyHeading = currentContent.some((node: any) => (
+        node?.type === 'heading'
+        && !Array.isArray(node?.content)
+      ));
+      if (hasEmptyHeading) return;
+      setEditorContentPreservingEmptyHeadings(editor as any, expectedContent);
     },
     editorProps: {
       handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
@@ -5072,7 +5169,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       return;
     }
     try {
-      (editor as any).commands.setContent(expectedContent || '<p></p>');
+      setEditorContentPreservingEmptyHeadings(editor as any, expectedContent || '<p></p>');
       pendingHydrationContentRef.current = null;
       lastSerializedHtmlRef.current = String(editor.getHTML() || expectedContent);
       setEditorHtmlSnapshot(lastSerializedHtmlRef.current);
