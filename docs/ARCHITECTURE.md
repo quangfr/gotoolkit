@@ -1,6 +1,6 @@
 # GoToolkit Data Architecture
 
-Date: 2026-03-12
+Date: 2026-03-17
 Purpose: describe how app data is structured, stored, synced, ingested, and processed so coding agents can modify the right layer without guessing
 Scope: `public/`, `workers/share-proxy`, browser storage, cloud storage
 
@@ -288,6 +288,7 @@ Role:
 
 - keep a small rolling version timeline per page for restore/duplicate flows
 - store local checkpoints for both private pages and locally opened cloud pages
+- each version now carries a persisted `contentHash` so duplicate checkpoint suppression survives reloads before full payload comparison
 
 Cloud draft queue:
 
@@ -314,6 +315,10 @@ Remote collections:
 - content collection: `pages`
 - metadata/tree collection: `pages-meta`
 - history checkpoints collection: `pages-history`
+
+History note:
+
+- `pages-history` version entries also persist `contentHash` for fast duplicate suppression on cloud checkpoint writes
 
 Collection families also used elsewhere by sharing:
 

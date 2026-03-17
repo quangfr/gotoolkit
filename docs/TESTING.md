@@ -1,6 +1,6 @@
 # GoToolkit Test Guide
 
-Date: 2026-03-12
+Date: 2026-03-17
 Purpose: describe how to automate testing, cloud document manipulation, browser-session reuse, worker verification, deployment checks, and CI regression coverage in the current repo
 Audience: coding agents and maintainers working from the repo and terminal
 
@@ -190,12 +190,12 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-12 20:41`
-- `Scope`: `tests/debug/memo-open-import-pipeline.spec.ts`
-- `Execution length`: `2 tests`
-- `Execution time`: `00:12`
-- `Result`: `2 passed, 0 failed, 0 skipped`
-- `Details`: `Verified file-menu Markdown import stays on the direct memo path in both memo and presentation contexts, and confirmed the imported markdown no longer starts with a leading blank line.`
+- `Last execution`: `2026-03-17 08:34`
+- `Scope`: `tests/debug/private-delete-switch-regression.spec.ts`
+- `Execution length`: `1 test`
+- `Execution time`: `00:14`
+- `Result`: `1 passed, 0 failed, 0 skipped`
+- `Details`: `Verified deleting an active private page clears stale active/open-document state before reopening other private pages, then stress-switched remaining pages without blank or duplicated content.`
 
 Recent troubleshooting note:
 
@@ -203,6 +203,7 @@ Recent troubleshooting note:
 - if that spec passes but a heavier import/reload spec fails, suspect restore hydration or renderer rehydration before suspecting IndexedDB durability
 - `tests/debug/sample-refresh-heading-diagnose.spec.ts` is the focused repro for imported Markdown refresh survival plus post-reload heading-title preservation around table and Mermaid-adjacent sections
 - `tests/debug/assist-page-switch-conversation.spec.ts` is the focused repro for per-page Assist conversation scoping plus summary-tab alignment during private page switches with one delayed inline edit and one send-button edit
+- `tests/debug/private-delete-switch-regression.spec.ts` is the focused repro for deleting an active private page, reopening another private page, and verifying no blank or duplicated content across repeated switches
 - `tests/debug/close-active-page.spec.ts` is the focused repro for the breadcrumb close button returning the app to the empty shell cleanly
 - `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
 - `tests/debug/cloud-open-bootstrap-diagnose.spec.ts` is the focused repro for the new no-active-page startup flow before cloud page open
@@ -226,18 +227,18 @@ Tier suites:
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse
-    - results: `passing` (`3 tests`, `00:10`) on `2026-03-10 12:21`
+    - results: `passing` (`3 tests`, `00:22`) on `2026-03-17 10:13`
     - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
 
 - `Tier 4` essential troubleshooting
   - description: troubleshooting coverage for private persistence, cloud stress, draft/archive semantics, and transfers
-  - results: `1 passed, 0 failed, 0 skipped` (`1 test`, `00:35`) on `2026-03-12 14:39`
-  - details: `Latest executed suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
+  - results: `3 passed, 1 failed, 0 skipped` (`4 tests`, `00:45`) on `2026-03-17 13:55`
+  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
-    - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
-    - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`1 test`, `00:07`) on `2026-03-17 13:55`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T4.2` `cloud-rapid-switch-large.spec.ts`
     - description: large cloud stress switch/edit flow with pre-sync write suppression and post-sync isolation
