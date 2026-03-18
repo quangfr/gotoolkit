@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
-import { clickMemoDoc, waitForMemoReady } from "./helpers/memo-ui";
+import { clickMemoDoc, waitForMemoReady } from "../helpers/memo-ui";
 
 const BASE_URL = "http://127.0.0.1:5000/index.html";
 const SAMPLE_MARKDOWN_PATH = path.resolve(process.cwd(), "tests/fixtures/sample.md");

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
-import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
-import { readCloudMemoRemoteState, seedCloudMemoDocs } from "./helpers/cloud-state";
+import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "../helpers/share-test-space";
+import { ensureCloudConnectedWithSpaceCode } from "../helpers/cloud-auth";
+import { readCloudMemoRemoteState, seedCloudMemoDocs } from "../helpers/cloud-state";
 import {
   clickMemoDoc,
   deleteActiveMemoDoc,
@@ -10,8 +10,8 @@ import {
   syncGolive,
   typeIntoVisibleEditor,
   waitForMemoReady
-} from "./helpers/memo-ui";
-import { attachPageDebugLogging } from "./helpers/test-debug";
+} from "../helpers/memo-ui";
+import { attachPageDebugLogging } from "../helpers/test-debug";
 
 test.describe("Cloud sync persistency", () => {
   test("persists cloud create/edit/rename/move/reorder/delete operations and cleans up", async ({ page }) => {

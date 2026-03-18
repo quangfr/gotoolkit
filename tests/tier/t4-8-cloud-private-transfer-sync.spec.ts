@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
-import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
+import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "../helpers/share-test-space";
+import { ensureCloudConnectedWithSpaceCode } from "../helpers/cloud-auth";
 import {
   clickMemoDoc,
   dismissDocsTour,
@@ -8,8 +8,8 @@ import {
   getMemoDocItem,
   refreshMemoExplorer,
   syncGolive
-} from "./helpers/memo-ui";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
+} from "../helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 test.describe("Cloud/private transfer sync", () => {
   test("covers cloud copy, private promote, and archived promote flows with shared setup", async ({ page, context }) => {

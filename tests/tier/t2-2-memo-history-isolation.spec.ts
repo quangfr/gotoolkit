@@ -3,8 +3,8 @@ import {
   clickMemoDoc,
   getMemoEditorHtml,
   waitForMemoReady
-} from "./helpers/memo-ui";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
+} from "../helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 test.describe("Memo history isolation", () => {
   test("restores and duplicates the selected page history without leaking another page content", async ({ page }) => {

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 test.describe("Cloud draft archive ops", () => {
   test("preserves archive/delete drafts when later non-terminal updates arrive", async ({ page }) => {

@@ -8,8 +8,8 @@ import {
   refreshMemoExplorer,
   typeIntoVisibleEditor,
   waitForMemoReady
-} from "./helpers/memo-ui";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
+} from "../helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 const SAMPLE_1_PATH = path.resolve(process.cwd(), "tests/fixtures/sample.md");
 const SAMPLE_2_PATH = path.resolve(process.cwd(), "tests/fixtures/sample2.md");

@@ -4,9 +4,9 @@ import {
   EPICONCEPT_SPACE_ID,
   PW_TEST_SPACE_CODE,
   PW_TEST_SPACE_ID
-} from "./helpers/share-test-space";
-import { ensureCloudConnectedWithSpaceCode, reloadIndex } from "./helpers/cloud-auth";
-import { readCloudMemoLocalState, readCloudMemoRemoteState } from "./helpers/cloud-state";
+} from "../helpers/share-test-space";
+import { ensureCloudConnectedWithSpaceCode, reloadIndex } from "../helpers/cloud-auth";
+import { readCloudMemoLocalState, readCloudMemoRemoteState } from "../helpers/cloud-state";
 import {
   clickMemoDoc,
   captureShareRequests,
@@ -16,8 +16,8 @@ import {
   syncGolive,
   typeIntoVisibleEditor,
   waitForMemoReady
-} from "./helpers/memo-ui";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
+} from "../helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 type SeedDoc = {
   id: string;

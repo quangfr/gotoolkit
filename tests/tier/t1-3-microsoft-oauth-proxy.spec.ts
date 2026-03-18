@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { attachPageDebugLogging } from "./helpers/test-debug";
+import { attachPageDebugLogging } from "../helpers/test-debug";
 
 const MS_AUTH_STATE_PATH = path.resolve(".tmp/playwright-ms-auth-state.json");
 

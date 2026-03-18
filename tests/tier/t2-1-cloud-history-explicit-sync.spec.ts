@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
-import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
-import { clickMemoDoc, refreshMemoExplorer, syncGolive, typeIntoVisibleEditor, waitForMemoReady } from "./helpers/memo-ui";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
+import { ensureCloudConnectedWithSpaceCode } from "../helpers/cloud-auth";
+import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "../helpers/share-test-space";
+import { clickMemoDoc, refreshMemoExplorer, syncGolive, typeIntoVisibleEditor, waitForMemoReady } from "../helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 test.describe("Cloud history explicit sync", () => {
   test("keeps pages-history local during edit switch and save, then flushes on manual sync", async ({ page }) => {

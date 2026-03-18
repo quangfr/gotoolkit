@@ -233,8 +233,8 @@ Current built-in automation hooks in the repo:
 - `tests/tier/t4-5-sample-refresh-heading-diagnose.spec.ts`
 - `tests/debug/root-empty-shell.spec.ts`
 - `tests/debug/empty-shell-search.spec.ts`
-- `tests/debug/assist-knowledge-selection.spec.ts`
 - `tests/tier/t3-1-space-code-rotate.spec.ts`
+- `tests/tier/t2-8-assist-knowledge-selection.spec.ts`
 - `scripts/with-env-local.sh`
 
 Current useful worker/API surfaces:
@@ -284,6 +284,7 @@ Recent troubleshooting note:
 - keep non-tier or one-off repro specs under `tests/debug/` by default; only promote a spec to `tests/tier/` when it is intentionally part of a maintained tier below
 - when promoting a debug spec, move it into `tests/tier/` instead of `tests/`
 - `tests/tier/t2-7-assist-page-switch-conversation.spec.ts` is the maintained Tier 2 repro for Assist conversation isolation across private page switches and the empty-shell Explorer scope, plus summary-tab alignment during one delayed inline edit and one send-button edit
+- `tests/tier/t2-8-assist-knowledge-selection.spec.ts` is the maintained Tier 2 repro for global knowledge selection filtering, including shared-marker fan-out for all, two, three, and no selected pages
 - `tests/tier/t4-2-private-delete-switch-regression.spec.ts` is the maintained repro for deleting an active private page, reopening another private page, and verifying no blank or duplicated content across repeated switches
 - `tests/tier/t4-1-close-active-page.spec.ts` is the maintained repro for the breadcrumb close button returning the app to the empty shell cleanly
 - `tests/tier/t4-3-private-heading-repair-entrypoints.spec.ts` is the maintained guard for private `sample.md` reopen/create/reload heading repair, including headings after `Artefacts PO`
@@ -315,7 +316,7 @@ Tier suites:
 
 - `Tier 4` essential troubleshooting
   - description: maintained troubleshooting coverage for shell recovery, private persistence/repair, plus cloud draft/transfer stress guards
-  - results: `4 passed, 1 failed, 0 skipped` (`5 tests`, `01:01`) on `2026-03-18 10:13`
+  - results: `4 passed, 1 failed, 0 skipped` (`5 tests`, `01:04`) on `2026-03-18 11:22`
   - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `t4-1-close-active-page.spec.ts`
@@ -335,7 +336,7 @@ Tier suites:
 
   - `T4.4` `t4-4-private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
-    - results: `passing` (`1 test`, `00:18`) on `2026-03-18 10:13`
+    - results: `passing` (`1 test`, `00:21`) on `2026-03-18 11:22`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T4.5` `t4-5-sample-refresh-heading-diagnose.spec.ts`
@@ -360,7 +361,7 @@ Tier suites:
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `3 passed, 3 failed, 1 skipped` (`7 tests`, `02:14`) on `2026-03-18 11:03`
+  - results: `4 passed, 3 failed, 1 skipped` (`8 tests`, `02:27`) on `2026-03-18 11:21`
   - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `t2-1-cloud-history-explicit-sync.spec.ts`
@@ -396,6 +397,11 @@ Tier suites:
   - `T2.7` `t2-7-assist-page-switch-conversation.spec.ts`
     - description: Assist conversation and preset isolation across page A, page B, and empty-shell Explorer scope, including delayed inline edit and send-button flows
     - results: `passing` (`1 test`, `00:18`) on `2026-03-18 11:03`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+
+  - `T2.8` `t2-8-assist-knowledge-selection.spec.ts`
+    - description: knowledge selection retrieval filtering with four ingested pages, shared-marker fan-out, and exact selected-page coverage for all, two, three, and no selected pages
+    - results: `passing` (`1 test`, `00:13`) on `2026-03-18 11:21`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 3` admin features

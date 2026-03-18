@@ -2373,6 +2373,21 @@ ul.release-roadmap-text li::before {
   padding-top: 30px;
 }
 
+.chat-content .chat-quote-block {
+  position: relative;
+  margin: 0 0 6px;
+  background: black;
+  color: white;
+  padding: 30px 10px 10px;
+  border-radius: var(--radius-md);
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.chat-content .chat-quote-block__body {
+  white-space: pre-wrap;
+}
+
 .chat-pre-copy-btn {
   position: absolute;
   top: 6px;

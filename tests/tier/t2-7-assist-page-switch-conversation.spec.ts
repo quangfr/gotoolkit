@@ -93,14 +93,18 @@ test.describe("Assist conversation scope across private page switches", () => {
         pageBBase,
         pageAMarker: `INLINE_A_MARKER_${ts}`,
         pageBMarker: `SEND_B_MARKER_${ts}`,
+        explorerMarker: `EXPLORER_MARKER_${ts}`,
+        explorerMarker2: `EXPLORER_MARKER_2_${ts}`,
         askA: `Replace the selected paragraph with INLINE_A_MARKER_${ts}.`,
-        askB: `Rewrite the page so it includes SEND_B_MARKER_${ts}.`
+        askB: `Rewrite the page so it includes SEND_B_MARKER_${ts}.`,
+        askExplorer: `Remember EXPLORER_MARKER_${ts} for the empty page mode.`,
+        askExplorer2: `Also remember EXPLORER_MARKER_2_${ts} for the empty page mode.`
       };
     });
     logStep("seed-private-docs:done", seed);
 
     logStep("install-fake-ai:start");
-    await page.evaluate(({ pageAId, pageBId, pageAHeading, pageBHeading, pageAMarker, pageBMarker }) => {
+    await page.evaluate(({ pageAId, pageBId, pageAHeading, pageBHeading, pageAMarker, pageBMarker, explorerMarker, explorerMarker2 }) => {
       const w = window as any;
       const root = document.getElementById("chat-root");
       if (!w.GoToolkitAssistInstance && w.GoToolkitAssist?.mount && root) {
@@ -197,6 +201,21 @@ test.describe("Assist conversation scope across private page switches", () => {
           };
         }
 
+        if (!activeDocumentId) {
+          await wait(150);
+          const marker = userContent.includes(explorerMarker2) ? explorerMarker2 : explorerMarker;
+          w.__assistSwitchTest.responses.push({
+            activeDocumentId,
+            type: "explorer",
+            currentScopeId: String(w.GoToolkitAssistInstance?.currentConversationScopeId || ""),
+            marker
+          });
+          return {
+            text: `Remembered ${marker}`,
+            usage: { total_tokens: 1 }
+          };
+        }
+
         throw new Error(`Unexpected fake AI document id: ${activeDocumentId}`);
       };
 
@@ -207,7 +226,9 @@ test.describe("Assist conversation scope across private page switches", () => {
       pageAHeading: seed.pageAHeading,
       pageBHeading: seed.pageBHeading,
       pageAMarker: seed.pageAMarker,
-      pageBMarker: seed.pageBMarker
+      pageBMarker: seed.pageBMarker,
+      explorerMarker: seed.explorerMarker,
+      explorerMarker2: seed.explorerMarker2
     });
     logStep("install-fake-ai:done");
 
@@ -334,7 +355,7 @@ test.describe("Assist conversation scope across private page switches", () => {
         throw new Error("GoToolkitAssistInstance unavailable");
       }
       assist.open?.();
-      assist.setPromptPreset?.("edit", { persist: true });
+      assist.setPromptPreset?.("suggest", { persist: true });
       if (!assist.textarea || !assist.sendButton) {
         throw new Error("Assist composer unavailable");
       }
@@ -421,6 +442,24 @@ test.describe("Assist conversation scope across private page switches", () => {
     await openTocTab(page);
     await expect.poll(() => readTocItems(page), { timeout: 15_000 }).toContain(seed.pageAHeading);
     await expect.poll(() => readTocItems(page), { timeout: 15_000 }).not.toContain(seed.pageBHeading);
+    const pageAScopeSnapshot = await page.evaluate(() => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return {
+        scopeId: String(assist?.currentConversationScopeId || ""),
+        promptPresetId: String(assist?.promptPresetId || ""),
+        messages: Array.isArray(assist?.conversation?.messages)
+          ? assist.conversation.messages.map((message: any) => ({
+            role: String(message?.role || ""),
+            content: String(message?.content || "")
+          }))
+          : []
+      };
+    });
+    expect(pageAScopeSnapshot.promptPresetId).toBe("edit");
+    expect(pageAScopeSnapshot.messages.some(message => message.content.includes(seed.askA))).toBeTruthy();
+    expect(pageAScopeSnapshot.messages.some(message => message.content.includes(seed.askB))).toBeFalsy();
+    expect(pageAScopeSnapshot.messages.some(message => message.content.includes(seed.askExplorer))).toBeFalsy();
+    expect(pageAScopeSnapshot.messages.some(message => message.content.includes(seed.explorerMarker))).toBeFalsy();
     logStep("verify-page-a-result:done");
 
     logStep("verify-page-b-result:start");
@@ -445,6 +484,24 @@ test.describe("Assist conversation scope across private page switches", () => {
     await openTocTab(page);
     await expect.poll(() => readTocItems(page), { timeout: 15_000 }).toContain(seed.pageBHeading);
     await expect.poll(() => readTocItems(page), { timeout: 15_000 }).not.toContain(seed.pageAHeading);
+    const pageBScopeSnapshot = await page.evaluate(() => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return {
+        scopeId: String(assist?.currentConversationScopeId || ""),
+        promptPresetId: String(assist?.promptPresetId || ""),
+        messages: Array.isArray(assist?.conversation?.messages)
+          ? assist.conversation.messages.map((message: any) => ({
+            role: String(message?.role || ""),
+            content: String(message?.content || "")
+          }))
+          : []
+      };
+    });
+    expect(pageBScopeSnapshot.promptPresetId).toBe("suggest");
+    expect(pageBScopeSnapshot.messages.some(message => message.content.includes(seed.askB))).toBeTruthy();
+    expect(pageBScopeSnapshot.messages.some(message => message.content.includes(seed.askA))).toBeFalsy();
+    expect(pageBScopeSnapshot.messages.some(message => message.content.includes(seed.askExplorer))).toBeFalsy();
+    expect(pageBScopeSnapshot.messages.some(message => message.content.includes(seed.explorerMarker))).toBeFalsy();
     logStep("verify-page-b-result:done");
 
     logStep("verify-conversation-store:start");
@@ -475,12 +532,305 @@ test.describe("Assist conversation scope across private page switches", () => {
     expect(storeWithB.scopeKeys).toEqual(expect.arrayContaining([scopeA.scopeId, scopeB]));
     expect(storeWithB.scopeAMessages.some(message => message.content.includes(seed.askA))).toBeTruthy();
     expect(storeWithB.scopeAMessages.some(message => message.content.includes(seed.askB))).toBeFalsy();
+    expect(storeWithB.scopeAMessages.some(message => message.content.includes(seed.askExplorer))).toBeFalsy();
+    expect(storeWithB.scopeAMessages.some(message => message.content.includes(seed.explorerMarker))).toBeFalsy();
     expect(storeWithB.scopeBMessages.some(message => message.content.includes(seed.askB))).toBeTruthy();
     expect(storeWithB.scopeBMessages.some(message => message.content.includes(seed.askA))).toBeFalsy();
+    expect(storeWithB.scopeBMessages.some(message => message.content.includes(seed.askExplorer))).toBeFalsy();
+    expect(storeWithB.scopeBMessages.some(message => message.content.includes(seed.explorerMarker))).toBeFalsy();
     logStep("verify-conversation-store:done", {
       scopeA: scopeA.scopeId,
       scopeB,
       scopeKeys: storeWithB.scopeKeys
+    });
+
+    logStep("empty-shell-open:start");
+    await page.locator("#closeActivePageBtn").click();
+    await expect.poll(() => page.evaluate(() => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "")), { timeout: 15_000 }).toBe("");
+    const explorerScope = await page.evaluate(() => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return {
+        scopeId: String(assist?.currentConversationScopeId || ""),
+        conversationId: String(assist?.conversation?.id || ""),
+        isOpen: Boolean(assist?.isOpen),
+        promptPresetId: String(assist?.promptPresetId || ""),
+        promptLabel: String(assist?.promptDropdownButton?.textContent || "").trim(),
+        followDisplay: String(assist?.memoSelectionFollowButton?.style?.display || ""),
+        messages: Array.isArray(assist?.conversation?.messages)
+          ? assist.conversation.messages.map((message: any) => ({
+            role: String(message?.role || ""),
+            content: String(message?.content || "")
+          }))
+          : []
+      };
+    });
+    expect(explorerScope.scopeId).toBe("memo-explorer");
+    expect(explorerScope.scopeId).not.toBe(scopeA.scopeId);
+    expect(explorerScope.scopeId).not.toBe(scopeB);
+    expect(explorerScope.conversationId).toBeTruthy();
+    expect(explorerScope.conversationId).not.toBe(scopeA.conversationId);
+    expect(explorerScope.isOpen).toBeTruthy();
+    expect(explorerScope.promptPresetId).toBe("explore");
+    expect(explorerScope.promptLabel).toContain("Explorer");
+    expect(explorerScope.followDisplay).toBe("none");
+    expect(explorerScope.messages).toEqual([]);
+    logStep("empty-shell-open:done", explorerScope);
+
+    logStep("empty-shell-send:start");
+    await page.evaluate(({ askExplorer }) => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      if (!assist) throw new Error("GoToolkitAssistInstance unavailable");
+      assist.open?.();
+      assist.setPromptPreset?.("explore", { persist: true });
+      if (!assist.textarea || !assist.sendButton) {
+        throw new Error("Assist composer unavailable");
+      }
+      assist.textarea.value = askExplorer;
+      assist.textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      assist.textarea.dispatchEvent(new Event("change", { bubbles: true }));
+      assist.handleComposerManualInput?.();
+      assist.updateComposerState?.();
+      assist.sendButton.click();
+    }, { askExplorer: seed.askExplorer });
+    await expect.poll(() => page.evaluate(({ explorerMarker }) => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return Array.isArray(assist?.conversation?.messages)
+        ? assist.conversation.messages.some((message: any) => String(message?.content || "").includes(explorerMarker))
+        : false;
+    }, { explorerMarker: seed.explorerMarker }), { timeout: 15_000 }).toBeTruthy();
+    const explorerAfterSend = await page.evaluate(() => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return {
+        scopeId: String(assist?.currentConversationScopeId || ""),
+        conversationId: String(assist?.conversation?.id || ""),
+        messages: Array.isArray(assist?.conversation?.messages)
+          ? assist.conversation.messages.map((message: any) => ({
+            role: String(message?.role || ""),
+            content: String(message?.content || "")
+          }))
+          : []
+      };
+    });
+    expect(explorerAfterSend.scopeId).toBe("memo-explorer");
+    logStep("empty-shell-send:done", explorerAfterSend);
+
+    logStep("verify-explorer-restoration:start");
+    await clickMemoDoc(page, seed.pageAId);
+    await expect.poll(() => page.evaluate(() => String((window as any).GoToolkitAssistInstance?.currentConversationScopeId || "")), { timeout: 15_000 }).toBe(scopeA.scopeId);
+    await page.locator("#closeActivePageBtn").click();
+    await expect.poll(() => page.evaluate(() => ({
+      emptyExists: Boolean(document.getElementById("memoEmptyState")),
+      scopeId: String((window as any).GoToolkitAssistInstance?.currentConversationScopeId || ""),
+      activeDocumentId: String((window as any).GoToolkitMemoGetActiveDocumentId?.() || ""),
+      pathname: String(window.location.pathname || ""),
+      memoCardHidden: (() => {
+        const memoCard = document.querySelector(".memo-card");
+        return !memoCard || getComputedStyle(memoCard).display === "none";
+      })(),
+      emptyVisible: (() => {
+        const emptyState = document.getElementById("memoEmptyState");
+        return Boolean(emptyState) && getComputedStyle(emptyState).display !== "none";
+      })()
+    })), { timeout: 15_000 }).toMatchObject({
+      emptyExists: true,
+      scopeId: "memo-explorer",
+      activeDocumentId: "",
+      pathname: "/",
+      memoCardHidden: true,
+      emptyVisible: true
+    });
+    const explorerRestored = await page.evaluate(() => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return {
+        scopeId: String(assist?.currentConversationScopeId || ""),
+        conversationId: String(assist?.conversation?.id || ""),
+        promptPresetId: String(assist?.promptPresetId || ""),
+        followDisplay: String(assist?.memoSelectionFollowButton?.style?.display || ""),
+        messages: Array.isArray(assist?.conversation?.messages)
+          ? assist.conversation.messages.map((message: any) => ({
+            role: String(message?.role || ""),
+            content: String(message?.content || "")
+          }))
+          : []
+      };
+    });
+    expect(explorerRestored.scopeId).toBe("memo-explorer");
+    expect(explorerRestored.conversationId).toBe(explorerAfterSend.conversationId);
+    expect(explorerRestored.promptPresetId).toBe("explore");
+    expect(explorerRestored.followDisplay).toBe("none");
+    expect(explorerRestored.messages.some(message => message.content.includes(seed.askExplorer))).toBeTruthy();
+    expect(explorerRestored.messages.some(message => message.content.includes(seed.explorerMarker))).toBeTruthy();
+    expect(explorerRestored.messages.some(message => message.content.includes(seed.askA))).toBeFalsy();
+    expect(explorerRestored.messages.some(message => message.content.includes(seed.askB))).toBeFalsy();
+    logStep("verify-explorer-restoration:done", explorerRestored);
+
+    logStep("explorer-second-pass:start");
+    await page.evaluate(({ askExplorer2 }) => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      if (!assist) throw new Error("GoToolkitAssistInstance unavailable");
+      assist.open?.();
+      assist.setPromptPreset?.("explore", { persist: true });
+      if (!assist.textarea || !assist.sendButton) {
+        throw new Error("Assist composer unavailable");
+      }
+      assist.textarea.value = askExplorer2;
+      assist.textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      assist.textarea.dispatchEvent(new Event("change", { bubbles: true }));
+      assist.handleComposerManualInput?.();
+      assist.updateComposerState?.();
+      assist.sendButton.click();
+    }, { askExplorer2: seed.askExplorer2 });
+    await expect.poll(() => page.evaluate(({ explorerMarker2 }) => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return Array.isArray(assist?.conversation?.messages)
+        ? assist.conversation.messages.some((message: any) => String(message?.content || "").includes(explorerMarker2))
+        : false;
+    }, { explorerMarker2: seed.explorerMarker2 }), { timeout: 15_000 }).toBeTruthy();
+    const explorerSecondPass = await page.evaluate(() => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return {
+        scopeId: String(assist?.currentConversationScopeId || ""),
+        promptPresetId: String(assist?.promptPresetId || ""),
+        messages: Array.isArray(assist?.conversation?.messages)
+          ? assist.conversation.messages.map((message: any) => ({
+            role: String(message?.role || ""),
+            content: String(message?.content || "")
+          }))
+          : []
+      };
+    });
+    expect(explorerSecondPass.scopeId).toBe("memo-explorer");
+    expect(explorerSecondPass.promptPresetId).toBe("explore");
+    expect(explorerSecondPass.messages.some(message => message.content.includes(seed.askExplorer))).toBeTruthy();
+    expect(explorerSecondPass.messages.some(message => message.content.includes(seed.explorerMarker))).toBeTruthy();
+    expect(explorerSecondPass.messages.some(message => message.content.includes(seed.askExplorer2))).toBeTruthy();
+    expect(explorerSecondPass.messages.some(message => message.content.includes(seed.explorerMarker2))).toBeTruthy();
+    expect(explorerSecondPass.messages.some(message => message.content.includes(seed.askA))).toBeFalsy();
+    expect(explorerSecondPass.messages.some(message => message.content.includes(seed.askB))).toBeFalsy();
+    logStep("explorer-second-pass:done", explorerSecondPass);
+
+    logStep("verify-conversation-store-with-explorer:start");
+    const storeWithExplorer = await page.evaluate(({ scopeAId, scopeBId, explorerScopeId }) => {
+      const raw = localStorage.getItem("goToolkit.chat.conversations.memo");
+      const parsed = raw ? JSON.parse(raw) : {};
+      const summarize = (scopeId: string) => {
+        const messages = Array.isArray(parsed?.[scopeId]?.messages) ? parsed[scopeId].messages : [];
+        return messages.map((message: any) => ({
+          role: String(message?.role || ""),
+          content: String(message?.content || "")
+        }));
+      };
+      return {
+        scopeKeys: Object.keys(parsed || {}),
+        scopeAMessages: summarize(scopeAId),
+        scopeBMessages: summarize(scopeBId),
+        explorerMessages: summarize(explorerScopeId),
+        promptPresets: (() => {
+          const rawPresetStore = localStorage.getItem("goToolkit.chat.prompt.preset.memo");
+          return rawPresetStore ? JSON.parse(rawPresetStore) : {};
+        })()
+      };
+    }, {
+      scopeAId: scopeA.scopeId,
+      scopeBId: scopeB,
+      explorerScopeId: "memo-explorer"
+    });
+    expect(storeWithExplorer.scopeKeys).toEqual(expect.arrayContaining([scopeA.scopeId, scopeB, "memo-explorer"]));
+    expect(storeWithExplorer.explorerMessages.some(message => message.content.includes(seed.askExplorer))).toBeTruthy();
+    expect(storeWithExplorer.explorerMessages.some(message => message.content.includes(seed.explorerMarker))).toBeTruthy();
+    expect(storeWithExplorer.explorerMessages.some(message => message.content.includes(seed.askExplorer2))).toBeTruthy();
+    expect(storeWithExplorer.explorerMessages.some(message => message.content.includes(seed.explorerMarker2))).toBeTruthy();
+    expect(storeWithExplorer.explorerMessages.some(message => message.content.includes(seed.askA))).toBeFalsy();
+    expect(storeWithExplorer.explorerMessages.some(message => message.content.includes(seed.askB))).toBeFalsy();
+    expect(storeWithExplorer.scopeAMessages.some(message => message.content.includes(seed.askExplorer))).toBeFalsy();
+    expect(storeWithExplorer.scopeAMessages.some(message => message.content.includes(seed.explorerMarker))).toBeFalsy();
+    expect(storeWithExplorer.scopeAMessages.some(message => message.content.includes(seed.askExplorer2))).toBeFalsy();
+    expect(storeWithExplorer.scopeAMessages.some(message => message.content.includes(seed.explorerMarker2))).toBeFalsy();
+    expect(storeWithExplorer.scopeBMessages.some(message => message.content.includes(seed.askExplorer))).toBeFalsy();
+    expect(storeWithExplorer.scopeBMessages.some(message => message.content.includes(seed.explorerMarker))).toBeFalsy();
+    expect(storeWithExplorer.scopeBMessages.some(message => message.content.includes(seed.askExplorer2))).toBeFalsy();
+    expect(storeWithExplorer.scopeBMessages.some(message => message.content.includes(seed.explorerMarker2))).toBeFalsy();
+    expect(storeWithExplorer.promptPresets[scopeA.scopeId]).toBe("edit");
+    expect(storeWithExplorer.promptPresets[scopeB]).toBe("suggest");
+    expect(storeWithExplorer.promptPresets["memo-explorer"]).toBe("explore");
+    logStep("verify-conversation-store-with-explorer:done", {
+      scopeKeys: storeWithExplorer.scopeKeys
+    });
+
+    logStep("verify-page-presets-after-explorer:start");
+    await page.evaluate(async (docId) => {
+      await (window as any).GoToolkitMemoOpenDocumentByLink?.(docId);
+    }, seed.pageAId);
+    await expect.poll(() => page.evaluate(() => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "")), { timeout: 15_000 }).toBe(seed.pageAId);
+    await expect.poll(() => page.evaluate(() => String((window as any).GoToolkitAssistInstance?.currentConversationScopeId || "")), { timeout: 15_000 }).toBe(scopeA.scopeId);
+    const pageAAfterExplorer = await page.evaluate(() => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return {
+        scopeId: String(assist?.currentConversationScopeId || ""),
+        promptPresetId: String(assist?.promptPresetId || ""),
+        messages: Array.isArray(assist?.conversation?.messages)
+          ? assist.conversation.messages.map((message: any) => ({
+            role: String(message?.role || ""),
+            content: String(message?.content || "")
+          }))
+          : []
+      };
+    });
+    expect(pageAAfterExplorer.scopeId).toBe(scopeA.scopeId);
+    expect(pageAAfterExplorer.promptPresetId).toBe("edit");
+    expect(pageAAfterExplorer.messages.some(message => message.content.includes(seed.askA))).toBeTruthy();
+    expect(pageAAfterExplorer.messages.some(message => message.content.includes(seed.askExplorer))).toBeFalsy();
+    expect(pageAAfterExplorer.messages.some(message => message.content.includes(seed.askExplorer2))).toBeFalsy();
+
+    await page.evaluate(async (docId) => {
+      await (window as any).GoToolkitMemoOpenDocumentByLink?.(docId);
+    }, seed.pageBId);
+    await expect.poll(() => page.evaluate(() => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "")), { timeout: 15_000 }).toBe(seed.pageBId);
+    await expect.poll(() => page.evaluate(() => String((window as any).GoToolkitAssistInstance?.currentConversationScopeId || "")), { timeout: 15_000 }).toBe(scopeB);
+    const pageBAfterExplorer = await page.evaluate(() => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return {
+        scopeId: String(assist?.currentConversationScopeId || ""),
+        promptPresetId: String(assist?.promptPresetId || ""),
+        messages: Array.isArray(assist?.conversation?.messages)
+          ? assist.conversation.messages.map((message: any) => ({
+            role: String(message?.role || ""),
+            content: String(message?.content || "")
+          }))
+          : []
+      };
+    });
+    expect(pageBAfterExplorer.scopeId).toBe(scopeB);
+    expect(pageBAfterExplorer.promptPresetId).toBe("suggest");
+    expect(pageBAfterExplorer.messages.some(message => message.content.includes(seed.askB))).toBeTruthy();
+    expect(pageBAfterExplorer.messages.some(message => message.content.includes(seed.askExplorer))).toBeFalsy();
+    expect(pageBAfterExplorer.messages.some(message => message.content.includes(seed.askExplorer2))).toBeFalsy();
+
+    await page.locator("#closeActivePageBtn").click();
+    await expect.poll(() => page.evaluate(() => String((window as any).GoToolkitAssistInstance?.currentConversationScopeId || "")), { timeout: 15_000 }).toBe("memo-explorer");
+    const explorerFinal = await page.evaluate(() => {
+      const assist = (window as any).GoToolkitAssistInstance;
+      return {
+        scopeId: String(assist?.currentConversationScopeId || ""),
+        promptPresetId: String(assist?.promptPresetId || ""),
+        messages: Array.isArray(assist?.conversation?.messages)
+          ? assist.conversation.messages.map((message: any) => ({
+            role: String(message?.role || ""),
+            content: String(message?.content || "")
+          }))
+          : []
+      };
+    });
+    expect(explorerFinal.scopeId).toBe("memo-explorer");
+    expect(explorerFinal.promptPresetId).toBe("explore");
+    expect(explorerFinal.messages.some(message => message.content.includes(seed.askExplorer))).toBeTruthy();
+    expect(explorerFinal.messages.some(message => message.content.includes(seed.askExplorer2))).toBeTruthy();
+    expect(explorerFinal.messages.some(message => message.content.includes(seed.askA))).toBeFalsy();
+    expect(explorerFinal.messages.some(message => message.content.includes(seed.askB))).toBeFalsy();
+    logStep("verify-page-presets-after-explorer:done", {
+      pageAAfterExplorer,
+      pageBAfterExplorer,
+      explorerFinal
     });
 
     await refreshMemoExplorer(page, 5_000);

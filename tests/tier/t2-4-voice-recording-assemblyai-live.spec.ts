@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { clickMemoDoc, createLocalMemoPageFromUiAndReturnId, getMemoDocItem, getMemoEditorHtml, waitForMemoReady } from "./helpers/memo-ui";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
+import { clickMemoDoc, createLocalMemoPageFromUiAndReturnId, getMemoDocItem, getMemoEditorHtml, waitForMemoReady } from "../helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 const BASE_URL = "http://127.0.0.1:5000";
 const TEST_TIMEOUT = 240_000;

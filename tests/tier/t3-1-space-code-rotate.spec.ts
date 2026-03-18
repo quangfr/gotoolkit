@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
-import { refreshMemoExplorer, syncGolive } from "./helpers/memo-ui";
-import { attachPageDebugLogging } from "./helpers/test-debug";
+import { ensureCloudConnectedWithSpaceCode } from "../helpers/cloud-auth";
+import { refreshMemoExplorer, syncGolive } from "../helpers/memo-ui";
+import { attachPageDebugLogging } from "../helpers/test-debug";
 
 const SHARE_WORKER_BASE = "https://share.gotoolkit.workers.dev";
 

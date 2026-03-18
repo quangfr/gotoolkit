@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
-import { ensureCloudConnectedWithSpaceCode } from "./helpers/cloud-auth";
-import { clickMemoDoc, getMemoEditorHtml, refreshMemoExplorer, syncGolive, typeIntoVisibleEditor, waitForMemoReady } from "./helpers/memo-ui";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
-import { readCloudMemoLocalState, readCloudMemoRemoteState, seedCloudMemoDocs, waitForCloudMemoApis } from "./helpers/cloud-state";
+import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "../helpers/share-test-space";
+import { ensureCloudConnectedWithSpaceCode } from "../helpers/cloud-auth";
+import { clickMemoDoc, getMemoEditorHtml, refreshMemoExplorer, syncGolive, typeIntoVisibleEditor, waitForMemoReady } from "../helpers/memo-ui";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
+import { readCloudMemoLocalState, readCloudMemoRemoteState, seedCloudMemoDocs, waitForCloudMemoApis } from "../helpers/cloud-state";
 
 test.describe("Cloud page switching persistency", () => {
   test("keeps cloud edits across cloud page switches and reload", async ({ page }) => {

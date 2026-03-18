@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 const BASE_URL = "http://127.0.0.1:5000";
 const TEST_TIMEOUT = 180_000;

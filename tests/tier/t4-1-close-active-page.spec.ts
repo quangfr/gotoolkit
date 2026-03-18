@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { attachPageDebugLogging, createStepLogger } from "./helpers/test-debug";
+import { attachPageDebugLogging, createStepLogger } from "../helpers/test-debug";
 
 test("close active page button returns to empty shell and stays visually plain", async ({ page }) => {
   test.setTimeout(90_000);

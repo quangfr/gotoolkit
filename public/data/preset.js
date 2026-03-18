@@ -129,7 +129,7 @@
     };
 
     (function () {
-        var adviceChatPrompt = `SYSTEM — Q&A RAG (JSON)
+        var exploreChatPrompt = `SYSTEM — Q&A RAG (JSON)
 
 Tu réponds de manière exhaustive à ASK sur la base de CONVERSATION_ATTACHMENTS et SPACE_PAGES, en tenant compte du contexte de DOCUMENT et en particulier de SELECTION.
 
@@ -458,7 +458,7 @@ FORMAT DE SORTIE
 }`
 
         var initial = editChatPrompt;
-        var initialInfo = adviceChatPrompt;
+        var initialInfo = exploreChatPrompt;
 
         if (!global.GoToolkitChatPrompt) {
             global.GoToolkitChatPrompt = {};
@@ -466,14 +466,14 @@ FORMAT DE SORTIE
         global.GoToolkitChatPrompt.SYSTEM_PROMPT = initial;
         global.GoToolkitChatPrompt.DEFAULT_SYSTEM_PROMPT = editChatPrompt;
         global.GoToolkitChatPrompt.INFO_PROMPT = initialInfo;
-        global.GoToolkitChatPrompt.DEFAULT_INFO_PROMPT = adviceChatPrompt;
+        global.GoToolkitChatPrompt.DEFAULT_INFO_PROMPT = exploreChatPrompt;
         global.GoToolkitChatPrompt.PRESETS = {
-            advice: {
-                id: "advice",
+            explore: {
+                id: "explore",
                 label: "Explorer",
                 icon: "compass",
-                prompt: adviceChatPrompt,
-                defaultPrompt: adviceChatPrompt
+                prompt: exploreChatPrompt,
+                defaultPrompt: exploreChatPrompt
             },
             suggest: {
                 id: "suggest",
