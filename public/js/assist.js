@@ -563,9 +563,13 @@
     function normalizeKnowledgeSpaceId(value) {
         var spacesApi = global.GoToolkitSpaces;
         if (spacesApi && typeof spacesApi.normalizeSpaceId === "function") {
-            return String(spacesApi.normalizeSpaceId(value || "") || "").trim();
+            var normalizedByApi = String(spacesApi.normalizeSpaceId(value || "") || "").trim();
+            if (normalizedByApi === "private") return KNOWLEDGE_PRIVATE_SPACE_ID;
+            return normalizedByApi;
         }
-        return String(value || "").trim().toLowerCase();
+        var normalized = String(value || "").trim().toLowerCase();
+        if (normalized === "private") return KNOWLEDGE_PRIVATE_SPACE_ID;
+        return normalized;
     }
 
     function getAvailableKnowledgeSpaces() {
@@ -8625,9 +8629,9 @@
     };
 
     AssistSidebar.prototype.getMemoireDocumentCount = function () {
-        if (this.selectedKnowledgeSpaceIds instanceof Set && this.selectedKnowledgeSpaceIds.size) {
-            return this.selectedKnowledgeSpaceIds.size;
-        }
+        var selectionState = this.resolveKnowledgeSelectionState(this.knowledgeManifestEntries);
+        if (selectionState.selection.size) return selectionState.selection.size;
+        if (selectionState.selectedSpaces.size) return selectionState.selectedSpaces.size;
         return 0;
     };
 
@@ -8727,9 +8731,8 @@
     };
 
     AssistSidebar.prototype.getMemoryButtonIngestionState = function () {
-        var selected = this.selectedKnowledgeSpaceIds instanceof Set
-            ? this.selectedKnowledgeSpaceIds
-            : this.readSelectedKnowledgeSpaces();
+        var state = this.resolveKnowledgeSelectionState(this.knowledgeManifestEntries);
+        var selected = state.selectedSpaces;
         if (!(selected instanceof Set) || !selected.size) {
             return "none";
         }
@@ -8744,7 +8747,7 @@
         if (Boolean(this.knowledgeIndexing)) {
             return "partial";
         }
-        return "full";
+        return hasPartial ? "partial" : "full";
     };
 
     AssistSidebar.prototype.readSelectedKnowledgeSpaces = function () {
@@ -8882,6 +8885,27 @@
         return selection;
     };
 
+    AssistSidebar.prototype.resolveKnowledgeSelectionState = function (entries) {
+        var manifestEntries = Array.isArray(entries) ? entries : [];
+        var selectedSpaces = this.selectedKnowledgeSpaceIds instanceof Set
+            ? new Set(this.selectedKnowledgeSpaceIds)
+            : this.readSelectedKnowledgeSpaces();
+        this.selectedKnowledgeSpaceIds = selectedSpaces;
+        if (!(this.selectedKnowledgePageRootsBySpace instanceof Map)) {
+            this.selectedKnowledgePageRootsBySpace = new Map();
+        }
+        this.readSelectedKnowledgePageRootsBySpace(manifestEntries);
+        var selection = this.buildKnowledgeSelectionFromSpaces(manifestEntries);
+        this.setKnowledgeModalSelection(selection);
+        return {
+            selectedSpaces: selectedSpaces,
+            selectedRootsBySpace: this.selectedKnowledgePageRootsBySpace instanceof Map
+                ? this.selectedKnowledgePageRootsBySpace
+                : new Map(),
+            selection: selection
+        };
+    };
+
     AssistSidebar.prototype.getKnowledgeSpaceCounters = function (entries) {
         var counters = new Map();
         var seenBySpace = new Map();
@@ -8988,7 +9012,7 @@
         }.bind(this));
     };
 
-    AssistSidebar.prototype.openMemorySpacesMenu = function () {
+    AssistSidebar.prototype.openMemorySpacesMenu = async function () {
         if (!this.memorySpacesMenuEl) return;
         this.renderMemorySpacesMenu();
         this.memorySpacesMenuEl.classList.add("open");
@@ -9000,6 +9024,14 @@
                 }
             }.bind(this);
             document.addEventListener("click", this.memorySpacesOutsideClickHandler, true);
+        }
+        try {
+            await this.ensureSelectedKnowledgeIndexed();
+        } catch (err) {
+            console.warn("Knowledge open verification failed", err);
+            this.setKnowledgeModalStatus("Vérification de la base de connaissance échouée.", true, 2400);
+        } finally {
+            this.renderMemorySpacesMenu();
         }
     };
 
@@ -9397,6 +9429,22 @@
         return "memo-" + raw + ".txt";
     };
 
+    AssistSidebar.prototype.getMemoPayloadPrimaryTab = function (payload) {
+        if (!payload || typeof payload !== "object") return null;
+        var tabs = Array.isArray(payload.tabs) ? payload.tabs : [];
+        if (!tabs.length) return null;
+        var activeTabId = String(payload.activeTabId || "").trim();
+        if (activeTabId) {
+            for (var i = 0; i < tabs.length; i++) {
+                var candidate = tabs[i];
+                if (String(candidate?.id || "").trim() === activeTabId) {
+                    return candidate;
+                }
+            }
+        }
+        return tabs[0] || null;
+    };
+
     AssistSidebar.prototype.loadMemoLibraryEntries = async function () {
         var records = [];
         try {
@@ -9421,10 +9469,8 @@
             var fileName = this.getMemoLibraryFileName(record.id || record.uuid || "");
             if (!fileName) return;
             var payload = record.payload;
-            var tab = null;
-            if (payload && Array.isArray(payload.tabs) && payload.tabs[0]) {
-                tab = payload.tabs[0];
-            } else if (typeof payload === "string") {
+            var tab = this.getMemoPayloadPrimaryTab(payload);
+            if (!tab && typeof payload === "string") {
                 tab = { title: record.title || "Docs", content: payload };
             }
             if (!tab) return;
@@ -9585,18 +9631,18 @@
                     };
                 }
             }
-            var firstTab = payload && Array.isArray(payload.tabs) ? payload.tabs[0] : null;
-            var memoHtml = typeof firstTab?.content === "string"
-                ? firstTab.content
+            var primaryTab = this.getMemoPayloadPrimaryTab(payload);
+            var memoHtml = typeof primaryTab?.content === "string"
+                ? primaryTab.content
                 : (typeof payload === "string" ? payload : "");
             var plainText = this.stripHtmlText(memoHtml);
-            var abstract = String(item.description || "").trim() || this.getFirstNonEmptyLine(plainText);
-            var title = String(item.title || record?.title || "").trim() || "Nouvelle page";
+            var abstract = String(record?.description || item.description || "").trim() || this.getFirstNonEmptyLine(plainText);
+            var title = String(record?.title || item.title || "").trim() || "Nouvelle page";
             entries.push({
                 path: "",
                 name: title,
                 abstract: abstract,
-                updatedAt: this.parseUpdatedAt(item.updatedAt || record?.updatedAt),
+                updatedAt: this.parseUpdatedAt(record?.updatedAt || item.updatedAt),
                 fileName: fileName,
                 source: "Mémo",
                 memoHtml: memoHtml,
@@ -9980,13 +10026,27 @@
             await this.refreshKnowledgeModal({ skipAutoReindex: true });
             if (token !== this._knowledgeScopeApplyToken) return;
             var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
-            var selection = this.buildKnowledgeSelectionFromSpaces(entries);
-            this.setKnowledgeModalSelection(selection);
+            this.resolveKnowledgeSelectionState(entries);
             this.setKnowledgeModalStatus("");
             this.refreshDocumentStats();
         } catch (err) {
             console.warn("Knowledge scope selection apply failed", err);
         }
+    };
+
+    AssistSidebar.prototype.ensureSelectedKnowledgeIndexed = async function () {
+        if (!this.docManager || this.knowledgeIndexing) return;
+        await this.refreshKnowledgeModal({ skipAutoReindex: true });
+        var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
+        var selection = this.resolveKnowledgeSelectionState(entries).selection;
+        if (!selection.size) {
+            this.setKnowledgeModalStatus("");
+            this.refreshDocumentStats();
+            return;
+        }
+        await this.reindexKnowledgeSelection(entries, selection, {
+            reindexIfUpdated: true
+        });
     };
 
     AssistSidebar.prototype.shouldRunKnowledgeSync = function (force) {
@@ -10027,9 +10087,7 @@
 
     AssistSidebar.prototype.getKnowledgeAllowedDocIdsForCurrentScope = async function () {
         if (!this.docManager) return null;
-        var selection = this.knowledgeModalSelectionSet instanceof Set
-            ? this.knowledgeModalSelectionSet
-            : new Set();
+        var selection = this.resolveKnowledgeSelectionState(this.knowledgeManifestEntries).selection;
         if (!selection.size) {
             try {
             } catch (err) {
@@ -10493,7 +10551,11 @@
                     if (!stored) return;
                     var incomingHash = contentHashByKey.get(key) || "";
                     var storedHash = String(stored.fileHash || "").trim();
-                    if (incomingHash && storedHash && incomingHash !== storedHash) {
+                    var incomingUpdatedAt = this.parseUpdatedAt(entry?.updatedAt);
+                    var storedUpdatedAt = this.parseUpdatedAt(stored?.updatedAt);
+                    var hashChanged = Boolean(incomingHash && storedHash && incomingHash !== storedHash);
+                    var updatedAfterStored = Boolean(incomingUpdatedAt && storedUpdatedAt && incomingUpdatedAt > storedUpdatedAt);
+                    if (hashChanged || updatedAfterStored) {
                         var name = (stored.name || stored.sourceFileName || "").toString().trim();
                         if (name) staleNamesToDelete.push(name);
                         existingByKey.delete(key);
@@ -10597,12 +10659,12 @@
         }
     };
 
-    AssistSidebar.prototype.handleHeaderDocCountClick = function () {
+    AssistSidebar.prototype.handleHeaderDocCountClick = async function () {
         if (this.memorySpacesMenuEl && this.memorySpacesMenuEl.classList.contains("open")) {
             this.closeMemorySpacesMenu();
             return;
         }
-        this.openMemorySpacesMenu();
+        await this.openMemorySpacesMenu();
     };
 
     AssistSidebar.prototype.refreshDocumentStats = function () {
@@ -12176,6 +12238,8 @@
         this.updateComposerState();
         this.refreshMemoContextAttachments();
         this.selectedKnowledgeSpaceIds = this.readSelectedKnowledgeSpaces();
+        this.readSelectedKnowledgePageRootsBySpace(this.knowledgeManifestEntries);
+        this.resolveKnowledgeSelectionState(this.knowledgeManifestEntries);
         if (this.docManager) {
             this.documentStatsWatcher = this.docManager.onStatsChange(this.refreshDocumentStats.bind(this));
             this.refreshDocumentStats();

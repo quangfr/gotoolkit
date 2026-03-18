@@ -284,7 +284,7 @@ Recent troubleshooting note:
 - keep non-tier or one-off repro specs under `tests/debug/` by default; only promote a spec to `tests/tier/` when it is intentionally part of a maintained tier below
 - when promoting a debug spec, move it into `tests/tier/` instead of `tests/`
 - `tests/tier/t2-7-assist-page-switch-conversation.spec.ts` is the maintained Tier 2 repro for Assist conversation isolation across private page switches and the empty-shell Explorer scope, plus summary-tab alignment during one delayed inline edit and one send-button edit
-- `tests/tier/t2-8-assist-knowledge-selection.spec.ts` is the maintained Tier 2 repro for global knowledge selection filtering, including shared-marker fan-out for all, two, three, and no selected pages
+- `tests/tier/t2-8-assist-knowledge-selection.spec.ts` is the maintained Tier 2 repro for global knowledge selection filtering, ingested-page persistence across reload, and re-ingest on selected-page content updates
 - `tests/tier/t4-2-private-delete-switch-regression.spec.ts` is the maintained repro for deleting an active private page, reopening another private page, and verifying no blank or duplicated content across repeated switches
 - `tests/tier/t4-1-close-active-page.spec.ts` is the maintained repro for the breadcrumb close button returning the app to the empty shell cleanly
 - `tests/tier/t4-3-private-heading-repair-entrypoints.spec.ts` is the maintained guard for private `sample.md` reopen/create/reload heading repair, including headings after `Artefacts PO`
@@ -361,7 +361,7 @@ Tier suites:
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `4 passed, 3 failed, 1 skipped` (`8 tests`, `02:27`) on `2026-03-18 11:21`
+  - results: `4 passed, 3 failed, 1 skipped` (`8 tests`, `02:30`) on `2026-03-18 12:38`
   - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
   - `T2.1` `t2-1-cloud-history-explicit-sync.spec.ts`
@@ -400,8 +400,8 @@ Tier suites:
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T2.8` `t2-8-assist-knowledge-selection.spec.ts`
-    - description: knowledge selection retrieval filtering with four ingested pages, shared-marker fan-out, and exact selected-page coverage for all, two, three, and no selected pages
-    - results: `passing` (`1 test`, `00:13`) on `2026-03-18 11:21`
+    - description: knowledge selection retrieval filtering with four ingested pages, shared-marker fan-out, persisted knowledge index reuse after reload, and exact re-ingest for selected-page updates
+    - results: `passing` (`1 test`, `00:16`) on `2026-03-18 12:38`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 3` admin features
@@ -654,6 +654,24 @@ When touching Playwright coverage in this repo, bias toward:
 - keep the instrumentation in place until the failing stage is isolated; do not keep rewriting the harness blindly between runs
 
 This is the minimum standard for non-trivial UI debugging.
+
+### 7.0 Persistence and rehydration bugs: do and don't
+
+Use these rules for bugs involving reload, reopen, page switch, selection restore, cached indexes, or re-ingest decisions.
+
+- Do compare the same entity across UI, in-memory state, durable storage, and indexed/search storage before changing logic.
+- Do log both the persisted identifier and the rehydrated identifier when a selection or scope disappears after reload.
+- Do normalize persisted identifiers at both write time and read time when multiple aliases can exist for one logical scope.
+- Do verify that counters and visible badges derive from rehydrated state, not only from the last interactive session state.
+- Do treat missing re-ingest after edits as a state-rebuild problem first, not only as a hashing problem.
+- Do check whether the reopen or toggle helper actually leaves the target panel open before trusting the test signal.
+- Do prefer one maintained tier repro that covers persistence, restore, and update handling together when they share the same contract.
+
+- Don't assume durable data is wrong just because the UI is empty after reload; restore and normalization bugs are common.
+- Don't add a second comparison path for update detection if the existing ingest path already owns hash or timestamp comparisons.
+- Don't trust raw space, section, or scope IDs across layers without checking canonicalization.
+- Don't debug only the happy path; log skip paths and "selection empty" branches explicitly.
+- Don't keep tightening retrieval assertions around ranking noise when the real contract is selection scope, persistence, or stale-index replacement.
 
 Persistent Linux mirror details:
 

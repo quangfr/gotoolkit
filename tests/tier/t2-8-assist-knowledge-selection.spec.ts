@@ -72,10 +72,37 @@ async function installFastEmbeddingHarness(page: Page) {
 }
 
 async function setActiveDocHtml(page: Page, html: string) {
+  const markerMatch = String(html || "").match(/PW_[A-Z0-9_]+/);
+  const marker = String(markerMatch?.[0] || "").trim();
+  if (!marker) {
+    throw new Error("Expected a stable PW_* marker in helper HTML");
+  }
   await page.evaluate(async (nextHtml) => {
     const w = window as any;
     const activeId = String(w.GoToolkitMemoGetActiveDocumentId?.() || "").trim();
     if (!activeId) throw new Error("No active memo document");
+    if (typeof w.GoToolkitMemoInstance?.switchTo === "function") {
+      w.GoToolkitMemoInstance.switchTo(activeId, String(nextHtml || ""));
+      return;
+    }
+    await w.GoToolkitMemoOpenDocumentByLink?.(activeId);
+    if (!w.GoToolkitMemoInstance?.setValue) throw new Error("GoToolkitMemoInstance.setValue unavailable");
+    w.GoToolkitMemoInstance.setValue(String(nextHtml || ""));
+  }, html);
+
+  await expect.poll(async () => {
+    return page.evaluate(expectedMarker => {
+      const w = window as any;
+      const currentHtml = String(w.GoToolkitMemoInstance?.getValue?.() || "");
+      return currentHtml.includes(String(expectedMarker || ""));
+    }, marker);
+  }, { timeout: 15_000 }).toBeTruthy();
+
+  await page.evaluate(async () => {
+    const w = window as any;
+    const activeId = String(w.GoToolkitMemoGetActiveDocumentId?.() || "").trim();
+    if (!activeId) throw new Error("No active memo document");
+    const currentHtml = String(w.GoToolkitMemoInstance?.getValue?.() || "");
     const docApi = w.goToolkitDocumentApi;
     if (!docApi?.getRecord || !docApi?.upsertRecord) throw new Error("document api unavailable");
     const record = await docApi.getRecord(activeId);
@@ -91,13 +118,13 @@ async function setActiveDocHtml(page: Page, html: string) {
       if (!shouldUpdate) return tab;
       return {
         ...tab,
-        content: String(nextHtml || ""),
+        content: currentHtml,
       };
     });
     payload.tabs = nextTabs.length ? nextTabs : [{
       id: activeTabId || `tab-${activeId}`,
       title: record.title || "Page",
-      content: String(nextHtml || ""),
+      content: currentHtml,
     }];
     if (!payload.activeTabId) {
       payload.activeTabId = String(payload.tabs[0]?.id || `tab-${activeId}`);
@@ -107,11 +134,32 @@ async function setActiveDocHtml(page: Page, html: string) {
       payload,
       updatedAt: new Date().toISOString(),
     });
-    await w.GoToolkitMemoOpenDocumentByLink?.(activeId);
-    if (w.GoToolkitMemoInstance?.setValue) {
-      w.GoToolkitMemoInstance.setValue(String(nextHtml || ""));
-    }
-  }, html);
+  });
+
+  await expect.poll(async () => {
+    return page.evaluate(async expectedMarker => {
+      const w = window as any;
+      const activeId = String(w.GoToolkitMemoGetActiveDocumentId?.() || "").trim();
+      const currentHtml = String(w.GoToolkitMemoInstance?.getValue?.() || "");
+      const docApi = w.goToolkitDocumentApi;
+      const record = activeId && docApi?.getRecord ? await docApi.getRecord(activeId).catch(() => null) : null;
+      const payload = record?.payload && typeof record.payload === "object" ? record.payload : null;
+      const tabs = Array.isArray(payload?.tabs) ? payload.tabs : [];
+      const activeTabId = String(payload?.activeTabId || tabs[0]?.id || "").trim();
+      const activeTab = tabs.find((tab: any, index: number) => {
+        const tabId = String(tab?.id || "").trim();
+        return (activeTabId && tabId === activeTabId) || (!activeTabId && index === 0);
+      }) || tabs[0] || null;
+      const persistedHtml = String(activeTab?.content || record?.payload || "");
+      return {
+        currentMatches: currentHtml.includes(String(expectedMarker || "")),
+        persistedMatches: persistedHtml.includes(String(expectedMarker || "")),
+      };
+    }, marker);
+  }, { timeout: 15_000 }).toMatchObject({
+    currentMatches: true,
+    persistedMatches: true,
+  });
 }
 
 async function renameMemoDocViaApi(page: Page, docId: string, nextTitle: string) {
@@ -149,6 +197,18 @@ async function getKnowledgePageCheckboxMeta(page: Page) {
 async function openKnowledgeMenu(page: Page) {
   const trigger = page.locator("#chatMemoryBtn");
   await expect(trigger).toBeVisible({ timeout: 30_000 });
+  await trigger.click();
+  await expect(page.locator(".chat-memory-spaces-menu.open")).toBeVisible({ timeout: 30_000 });
+}
+
+async function reopenKnowledgeMenu(page: Page) {
+  const trigger = page.locator("#chatMemoryBtn");
+  await expect(trigger).toBeVisible({ timeout: 30_000 });
+  const menu = page.locator(".chat-memory-spaces-menu");
+  if (await menu.evaluate((node: Element | null) => Boolean(node?.classList.contains("open"))).catch(() => false)) {
+    await trigger.click();
+    await expect(page.locator(".chat-memory-spaces-menu.open")).toHaveCount(0, { timeout: 30_000 });
+  }
   await trigger.click();
   await expect(page.locator(".chat-memory-spaces-menu.open")).toBeVisible({ timeout: 30_000 });
 }
@@ -260,6 +320,28 @@ async function runKnowledgeQuery(page: Page, query: string) {
   }, query);
 }
 
+async function getKnowledgeDocSummaries(page: Page) {
+  return page.evaluate(async () => {
+    const w = window as any;
+    const assist = w.GoToolkitAssistInstance;
+    if (!assist?.docManager) throw new Error("Assist/doc manager unavailable");
+    await assist.docManager.waitReady?.();
+    const docs = await assist.docManager.getDocuments(assist.knowledgeConversationId);
+    return (Array.isArray(docs) ? docs : [])
+      .filter((doc: any) => String(doc?.sourceType || "context") === "embedded")
+      .map((doc: any) => ({
+        docId: String(doc?.id || ""),
+        docName: String(doc?.name || ""),
+        sourceFileName: String(doc?.sourceFileName || ""),
+        fileHash: String(doc?.fileHash || ""),
+      }));
+  });
+}
+
+function getKnowledgeDocHashByName(docs: Array<{ docName: string; fileHash: string }>) {
+  return new Map(docs.map(doc => [String(doc.docName || ""), String(doc.fileHash || "")]));
+}
+
 function getHitDocNames(hits: Array<{ docName: string }>) {
   const names = Array.from(new Set(hits.map(hit => hit.docName).filter(Boolean)));
   return names;
@@ -363,7 +445,7 @@ test.describe("Assist knowledge selection", () => {
     ]);
     logStep("ingested-entries", ingestedEntries);
 
-    await openKnowledgeMenu(page);
+    await reopenKnowledgeMenu(page);
 
     const initialPageBoxes = await getKnowledgePageCheckboxMeta(page);
     logStep("initial-knowledge-page-boxes", initialPageBoxes);
@@ -379,12 +461,16 @@ test.describe("Assist knowledge selection", () => {
     expect(importedARootId).toBeTruthy();
     expect(importedBRootId).toBeTruthy();
     const pageLabelByRootId = new Map(initialPageBoxes.map(item => [item.rootId, item.text]));
+    const generatedALabel = String(pageLabelByRootId.get(String(generatedARootId)) || generatedA.title);
+    const generatedBLabel = String(pageLabelByRootId.get(String(generatedBRootId)) || generatedB.title);
+    const importedALabel = String(pageLabelByRootId.get(String(importedARootId)) || importedA.title);
+    const importedBLabel = String(pageLabelByRootId.get(String(importedBRootId)) || importedB.title);
 
     const allSelectedExpectedNames = [
-      pageLabelByRootId.get(String(generatedARootId)),
-      pageLabelByRootId.get(String(generatedBRootId)),
-      pageLabelByRootId.get(String(importedARootId)),
-      pageLabelByRootId.get(String(importedBRootId)),
+      generatedALabel,
+      generatedBLabel,
+      importedALabel,
+      importedBLabel,
     ].filter(Boolean) as string[];
 
     await applyKnowledgeSelection(page, [
@@ -394,6 +480,15 @@ test.describe("Assist knowledge selection", () => {
       String(importedBRootId),
     ]);
     await waitForKnowledgeState(page, 4);
+
+    const indexedDocsBeforeReload = await getKnowledgeDocSummaries(page);
+    logStep("indexed-docs-before-reload", indexedDocsBeforeReload);
+    expect(indexedDocsBeforeReload).toHaveLength(4);
+    const hashByNameBeforeReload = getKnowledgeDocHashByName(indexedDocsBeforeReload);
+    expect(hashByNameBeforeReload.get(generatedALabel)).toBeTruthy();
+    expect(hashByNameBeforeReload.get(generatedBLabel)).toBeTruthy();
+    expect(hashByNameBeforeReload.get(importedALabel)).toBeTruthy();
+    expect(hashByNameBeforeReload.get(importedBLabel)).toBeTruthy();
 
     const allGeneratedAHits = await runKnowledgeQuery(page, generatedA.token);
     const allGeneratedBHits = await runKnowledgeQuery(page, generatedB.token);
@@ -413,13 +508,88 @@ test.describe("Assist knowledge selection", () => {
     expect(getTokenMatchingHits(allImportedBHits, importedB.token)).not.toHaveLength(0);
     expectHitNamesToEqual(getTokenMatchingHits(allSharedHits, sharedToken) as Array<{ docName: string }>, allSelectedExpectedNames);
 
+    await page.reload({ waitUntil: "load", timeout: 30_000 });
+    await waitForMemoReady(page, 45_000);
+    await ensureAssist(page);
+    await installFastEmbeddingHarness(page);
+    await page.evaluate(() => (window as any).GoToolkitAssistInstance?.open?.());
+    await page.waitForTimeout(500);
+
+    const indexedDocsAfterReload = await getKnowledgeDocSummaries(page);
+    logStep("indexed-docs-after-reload", indexedDocsAfterReload);
+    expect(indexedDocsAfterReload).toHaveLength(4);
+    expect(getKnowledgeDocHashByName(indexedDocsAfterReload)).toEqual(hashByNameBeforeReload);
+
+    await applyKnowledgeSelection(page, [
+      String(generatedARootId),
+      String(generatedBRootId),
+      String(importedARootId),
+      String(importedBRootId),
+    ]);
+    await waitForKnowledgeState(page, 4);
+
+    const generatedAUpdatedToken = `PW_ALPHA_UPDATED_${ts}_REINDEX`;
+    generatedA.html = `<h1>PW Knowledge A ${ts}</h1><p>${`Alpha refreshed context ${ts} `.repeat(80)}${generatedAUpdatedToken}</p><p>${sharedToken}</p>`;
+    await clickMemoDoc(page, generatedADocId);
+    await setActiveDocHtml(page, generatedA.html);
+    await refreshMemoExplorer(page);
+    await reopenKnowledgeMenu(page);
+    const postUpdateState = await page.evaluate(async ({ docId, fileLabel, updatedToken }) => {
+      const w = window as any;
+      const assist = w.GoToolkitAssistInstance;
+      const docApi = w.goToolkitDocumentApi;
+      const record = docApi?.getRecord ? await docApi.getRecord(String(docId || "")).catch(() => null) : null;
+      const payload = record?.payload && typeof record.payload === "object" ? record.payload : null;
+      const tabs = Array.isArray(payload?.tabs) ? payload.tabs : [];
+      const activeTabId = String(payload?.activeTabId || tabs[0]?.id || "").trim();
+      const activeTab = tabs.find((tab: any, index: number) => {
+        const tabId = String(tab?.id || "").trim();
+        return (activeTabId && tabId === activeTabId) || (!activeTabId && index === 0);
+      }) || tabs[0] || null;
+      const manifestEntry = (Array.isArray(assist?.knowledgeManifestEntries) ? assist.knowledgeManifestEntries : []).find((entry: any) => String(entry?.documentId || "").trim() === String(docId || ""));
+      const docs = assist?.docManager?.getDocuments ? await assist.docManager.getDocuments(assist.knowledgeConversationId).catch(() => []) : [];
+      const indexedDoc = (Array.isArray(docs) ? docs : []).find((doc: any) => String(doc?.sourceFileName || "").trim() === String(fileLabel || "").trim());
+      return {
+        editorHasUpdatedToken: String(w.GoToolkitMemoInstance?.getValue?.() || "").includes(String(updatedToken || "")),
+        recordHasUpdatedToken: String(activeTab?.content || record?.payload || "").includes(String(updatedToken || "")),
+        manifestHasUpdatedToken: String(manifestEntry?.memoHtml || manifestEntry?.memoText || "").includes(String(updatedToken || "")),
+        manifestUpdatedAt: Number(manifestEntry?.updatedAt || 0) || 0,
+        indexedFileHash: String(indexedDoc?.fileHash || ""),
+        indexedUpdatedAt: Number(indexedDoc?.updatedAt || 0) || 0,
+      };
+    }, {
+      docId: generatedADocId,
+      fileLabel: `memo-${generatedADocId}.txt`,
+      updatedToken: generatedAUpdatedToken,
+    });
+    logStep("post-update-state", postUpdateState);
+    await expect.poll(async () => {
+      const docs = await getKnowledgeDocSummaries(page);
+      return getKnowledgeDocHashByName(docs).get(generatedALabel) || "";
+    }, { timeout: 90_000 }).not.toBe(hashByNameBeforeReload.get(generatedALabel) || "");
+
+    const updatedGeneratedAOldHits = await runKnowledgeQuery(page, generatedA.token);
+    const updatedGeneratedANewHits = await runKnowledgeQuery(page, generatedAUpdatedToken);
+    const updatedSharedHits = await runKnowledgeQuery(page, sharedToken);
+    logStep("updated-generated-a-hits", {
+      oldToken: updatedGeneratedAOldHits,
+      newToken: updatedGeneratedANewHits,
+      shared: updatedSharedHits,
+    });
+    expect(getTokenMatchingHits(updatedGeneratedAOldHits, generatedA.token)).toHaveLength(0);
+    expect(getTokenMatchingHits(updatedGeneratedANewHits, generatedAUpdatedToken)).not.toHaveLength(0);
+    expectHitNamesToInclude(
+      getTokenMatchingHits(updatedSharedHits, sharedToken) as Array<{ docName: string }>,
+      [generatedALabel, generatedBLabel].filter(Boolean) as string[]
+    );
+
     await applyKnowledgeSelection(page, [
       String(generatedARootId),
       String(importedARootId),
     ]);
     await waitForKnowledgeState(page, 2);
 
-    const twoOfFourGeneratedAHits = await runKnowledgeQuery(page, generatedA.token);
+    const twoOfFourGeneratedAHits = await runKnowledgeQuery(page, generatedAUpdatedToken);
     const twoOfFourGeneratedBHits = await runKnowledgeQuery(page, generatedB.token);
     const twoOfFourImportedAHits = await runKnowledgeQuery(page, importedA.token);
     const twoOfFourImportedBHits = await runKnowledgeQuery(page, importedB.token);
@@ -431,7 +601,7 @@ test.describe("Assist knowledge selection", () => {
     });
     const twoOfFourSharedHits = await runKnowledgeQuery(page, sharedToken);
     logStep("two-of-four-shared-hits", twoOfFourSharedHits);
-    expect(getTokenMatchingHits(twoOfFourGeneratedAHits, generatedA.token)).not.toHaveLength(0);
+    expect(getTokenMatchingHits(twoOfFourGeneratedAHits, generatedAUpdatedToken)).not.toHaveLength(0);
     expectHitNamesToExclude(twoOfFourGeneratedAHits, [generatedB.title, "Page 5"]);
     expect(getTokenMatchingHits(twoOfFourGeneratedBHits, generatedB.token)).toHaveLength(0);
     expect(getTokenMatchingHits(twoOfFourImportedAHits, importedA.token)).not.toHaveLength(0);
@@ -440,8 +610,8 @@ test.describe("Assist knowledge selection", () => {
     expectHitNamesToEqual(
       getTokenMatchingHits(twoOfFourSharedHits, sharedToken) as Array<{ docName: string }>,
       [
-        pageLabelByRootId.get(String(generatedARootId)),
-        pageLabelByRootId.get(String(importedARootId)),
+        generatedALabel,
+        importedALabel,
       ].filter(Boolean) as string[]
     );
 
@@ -452,7 +622,7 @@ test.describe("Assist knowledge selection", () => {
     ]);
     await waitForKnowledgeState(page, 3);
 
-    const threeOfFourGeneratedAHits = await runKnowledgeQuery(page, generatedA.token);
+    const threeOfFourGeneratedAHits = await runKnowledgeQuery(page, generatedAUpdatedToken);
     const threeOfFourGeneratedBHits = await runKnowledgeQuery(page, generatedB.token);
     const threeOfFourImportedAHits = await runKnowledgeQuery(page, importedA.token);
     const threeOfFourImportedBHits = await runKnowledgeQuery(page, importedB.token);
@@ -464,7 +634,7 @@ test.describe("Assist knowledge selection", () => {
     });
     const threeOfFourSharedHits = await runKnowledgeQuery(page, sharedToken);
     logStep("three-of-four-shared-hits", threeOfFourSharedHits);
-    expect(getTokenMatchingHits(threeOfFourGeneratedAHits, generatedA.token)).not.toHaveLength(0);
+    expect(getTokenMatchingHits(threeOfFourGeneratedAHits, generatedAUpdatedToken)).not.toHaveLength(0);
     expectHitNamesToExclude(threeOfFourGeneratedAHits, ["Page 5"]);
     expect(getTokenMatchingHits(threeOfFourGeneratedBHits, generatedB.token)).not.toHaveLength(0);
     expectHitNamesToExclude(threeOfFourGeneratedBHits, ["Page 5"]);
@@ -474,16 +644,16 @@ test.describe("Assist knowledge selection", () => {
     expectHitNamesToEqual(
       getTokenMatchingHits(threeOfFourSharedHits, sharedToken) as Array<{ docName: string }>,
       [
-        pageLabelByRootId.get(String(generatedARootId)),
-        pageLabelByRootId.get(String(generatedBRootId)),
-        pageLabelByRootId.get(String(importedARootId)),
+        generatedALabel,
+        generatedBLabel,
+        importedALabel,
       ].filter(Boolean) as string[]
     );
 
     await applyKnowledgeSelection(page, []);
     await waitForKnowledgeState(page, 0);
 
-    const noSelectionGeneratedAHits = await runKnowledgeQuery(page, generatedA.token);
+    const noSelectionGeneratedAHits = await runKnowledgeQuery(page, generatedAUpdatedToken);
     const noSelectionGeneratedBHits = await runKnowledgeQuery(page, generatedB.token);
     const noSelectionImportedAHits = await runKnowledgeQuery(page, importedA.token);
     const noSelectionImportedBHits = await runKnowledgeQuery(page, importedB.token);
@@ -495,7 +665,7 @@ test.describe("Assist knowledge selection", () => {
     });
     const noSelectionSharedHits = await runKnowledgeQuery(page, sharedToken);
     logStep("no-selection-shared-hits", noSelectionSharedHits);
-    expect(getTokenMatchingHits(noSelectionGeneratedAHits, generatedA.token)).toHaveLength(0);
+    expect(getTokenMatchingHits(noSelectionGeneratedAHits, generatedAUpdatedToken)).toHaveLength(0);
     expect(getTokenMatchingHits(noSelectionGeneratedBHits, generatedB.token)).toHaveLength(0);
     expect(getTokenMatchingHits(noSelectionImportedAHits, importedA.token)).toHaveLength(0);
     expect(getTokenMatchingHits(noSelectionImportedBHits, importedB.token)).toHaveLength(0);

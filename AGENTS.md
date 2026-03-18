@@ -135,6 +135,11 @@ Treat `scripts/csp-common.js` as canonical for CSP-related checks.
   - in-memory app state
   - durable local storage such as IndexedDB or `localStorage`
   - remote state or API payloads when relevant
+- For reload, reopen, selection-restore, and re-ingest bugs, log both persisted IDs and rehydrated IDs before changing business logic.
+- Normalize persisted scope or space identifiers on both write and read paths when aliases can exist for the same logical space.
+- Make counters and badges prove they come from rehydrated state, not only from pre-reload interactive state.
+- Treat stale or missing re-ingest after edits as a restore or selection rebuild bug first, not only as a hash-comparison bug.
+- Verify toggle helpers leave the intended panel open before trusting a failing browser repro around refresh or reindex flows.
 - The goal is to find the first step where the layers diverge:
   - wrong in UI and state before persistence: render, parser, or state bug
   - wrong only after save: persistence or overwrite bug

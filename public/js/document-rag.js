@@ -2434,7 +2434,14 @@
             const targetNames = new Set(names.filter(Boolean));
             if (!targetNames.size) return;
             const docs = await this.getDocuments(convId);
-            const toDelete = docs.filter(doc => targetNames.has(doc.name));
+            const toDelete = docs.filter(doc => {
+                const docName = typeof doc?.name === "string" ? doc.name.trim() : "";
+                const sourceFileName = typeof doc?.sourceFileName === "string" ? doc.sourceFileName.trim() : "";
+                return Boolean(
+                    (docName && targetNames.has(docName))
+                    || (sourceFileName && targetNames.has(sourceFileName))
+                );
+            });
             if (!toDelete.length) return;
             await this.removeDocsFromKeywordIndex(toDelete.map((doc) => doc.id));
             await Promise.all(toDelete.map(async doc => {
