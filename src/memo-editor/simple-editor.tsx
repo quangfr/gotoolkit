@@ -589,20 +589,52 @@ const setFlowchartDirection = (code: string, direction: string) => {
   return { code: lines.join('\n'), updated };
 };
 
-const selectTableCellText = (view: any, pos: number) => {
+const resolveTableCellClickTextPos = (view: any, event: MouseEvent, fallbackCellPos: number) => {
+  const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+  if (!coords) return fallbackCellPos + 2;
+  let targetPos = coords.pos;
+  const $target = view.state.doc.resolve(targetPos);
+  if ($target.parent.type.name === 'table_cell' || $target.parent.type.name === 'table_header') {
+    targetPos = $target.before($target.depth) + 2;
+  }
+  return targetPos;
+};
+
+const selectWordAtPos = (view: any, pos: number) => {
   const { state } = view;
   const $pos = state.doc.resolve(pos);
-  for (let depth = $pos.depth; depth > 0; depth--) {
-    const node = $pos.node(depth);
-    if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
-      const cellPos = $pos.before(depth);
-      const from = cellPos + 1;
-      const to = cellPos + node.nodeSize - 1;
-      view.dispatch(state.tr.setSelection(TextSelection.create(state.doc, from, to)));
-      return true;
-    }
+  if (!$pos.parent?.isTextblock) {
+    const safePos = Math.max(1, Math.min(pos, state.doc.content.size));
+    view.dispatch(state.tr.setSelection(TextSelection.create(state.doc, safePos)));
+    return true;
   }
-  return false;
+
+  const text = String($pos.parent.textContent || '');
+  const base = $pos.start();
+  let offset = Math.max(0, Math.min($pos.parentOffset, text.length));
+
+  if (!text.length) {
+    view.dispatch(state.tr.setSelection(TextSelection.create(state.doc, base)));
+    return true;
+  }
+
+  const isWordChar = (char: string) => /\S/.test(char);
+  if (offset >= text.length) offset = text.length - 1;
+  if (!isWordChar(text[offset]) && offset > 0 && isWordChar(text[offset - 1])) {
+    offset -= 1;
+  }
+
+  let fromOffset = offset;
+  let toOffset = offset;
+
+  while (fromOffset > 0 && isWordChar(text[fromOffset - 1])) fromOffset -= 1;
+  while (toOffset < text.length && isWordChar(text[toOffset])) toOffset += 1;
+
+  const from = base + fromOffset;
+  const to = base + toOffset;
+  view.dispatch(state.tr.setSelection(TextSelection.create(state.doc, from, to)));
+  view.focus();
+  return true;
 };
 
 const CustomBulletList = BulletList.extend({
@@ -4473,7 +4505,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     content: initialEditorContent,
     editable,
     editorProps: {
-      handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
+      handleTripleClickOn: () => false,
       handlePaste: (_view, event) => {
         if (!(event instanceof ClipboardEvent)) return false;
         const text = String(event.clipboardData?.getData('text/plain') || '').trim();
@@ -4519,31 +4551,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         const info = getTableCellInfo(view, event);
         if (!info) return false;
 
-        const selection = view.state.selection;
-        const isCellSelection = selection instanceof CellSelection;
-        const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
         const clickCellPos = info.cellPos;
-        const selectionCellPos = selection instanceof TextSelection
-          ? getTableCellPosFromResolved(selection.$from)
-          : null;
-        const isTextSelectionInCell = selection instanceof TextSelection && selectionCellPos !== null;
-        let clickedCellSelected = false;
-        if (isCellSelection) {
-          selection.forEachCell((_cell, pos) => {
-            if (pos === clickCellPos) clickedCellSelected = true;
-          });
-        }
 
         const setCaretAtClick = () => {
-          if (!coords) return false;
-          let targetPos = coords.pos;
-          const $target = view.state.doc.resolve(targetPos);
-          if ($target.parent.type.name === 'table_cell' || $target.parent.type.name === 'table_header') {
-            const cell = $target.parent;
-            if (cell.firstChild) {
-              targetPos = $target.before($target.depth) + 2;
-            }
-          }
+          const targetPos = resolveTableCellClickTextPos(view, event, clickCellPos);
           const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, targetPos));
           view.dispatch(tr.setMeta('addToHistory', false));
           view.dispatch(view.state.tr.scrollIntoView());
@@ -4562,19 +4573,26 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           return true;
         };
 
-        if (event.detail >= 2) {
-          if (isTextSelectionInCell && selectionCellPos === clickCellPos) {
-            return selectAllCellText();
-          }
+        const wantsCellSelection = event.metaKey || event.ctrlKey;
+
+        if (event.detail >= 4) {
+          return selectAllCellText();
+        }
+
+        if (event.detail === 3) {
+          const targetPos = resolveTableCellClickTextPos(view, event, clickCellPos);
+          return selectWordAtPos(view, targetPos);
+        }
+
+        if (event.detail === 2) {
           return setCaretAtClick();
         }
 
-        if (isTextSelectionInCell && selectionCellPos === clickCellPos) {
-          return setCaretAtClick();
-        }
-
-        if (isCellSelection && clickedCellSelected) {
-          return setCaretAtClick();
+        if (wantsCellSelection) {
+          const $cell = view.state.doc.resolve(info.cellPos);
+          view.dispatch(view.state.tr.setSelection(new CellSelection($cell)));
+          view.focus();
+          return true;
         }
 
         const $cell = view.state.doc.resolve(info.cellPos);
@@ -4896,6 +4914,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)
         ) {
           if (hasAncestorNode(selection.$from, 'table')) {
+            const shouldMoveBetweenCells =
+              selection instanceof CellSelection ||
+              event.metaKey ||
+              event.ctrlKey;
+            if (!shouldMoveBetweenCells) return false;
             const currentCellPos = selection instanceof CellSelection
               ? selection.$anchorCell.pos
               : getTableCellPosFromResolved(selection.$from);
@@ -6866,10 +6889,16 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                   const container = doc.createElement('div');
                   container.style.margin = '20px 0';
                   container.style.textAlign = 'center';
+                  container.style.pageBreakInside = 'avoid';
+                  container.style.breakInside = 'avoid';
+                  container.style.maxHeight = format === 'pdf' ? '240mm' : '92vh';
+                  container.style.overflow = 'hidden';
                   const importedSvg = doc.importNode(svgNode, true) as SVGSVGElement;
                   importedSvg.setAttribute('width', importedSvg.getAttribute('width') || '100%');
                   importedSvg.style.maxWidth = '100%';
+                  importedSvg.style.width = 'auto';
                   importedSvg.style.height = 'auto';
+                  importedSvg.style.maxHeight = format === 'pdf' ? '240mm' : '92vh';
                   importedSvg.style.display = 'inline-block';
                   container.appendChild(importedSvg);
                   diag.replaceWith(container);

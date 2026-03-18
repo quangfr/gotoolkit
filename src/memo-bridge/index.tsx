@@ -520,7 +520,7 @@ const App = () => {
                                 aria-label="Créer une page"
                                 title="Créer une page"
                             >
-                                <i data-lucide="file-plus" aria-hidden="true"></i>
+                                <i data-lucide="file-plus-2" aria-hidden="true"></i>
                             </button>
                             <form id="memoEmptyStateSearchForm" className="memo-empty-state__search" role="search">
                                 <i className="document-explorer__search-icon" data-lucide="search" aria-hidden="true"></i>

@@ -57351,20 +57351,46 @@ ${promptInput.trim()}`
     }
     return { code: lines.join("\n"), updated };
   };
-  var selectTableCellText = (view, pos) => {
+  var resolveTableCellClickTextPos = (view, event, fallbackCellPos) => {
+    const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+    if (!coords) return fallbackCellPos + 2;
+    let targetPos = coords.pos;
+    const $target = view.state.doc.resolve(targetPos);
+    if ($target.parent.type.name === "table_cell" || $target.parent.type.name === "table_header") {
+      targetPos = $target.before($target.depth) + 2;
+    }
+    return targetPos;
+  };
+  var selectWordAtPos = (view, pos) => {
+    var _a;
     const { state: state2 } = view;
     const $pos = state2.doc.resolve(pos);
-    for (let depth = $pos.depth; depth > 0; depth--) {
-      const node = $pos.node(depth);
-      if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
-        const cellPos = $pos.before(depth);
-        const from2 = cellPos + 1;
-        const to = cellPos + node.nodeSize - 1;
-        view.dispatch(state2.tr.setSelection(TextSelection.create(state2.doc, from2, to)));
-        return true;
-      }
+    if (!((_a = $pos.parent) == null ? void 0 : _a.isTextblock)) {
+      const safePos = Math.max(1, Math.min(pos, state2.doc.content.size));
+      view.dispatch(state2.tr.setSelection(TextSelection.create(state2.doc, safePos)));
+      return true;
     }
-    return false;
+    const text2 = String($pos.parent.textContent || "");
+    const base2 = $pos.start();
+    let offset3 = Math.max(0, Math.min($pos.parentOffset, text2.length));
+    if (!text2.length) {
+      view.dispatch(state2.tr.setSelection(TextSelection.create(state2.doc, base2)));
+      return true;
+    }
+    const isWordChar = (char) => /\S/.test(char);
+    if (offset3 >= text2.length) offset3 = text2.length - 1;
+    if (!isWordChar(text2[offset3]) && offset3 > 0 && isWordChar(text2[offset3 - 1])) {
+      offset3 -= 1;
+    }
+    let fromOffset = offset3;
+    let toOffset = offset3;
+    while (fromOffset > 0 && isWordChar(text2[fromOffset - 1])) fromOffset -= 1;
+    while (toOffset < text2.length && isWordChar(text2[toOffset])) toOffset += 1;
+    const from2 = base2 + fromOffset;
+    const to = base2 + toOffset;
+    view.dispatch(state2.tr.setSelection(TextSelection.create(state2.doc, from2, to)));
+    view.focus();
+    return true;
   };
   var CustomBulletList = BulletList.extend({
     renderHTML({ HTMLAttributes }) {
@@ -60519,7 +60545,7 @@ ${promptInput.trim()}`
       content: initialEditorContent,
       editable,
       editorProps: {
-        handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
+        handleTripleClickOn: () => false,
         handlePaste: (_view, event) => {
           var _a2;
           if (!(event instanceof ClipboardEvent)) return false;
@@ -60566,28 +60592,9 @@ ${promptInput.trim()}`
           if (!(event instanceof MouseEvent)) return false;
           const info = getTableCellInfo(view, event);
           if (!info) return false;
-          const selection = view.state.selection;
-          const isCellSelection2 = selection instanceof CellSelection;
-          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
           const clickCellPos = info.cellPos;
-          const selectionCellPos = selection instanceof TextSelection ? getTableCellPosFromResolved(selection.$from) : null;
-          const isTextSelectionInCell = selection instanceof TextSelection && selectionCellPos !== null;
-          let clickedCellSelected = false;
-          if (isCellSelection2) {
-            selection.forEachCell((_cell, pos) => {
-              if (pos === clickCellPos) clickedCellSelected = true;
-            });
-          }
           const setCaretAtClick = () => {
-            if (!coords) return false;
-            let targetPos = coords.pos;
-            const $target = view.state.doc.resolve(targetPos);
-            if ($target.parent.type.name === "table_cell" || $target.parent.type.name === "table_header") {
-              const cell2 = $target.parent;
-              if (cell2.firstChild) {
-                targetPos = $target.before($target.depth) + 2;
-              }
-            }
+            const targetPos = resolveTableCellClickTextPos(view, event, clickCellPos);
             const tr2 = view.state.tr.setSelection(TextSelection.create(view.state.doc, targetPos));
             view.dispatch(tr2.setMeta("addToHistory", false));
             view.dispatch(view.state.tr.scrollIntoView());
@@ -60604,17 +60611,22 @@ ${promptInput.trim()}`
             view.focus();
             return true;
           };
-          if (event.detail >= 2) {
-            if (isTextSelectionInCell && selectionCellPos === clickCellPos) {
-              return selectAllCellText();
-            }
+          const wantsCellSelection = event.metaKey || event.ctrlKey;
+          if (event.detail >= 4) {
+            return selectAllCellText();
+          }
+          if (event.detail === 3) {
+            const targetPos = resolveTableCellClickTextPos(view, event, clickCellPos);
+            return selectWordAtPos(view, targetPos);
+          }
+          if (event.detail === 2) {
             return setCaretAtClick();
           }
-          if (isTextSelectionInCell && selectionCellPos === clickCellPos) {
-            return setCaretAtClick();
-          }
-          if (isCellSelection2 && clickedCellSelected) {
-            return setCaretAtClick();
+          if (wantsCellSelection) {
+            const $cell2 = view.state.doc.resolve(info.cellPos);
+            view.dispatch(view.state.tr.setSelection(new CellSelection($cell2)));
+            view.focus();
+            return true;
           }
           const $cell = view.state.doc.resolve(info.cellPos);
           view.dispatch(view.state.tr.setSelection(new CellSelection($cell)));
@@ -60884,6 +60896,8 @@ ${promptInput.trim()}`
           }
           if (!event.shiftKey && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
             if (hasAncestorNode(selection.$from, "table")) {
+              const shouldMoveBetweenCells = selection instanceof CellSelection || event.metaKey || event.ctrlKey;
+              if (!shouldMoveBetweenCells) return false;
               const currentCellPos = selection instanceof CellSelection ? selection.$anchorCell.pos : getTableCellPosFromResolved(selection.$from);
               if (currentCellPos !== null) {
                 const info = getTableCellInfoFromPos(editor.state.doc, currentCellPos);
@@ -62618,10 +62632,16 @@ ${innerMarkdown}
                     const container2 = doc3.createElement("div");
                     container2.style.margin = "20px 0";
                     container2.style.textAlign = "center";
+                    container2.style.pageBreakInside = "avoid";
+                    container2.style.breakInside = "avoid";
+                    container2.style.maxHeight = format === "pdf" ? "240mm" : "92vh";
+                    container2.style.overflow = "hidden";
                     const importedSvg = doc3.importNode(svgNode, true);
                     importedSvg.setAttribute("width", importedSvg.getAttribute("width") || "100%");
                     importedSvg.style.maxWidth = "100%";
+                    importedSvg.style.width = "auto";
                     importedSvg.style.height = "auto";
+                    importedSvg.style.maxHeight = format === "pdf" ? "240mm" : "92vh";
                     importedSvg.style.display = "inline-block";
                     container2.appendChild(importedSvg);
                     diag.replaceWith(container2);
@@ -64959,7 +64979,7 @@ ${innerMarkdown}
               onClick: handleCreateRootPage,
               "aria-label": "Cr\xE9er une page",
               title: "Cr\xE9er une page",
-              children: /* @__PURE__ */ jsx("i", { "data-lucide": "file-plus", "aria-hidden": "true" })
+              children: /* @__PURE__ */ jsx("i", { "data-lucide": "file-plus-2", "aria-hidden": "true" })
             }
           ),
           /* @__PURE__ */ jsxs("form", { id: "memoEmptyStateSearchForm", className: "memo-empty-state__search", role: "search", children: [
@@ -65149,4 +65169,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map
