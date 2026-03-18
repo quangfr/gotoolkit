@@ -53315,7 +53315,7 @@ ${drawTypeValue}`,
 ${promptInput.trim()}`
         ].join("\n\n");
         const payload = {
-          model: "openai/gpt-oss-120b",
+          model: "openai/gpt-oss-120b:nitro",
           messages: [
             { role: "system", content: template },
             { role: "user", content: userContent }
@@ -65169,3 +65169,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
+//# sourceMappingURL=memo.bundle.js.map

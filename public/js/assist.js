@@ -1415,6 +1415,34 @@
         };
     }
 
+    function buildReferenceDedupKey(reference) {
+        if (!reference || typeof reference !== "object") return "";
+        var snippet = Array.isArray(reference.snippet)
+            ? reference.snippet.filter(Boolean).join("|")
+            : String(reference.snippet || "").trim();
+        return [
+            String(reference.documentId || "").trim().toLowerCase(),
+            String(reference.chunkId || "").trim().toLowerCase(),
+            String(reference.documentName || "").trim().toLowerCase(),
+            String(reference.abstract || "").trim().toLowerCase(),
+            reference.line === null || reference.line === undefined ? "" : String(reference.line),
+            reference.page === null || reference.page === undefined ? "" : String(reference.page),
+            snippet.toLowerCase()
+        ].join("::");
+    }
+
+    function dedupeReferences(references) {
+        if (!Array.isArray(references) || !references.length) return [];
+        var seen = new Set();
+        return references.filter(function (reference) {
+            var key = buildReferenceDedupKey(reference);
+            if (!key) return true;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+
     function normalizeHighlightSnippet(value) {
         return String(value || "").replace(/\s+/g, " ").trim();
     }
@@ -10916,7 +10944,7 @@
             collect(container?.content);
         });
         return {
-            references: refs,
+            references: dedupeReferences(refs.map(normalizeReference).filter(Boolean)),
             suggestions: suggestions
         };
     }
@@ -10965,9 +10993,7 @@
                 : (output && output.length ? "Import effectué." : "Non trouvé dans la base");
             return {
                 content: finalContent,
-                references: references
-                    .map(normalizeReference)
-                    .filter(Boolean),
+                references: dedupeReferences(references.map(normalizeReference).filter(Boolean)),
                 suggestions: suggestions.filter(Boolean).slice(0, 3),
                 operations: operations,
                 output: output

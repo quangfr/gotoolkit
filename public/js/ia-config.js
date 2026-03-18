@@ -10,16 +10,26 @@
         REASONING_EFFORT: "go-toolkit-openrouter-reasoning-effort"
     };
 
+    var LEGACY_OPENROUTER_MODEL_ALIASES = {
+        "openai/gpt-oss-120b": "openai/gpt-oss-120b:nitro"
+    };
+
+    function normalizeOpenRouterModel(value) {
+        var normalized = String(value || "").trim();
+        if (!normalized) return "";
+        return LEGACY_OPENROUTER_MODEL_ALIASES[normalized] || normalized;
+    }
+
     var DEFAULTS = {
         CONTEXT_WINDOW: "0",
-        OPENROUTER_MODEL: "openai/gpt-oss-120b",
+        OPENROUTER_MODEL: "openai/gpt-oss-120b:nitro",
         OPENROUTER_OCR_MODEL: "nvidia/nemotron-nano-12b-v2-vl",
         OPENROUTER_EMBEDDINGS_MODEL: "qwen/qwen3-embedding-8b",
         OPENROUTER_REASONING_EFFORT: "low"
     };
 
     var OPENROUTER_MODELS = [
-        "openai/gpt-oss-120b",
+        "openai/gpt-oss-120b:nitro",
         "qwen/qwen3.5-35b-a3b",
         "qwen/qwen3.5-397b-a17b",
         "xiaomi/mimo-v2-flash",
@@ -79,7 +89,7 @@
             safeStorageWrite(STORAGE_KEYS.CONTEXT_WINDOW, normalized);
         },
         getOpenRouterModel: function () {
-            var model = safeStorageRead(STORAGE_KEYS_OPENROUTER.MODEL);
+            var model = normalizeOpenRouterModel(safeStorageRead(STORAGE_KEYS_OPENROUTER.MODEL));
             if (!model) {
                 model = DEFAULTS.OPENROUTER_MODEL;
             }
@@ -89,7 +99,7 @@
             return model;
         },
         setOpenRouterModel: function (value) {
-            var normalized = (value || "").trim();
+            var normalized = normalizeOpenRouterModel(value);
             if (!normalized || OPENROUTER_MODELS.indexOf(normalized) === -1) {
                 normalized = DEFAULTS.OPENROUTER_MODEL;
             }

@@ -189,7 +189,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
       ].join('\n\n');
 
       const payload = {
-        model: "openai/gpt-oss-120b",
+        model: "openai/gpt-oss-120b:nitro",
         messages: [
           { role: "system", content: template },
           { role: "user", content: userContent }

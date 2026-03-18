@@ -583,7 +583,7 @@
             return proxyPayload;
         }
 
-        const defaultModel = "openai/gpt-oss-120b";
+        const defaultModel = "openai/gpt-oss-120b:nitro";
         const result = {
             model: requestedModel || defaultModel,
             messages: buildOpenRouterMessages(source)
@@ -929,7 +929,7 @@
                 type: "openrouter-proxy",
                 endpoint: global.GoToolkitIAConfig?.OPENROUTER_PROXY_ENDPOINT || "https://openrouter.gotoolkit.workers.dev/api/v1/chat/completions",
                 apiKey: "",
-                model: global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "openai/gpt-oss-120b"
+                model: global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "openai/gpt-oss-120b:nitro"
             };
             const result = await executeOpenRouter(fallbackBackend, payload || {}, stopCondition, signal, onChunk);
             recordAIResponse(result);

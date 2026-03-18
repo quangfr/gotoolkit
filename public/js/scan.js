@@ -3,7 +3,7 @@
   const HANDOFF_COLLECTION = "handoffs";
   const CODE_COLLECTION = "codes_map";
   const OCR_MODEL = "nvidia/nemotron-nano-12b-v2-vl";
-  const MOBILE_EDIT_MODEL = "openai/gpt-oss-120b";
+  const MOBILE_EDIT_MODEL = "openai/gpt-oss-120b:nitro";
   const MOBILE_EDIT_TEMPERATURE = 0.3;
   const MOBILE_EDIT_PRESET_FALLBACK =
     "Tu modifies le HANDOFF selon ASK. Réponds uniquement avec un objet JSON strict: {\"title\":\"résumé 2-3 mots\",\"content\":\"contenu final complet\"}. Ne pas ajouter spontanément des émojis si ce n'est pas demandé. Pas de tableau. Pas de Markdown.";

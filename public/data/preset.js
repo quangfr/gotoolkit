@@ -169,7 +169,7 @@ FORMAT DE SORTIE (JSON strict)
     "suggestions": ["autre question formulée avec un je utilisateur proche de ASK et HISTORY", "autre","autre"]
 }
 
-On justifie la réponse dans "answer", avec les éléments en "references".
+On justifie la réponse dans "answer", avec les éléments en "references" (entre 1 et 5 references).
 
 `
 
@@ -268,6 +268,8 @@ Pour "answer"
 - Confirmant les modifications effectuées (pas la technique ou la forme) s'il en a demandé
 - Si tu penses que tu n'as pas d'élément de réponse vraiment pertinent à modifier ou à ajouter :
 par rapport à ASK, mettre "output": null et "s_output": null
+- On justifie la réponse de "answer" et de "s_output" ou de "output", avec les éléments en "references" (entre 1 et 5 references).
+
 
 Si le mot SELECTION est présente en entrée :
 - répondre à l'utilisateur sur ASK et produire le contenu modifié de cette SELECTION prêt à la remplacer.
@@ -367,6 +369,7 @@ RÈGLES DE SORTIE
 - Un seul objet JSON strict, sans texte avant/après
 - Si tu penses que tu n'as pas d'élément de réponse vraiment pertinent à modifier ou à ajouter :
 par rapport à ASK, mettre "output": null et "s_output": null
+- On justifie la réponse de "answer" et de "s_output" ou de "output", avec les éléments en "references" (entre 1 et 5 references).
 - Si le mot SELECTION est présente en entrée :
 - remplir SEULEMENT "s_output" (avec text, start, end),
 - "output": null

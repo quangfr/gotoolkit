@@ -254,7 +254,7 @@
                                     </button>
                                 </span>
                                 <select id="openrouterModelInput">
-                                    <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
+                                    <option value="openai/gpt-oss-120b:nitro">openai/gpt-oss-120b:nitro</option>
                                     <option value="qwen/qwen3.5-35b-a3b">qwen/qwen3.5-35b-a3b</option>
                                     <option value="qwen/qwen3.5-397b-a17b">qwen/qwen3.5-397b-a17b</option>
                                     <option value="xiaomi/mimo-v2-flash">xiaomi/mimo-v2-flash</option>
@@ -572,7 +572,7 @@
         );
         const value = allowedModels.includes(stored)
             ? stored
-            : (global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "openai/gpt-oss-120b");
+            : (global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "openai/gpt-oss-120b:nitro");
         if (value) input.value = value;
     }
 
