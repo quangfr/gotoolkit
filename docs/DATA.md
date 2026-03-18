@@ -1,6 +1,6 @@
 # GoToolkit Data Architecture
 
-Date: 2026-03-17
+Date: 2026-03-18
 Purpose: describe how app data is structured, stored, synced, ingested, and processed so coding agents can modify the right layer without guessing
 Scope: `public/`, `workers/share-proxy`, browser storage, cloud storage
 
@@ -795,6 +795,10 @@ It should not be treated as a separate primary storage system alongside private 
 For agents, the practical interpretation is:
 
 - `knowledge-*` stores support AI ingestion, indexing selection, caching, and preview flows
+- The knowledge manifest for memo pages must be built from the durable memo/share registries, not only the live explorer snapshot.
+  Page switches or reloads can temporarily narrow the explorer view; selected knowledge must remain globally ingestible across those transitions.
+- Changing the active knowledge page/space selection is a retrieval-filter change, not an ingestion trigger.
+  Selection changes should reuse the already indexed knowledge corpus and must not restart ingestion by themselves.
 - the underlying source data is usually still private docs, shared pages, or imported documents
 - when changing AI-in or retrieval behavior, inspect these stores before adding new persistence or inventing a new data model
 

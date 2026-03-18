@@ -97,6 +97,7 @@ Use this when `/` should stay empty or a direct page URL should trigger auth/acc
     - `window.GoToolkitMemoGetActiveDocumentId?.()` is empty
     - header breadcrumb is hidden
     - `memo-card` is hidden
+    - stale `goToolkit.memo.openDocuments` localStorage alone does not activate a page on `/`
   - if static HTML looks correct but the browser still shows a card, inspect `src/memo-bridge/index.tsx` for default-editor bootstrap
 
 - direct UUID or shared deep-link auth bugs
@@ -221,18 +222,19 @@ Current built-in automation hooks in the repo:
 - `npm run playwright:persist:headed`
 - `scripts/playwright-auth-bootstrap.mjs`
 - `scripts/playwright-persist.sh`
-- `tests/cloud-sync-persist.spec.ts`
-- `tests/cloud-private-transfer-sync.spec.ts`
-- `tests/cloud-switch-persist.spec.ts`
-- `tests/cloud-rapid-switch-large.spec.ts`
-- `tests/close-active-page.spec.ts`
-- `tests/private-delete-switch-regression.spec.ts`
-- `tests/private-heading-repair-entrypoints.spec.ts`
-- `tests/private-switch-persist.spec.ts`
-- `tests/sample-refresh-heading-diagnose.spec.ts`
+- `tests/tier/t1-2-cloud-sync-persist.spec.ts`
+- `tests/tier/t4-8-cloud-private-transfer-sync.spec.ts`
+- `tests/tier/t1-1-cloud-switch-persist.spec.ts`
+- `tests/tier/t4-6-cloud-rapid-switch-large.spec.ts`
+- `tests/tier/t4-1-close-active-page.spec.ts`
+- `tests/tier/t4-2-private-delete-switch-regression.spec.ts`
+- `tests/tier/t4-3-private-heading-repair-entrypoints.spec.ts`
+- `tests/tier/t4-4-private-switch-persist.spec.ts`
+- `tests/tier/t4-5-sample-refresh-heading-diagnose.spec.ts`
 - `tests/debug/root-empty-shell.spec.ts`
 - `tests/debug/empty-shell-search.spec.ts`
-- `tests/space-code-rotate.spec.ts`
+- `tests/debug/assist-knowledge-selection.spec.ts`
+- `tests/tier/t3-1-space-code-rotate.spec.ts`
 - `scripts/with-env-local.sh`
 
 Current useful worker/API surfaces:
@@ -266,7 +268,7 @@ Coverage-map maintenance rule:
 Latest targeted Playwright run:
 
 - `Last execution`: `2026-03-18 21:52`
-- `Scope`: `tests/microsoft-oauth-proxy.spec.ts`
+- `Scope`: `tests/tier/t1-3-microsoft-oauth-proxy.spec.ts`
 - `Execution length`: `3 tests`
 - `Execution time`: `00:21`
 - `Result`: `2 passed, 0 failed, 1 skipped`
@@ -276,12 +278,15 @@ Recent troubleshooting note:
 
 - `private-switch-persist.spec.ts` is the primary fast check for generic local-page persistence regressions
 - if that spec passes but a heavier import/reload spec fails, suspect restore hydration or renderer rehydration before suspecting IndexedDB durability
-- `tests/sample-refresh-heading-diagnose.spec.ts` is the maintained repro for imported Markdown refresh survival plus post-reload heading-title preservation around table and Mermaid-adjacent sections
-- keep non-tier or one-off repro specs under `tests/debug/` by default; only promote a spec to the top-level `tests/` directory when it is intentionally part of a maintained tier below
-- `tests/debug/assist-page-switch-conversation.spec.ts` is the focused repro for per-page Assist conversation scoping plus summary-tab alignment during private page switches with one delayed inline edit and one send-button edit
-- `tests/private-delete-switch-regression.spec.ts` is the maintained repro for deleting an active private page, reopening another private page, and verifying no blank or duplicated content across repeated switches
-- `tests/close-active-page.spec.ts` is the maintained repro for the breadcrumb close button returning the app to the empty shell cleanly
-- `tests/private-heading-repair-entrypoints.spec.ts` is the maintained guard for private `sample.md` reopen/create/reload heading repair, including headings after `Artefacts PO`
+- all promoted tier specs must live under `tests/tier/`
+- promoted tier spec filenames must be prefixed with their tier slot as `tX-Y-`, for example `tests/tier/t2-7-assist-page-switch-conversation.spec.ts`
+- `tests/tier/t4-5-sample-refresh-heading-diagnose.spec.ts` is the maintained repro for imported Markdown refresh survival plus post-reload heading-title preservation around table and Mermaid-adjacent sections
+- keep non-tier or one-off repro specs under `tests/debug/` by default; only promote a spec to `tests/tier/` when it is intentionally part of a maintained tier below
+- when promoting a debug spec, move it into `tests/tier/` instead of `tests/`
+- `tests/tier/t2-7-assist-page-switch-conversation.spec.ts` is the maintained Tier 2 repro for Assist conversation isolation across private page switches and the empty-shell Explorer scope, plus summary-tab alignment during one delayed inline edit and one send-button edit
+- `tests/tier/t4-2-private-delete-switch-regression.spec.ts` is the maintained repro for deleting an active private page, reopening another private page, and verifying no blank or duplicated content across repeated switches
+- `tests/tier/t4-1-close-active-page.spec.ts` is the maintained repro for the breadcrumb close button returning the app to the empty shell cleanly
+- `tests/tier/t4-3-private-heading-repair-entrypoints.spec.ts` is the maintained guard for private `sample.md` reopen/create/reload heading repair, including headings after `Artefacts PO`
 - keep `tests/debug/private-immediate-reload-persist.spec.ts` and `tests/debug/empty-shell-search.spec.ts` in debug until their immediate-reload and empty-search result contracts are stable
 - `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
 - `tests/debug/cloud-open-bootstrap-diagnose.spec.ts` is the focused repro for the new no-active-page startup flow before cloud page open
@@ -293,107 +298,112 @@ Tier suites:
   - results: `4 passed, 0 failed, 1 skipped` (`5 tests`, `01:14`) on `2026-03-18 21:52`
   - details: `Latest suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 1 suite results, including the modal-first Microsoft OAuth flow.`
 
-  - `T1.1` `cloud-switch-persist.spec.ts`
+  - `T1.1` `t1-1-cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
     - results: `passing` (`1 test`, `00:25`) on `2026-03-17 17:42`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `T1.2` `cloud-sync-persist.spec.ts`
+  - `T1.2` `t1-2-cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
     - results: `passing` (`1 test`, `00:28`) on `2026-03-17 17:29`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `T1.3` `microsoft-oauth-proxy.spec.ts`
+  - `T1.3` `t1-3-microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse
     - results: `passing` (`3 tests`, `00:21`) on `2026-03-18 21:52`
     - details: `Latest run passed with 1 skipped after updating the spec to follow the current modal-first connection entry before Microsoft popup auth.`
 
 - `Tier 4` essential troubleshooting
   - description: maintained troubleshooting coverage for shell recovery, private persistence/repair, plus cloud draft/transfer stress guards
-  - results: `10 passed, 1 failed, 0 skipped` (`11 tests`, `02:51`) on `2026-03-17 21:35`
-  - details: `The promoted local troubleshooting slice is fully passing; Tier 4 still carries one older failing cloud stress suite that remains under investigation.`
+  - results: `4 passed, 1 failed, 0 skipped` (`5 tests`, `01:01`) on `2026-03-18 10:13`
+  - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
-  - `T4.1` `close-active-page.spec.ts`
+  - `T4.1` `t4-1-close-active-page.spec.ts`
     - description: closing the active page returns to the empty shell without leaving shell chrome visible
-    - results: `passing` (`1 test`, part of `02:12` grouped local troubleshooting run) on `2026-03-17 21:35`
-    - details: `Latest promoted run passed as part of the maintained local troubleshooting slice.`
+    - results: `passing` (`1 test`, `00:04`) on `2026-03-18 10:11`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `T4.2` `private-delete-switch-regression.spec.ts`
+  - `T4.2` `t4-2-private-delete-switch-regression.spec.ts`
     - description: deleting an active private page does not blank or duplicate remaining private pages during repeated switches
     - results: `passing` (`1 test`, part of `02:12` grouped local troubleshooting run) on `2026-03-17 21:35`
     - details: `Latest promoted run passed as part of the maintained local troubleshooting slice.`
 
-  - `T4.3` `private-heading-repair-entrypoints.spec.ts`
+  - `T4.3` `t4-3-private-heading-repair-entrypoints.spec.ts`
     - description: private reopen/create/reload heading repair for `sample.md`, including headings after `Artefacts PO`
     - results: `passing` (`4 tests`, part of `02:12` grouped local troubleshooting run) on `2026-03-17 21:35`
     - details: `Latest promoted run passed as part of the maintained local troubleshooting slice.`
 
-  - `T4.4` `private-switch-persist.spec.ts`
+  - `T4.4` `t4-4-private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
-    - results: `passing` (`1 test`, part of `02:12` grouped local troubleshooting run) on `2026-03-17 21:35`
-    - details: `Latest promoted run passed as part of the maintained local troubleshooting slice.`
+    - results: `passing` (`1 test`, `00:18`) on `2026-03-18 10:13`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `T4.5` `sample-refresh-heading-diagnose.spec.ts`
+  - `T4.5` `t4-5-sample-refresh-heading-diagnose.spec.ts`
     - description: imported `sample.md` refresh survival plus heading visibility across editor, state, and durable record layers
     - results: `passing` (`1 test`, part of `02:12` grouped local troubleshooting run) on `2026-03-17 21:35`
     - details: `Latest promoted run passed as part of the maintained local troubleshooting slice.`
 
-  - `T4.6` `cloud-rapid-switch-large.spec.ts`
+  - `T4.6` `t4-6-cloud-rapid-switch-large.spec.ts`
     - description: large cloud stress switch/edit flow with pre-sync write suppression and post-sync isolation
     - results: `failing` (`1 test`, `00:02`) on `2026-03-10 11:53`
     - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
-  - `T4.7` `cloud-draft-archive-ops.spec.ts`
+  - `T4.7` `t4-7-cloud-draft-archive-ops.spec.ts`
     - description: local draft archive/delete terminal semantics
     - results: `passing` (`1 test`, `00:02`) on `2026-03-17 17:52`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `T4.8` `cloud-private-transfer-sync.spec.ts`
+  - `T4.8` `t4-8-cloud-private-transfer-sync.spec.ts`
     - description: grouped cloud copy, private promote, and archived fresh-token promotion with reload verification
     - results: `passing` (`1 test`, `00:35`) on `2026-03-12 14:39`
     - details: `Latest run passed after Playwright readiness was updated for the no-active-page-on-open flow.`
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows
-  - results: `1 passed, 2 failed, 0 skipped` (`3 tests`, `01:38`) on `2026-03-12 16:31`
-  - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
+  - results: `3 passed, 3 failed, 1 skipped` (`7 tests`, `02:14`) on `2026-03-18 11:03`
+  - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 2 suite results.`
 
-  - `T2.1` `cloud-history-explicit-sync.spec.ts`
+  - `T2.1` `t2-1-cloud-history-explicit-sync.spec.ts`
     - description: explicit sync gating for remote `pages-history` writes
     - results: `passing` (`1 test`, `00:17`) on `2026-03-10 11:53`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `T2.2` `memo-history-isolation.spec.ts`
+  - `T2.2` `t2-2-memo-history-isolation.spec.ts`
     - description: history isolation plus restore/duplicate correctness per page
     - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
     - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
-  - `T2.3` `excalidraw-regression.spec.ts`
+  - `T2.3` `t2-3-excalidraw-regression.spec.ts`
     - description: grouped Excalidraw/Mermaid regression across flowchart, sequence, and class docs with manual edit, switch, and reload checks
     - results: `passing` (`1 test`, `00:24`) on `2026-03-12 16:31`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
-  - `T2.4` `voice-recording-assemblyai-live.spec.ts`
+  - `T2.4` `t2-4-voice-recording-assemblyai-live.spec.ts`
     - description: real AssemblyAI proxy coverage using `tests/fixtures/sample.wav` during an actual recording, with live transcript mutation, cross-page stop/switch return to the origin page, saved transcript polling, badge state, and video playback verification
     - results: `skipped` (`1 test`, `00:00`) on `2026-03-10 11:53`
     - details: `Latest run skipped. Auto-synced from Playwright suite metrics.`
 
-  - `T2.5` `memo-import-ocr-regression.spec.ts`
+  - `T2.5` `t2-5-memo-import-ocr-regression.spec.ts`
     - description: private-page import of JPG OCR + PDF in one batch with direct paste into the active document
     - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
     - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
 
-  - `T2.6` `memo-import-mermaid-regression.spec.ts`
+  - `T2.6` `t2-6-memo-import-mermaid-regression.spec.ts`
     - description: blank private-page shared-picker Markdown import with no OpenRouter calls, auto-rendered Mermaid SVG previews, and modal code/diagram parity
     - results: `failing` (`1 test`, `01:13`) on `2026-03-12 08:15`
     - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
+
+  - `T2.7` `t2-7-assist-page-switch-conversation.spec.ts`
+    - description: Assist conversation and preset isolation across page A, page B, and empty-shell Explorer scope, including delayed inline edit and send-button flows
+    - results: `passing` (`1 test`, `00:18`) on `2026-03-18 11:03`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 3` admin features
   - description: protected-space administration coverage for space-code rotation and post-rotate readability
   - results: `0 passed, 1 failed, 0 skipped` (`1 test`, `00:01`) on `2026-03-10 11:53`
   - details: `Latest suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 3 suite results.`
 
-  - `T3.1` `space-code-rotate.spec.ts`
+  - `T3.1` `t3-1-space-code-rotate.spec.ts`
     - description: protected-space create/rotate/delete lifecycle and post-rotate readability
     - results: `failing` (`1 test`, `00:01`) on `2026-03-10 11:53`
     - details: `Latest run failed. Auto-synced from Playwright suite metrics.`
@@ -605,7 +615,7 @@ Playwright:
 
 Focused repro:
 
-- `npm run playwright:linux:test -- tests/debug/sample-refresh-heading-diagnose.spec.ts --workers=1 --reporter=line --config=playwright.config.ts`
+- `npm run playwright:linux:test -- tests/tier/t4-5-sample-refresh-heading-diagnose.spec.ts --workers=1 --reporter=line --config=playwright.config.ts`
 
 ### 6.1 Local noise to treat carefully
 
@@ -648,7 +658,7 @@ Persistent Linux mirror details:
 - the script only re-runs `npm ci` when `package-lock.json` changed or `node_modules/` is missing
 - `tests/results/`, `playwright-report/`, and `.tmp/` stay local to each side and are not copied into the mirror
 - after the sync, change into the printed mirror path and run Playwright there
-- `npm run playwright:linux:test -- tests/foo.spec.ts --workers=1 --reporter=line` refreshes the mirror and runs Playwright from it in one command
+- `npm run playwright:linux:test -- tests/tier/t2-7-assist-page-switch-conversation.spec.ts --workers=1 --reporter=line` refreshes the mirror and runs Playwright from it in one command
 
 Generic step-logging pattern:
 

@@ -320,6 +320,7 @@
 
     var CHAT_APP_ID = resolveChatAppId();
     var DEFAULT_CONVERSATION_SCOPE = "default";
+    var MEMO_EXPLORER_CONVERSATION_SCOPE = "memo-explorer";
 
     function isMemoAssistContext() {
         return CHAT_APP_ID === "memo" || CHAT_APP_ID.indexOf("presentation-") === 0;
@@ -377,9 +378,8 @@
             var docIdFromApi = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
                 : null;
-            var docIdFromState = global.__memoState?.activeTabId;
             var docIdFromLegacy = global.__memoActiveDocumentId;
-            var docId = docIdFromApi || docIdFromState || docIdFromLegacy || null;
+            var docId = docIdFromApi || docIdFromLegacy || null;
             return (docId || "").toString().trim() || null;
         } catch (err) {
             return null;
@@ -400,19 +400,24 @@
         }
     }
 
+    function isMemoExplorerScope(scopeId) {
+        return isMemoAssistContext() && String(scopeId || "").trim() === MEMO_EXPLORER_CONVERSATION_SCOPE;
+    }
+
+    function shouldAutoCreateMemoDocumentForScope(scopeId) {
+        if (!isMemoAssistContext()) return false;
+        return !isMemoExplorerScope(scopeId || getConversationScopeId());
+    }
+
     function getConversationScopeId() {
         if (!isMemoAssistContext()) return DEFAULT_CONVERSATION_SCOPE;
-        var tabId = getActiveMemoTabId();
-        if (tabId) return "tab:" + tabId;
         var docId = getActiveMemoDocumentId();
         if (docId) return "doc:" + docId;
-        return DEFAULT_CONVERSATION_SCOPE;
+        return MEMO_EXPLORER_CONVERSATION_SCOPE;
     }
 
     function getConversationScopeIdForDocument(documentId) {
         if (!isMemoAssistContext()) return DEFAULT_CONVERSATION_SCOPE;
-        var activeTabId = getActiveMemoTabId();
-        if (activeTabId) return "tab:" + activeTabId;
         var docId = (documentId || "").toString().trim();
         if (!docId) return getConversationScopeId();
         return "doc:" + docId;
@@ -534,10 +539,16 @@
         }
     }
 
-    var KNOWLEDGE_PROMPT_IDS = ["advice", "edit", "suggest"];
+    var KNOWLEDGE_PROMPT_IDS = ["explore", "edit", "suggest"];
 
     function shouldIncludeKnowledgeForPreset(presetId) {
         return KNOWLEDGE_PROMPT_IDS.includes(presetId);
+    }
+
+    function normalizePromptPresetId(presetId) {
+        var normalized = (presetId || "").toString().trim().toLowerCase();
+        if (normalized === "ask" || normalized === "advice") return "explore";
+        return normalized;
     }
 
     var AI_HISTORY_LIMIT = 20;
@@ -728,25 +739,28 @@
     }
 
     function getAllowedPromptPresetIds() {
-        if (isMemoAssistContext()) return ["edit", "advice", "suggest", "import", "draw"];
-        if (CHAT_APP_ID === "index") return ["edit", "advice", "suggest"];
-        return ["edit", "advice", "suggest"];
+        if (isMemoAssistContext()) {
+            if (!getActiveMemoDocumentId()) return ["explore"];
+            return ["edit", "explore", "suggest", "import", "draw"];
+        }
+        if (CHAT_APP_ID === "index") return ["edit", "explore", "suggest"];
+        return ["edit", "explore", "suggest"];
     }
 
     function readPromptPreset(scopeId) {
         var allowed = getAllowedPromptPresetIds();
-        var defaultPreset = allowed.includes("edit") ? "edit" : (allowed[0] || "advice");
+        var defaultPreset = allowed.includes("edit") ? "edit" : (allowed[0] || "explore");
         var scoped = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString();
         try {
             if (isMemoAssistContext()) {
                 var rawStore = global.localStorage.getItem(PROMPT_PRESET_KEY);
                 var parsedStore = safeParseConversationStore(rawStore);
-                var scopedValue = parsedStore?.[scoped];
+                var scopedValue = normalizePromptPresetId(parsedStore?.[scoped]);
                 if (scopedValue && allowed.includes(scopedValue)) {
                     return scopedValue;
                 }
             } else {
-                var stored = global.localStorage.getItem(PROMPT_PRESET_KEY);
+                var stored = normalizePromptPresetId(global.localStorage.getItem(PROMPT_PRESET_KEY));
                 if (stored && allowed.includes(stored)) {
                     return stored;
                 }
@@ -759,14 +773,15 @@
 
     function persistPromptPreset(value, scopeId) {
         var scoped = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString();
+        var normalizedValue = normalizePromptPresetId(value);
         try {
             if (isMemoAssistContext()) {
                 var rawStore = global.localStorage.getItem(PROMPT_PRESET_KEY);
                 var parsedStore = safeParseConversationStore(rawStore);
-                parsedStore[scoped] = value;
+                parsedStore[scoped] = normalizedValue;
                 global.localStorage.setItem(PROMPT_PRESET_KEY, JSON.stringify(parsedStore));
             } else {
-                global.localStorage.setItem(PROMPT_PRESET_KEY, value);
+                global.localStorage.setItem(PROMPT_PRESET_KEY, normalizedValue);
             }
         } catch (err) {
             console.warn("Chat prompt preset save failed", err);
@@ -786,10 +801,9 @@
     }
 
     function getInstructionStorageKeyForPreset(presetId) {
-        var normalized = (presetId || "").toString().trim().toLowerCase();
-        if (normalized === "ask") normalized = "advice";
+        var normalized = normalizePromptPresetId(presetId);
         var keyMap = {
-            advice: "goToolkit.chat.instructions.advice",
+            explore: "goToolkit.chat.instructions.advice",
             suggest: "goToolkit.chat.instructions.suggest",
             edit: "goToolkit.chat.instructions.edit",
             import: "goToolkit.chat.instructions.import",
@@ -994,6 +1008,16 @@
         return clone.textContent || "";
     }
 
+    function getQuoteBlockCopyText(block) {
+        if (!block) return "";
+        var body = block.querySelector(".chat-quote-block__body");
+        if (body) return body.textContent || "";
+        var clone = block.cloneNode(true);
+        var btn = clone.querySelector(".chat-pre-copy-btn");
+        if (btn) btn.remove();
+        return clone.textContent || "";
+    }
+
     function showCopyToast(message) {
         var text = String(message || "");
         if (!text) return;
@@ -1036,9 +1060,73 @@
             pre.insertBefore(btn, pre.firstChild);
             if (window.lucide) window.lucide.createIcons({ props: { size: 12 } });
         });
+        var quoteBlocks = contentEl.querySelectorAll(".chat-quote-block");
+        quoteBlocks.forEach(function (block) {
+            if (block.querySelector(".chat-pre-copy-btn")) return;
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "chat-pre-copy-btn";
+            btn.setAttribute("aria-label", "Copier");
+            btn.setAttribute("title", "Copier");
+            setElementIconOnly(btn, "copy", "width:12px;height:12px;");
+            btn.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                var originalLabel = btn.getAttribute("aria-label") || "Copier";
+                copyTextToClipboard(getQuoteBlockCopyText(block)).then(function () {
+                    btn.setAttribute("aria-label", "Copié");
+                    showCopyToast("Contenu copié");
+                    setTimeout(function () {
+                        btn.setAttribute("aria-label", originalLabel);
+                    }, 1200);
+                }).catch(function () {
+                    btn.setAttribute("aria-label", "Erreur");
+                    setTimeout(function () {
+                        btn.setAttribute("aria-label", originalLabel);
+                    }, 1200);
+                });
+            });
+            block.insertBefore(btn, block.firstChild);
+            if (window.lucide) window.lucide.createIcons({ props: { size: 12 } });
+        });
+    }
+
+    function parseQuotedMarkdownBlock(text) {
+        var source = String(text || "").replace(/\r\n?/g, "\n");
+        if (!source.trim()) return null;
+        var lines = source.split("\n");
+        var bodyLines = [];
+        var hasQuotedContent = false;
+        for (var i = 0; i < lines.length; i += 1) {
+            var line = String(lines[i] || "");
+            if (!line.trim()) {
+                bodyLines.push("");
+                continue;
+            }
+            var match = line.match(/^\s*>\s?(.*)$/);
+            if (!match) return null;
+            hasQuotedContent = true;
+            bodyLines.push(String(match[1] || ""));
+        }
+        if (!hasQuotedContent) return null;
+        return bodyLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    }
+
+    function renderQuotedMarkdownBlock(text) {
+        var quotedText = parseQuotedMarkdownBlock(text);
+        if (!quotedText) return "";
+        return [
+            '<div class="chat-quote-block">',
+            '<div class="chat-quote-block__body">',
+            escapeHtml(quotedText).replace(/\n/g, "<br>"),
+            "</div>",
+            "</div>"
+        ].join("");
     }
 
     function renderBotMarkdown(text) {
+        var quotedBlockHtml = renderQuotedMarkdownBlock(text);
+        if (quotedBlockHtml) return quotedBlockHtml;
         if (global.GoToolkitMarkdown) {
             if (typeof global.GoToolkitMarkdown.renderDocument === "function") {
                 return global.GoToolkitMarkdown.renderDocument(text);
@@ -1850,6 +1938,7 @@
         this.updatePromptDropdownLabel();
         this.updateInlinePromptDropdownLabel();
         this.updateInputPlaceholder();
+        this.updateMemoSelectionFollowButtonVisibility();
         this.updateComposerState();
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
@@ -1857,6 +1946,9 @@
         this.renderQueuedMessages();
         this.refreshAiRequestToaster?.();
         this.updateHeaderDocumentCount();
+        if (isMemoExplorerScope(nextScopeId) && !this.isOpen) {
+            this.open();
+        }
         setTimeout(function () {
             this.applyPendingInlineEditForScope(nextScopeId, 0);
         }.bind(this), 220);
@@ -3410,10 +3502,12 @@
             || "";
 
         var all = {
-            advice: {
-                id: "advice",
-                label: storePresets?.advice?.label || "Demander",
-                icon: storePresets?.advice?.icon || "message-square",
+            explore: {
+                id: "explore",
+                label: isMemoExplorerScope(this.currentConversationScopeId)
+                    ? "Explorer"
+                    : (storePresets?.explore?.label || "Explorer"),
+                icon: storePresets?.explore?.icon || "message-square",
                 prompt: advicePrompt
             },
             suggest: {
@@ -3462,7 +3556,8 @@
         var allowed = getAllowedPromptPresetIds();
         options = options || {};
         var prevPreset = this.promptPresetId;
-        var next = allowed.includes(presetId) ? presetId : (allowed[0] || "advice");
+        var normalizedPresetId = normalizePromptPresetId(presetId);
+        var next = allowed.includes(normalizedPresetId) ? normalizedPresetId : (allowed[0] || "explore");
         this.promptPresetId = next;
         persistPromptPreset(next, this.currentConversationScopeId);
         try {
@@ -3472,7 +3567,7 @@
                 }));
             }
         } catch (err) { /* ignore */ }
-        if (next !== "advice") {
+        if (next !== "explore") {
             this.closeKnowledgeModal(false);
         }
         this.updatePromptDropdownLabel();
@@ -3486,7 +3581,7 @@
         if (!this.textarea) return;
         var placeholders = {
             'edit': 'Que veux-tu modifier ?',
-            'advice': 'Que veux-tu demander ou explorer ?',
+            'explore': 'Que veux-tu demander ou explorer ?',
             'draw': 'Que veux-tu dessiner ?',
             'suggest': 'Que veux-tu corriger ?',
             'ask': 'Que veux-tu explorer ?',
@@ -3494,6 +3589,15 @@
             'extract': 'Que veux-tu extraire ?'
         };
         this.textarea.placeholder = placeholders[this.promptPresetId] || 'ok go, ok annule, ok efface';
+    };
+
+    AssistSidebar.prototype.updateMemoSelectionFollowButtonVisibility = function () {
+        if (!this.memoSelectionFollowButton) return;
+        var hidden = isMemoExplorerScope(this.currentConversationScopeId);
+        this.memoSelectionFollowButton.style.display = hidden ? "none" : "";
+        if (hidden && this.memoSelectionOverlay) {
+            this.memoSelectionOverlay.style.display = "none";
+        }
     };
 
     AssistSidebar.prototype.initMemoSelectionTracking = function () {
@@ -3735,7 +3839,7 @@
 
     AssistSidebar.prototype.getActiveSystemPrompt = function () {
         var prompt = "";
-        if (this.promptPresetId === "ask" || this.promptPresetId === "advice") {
+        if (this.promptPresetId === "ask" || this.promptPresetId === "explore") {
             prompt = getInfoPrompt();
         }
         if (!prompt && this.promptPresetId === "suggest") {
@@ -4038,7 +4142,7 @@
     };
 
     AssistSidebar.prototype.isVisionPreset = function (presetId) {
-        return presetId === "edit" || presetId === "advice" || presetId === "suggest";
+        return presetId === "edit" || presetId === "explore" || presetId === "suggest";
     };
 
     AssistSidebar.prototype.isVisionAttachmentName = function (name) {
@@ -4795,7 +4899,7 @@
         this.scrollToBottom();
 
         try {
-        if (isMemoAssistContext()) {
+        if (isMemoAssistContext() && shouldAutoCreateMemoDocumentForScope(this.currentConversationScopeId)) {
             var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
                 : null;
@@ -5413,7 +5517,7 @@
         menu.hidden = true;
 
         var presets = this.getPromptPresets();
-        var presetKeys = ["edit", "advice", "suggest"];
+        var presetKeys = getAllowedPromptPresetIds();
         presetKeys.forEach(function (key) {
             var preset = presets[key];
             if (!preset) {
@@ -5479,7 +5583,7 @@
         menu.hidden = true;
 
         var presets = this.getPromptPresets();
-        var presetKeys = ["edit", "advice", "suggest"];
+        var presetKeys = getAllowedPromptPresetIds();
         presetKeys.forEach(function (key) {
             var preset = presets[key];
             if (!preset) {
@@ -6311,6 +6415,7 @@
             }
         }.bind(this));
         composerLeftActions.appendChild(this.memoSelectionFollowButton);
+        this.updateMemoSelectionFollowButtonVisibility();
         this.sidebar.appendChild(composer);
         if (window.lucide) window.lucide.createIcons();
 
@@ -6405,7 +6510,7 @@
     };
 
     AssistSidebar.prototype.openDocumentSelector = async function () {
-        if (isMemoAssistContext()) {
+        if (isMemoAssistContext() && shouldAutoCreateMemoDocumentForScope(this.currentConversationScopeId)) {
             var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
                 : null;
@@ -6443,7 +6548,7 @@
             directPasteMode: Boolean(options?.directPasteMode),
             markdownViaAi: Boolean(options?.markdownViaAi)
         });
-        if ((isMemoAssistContext() || options?.memoTarget) && options?.skipIngestion) {
+        if ((isMemoAssistContext() || options?.memoTarget) && options?.skipIngestion && shouldAutoCreateMemoDocumentForScope(this.currentConversationScopeId)) {
             var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
                 : null;
@@ -6767,7 +6872,7 @@
             markdownViaAi: markdownViaAi
         });
 
-        if (useMemoDirectImport && skipIngestion && !memoId && typeof global.GoToolkitMemoCreateAutoDocument === "function") {
+        if (useMemoDirectImport && skipIngestion && !memoId && typeof global.GoToolkitMemoCreateAutoDocument === "function" && shouldAutoCreateMemoDocumentForScope(this.currentConversationScopeId)) {
             await global.GoToolkitMemoCreateAutoDocument();
             memoId = this.getActiveMemoId();
             tabId = memoId || null;
@@ -8931,9 +9036,9 @@
         var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
         var selection = this.buildKnowledgeSelectionFromSpaces(entries);
         this.setKnowledgeModalSelection(selection);
-        await this.reindexKnowledgeSelection(entries, selection, { reindexIfUpdated: true });
         this.updateHeaderDocumentCount();
         this.setKnowledgeModalStatus("");
+        this.refreshDocumentStats();
         this.renderMemorySpacesMenu();
     };
 
@@ -8969,9 +9074,9 @@
         var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
         var selection = this.buildKnowledgeSelectionFromSpaces(entries);
         this.setKnowledgeModalSelection(selection);
-        await this.reindexKnowledgeSelection(entries, selection, { reindexIfUpdated: true });
         this.updateHeaderDocumentCount();
         this.setKnowledgeModalStatus("");
+        this.refreshDocumentStats();
         this.renderMemorySpacesMenu();
     };
 
@@ -9383,6 +9488,15 @@
         var seenIds = new Set();
         var privateRecordMap = new Map();
         var sharedRecordMap = new Map();
+        var sourceItems = [];
+        var sourceItemsById = new Map();
+        var addSourceItem = function (item) {
+            if (!item) return;
+            var id = String(item.id || "").trim();
+            if (!id || sourceItemsById.has(id)) return;
+            sourceItemsById.set(id, item);
+            sourceItems.push(item);
+        };
         try {
             var records = await global.goToolkitDocumentApi?.getAllRecords?.();
             (records || []).forEach(function (record) {
@@ -9409,19 +9523,33 @@
         } catch (err) {
             explorerItems = [];
         }
-        var sourceItems = Array.isArray(explorerItems) && explorerItems.length
-            ? explorerItems
-            : Array.from(privateRecordMap.values()).map(function (record) {
-                return {
-                    id: record.id,
-                    title: record.title,
-                    description: record.description,
-                    icon: record.icon,
-                    parentId: record.parentId || "",
-                    section: "private",
-                    updatedAt: record.updatedAt || ""
-                };
+        if (Array.isArray(explorerItems) && explorerItems.length) {
+            explorerItems.forEach(addSourceItem);
+        }
+        privateRecordMap.forEach(function (record, id) {
+            addSourceItem({
+                id: id,
+                title: record?.title,
+                description: record?.description,
+                icon: record?.icon,
+                parentId: record?.parentId || "",
+                section: "private",
+                updatedAt: record?.updatedAt || ""
             });
+        });
+        sharedRecordMap.forEach(function (record, token) {
+            addSourceItem({
+                id: "share:" + token,
+                title: record?.title,
+                description: record?.description,
+                icon: record?.icon,
+                parentId: record?.parentId || "",
+                section: "shared",
+                updatedAt: record?.updatedAt || "",
+                isShared: true,
+                spaceId: record?.spaceId || record?.space || ""
+            });
+        });
         sourceItems.forEach(function (item) {
             if (!item) return;
             var id = String(item.id || "").trim();
@@ -9854,8 +9982,6 @@
             var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
             var selection = this.buildKnowledgeSelectionFromSpaces(entries);
             this.setKnowledgeModalSelection(selection);
-            await this.reindexKnowledgeSelection(entries, selection, { reindexIfUpdated: true });
-            if (token !== this._knowledgeScopeApplyToken) return;
             this.setKnowledgeModalStatus("");
             this.refreshDocumentStats();
         } catch (err) {
@@ -9905,15 +10031,11 @@
             ? this.knowledgeModalSelectionSet
             : new Set();
         if (!selection.size) {
-            var hasSelectedSpaces = this.selectedKnowledgeSpaceIds instanceof Set && this.selectedKnowledgeSpaceIds.size > 0;
-            if (hasSelectedSpaces) {
-                return new Set();
-            }
             try {
             } catch (err) {
                 // ignore
             }
-            return null;
+            return new Set();
         }
         var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
         if (!Array.isArray(docs) || !docs.length) return new Set();

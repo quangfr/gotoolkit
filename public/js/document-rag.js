@@ -4005,6 +4005,7 @@
             const scored = [];
             for (const chunk of chunks) {
                 if (candidateIds && !candidateIds.has(chunk.id)) continue;
+                if (!docMap.has(chunk.docId)) continue;
                 const target = quantizeEmbedding(chunk.emb);
                 const similarity = cosineSimInt8(queryVector, target);
                 if (similarity < minScore) continue;
