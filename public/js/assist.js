@@ -1866,6 +1866,7 @@
         this.knowledgeSelectionStore = createKnowledgeSelectionStore();
         this.selectedKnowledgeSpaceIds = new Set();
         this.selectedKnowledgePageRootsBySpace = new Map();
+        this.memorySpacesSyncDebounceTimer = null;
         this.lastKnowledgeSpaceSyncAt = 0;
         this.knowledgeModal = null;
         this.knowledgeModalStatusMessage = "";
@@ -2191,7 +2192,6 @@
         if (this.textarea) {
             this.textarea.focus();
         }
-        this.ensureKnowledgeIndexWarm();
     };
 
     AssistSidebar.prototype.closeActiveModals = function () {
@@ -4162,7 +4162,7 @@
     };
 
     AssistSidebar.prototype.getConfiguredChatModel = function () {
-        return global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b";
+        return global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b:nitro";
     };
 
     AssistSidebar.prototype.resolveModelForChatRequest = function (userMessage) {
@@ -4919,34 +4919,46 @@
         var docInfo = null;
 
         if (this.docManager) {
+            var contextParams = shouldFetchContextAttachments ? this.getRetrievalParamsForQuestion(value) : null;
+            var knowledgeParams = shouldFetchKnowledge ? this.getRetrievalParamsForQuestion(value) : null;
             var contextHits = [];
-            if (shouldFetchContextAttachments) {
-                var contextParams = this.getRetrievalParamsForQuestion(value);
-                contextHits = await this.retrieveWithFallback(value, this.conversation.id, contextParams, "context", aiInTraceId);
-                if (!Array.isArray(contextHits)) {
-                    contextHits = [];
-                }
-                contextHits = contextHits.filter(function (hit) {
-                    if ((hit?.sourceType || "context") !== "embedded") return true;
-                    var scopes = Array.isArray(hit?.docScopes) ? hit.docScopes : [];
-                    return scopes.includes("attachments");
-                });
-                contextHits = this.filterHitsByPromptPreset(contextHits);
-            }
             var knowledgeHits = [];
-            if (shouldFetchKnowledge) {
-                var knowledgeParams = this.getRetrievalParamsForQuestion(value);
-                knowledgeHits = await this.retrieveWithFallback(value, this.knowledgeConversationId, knowledgeParams, "knowledge", aiInTraceId);
-                if (!Array.isArray(knowledgeHits)) {
-                    knowledgeHits = [];
-                }
-                if (!knowledgeHits.length) {
-                    knowledgeHits = await this.getKnowledgeFallbackHits(knowledgeParams?.topK);
-                    try {
-                    } catch (err) {
-                        // ignore
+            var retrievalTasks = [];
+
+            if (shouldFetchContextAttachments) {
+                retrievalTasks.push((async function () {
+                    var hits = await this.retrieveWithFallback(value, this.conversation.id, contextParams, "context", aiInTraceId);
+                    if (!Array.isArray(hits)) {
+                        hits = [];
                     }
-                }
+                    hits = hits.filter(function (hit) {
+                        if ((hit?.sourceType || "context") !== "embedded") return true;
+                        var scopes = Array.isArray(hit?.docScopes) ? hit.docScopes : [];
+                        return scopes.includes("attachments");
+                    });
+                    contextHits = this.filterHitsByPromptPreset(hits);
+                }).call(this));
+            }
+
+            if (shouldFetchKnowledge) {
+                retrievalTasks.push((async function () {
+                    var hits = await this.retrieveWithFallback(value, this.knowledgeConversationId, knowledgeParams, "knowledge", aiInTraceId);
+                    if (!Array.isArray(hits)) {
+                        hits = [];
+                    }
+                    if (!hits.length) {
+                        hits = await this.getKnowledgeFallbackHits(knowledgeParams?.topK);
+                        try {
+                        } catch (err) {
+                            // ignore
+                        }
+                    }
+                    knowledgeHits = Array.isArray(hits) ? hits : [];
+                }).call(this));
+            }
+
+            if (retrievalTasks.length) {
+                await Promise.all(retrievalTasks);
             }
             docInfo = {
                 context: this.categorizeHits(contextHits)
@@ -9045,6 +9057,29 @@
         }
     };
 
+    AssistSidebar.prototype.scheduleMemorySpacesSync = function () {
+        if (this.memorySpacesSyncDebounceTimer) {
+            clearTimeout(this.memorySpacesSyncDebounceTimer);
+            this.memorySpacesSyncDebounceTimer = null;
+        }
+        this.setKnowledgeModalStatus("Synchronisation de la base de connaissance dans 5 s…", false);
+        this.memorySpacesSyncDebounceTimer = setTimeout(function () {
+            this.memorySpacesSyncDebounceTimer = null;
+            this.setKnowledgeModalStatus("Synchronisation de la base de connaissance…", false);
+            Promise.resolve(this.syncKnowledgeFromSelectedSpaces({ force: true }))
+                .then(function () {
+                    this.setKnowledgeModalStatus("Base de connaissance synchronisee.", false, 1800);
+                    if (this.memorySpacesMenuEl && this.memorySpacesMenuEl.classList.contains("open")) {
+                        this.renderMemorySpacesMenu();
+                    }
+                }.bind(this))
+                .catch(function (err) {
+                    console.warn("Deferred knowledge sync failed", err);
+                    this.setKnowledgeModalStatus("Synchronisation de la base de connaissance echouee.", true, 2400);
+                }.bind(this));
+        }.bind(this), 5000);
+    };
+
     AssistSidebar.prototype.handleMemorySpaceToggle = async function (event) {
         var target = event?.currentTarget || event?.target;
         if (!target) return;
@@ -9072,6 +9107,7 @@
         this.setKnowledgeModalStatus("");
         this.refreshDocumentStats();
         this.renderMemorySpacesMenu();
+        this.scheduleMemorySpacesSync();
     };
 
     AssistSidebar.prototype.handleMemoryPageToggle = async function (event) {
@@ -9110,6 +9146,7 @@
         this.setKnowledgeModalStatus("");
         this.refreshDocumentStats();
         this.renderMemorySpacesMenu();
+        this.scheduleMemorySpacesSync();
     };
 
     AssistSidebar.prototype.updateHeaderDocumentCount = function () {
@@ -12263,7 +12300,9 @@
             this.syncKnowledgeFromSelectedSpaces({ force: true });
         }.bind(this));
         this.syncKnowledgeFromSelectedSpaces({ force: true });
-        this.ensureKnowledgeIndexWarm();
+        if (this.isOpen) {
+            this.ensureKnowledgeIndexWarm();
+        }
     };
 
     var GoToolkitAssist = {

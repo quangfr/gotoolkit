@@ -1,6 +1,6 @@
 # GoToolkit Interface Map
 
-Date: 2026-03-17
+Date: 2026-03-18
 Purpose: help coding agents locate the right frontend surface, bridge, helper, and runtime owner before changing UI behavior
 Scope: `public/*.html`, `public/js/`, `src/`, frontend window globals, shared UI helpers
 
@@ -121,6 +121,7 @@ Practical rule:
   - config bootstrap
   - RAG DB readiness/repair
   - assistant-side UI helpers and integration glue
+  - empty-state auto-open behavior and open-time retrieval refresh
 
 - `public/js/ia-config.js`
   - backend/model configuration

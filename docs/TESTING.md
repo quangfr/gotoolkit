@@ -267,12 +267,12 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-18 21:52`
-- `Scope`: `tests/tier/t1-3-microsoft-oauth-proxy.spec.ts`
-- `Execution length`: `3 tests`
-- `Execution time`: `00:21`
-- `Result`: `2 passed, 0 failed, 1 skipped`
-- `Details`: `Validated the maintained Microsoft OAuth proxy tier entry against the modal-first connection flow and managed-space load path.`
+- `Last execution`: `2026-03-18 13:22`
+- `Scope`: `tests/debug/assist-reload-warmth.spec.ts`
+- `Execution length`: `1 test`
+- `Execution time`: `00:23`
+- `Result`: `1 passed, 0 failed, 0 skipped`
+- `Details`: `Measured cold, warm, and post-reload real Assist sends, showing roughly 7.3-second cold retrieval, roughly 0.06-second warm retrieval in the same session, and roughly 0.89-second retrieval after a full reload.`
 
 Recent troubleshooting note:
 
@@ -291,6 +291,10 @@ Recent troubleshooting note:
 - keep `tests/debug/private-immediate-reload-persist.spec.ts` and `tests/debug/empty-shell-search.spec.ts` in debug until their immediate-reload and empty-search result contracts are stable
 - `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
 - `tests/debug/cloud-open-bootstrap-diagnose.spec.ts` is the focused repro for the new no-active-page startup flow before cloud page open
+- `tests/debug/assist-first-response-latency.spec.ts` is the focused repro for Assist send-button latency, measuring retrieval overlap and first visible AI content timing with deterministic delays
+- `tests/debug/assist-real-first-response-latency.spec.ts` is the focused repro for real end-to-end Assist latency, measuring retrieval timing, IA request timing, first chunk arrival, and first visible bot text
+- `tests/debug/assist-real-second-send-latency.spec.ts` is the focused repro for comparing cold and warm real Assist sends in the same session, with retrieval, IA request, and first visible text timings
+- `tests/debug/assist-reload-warmth.spec.ts` is the focused repro for comparing cold, warm, and post-reload real Assist sends, with retrieval, IA request, and first visible text timings
 
 Tier suites:
 
