@@ -1868,6 +1868,8 @@
         this.selectedKnowledgePageRootsBySpace = new Map();
         this.memorySpacesSyncDebounceTimer = null;
         this.lastKnowledgeSpaceSyncAt = 0;
+        this.knowledgeWarmupInFlight = false;
+        this.knowledgeSyncInFlight = false;
         this.knowledgeModal = null;
         this.knowledgeModalStatusMessage = "";
         this.knowledgeModalStatusIsError = false;
@@ -6456,14 +6458,20 @@
     };
 
     AssistSidebar.prototype.ensureKnowledgeIndexWarm = function () {
-        if (this.knowledgeIndexing || !this.docManager) return;
+        if (this.knowledgeIndexing || this.knowledgeWarmupInFlight || !this.docManager) return;
+        this.knowledgeWarmupInFlight = true;
+        this.updateHeaderDocumentCount();
         this.docManager.waitReady?.()
             .then(function () {
                 return this.refreshKnowledgeModal({ skipAutoReindex: true });
             }.bind(this))
             .catch(function (err) {
                 console.warn("Knowledge warmup failed", err);
-            });
+            })
+            .finally(function () {
+                this.knowledgeWarmupInFlight = false;
+                this.updateHeaderDocumentCount();
+            }.bind(this));
     };
 
     AssistSidebar.prototype.getFileImportAcceptString = function (options) {
@@ -8748,18 +8756,13 @@
         if (!(selected instanceof Set) || !selected.size) {
             return "none";
         }
-        var counters = this.getKnowledgeSpaceCounters(this.knowledgeManifestEntries);
-        var hasPartial = false;
-        selected.forEach(function (spaceId) {
-            var count = counters.get(spaceId) || { ingested: 0, total: 0 };
-            if (count.ingested < count.total) {
-                hasPartial = true;
-            }
-        });
         if (Boolean(this.knowledgeIndexing)) {
             return "partial";
         }
-        return hasPartial ? "partial" : "full";
+        if (Boolean(this.knowledgeWarmupInFlight) || Boolean(this.knowledgeSyncInFlight)) {
+            return "partial";
+        }
+        return "full";
     };
 
     AssistSidebar.prototype.readSelectedKnowledgeSpaces = function () {
@@ -10112,6 +10115,8 @@
     AssistSidebar.prototype.syncKnowledgeFromSelectedSpaces = async function (options) {
         var opts = options || {};
         if (!this.shouldRunKnowledgeSync(Boolean(opts.force))) return false;
+        this.knowledgeSyncInFlight = true;
+        this.updateHeaderDocumentCount();
         try {
             await this.applyKnowledgeSelectionForCurrentScope();
             this.markKnowledgeSyncRun();
@@ -10119,6 +10124,9 @@
         } catch (err) {
             console.warn("Knowledge spaces sync failed", err);
             return false;
+        } finally {
+            this.knowledgeSyncInFlight = false;
+            this.updateHeaderDocumentCount();
         }
     };
 
