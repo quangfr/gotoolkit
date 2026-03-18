@@ -95,9 +95,12 @@ async function runMicrosoftPopupLogin(
     const preClickState = await page.evaluate(async () => {
       const publisher = (window as any).GoToolkitMicrosoftPublish;
       const status = await publisher?.getAuthStatus?.().catch(() => null);
+      const modal = document.getElementById("connectionModal");
       const menu = document.getElementById("connectionProviderMenu");
       return {
         connectionBtnExists: Boolean(document.getElementById("memoConnectionBtn")),
+        modalExists: Boolean(modal),
+        modalOpen: Boolean(modal?.classList.contains("open")),
         menuExists: Boolean(menu),
         menuOpen: Boolean(menu?.classList.contains("open")),
         statusConnected: Boolean(status?.connected),
@@ -107,26 +110,43 @@ async function runMicrosoftPopupLogin(
     logStep("popup-flow:pre-click-state", preClickState);
     await page.locator("#memoConnectionBtn").click();
     logStep("popup-flow:clicked-connection-btn");
-    await page.waitForSelector("#connectionProviderMenu.open", { timeout: 10_000 }).catch(() => null);
-    const menuStateAfterClick = await page.evaluate(() => {
+
+    const chooserStateAfterClick = await page.evaluate(() => {
+      const modal = document.getElementById("connectionModal");
       const menu = document.getElementById("connectionProviderMenu");
-      const items = Array.from(menu?.querySelectorAll('[role="menuitem"]') || []).map(node => ({
+      const menuItems = Array.from(menu?.querySelectorAll('[role="menuitem"]') || []).map(node => ({
         text: String((node as HTMLElement).innerText || node.textContent || "").trim(),
         ariaLabel: String((node as HTMLElement).getAttribute("aria-label") || "").trim()
       }));
+      const modalButtons = Array.from(modal?.querySelectorAll("button") || []).map(node => ({
+        id: String((node as HTMLElement).id || "").trim(),
+        text: String((node as HTMLElement).innerText || node.textContent || "").trim()
+      }));
       return {
+        modalOpen: Boolean(modal?.classList.contains("open")),
+        modalButtons,
         menuOpen: Boolean(menu?.classList.contains("open")),
-        items
+        menuItems
       };
     });
-    logStep("popup-flow:menu-state-after-click", menuStateAfterClick);
-    const microsoftItem = page.locator('#connectionProviderMenu.open [role="menuitem"]').filter({ hasText: /microsoft/i }).first();
-    const microsoftVisible = await microsoftItem.isVisible({ timeout: 5_000 }).catch(() => false);
-    logStep("popup-flow:microsoft-menuitem-visible", { visible: microsoftVisible });
-    if (microsoftVisible) {
-      await microsoftItem.click();
-      writeDebug("clicked_microsoft_provider");
-      logStep("popup-flow:clicked-microsoft-provider");
+    logStep("popup-flow:chooser-state-after-click", chooserStateAfterClick);
+
+    const microsoftModalButton = page.locator("#connectionModal.open #connectionMicrosoftBtn").first();
+    const modalButtonVisible = await microsoftModalButton.isVisible({ timeout: 5_000 }).catch(() => false);
+    logStep("popup-flow:microsoft-modal-button-visible", { visible: modalButtonVisible });
+    if (modalButtonVisible) {
+      await microsoftModalButton.click();
+      writeDebug("clicked_microsoft_modal_button");
+      logStep("popup-flow:clicked-microsoft-modal-button");
+    } else {
+      const microsoftItem = page.locator('#connectionProviderMenu.open [role="menuitem"]').filter({ hasText: /microsoft/i }).first();
+      const menuItemVisible = await microsoftItem.isVisible({ timeout: 5_000 }).catch(() => false);
+      logStep("popup-flow:microsoft-menuitem-visible", { visible: menuItemVisible });
+      if (menuItemVisible) {
+        await microsoftItem.click();
+        writeDebug("clicked_microsoft_provider");
+        logStep("popup-flow:clicked-microsoft-provider");
+      }
     }
     popup = await popupPromise;
   } else {

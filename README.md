@@ -8,7 +8,7 @@ Ce README donne le minimum pour :
 - comprendre où modifier quoi
 
 Pour le détail architecture, sécurité et tests, voir :
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/DATA.md](docs/DATA.md)
 - [docs/SECURITY.MD](docs/SECURITY.MD)
 - [docs/TESTING.md](docs/TESTING.md)
 
@@ -152,7 +152,7 @@ Ces fichiers doivent rester faciles à trouver et sont consommés directement pa
 ## Quand ouvrir les autres docs
 
 - Architecture stockage, sync, cloud, partage :
-  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+  [docs/DATA.md](docs/DATA.md)
 
 - Sécurité frontend, CSP, auth, règles de partage :
   [docs/SECURITY.MD](docs/SECURITY.MD)

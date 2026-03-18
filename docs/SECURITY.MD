@@ -1,6 +1,6 @@
 # GoToolkit Security Architecture
 
-Date: 2026-03-16
+Date: 2026-03-18
 Purpose: short technical map of how security works in the current codebase
 Scope: `public/`, `workers/`, `firebase.json`
 
@@ -258,6 +258,94 @@ Write and sync-sensitive operations also use:
 These are validated server-side to reject missing or replayed sync requests.
 
 Current server-side checks include:
+
+## 9. Audit Baseline
+
+This section replaces the old standalone `AUDIT_SECURITY.md`.
+
+### 9.1 Scope
+
+- browser app under `public/` and `src/`
+- Cloudflare Workers under `workers/`
+- static configuration under `scripts/` and `firebase.json`
+- static code review only; no live exploit simulation or credentialed environment review
+
+### 9.2 Current status
+
+- no confirmed high or medium findings from the current static pass
+- current controls materially reduce risk around protected-space auth, sync replay, OAuth identity reuse, and CSP drift
+- current residual exposure is mostly operational: CSP mirror discipline, HTML sanitizer discipline, browser-side decryption material, and auth-path logging hygiene
+
+### 9.3 Controls confirmed in code
+
+- protected share auth is tokenized and scoped
+  - `spaceCode` is validated once, then the worker mints a short-lived HMAC-signed `X-Space-Auth` bound to `spaceId` and `exp`
+  - malformed, expired, or wrong-scope tokens are rejected before protected access
+  - evidence:
+    - `workers/share-proxy/index.js`
+
+- sync-sensitive routes have anti-replay checks
+  - the browser client adds `X-Sync-Session`, `X-Sync-JTI`, and `X-Sync-TS`
+  - the worker validates presence, clock skew, session revocation, and one-time JTI use before non-read sync operations
+  - evidence:
+    - `public/js/share-worker-client.js`
+    - `workers/share-proxy/index.js`
+
+- managed-space OAuth identity is re-verified server-side
+  - Gmail and Microsoft workers mint short-lived identity assertions only after an authenticated worker session exists
+  - `share-proxy` verifies the `identityToken`, resolves allowed spaces by email, and only then resolves the managed `spaceCode`
+  - evidence:
+    - `workers/gmail-proxy/index.js`
+    - `workers/ms-proxy/index.js`
+    - `workers/share-proxy/index.js`
+
+- OAuth session state stays worker-side
+  - OAuth workers store session payloads in D1 `oauth_sessions`, keyed by provider and session key, with expiry metadata
+  - provider tokens and state are kept out of normal frontend storage paths
+  - evidence:
+    - `workers/oauth-d1/schema.sql`
+    - `workers/gmail-proxy/index.js`
+    - `workers/notion-proxy/index.js`
+
+- CSP is centralized and mirror-checked
+  - the canonical CSP lives in `scripts/csp-common.js`
+  - repo scripts sync inline-script hashes to HTML entrypoints and `firebase.json`, and fail consistency checks when hashes drift
+  - evidence:
+    - `scripts/csp-common.js`
+    - `scripts/update-csp-inline-hashes.js`
+    - `scripts/check-csp-consistency.js`
+    - `firebase.json`
+
+- some rich-HTML paths are explicitly sanitized before DOM insertion
+  - the memo source modal uses `DOMPurify` when available and falls back to stripping obvious script, iframe, and inline-event-handler patterns
+  - URL-bearing editor nodes use explicit URL sanitization helpers
+  - evidence:
+    - `public/js/memo-source-modal.js`
+    - `src/memo-editor/video-node.tsx`
+
+### 9.4 Residual risks
+
+- low: CSP remains operationally fragile
+  - the repo depends on synchronized CSP mirrors across HTML entrypoints and hosting headers
+  - skipping `npm run csp:inline:sync` after inline-script changes can break runtime behavior or desynchronize enforcement
+
+- low: rich HTML still depends on sanitizer discipline
+  - runtime `innerHTML` sinks still exist for templates and SVG/HTML preview rendering
+  - the `memo-source-modal` fallback sanitizer is materially weaker than `DOMPurify`
+
+- low: share auth returns decryption material by design
+  - `/v1/spaces/auth` returns both the bearer token and `contentKey` so the browser can decrypt protected content
+  - this matches the current product model, but browser compromise or verbose client logging would expose the same material
+
+- low: auth-path logging should stay minimal
+  - share auth flows log decision metadata and hash suffixes
+  - the current values are limited, but this area should remain constrained
+
+### 9.5 Audit notes
+
+- this is a repo-grounded baseline, not a penetration test or compliance certification
+- it does not cover deployment-time secret management, Cloudflare/Firebase console configuration, or production log retention
+- re-run this baseline after changes to CSP, DOM rendering, OAuth flows, or protected-share encryption/auth logic
 
 - all three headers are required when sync protection is enabled
 - `X-Sync-TS` must be within an allowed clock-skew window

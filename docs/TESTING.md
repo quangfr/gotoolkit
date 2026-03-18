@@ -1,6 +1,6 @@
 # GoToolkit Test Guide
 
-Date: 2026-03-17
+Date: 2026-03-18
 Purpose: describe how to automate testing, cloud document manipulation, browser-session reuse, worker verification, deployment checks, and CI regression coverage in the current repo
 Audience: coding agents and maintainers working from the repo and terminal
 
@@ -25,7 +25,7 @@ Use these as the default entry points before reading the full guide.
 - Cloud/share repro
   - bootstrap with `spaceCode` first
   - prefer direct worker setup + focused Playwright verification
-  - read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) first for sync ordering, tombstones, and shared `pages` vs `pages-meta` expectations
+  - read [`docs/DATA.md`](docs/DATA.md) first for sync ordering, tombstones, and shared `pages` vs `pages-meta` expectations
 
 - Worker auth or share-route repro
   - verify the route directly with `curl` or `fetch`
@@ -113,7 +113,7 @@ Use these rules to shorten the next investigation:
 
 - read the contract doc first, not after the first failed hypothesis
   - UI shell, route, or surface-entry bug: read [`docs/INTERFACE.md`](docs/INTERFACE.md)
-  - storage, sync, cloud/share bug: read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+  - storage, sync, cloud/share bug: read [`docs/DATA.md`](docs/DATA.md)
   - worker auth, protected route, CSP bug: read [`docs/SECURITY.MD`](docs/SECURITY.MD)
 
 - do not start with broad suites when one fixture can reproduce the issue
@@ -265,12 +265,12 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-17 21:35`
-- `Scope`: `tests/close-active-page.spec.ts tests/private-delete-switch-regression.spec.ts tests/private-heading-repair-entrypoints.spec.ts tests/private-switch-persist.spec.ts tests/sample-refresh-heading-diagnose.spec.ts`
-- `Execution length`: `8 tests`
-- `Execution time`: `02:12`
-- `Result`: `8 passed, 0 failed, 0 skipped`
-- `Details`: `Validated the promoted local troubleshooting tier for shell close recovery, private delete/switch isolation, private heading repair entrypoints, private switch persistence, and full sample.md refresh heading survival.`
+- `Last execution`: `2026-03-18 21:52`
+- `Scope`: `tests/microsoft-oauth-proxy.spec.ts`
+- `Execution length`: `3 tests`
+- `Execution time`: `00:21`
+- `Result`: `2 passed, 0 failed, 1 skipped`
+- `Details`: `Validated the maintained Microsoft OAuth proxy tier entry against the modal-first connection flow and managed-space load path.`
 
 Recent troubleshooting note:
 
@@ -290,8 +290,8 @@ Tier suites:
 
 - `Tier 1` default gate
   - description: essential feature coverage for cloud persistence and Microsoft-managed space access
-  - results: `4 passed, 0 failed, 1 skipped` (`5 tests`, `00:57`) on `2026-03-12 14:39`
-  - details: `Latest suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 1 suite results.`
+  - results: `4 passed, 0 failed, 1 skipped` (`5 tests`, `01:14`) on `2026-03-18 21:52`
+  - details: `Latest suite entries are all passing. Aggregate summary refreshed from the latest recorded Tier 1 suite results, including the modal-first Microsoft OAuth flow.`
 
   - `T1.1` `cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
@@ -305,8 +305,8 @@ Tier suites:
 
   - `T1.3` `microsoft-oauth-proxy.spec.ts`
     - description: Microsoft popup handshake, managed space loading, and auth-state reuse
-    - results: `passing` (`3 tests`, `00:22`) on `2026-03-17 10:13`
-    - details: `Latest run passed with 1 skipped. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`3 tests`, `00:21`) on `2026-03-18 21:52`
+    - details: `Latest run passed with 1 skipped after updating the spec to follow the current modal-first connection entry before Microsoft popup auth.`
 
 - `Tier 4` essential troubleshooting
   - description: maintained troubleshooting coverage for shell recovery, private persistence/repair, plus cloud draft/transfer stress guards
