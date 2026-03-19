@@ -542,17 +542,19 @@ const App = () => {
             {hasActiveEditor ? (
                 <div className="memo-card">
                     <div className="editor-wrap">
-                        {Object.values(editors).map((editor) => (
-                            <EditorItem
-                                key={editor.id}
-                                editor={editor}
-                                activeId={activeId}
-                                editable={hasActiveEditor && editor.id === activeId}
-                                placeholder={editorPlaceholder}
-                                onEditorChange={handleEditorChange}
-                                handleEditorReady={handleEditorReady}
-                            />
-                        ))}
+                        <div id="editor" className="editor">
+                            {Object.values(editors).map((editor) => (
+                                <EditorItem
+                                    key={editor.id}
+                                    editor={editor}
+                                    activeId={activeId}
+                                    editable={hasActiveEditor && editor.id === activeId}
+                                    placeholder={editorPlaceholder}
+                                    onEditorChange={handleEditorChange}
+                                    handleEditorReady={handleEditorReady}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
             ) : null}

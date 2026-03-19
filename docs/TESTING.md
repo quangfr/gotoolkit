@@ -1,6 +1,6 @@
 # GoToolkit Test Guide
 
-Date: 2026-03-18
+Date: 2026-03-19
 Purpose: describe how to automate testing, cloud document manipulation, browser-session reuse, worker verification, deployment checks, and CI regression coverage in the current repo
 Audience: coding agents and maintainers working from the repo and terminal
 
@@ -224,6 +224,7 @@ Current built-in automation hooks in the repo:
 - `scripts/playwright-persist.sh`
 - `tests/tier/t1-2-cloud-sync-persist.spec.ts`
 - `tests/tier/t4-8-cloud-private-transfer-sync.spec.ts`
+- `tests/tier/t4-9-simple-editor-typing-regression.spec.ts`
 - `tests/tier/t1-1-cloud-switch-persist.spec.ts`
 - `tests/tier/t4-6-cloud-rapid-switch-large.spec.ts`
 - `tests/tier/t4-1-close-active-page.spec.ts`
@@ -267,12 +268,12 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-18 13:22`
-- `Scope`: `tests/debug/assist-reload-warmth.spec.ts`
+- `Last execution`: `2026-03-19 14:23`
+- `Scope`: `tests/tier/t4-9-simple-editor-typing-regression.spec.ts`
 - `Execution length`: `1 test`
-- `Execution time`: `00:23`
+- `Execution time`: `00:09`
 - `Result`: `1 passed, 0 failed, 0 skipped`
-- `Details`: `Measured cold, warm, and post-reload real Assist sends, showing roughly 7.3-second cold retrieval, roughly 0.06-second warm retrieval in the same session, and roughly 0.89-second retrieval after a full reload.`
+- `Details`: `Promoted the human-paced same-document typing repro into Tier 4 and verified that text, caret progression, and the hidden inline assistant contract all survive a same-document refresh.`
 
 Recent troubleshooting note:
 
@@ -288,6 +289,7 @@ Recent troubleshooting note:
 - `tests/tier/t4-2-private-delete-switch-regression.spec.ts` is the maintained repro for deleting an active private page, reopening another private page, and verifying no blank or duplicated content across repeated switches
 - `tests/tier/t4-1-close-active-page.spec.ts` is the maintained repro for the breadcrumb close button returning the app to the empty shell cleanly
 - `tests/tier/t4-3-private-heading-repair-entrypoints.spec.ts` is the maintained guard for private `sample.md` reopen/create/reload heading repair, including headings after `Artefacts PO`
+- `tests/tier/t4-9-simple-editor-typing-regression.spec.ts` is the maintained Tier 4 guard for human-paced typing, same-document refresh, forward caret movement, and keeping the inline assistant closed during normal memo editing
 - keep `tests/debug/private-immediate-reload-persist.spec.ts` and `tests/debug/empty-shell-search.spec.ts` in debug until their immediate-reload and empty-search result contracts are stable
 - `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
 - `tests/debug/cloud-open-bootstrap-diagnose.spec.ts` is the focused repro for the new no-active-page startup flow before cloud page open
@@ -320,7 +322,7 @@ Tier suites:
 
 - `Tier 4` essential troubleshooting
   - description: maintained troubleshooting coverage for shell recovery, private persistence/repair, plus cloud draft/transfer stress guards
-  - results: `4 passed, 1 failed, 0 skipped` (`5 tests`, `01:04`) on `2026-03-18 11:22`
+  - results: `5 passed, 1 failed, 0 skipped` (`6 tests`, `01:13`) on `2026-03-19 14:23`
   - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `t4-1-close-active-page.spec.ts`
@@ -362,6 +364,11 @@ Tier suites:
     - description: grouped cloud copy, private promote, and archived fresh-token promotion with reload verification
     - results: `passing` (`1 test`, `00:35`) on `2026-03-12 14:39`
     - details: `Latest run passed after Playwright readiness was updated for the no-active-page-on-open flow.`
+
+  - `T4.9` `t4-9-simple-editor-typing-regression.spec.ts`
+    - description: human-paced simple-editor typing survives same-document refresh without caret rollback or inline assistant pop-open
+    - results: `passing` (`1 test`, `00:09`) on `2026-03-19 14:23`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 2` advanced features
   - description: advanced coverage for explicit history sync, history isolation, Excalidraw/Mermaid regression behavior, OCR/PDF direct-paste imports, and local voice recording playback/transcript flows

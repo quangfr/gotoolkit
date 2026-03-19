@@ -3112,6 +3112,27 @@ const BubbleActionsDropdown = ({
   );
 };
 
+const unwrapBlockquoteAtPos = (editor: Editor, pos: number) => {
+  const node = editor.state.doc.nodeAt(pos);
+  if (!node || node.type.name !== 'blockquote') return false;
+  const tr = editor.state.tr.replaceWith(pos, pos + node.nodeSize, node.content).scrollIntoView();
+  const nextSelectionPos = Math.min(pos + 1, Math.max(1, tr.doc.content.size));
+  tr.setSelection(TextSelection.near(tr.doc.resolve(nextSelectionPos)));
+  editor.view.dispatch(tr);
+  editor.view.focus();
+  return true;
+};
+
+const unwrapActiveBlockquote = (editor: Editor) => {
+  const { $from } = editor.state.selection;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const node = $from.node(depth);
+    if (node.type.name !== 'blockquote') continue;
+    return unwrapBlockquoteAtPos(editor, $from.before(depth));
+  }
+  return false;
+};
+
 const QuoteTypeDropdown = ({ editor }: { editor: Editor }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -3127,16 +3148,14 @@ const QuoteTypeDropdown = ({ editor }: { editor: Editor }) => {
   }, []);
 
   const handleSelect = (type: string) => {
-    const chain = editor.chain().focus();
     if (editor.isActive('blockquote', { type })) {
-      // Si on clique sur le type déjà actif, on "déblogquotise" (on descend d'un niveau)
-      chain.lift('blockquote').run();
+      unwrapActiveBlockquote(editor);
     } else if (editor.isActive('blockquote')) {
       // Si on est déjà dans une citation mais d'un autre type, on change juste l'attribut
-      chain.updateAttributes('blockquote', { type }).run();
+      editor.chain().focus().updateAttributes('blockquote', { type }).run();
     } else {
       // Sinon on crée la citation et on met le bon type
-      chain.setBlockquote().updateAttributes('blockquote', { type }).run();
+      editor.chain().focus().setBlockquote().updateAttributes('blockquote', { type }).run();
     }
     setIsOpen(false);
   };
@@ -3279,7 +3298,10 @@ const runEditorDropdownAction = (
   else if (value === 'codeBlock') chain.toggleCodeBlock().run();
   else if (value === 'link') callbacks.onLink?.();
   else if (value === 'label') chain.insertContent('`').run();
-  else if (value === 'quote') chain.setBlockquote().run();
+  else if (value === 'quote') {
+    if (editor.isActive('blockquote')) unwrapActiveBlockquote(editor);
+    else chain.setBlockquote().run();
+  }
   else if (value === 'table') {
     const selectedItems = getTableItemsFromSelection(editor);
     if (selectedItems.length) {
@@ -5271,11 +5293,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         clearDelayedHydrationTimers();
       };
     }
+    const scheduledBaselineHtml = String(editor.getHTML?.() || '');
     const scheduleHydrationPass = (delayMs: number) => {
       const timerId = window.setTimeout(() => {
         delayedHydrationTimersRef.current = delayedHydrationTimersRef.current.filter((id) => id !== timerId);
         const currentHtml = String(editor.getHTML?.() || '');
+        const editorDom = editor.view?.dom as HTMLElement | undefined;
+        const isFocusedEditor =
+          Boolean(editor.isFocused)
+          || Boolean(editorDom && document.activeElement && editorDom.contains(document.activeElement));
         if (currentHtml === expectedContent) return;
+        if (isFocusedEditor) return;
+        if (currentHtml !== scheduledBaselineHtml && memoHtmlHasMeaningfulContent(currentHtml)) {
+          return;
+        }
         setEditorContentPreservingEmptyHeadings(editor as any, expectedContent);
         lastSerializedHtmlRef.current = String(editor.getHTML?.() || expectedContent);
         setEditorHtmlSnapshot((prev) => (prev === lastSerializedHtmlRef.current ? prev : lastSerializedHtmlRef.current));
@@ -8827,11 +8858,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 onClick={() => {
                   const node = editor.state.doc.nodeAt(quoteMenu.pos);
                   if (node?.attrs.type === alert.type) {
-                    // Si on clique sur le type déjà actif, on enlève la citation
-                    editor.chain().focus()
-                      .setTextSelection({ from: quoteMenu.pos + 1, to: quoteMenu.pos + 1 })
-                      .lift('blockquote')
-                      .run();
+                    unwrapBlockquoteAtPos(editor, quoteMenu.pos);
                   } else {
                     // Sinon on change juste le type de l'alerte
                     editor.chain().focus()

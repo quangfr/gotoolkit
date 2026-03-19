@@ -59429,6 +59429,25 @@ ${promptInput.trim()}`
       )
     ] });
   };
+  var unwrapBlockquoteAtPos = (editor, pos) => {
+    const node = editor.state.doc.nodeAt(pos);
+    if (!node || node.type.name !== "blockquote") return false;
+    const tr2 = editor.state.tr.replaceWith(pos, pos + node.nodeSize, node.content).scrollIntoView();
+    const nextSelectionPos = Math.min(pos + 1, Math.max(1, tr2.doc.content.size));
+    tr2.setSelection(TextSelection.near(tr2.doc.resolve(nextSelectionPos)));
+    editor.view.dispatch(tr2);
+    editor.view.focus();
+    return true;
+  };
+  var unwrapActiveBlockquote = (editor) => {
+    const { $from } = editor.state.selection;
+    for (let depth = $from.depth; depth > 0; depth -= 1) {
+      const node = $from.node(depth);
+      if (node.type.name !== "blockquote") continue;
+      return unwrapBlockquoteAtPos(editor, $from.before(depth));
+    }
+    return false;
+  };
   var Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVideo, onInsertFile }) => {
     const [, forceUpdate] = react_shim_default.useReducer((x) => x + 1, 0);
     const toolbarRef = react_shim_default.useRef(null);
@@ -59502,8 +59521,10 @@ ${promptInput.trim()}`
     else if (value === "codeBlock") chain.toggleCodeBlock().run();
     else if (value === "link") (_a = callbacks.onLink) == null ? void 0 : _a.call(callbacks);
     else if (value === "label") chain.insertContent("`").run();
-    else if (value === "quote") chain.setBlockquote().run();
-    else if (value === "table") {
+    else if (value === "quote") {
+      if (editor.isActive("blockquote")) unwrapActiveBlockquote(editor);
+      else chain.setBlockquote().run();
+    } else if (value === "table") {
       const selectedItems = getTableItemsFromSelection(editor);
       if (selectedItems.length) {
         const tableNode = buildTableNodeFromItems(editor, selectedItems, 2);
@@ -61203,7 +61224,7 @@ ${promptInput.trim()}`
       }
     }, [content, editor, editorId]);
     react_shim_default.useEffect(() => {
-      var _a2;
+      var _a2, _b2;
       if (!editor || typeof editor.getHTML !== "function" || typeof ((_a2 = editor.commands) == null ? void 0 : _a2.setContent) !== "function") {
         return;
       }
@@ -61214,14 +61235,21 @@ ${promptInput.trim()}`
           clearDelayedHydrationTimers();
         };
       }
+      const scheduledBaselineHtml = String(((_b2 = editor.getHTML) == null ? void 0 : _b2.call(editor)) || "");
       const scheduleHydrationPass = (delayMs) => {
         const timerId = window.setTimeout(() => {
-          var _a3, _b2;
+          var _a3, _b3, _c2;
           delayedHydrationTimersRef.current = delayedHydrationTimersRef.current.filter((id) => id !== timerId);
           const currentHtml = String(((_a3 = editor.getHTML) == null ? void 0 : _a3.call(editor)) || "");
+          const editorDom = (_b3 = editor.view) == null ? void 0 : _b3.dom;
+          const isFocusedEditor = Boolean(editor.isFocused) || Boolean(editorDom && document.activeElement && editorDom.contains(document.activeElement));
           if (currentHtml === expectedContent) return;
+          if (isFocusedEditor) return;
+          if (currentHtml !== scheduledBaselineHtml && memoHtmlHasMeaningfulContent(currentHtml)) {
+            return;
+          }
           setEditorContentPreservingEmptyHeadings(editor, expectedContent);
-          lastSerializedHtmlRef.current = String(((_b2 = editor.getHTML) == null ? void 0 : _b2.call(editor)) || expectedContent);
+          lastSerializedHtmlRef.current = String(((_c2 = editor.getHTML) == null ? void 0 : _c2.call(editor)) || expectedContent);
           setEditorHtmlSnapshot((prev) => prev === lastSerializedHtmlRef.current ? prev : lastSerializedHtmlRef.current);
         }, delayMs);
         delayedHydrationTimersRef.current.push(timerId);
@@ -64397,7 +64425,7 @@ ${innerMarkdown}
                       onClick: () => {
                         const node = editor.state.doc.nodeAt(quoteMenu.pos);
                         if ((node == null ? void 0 : node.attrs.type) === alert.type) {
-                          editor.chain().focus().setTextSelection({ from: quoteMenu.pos + 1, to: quoteMenu.pos + 1 }).lift("blockquote").run();
+                          unwrapBlockquoteAtPos(editor, quoteMenu.pos);
                         } else {
                           editor.chain().focus().setNodeSelection(quoteMenu.pos).updateAttributes("blockquote", { type: alert.type }).run();
                         }
@@ -65000,7 +65028,7 @@ ${innerMarkdown}
           /* @__PURE__ */ jsx("div", { id: "memoEmptyStateRecentList", className: "memo-empty-state__recent-list" })
         ] })
       ] }) }) : null,
-      hasActiveEditor ? /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
+      hasActiveEditor ? /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: /* @__PURE__ */ jsx("div", { id: "editor", className: "editor", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
         EditorItem,
         {
           editor,
@@ -65011,7 +65039,7 @@ ${innerMarkdown}
           handleEditorReady
         },
         editor.id
-      )) }) }) : null,
+      )) }) }) }) : null,
       /* @__PURE__ */ jsx("section", { id: "memoSearchCard", className: "memo-card memo-search-card", hidden: true, children: /* @__PURE__ */ jsx("div", { id: "memoSearchResults", className: "memo-search-results" }) })
     ] });
   };
@@ -65169,4 +65197,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map
