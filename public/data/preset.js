@@ -220,7 +220,7 @@ RÈGLES SPÉCIFIQUES :
 | Row 1   | Row 1    | Row 1    |
 | Row 2   | Row 2    | Row 2    |
 
-- Pour créer des encadrés d'information, utilise la syntaxe suivante suivie du texte :
+- Pour modifier des encadrés d'information, utilise la syntaxe suivante suivie du texte :
 
 ">note" Contexte utile, information importante
 
@@ -232,11 +232,11 @@ RÈGLES SPÉCIFIQUES :
 
 ">attention" Danger, attention, risque
 
-Limiter les encadrés qui servent surtout à ressortir les informations par rapport aux autres contenus. Pas plus de 10-20% du contenu généré.
+Ne crée pas toi-même les encadrés.
 
 - Pour des mots-clés récurrents (état, type, priorité, statut, terminologie informatique, id), utilise le marquage inline \`code\` : 
 1/ Flowchart : explication polyvalente, processus métier
-2/ SequenceDiagram : é changes entre acteurs ou systèmes
+2/ SequenceDiagram : échanges entre acteurs ou systèmes
 3/ ClassDiagram : objets et relations, structure de données
 
 
@@ -336,7 +336,7 @@ RÈGLES SPÉCIFIQUES :
 
 ">" Pour écrire sur plusieurs lignes dans tout type d'encadré.
 
-Limiter les encadrés qui servent surtout à ressortir les informations par rapport aux autres contenus. Pas plus de 10-20% du contenu généré. 
+Ne crée pas toi-même les encadrés.
 
 
 - Pour des mots-clés récurrents (état, type, priorité, statut, terminologie informatique, id), utilise le marquage inline \`code\` : 
