@@ -1,8 +1,17 @@
 import { expect, Page, test } from "@playwright/test";
+import path from "node:path";
+
 import { waitForMemoReady } from "../helpers/memo-ui";
 
 const BASE_URL = "http://127.0.0.1:5000/index.html";
+const SAMPLE_MARKDOWN_PATH = path.resolve(process.cwd(), "tests/fixtures/sample.md");
 const HUMAN_DELAYS = [34, 62, 49, 88, 41, 73, 57];
+const MID_SENTENCE_NEEDLE = "Un diagramme de séquence décrit les interactions entre les acteurs humains / systèmes.";
+const MID_INSERT_TEXT = " [PW_MID_EDIT]";
+const MID_TAIL_TEXT = " et garde le curseur stable";
+const INSERTED_H2_TEXT = "Playwright H2 Heading";
+const INSERTED_LINK_LABEL = "Playwright Link";
+const INSERTED_LINK_URL = "https://example.com/playwright-regression";
 
 type EditorSnapshot = {
   text: string;
@@ -12,29 +21,28 @@ type EditorSnapshot = {
   inlineInputValue: string;
 };
 
-async function createLocalTypingDoc(page: Page) {
-  const docId = await page.evaluate(async () => {
-    const createDocument = (window as any).GoToolkitMemoCreateDocument;
-    if (typeof createDocument !== "function") {
-      throw new Error("GoToolkitMemoCreateDocument is unavailable");
-    }
-    return await createDocument({
-      name: "Typing Regression",
-      initialContent: "",
-    });
+async function importSampleIntoAutoDoc(page: Page) {
+  await page.evaluate(async () => {
+    const w = window as any;
+    await w.GoToolkitMemoCreateAutoDocument();
   });
-  return String(docId || "").trim();
-}
-
-async function reopenLocalTypingDoc(page: Page, docId: string, timeout = 45_000) {
-  await page.goto(`${BASE_URL}/index.html`);
-  await waitForMemoReady(page, timeout);
-  await page.evaluate(async currentDocId => {
-    await (window as any).GoToolkitMemoOpenDocumentByLink?.(String(currentDocId || ""));
-  }, docId);
-  await page.waitForFunction(expectedId => {
-    return String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "").trim() === String(expectedId || "").trim();
-  }, docId, { timeout });
+  await page.waitForFunction(() => Boolean(String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "").trim()), null, { timeout: 45_000 });
+  await waitForVisibleEditor(page);
+  await page.evaluate(() => {
+    (window as any).GoToolkitMemoInstance?.setValue?.("");
+  });
+  await page.locator("#fileMenuBtn").click();
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.locator("#memoOpenImportBtn").click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(SAMPLE_MARKDOWN_PATH);
+  await expect.poll(() => readSnapshot(page), { timeout: 90_000 }).toMatchObject({
+    text: expect.stringContaining("Artefacts PO"),
+    html: expect.stringContaining("Requêtes API"),
+  });
+  const docId = await page.evaluate(() => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "").trim());
+  expect(docId).toBeTruthy();
+  return docId;
 }
 
 async function waitForVisibleEditor(page: Page, timeout = 45_000) {
@@ -61,13 +69,6 @@ async function waitForVisibleEditor(page: Page, timeout = 45_000) {
       return false;
     });
     if (ready) return;
-    const activeDocId = await page.evaluate(() => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "").trim());
-    if (activeDocId) {
-      const explorerItem = page.locator(`.document-explorer__item[data-document-id="${activeDocId}"]`).first();
-      if (await explorerItem.isVisible().catch(() => false)) {
-        await explorerItem.click({ force: true }).catch(() => null);
-      }
-    }
     await page.waitForTimeout(300);
   }
   throw new Error(`Visible memo editor did not appear within ${timeout}ms`);
@@ -124,7 +125,8 @@ async function expectStableEditor(page: Page, expectedText: string, minimumCaret
   expect(snapshot.selection?.from ?? 0, `${label}: caret should keep moving forward`).toBeGreaterThanOrEqual(minimumCaretFrom);
 }
 
-async function humanType(page: Page, value: string) {
+async function humanType(page: Page, value: string, options: { label: string; allowSamePosition?: boolean }) {
+  let lastCaretFrom = (await readSnapshot(page)).selection?.from ?? 0;
   let delayIndex = 0;
   for (const char of value) {
     const nextDelay = HUMAN_DELAYS[delayIndex % HUMAN_DELAYS.length];
@@ -137,18 +139,86 @@ async function humanType(page: Page, value: string) {
       await page.keyboard.type(char);
     }
     await page.waitForTimeout(nextDelay);
+    const snapshot = await readSnapshot(page);
+    expect(snapshot.inlineDisplay, `${options.label}: inline editor should stay hidden while typing`).toBe("none");
+    expect(snapshot.inlineInputValue, `${options.label}: inline input should stay empty while typing`).toBe("");
+    expect(snapshot.selection?.empty, `${options.label}: selection should stay collapsed while typing`).toBe(true);
+    const currentCaretFrom = snapshot.selection?.from ?? 0;
+    if (options.allowSamePosition) {
+      expect(currentCaretFrom, `${options.label}: caret moved backwards after typing ${JSON.stringify(char)}`).toBeGreaterThanOrEqual(lastCaretFrom);
+    } else {
+      expect(currentCaretFrom, `${options.label}: caret did not advance after typing ${JSON.stringify(char)}`).toBeGreaterThan(lastCaretFrom);
+    }
+    lastCaretFrom = currentCaretFrom;
   }
 }
 
+async function setCaretAfterNeedle(page: Page, needle: string, occurrence = 1) {
+  await page.evaluate(({ textNeedle, targetOccurrence }) => {
+    const editor = (window as any).memoEditor || (window as any).MemoEditor;
+    if (!editor?.state?.doc || typeof editor.chain?.().focus !== "function") {
+      throw new Error("Memo editor is unavailable");
+    }
+    const expectedOccurrence = Math.max(1, Number(targetOccurrence) || 1);
+    let seen = 0;
+    let resolvedPos: number | null = null;
+    editor.state.doc.descendants((node: any, pos: number) => {
+      if (resolvedPos !== null || !node?.isText || !node.text) return true;
+      const text = String(node.text || "");
+      const index = text.indexOf(String(textNeedle || ""));
+      if (index < 0) return true;
+      seen += 1;
+      if (seen !== expectedOccurrence) return true;
+      resolvedPos = pos + index + String(textNeedle || "").length;
+      return false;
+    });
+    if (!resolvedPos) {
+      throw new Error(`Needle not found in editor text: ${textNeedle}`);
+    }
+    editor.chain().focus().setTextSelection({ from: resolvedPos, to: resolvedPos }).run();
+  }, { textNeedle: needle, targetOccurrence: occurrence });
+}
+
+async function setCaretToDocumentEnd(page: Page) {
+  await page.evaluate(() => {
+    const editor = (window as any).memoEditor || (window as any).MemoEditor;
+    if (!editor?.state?.doc || typeof editor.chain?.().focus !== "function") {
+      throw new Error("Memo editor is unavailable");
+    }
+    const endPos = Math.max(1, Number(editor.state.doc.content.size || 1));
+    editor.chain().focus().setTextSelection({ from: endPos, to: endPos }).run();
+  });
+}
+
+async function waitForSlashMenu(page: Page) {
+  const menu = page.locator(".memo-slash-actions-menu").first();
+  await expect(menu).toBeVisible({ timeout: 10_000 });
+  return menu;
+}
+
+async function runSlashAction(page: Page, query: string) {
+  await humanType(page, `/${query}`, { label: `slash-${query}` });
+  await waitForSlashMenu(page);
+  await page.keyboard.press("Enter");
+}
+
+async function insertLinkViaSlashMenu(page: Page, url: string, label: string) {
+  await runSlashAction(page, "link");
+  const queryInput = page.locator(".link-search-modal__search-input").first();
+  const labelInput = page.locator(".link-search-modal__query").first();
+  await expect(queryInput).toBeVisible({ timeout: 10_000 });
+  await queryInput.fill(url);
+  await labelInput.fill(label);
+  await labelInput.press("Enter");
+}
+
 test.describe("Simple editor typing regression", () => {
-  test("keeps human-paced typing stable across same-document refresh", async ({ page }) => {
-    test.setTimeout(120_000);
+  test("keeps mid-document typing stable and supports slash h2/link insertion in sample content", async ({ page }) => {
+    test.setTimeout(180_000);
 
     await page.goto(`${BASE_URL}/index.html`);
     await waitForMemoReady(page, 45_000);
-
-    const docId = await createLocalTypingDoc(page);
-    await reopenLocalTypingDoc(page, docId);
+    const docId = await importSampleIntoAutoDoc(page);
     await waitForVisibleEditor(page);
 
     const editor = page.locator(".editor-wrap .ProseMirror[contenteditable='true']").first();
@@ -156,21 +226,39 @@ test.describe("Simple editor typing regression", () => {
     await editor.click();
     await waitForEditorSettle(page);
 
-    await humanType(page, "hello world");
-    await expectStableEditor(page, "hello world", 12, "after-first-line");
-
-    await page.waitForTimeout(150);
-    await humanType(page, "\nslow human typing");
-    await expectStableEditor(page, "hello worldslow human typing", 31, "after-second-line");
+    await setCaretAfterNeedle(page, MID_SENTENCE_NEEDLE);
+    const beforeMidEdit = await readSnapshot(page);
+    const midEditMinimumCaret = Number(beforeMidEdit.selection?.from || 1) + MID_INSERT_TEXT.length;
+    await humanType(page, MID_INSERT_TEXT, { label: "mid-edit" });
+    await expectStableEditor(page, `${MID_SENTENCE_NEEDLE}${MID_INSERT_TEXT}`, midEditMinimumCaret, "after-mid-edit");
 
     await page.waitForTimeout(150);
     await page.evaluate(async currentDocId => {
       await (window as any).GoToolkitMemoSetActiveDocument?.(String(currentDocId || ""));
     }, docId);
     await page.waitForTimeout(220);
-    await expectStableEditor(page, "hello worldslow human typing", 31, "after-same-doc-refresh");
+    await expectStableEditor(page, `${MID_SENTENCE_NEEDLE}${MID_INSERT_TEXT}`, midEditMinimumCaret, "after-same-doc-refresh");
 
-    await humanType(page, " with more words");
-    await expectStableEditor(page, "hello worldslow human typing with more words", 47, "after-tail-text");
+    const beforeTailEdit = await readSnapshot(page);
+    const tailMinimumCaret = Number(beforeTailEdit.selection?.from || 1) + MID_TAIL_TEXT.length;
+    await humanType(page, MID_TAIL_TEXT, { label: "mid-tail-edit" });
+    await expectStableEditor(page, `${MID_SENTENCE_NEEDLE}${MID_INSERT_TEXT}${MID_TAIL_TEXT}`, tailMinimumCaret, "after-mid-tail-edit");
+
+    await setCaretToDocumentEnd(page);
+    await humanType(page, "\n", { label: "before-slash-h2" });
+    await runSlashAction(page, "h2");
+    const beforeHeadingText = await readSnapshot(page);
+    const headingMinimumCaret = Number(beforeHeadingText.selection?.from || 1) + INSERTED_H2_TEXT.length;
+    await humanType(page, INSERTED_H2_TEXT, { label: "slash-h2-text" });
+    await expectStableEditor(page, INSERTED_H2_TEXT, headingMinimumCaret, "after-slash-h2");
+
+    await humanType(page, "\n", { label: "before-slash-link" });
+    await insertLinkViaSlashMenu(page, INSERTED_LINK_URL, INSERTED_LINK_LABEL);
+    const finalSnapshot = await readSnapshot(page);
+    expect(finalSnapshot.text, "after-link: link label should be visible").toContain(INSERTED_LINK_LABEL);
+    expect(finalSnapshot.html, "after-link: heading should be persisted as h2").toContain(`>${INSERTED_H2_TEXT}</h2>`);
+    expect(finalSnapshot.html, "after-link: link href should be persisted").toContain(`href="${INSERTED_LINK_URL}"`);
+    expect(finalSnapshot.inlineDisplay, "after-link: inline editor should stay hidden").toBe("none");
+    expect(finalSnapshot.inlineInputValue, "after-link: inline input should stay empty").toBe("");
   });
 });

@@ -268,12 +268,12 @@ Coverage-map maintenance rule:
 
 Latest targeted Playwright run:
 
-- `Last execution`: `2026-03-19 14:23`
+- `Last execution`: `2026-03-19 14:32`
 - `Scope`: `tests/tier/t4-9-simple-editor-typing-regression.spec.ts`
 - `Execution length`: `1 test`
-- `Execution time`: `00:09`
+- `Execution time`: `00:14`
 - `Result`: `1 passed, 0 failed, 0 skipped`
-- `Details`: `Promoted the human-paced same-document typing repro into Tier 4 and verified that text, caret progression, and the hidden inline assistant contract all survive a same-document refresh.`
+- `Details`: `Validated the maintained Tier 4 guard against imported sample content, including a mid-paragraph edit, a same-document refresh, continued typing at the same caret position, then slash-menu insertion of an H2 and a link.`
 
 Recent troubleshooting note:
 
@@ -289,7 +289,7 @@ Recent troubleshooting note:
 - `tests/tier/t4-2-private-delete-switch-regression.spec.ts` is the maintained repro for deleting an active private page, reopening another private page, and verifying no blank or duplicated content across repeated switches
 - `tests/tier/t4-1-close-active-page.spec.ts` is the maintained repro for the breadcrumb close button returning the app to the empty shell cleanly
 - `tests/tier/t4-3-private-heading-repair-entrypoints.spec.ts` is the maintained guard for private `sample.md` reopen/create/reload heading repair, including headings after `Artefacts PO`
-- `tests/tier/t4-9-simple-editor-typing-regression.spec.ts` is the maintained Tier 4 guard for human-paced typing, same-document refresh, forward caret movement, and keeping the inline assistant closed during normal memo editing
+- `tests/tier/t4-9-simple-editor-typing-regression.spec.ts` is the maintained Tier 4 guard for mid-document human-paced typing in imported sample content, same-document refresh, forward caret movement, slash-menu H2/link insertion, and keeping the inline assistant closed during normal memo editing
 - keep `tests/debug/private-immediate-reload-persist.spec.ts` and `tests/debug/empty-shell-search.spec.ts` in debug until their immediate-reload and empty-search result contracts are stable
 - `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
 - `tests/debug/cloud-open-bootstrap-diagnose.spec.ts` is the focused repro for the new no-active-page startup flow before cloud page open
@@ -322,7 +322,7 @@ Tier suites:
 
 - `Tier 4` essential troubleshooting
   - description: maintained troubleshooting coverage for shell recovery, private persistence/repair, plus cloud draft/transfer stress guards
-  - results: `5 passed, 1 failed, 0 skipped` (`6 tests`, `01:13`) on `2026-03-19 14:23`
+  - results: `5 passed, 1 failed, 0 skipped` (`6 tests`, `01:17`) on `2026-03-19 14:34`
   - details: `Latest executed suite entries are not all passing. Aggregate summary refreshed from the latest recorded Tier 4 suite results.`
 
   - `T4.1` `t4-1-close-active-page.spec.ts`
@@ -366,8 +366,8 @@ Tier suites:
     - details: `Latest run passed after Playwright readiness was updated for the no-active-page-on-open flow.`
 
   - `T4.9` `t4-9-simple-editor-typing-regression.spec.ts`
-    - description: human-paced simple-editor typing survives same-document refresh without caret rollback or inline assistant pop-open
-    - results: `passing` (`1 test`, `00:09`) on `2026-03-19 14:23`
+    - description: imported sample-content mid-edit typing, same-document refresh, and slash-menu H2/link insertion without caret rollback or inline assistant pop-open
+    - results: `passing` (`1 test`, `00:13`) on `2026-03-19 14:34`
     - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
 - `Tier 2` advanced features
