@@ -3769,6 +3769,57 @@
         this.memoSelectionOverlay.style.height = Math.max(this.memoSelectionBlockCoords.height, 20) + "px";
     };
 
+    AssistSidebar.prototype.hasVisibleMemoSelectionOverlay = function () {
+        if (!this.memoSelectionOverlay) return false;
+        if (this.memoSelectionOverlay.style.display === "none") return false;
+        return Boolean(this.memoSelectionBlockCoords);
+    };
+
+    AssistSidebar.prototype.selectWholeMemoDocumentForComposerFocus = function (editor) {
+        if (!this.memoSelectionFollowActive || !editor?.state?.doc || !editor?.view) return false;
+        var docSize = Number(editor.state.doc.content?.size || 0);
+        if (!(docSize > 0)) return false;
+
+        try {
+            if (editor.commands && typeof editor.commands.selectAll === "function") {
+                editor.commands.selectAll();
+                this.refreshMemoSelectionFromEditorSelection(editor);
+            }
+        } catch (err) {
+            // ignore and use synthetic selection fallback below
+        }
+
+        if (this.memoSelection && this.memoSelectionBlockCoords) {
+            return true;
+        }
+
+        var editorRect = editor.view.dom?.getBoundingClientRect?.();
+        if (!editorRect) return false;
+
+        var selectedText = "";
+        try {
+            selectedText = editor.state.doc.textBetween(0, docSize, "\n");
+        } catch (err) {
+            selectedText = "";
+        }
+
+        this.memoSelection = {
+            text: selectedText,
+            blockText: selectedText,
+            blockMarkdown: selectedText,
+            excerpt: selectedText ? selectedText.substring(0, 100) + (selectedText.length > 100 ? "…" : "") : "",
+            from: 0,
+            to: docSize
+        };
+        this.memoSelectionBlockCoords = {
+            top: editorRect.top,
+            left: editorRect.left,
+            width: editorRect.width,
+            height: editorRect.height
+        };
+        return true;
+    };
+
     AssistSidebar.prototype.refreshMemoSelectionFromEditorSelection = function (editor) {
         if (!editor || !editor.view || !editor.state) return;
         if (!this.memoSelectionFollowActive) {
@@ -6220,6 +6271,13 @@
                     from: this.memoSelectionDetail.positionFrom,
                     to: this.memoSelectionDetail.positionTo
                 };
+            }
+            if (this.memoSelectionFollowActive
+                && !this.memoSelection
+                && !this.hasVisibleMemoSelectionOverlay()
+                && window.memoEditor?.state
+                && window.memoEditor?.view) {
+                this.selectWholeMemoDocumentForComposerFocus(window.memoEditor);
             }
             if (!this.memoSelection && window.memoEditor?.state && window.memoEditor?.view) {
                 try {
