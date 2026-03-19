@@ -3870,7 +3870,9 @@ ul.release-roadmap-text li::before {
 #chat-inline-editor-container {
   position: fixed;
   pointer-events: none;
-  z-index: 999;
+  z-index: 1004;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .chat-inline-editor {
@@ -3888,9 +3890,11 @@ ul.release-roadmap-text li::before {
 .chat-inline-editor__wrapper {
   position: relative;
   display: flex;
-  width: max(700px,70vh);
+  width: min(700px, calc(100vw - 32px));
+  max-width: 100%;
   height: auto;
   pointer-events: auto;
+  box-sizing: border-box;
 }
 
 .chat-inline-editor__input {

@@ -63393,8 +63393,59 @@ ${innerMarkdown}
       };
       const handleSelectionChange = () => {
         const { from: from2, to, empty: empty2 } = editor.state.selection;
+        const resolveBlockRange = (selection = editor.state.selection) => {
+          const doc3 = editor.state.doc;
+          const resolvedPositions = [selection.$from];
+          if (selection.$to && selection.$to !== selection.$from) {
+            resolvedPositions.push(selection.$to);
+          }
+          let nextRange = null;
+          const pickRange = (resolvedPos) => {
+            var _a2, _b2;
+            for (let depth = resolvedPos.depth; depth >= 0; depth--) {
+              const node = resolvedPos.node(depth);
+              if (!node || ((_a2 = node.type) == null ? void 0 : _a2.name) === "doc") continue;
+              if (((_b2 = node.type) == null ? void 0 : _b2.name) === "table") {
+                return {
+                  from: resolvedPos.start(depth),
+                  to: resolvedPos.end(depth),
+                  nodeType: node.type.name
+                };
+              }
+              if (node.isTextblock || node.isBlock) {
+                if (node.isAtom || node.isLeaf || node.content.size === 0) {
+                  return {
+                    from: depth > 0 ? resolvedPos.before(depth) : 0,
+                    to: depth > 0 ? resolvedPos.after(depth) : doc3.content.size,
+                    nodeType: node.type.name
+                  };
+                }
+                return {
+                  from: resolvedPos.start(depth),
+                  to: resolvedPos.end(depth),
+                  nodeType: node.type.name
+                };
+              }
+            }
+            return null;
+          };
+          resolvedPositions.forEach((resolvedPos) => {
+            const currentRange = pickRange(resolvedPos);
+            if (!currentRange) return;
+            if (!nextRange) {
+              nextRange = currentRange;
+              return;
+            }
+            nextRange = {
+              from: Math.min(nextRange.from, currentRange.from),
+              to: Math.max(nextRange.to, currentRange.to),
+              nodeType: nextRange.nodeType || currentRange.nodeType
+            };
+          });
+          return nextRange;
+        };
         clearTimeout(selectionTimeout);
-        if (empty2) {
+        if (empty2 && !resolveBlockRange()) {
           document.dispatchEvent(new CustomEvent("memoEditorSelectionChanged", {
             detail: { isSelected: false }
           }));
@@ -63421,52 +63472,13 @@ ${innerMarkdown}
             let blockFrom = from2;
             let blockTo = to;
             let blockText2 = selectedText;
-            const allowedBlockTypes = /* @__PURE__ */ new Set([
-              "paragraph",
-              "heading",
-              "codeBlock",
-              "table",
-              "listItem",
-              "blockquote",
-              "mermaidDiagram"
-            ]);
-            const isWhitespaceSelection = selectedText.trim().length === 0;
-            if (isWhitespaceSelection) {
-              const { $from, $to } = editor.state.selection;
-              const pickBlockDepth = (resolvedPos) => {
-                for (let depth = resolvedPos.depth; depth >= 0; depth--) {
-                  if (allowedBlockTypes.has(resolvedPos.node(depth).type.name)) {
-                    return depth;
-                  }
-                }
-                return -1;
-              };
-              const isEmptyTextblock = (resolvedPos) => {
-                var _a3;
-                return ((_a3 = resolvedPos.parent) == null ? void 0 : _a3.isTextblock) && resolvedPos.parent.content.size === 0;
-              };
-              const preferPos = isEmptyTextblock($to) ? $to : $from;
-              let blockDepth = pickBlockDepth(preferPos);
-              if (blockDepth < 0 && preferPos !== $from) {
-                blockDepth = pickBlockDepth($from);
-              }
-              if (blockDepth >= 0) {
-                blockFrom = preferPos.start(blockDepth);
-                blockTo = preferPos.end(blockDepth);
-              }
-            } else {
-              editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node, pos) => {
-                if (allowedBlockTypes.has(node.type.name)) {
-                  blockFrom = Math.min(blockFrom, pos);
-                  blockTo = Math.max(blockTo, pos + node.nodeSize);
-                }
-              });
+            const blockRange = resolveBlockRange(currentSelection);
+            if (blockRange) {
+              blockFrom = blockRange.from;
+              blockTo = blockRange.to;
             }
             blockText2 = editor.state.doc.textBetween(blockFrom, blockTo, "\n").trim();
-            let nodeType = "";
-            editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node) => {
-              if (node.type.name === "mermaidDiagram") nodeType = "mermaidDiagram";
-            });
+            let nodeType = (blockRange == null ? void 0 : blockRange.nodeType) || "";
             let blockMarkdown = "";
             try {
               const blockSlice = editor.state.doc.slice(blockFrom, blockTo);
@@ -65197,3 +65209,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
+//# sourceMappingURL=memo.bundle.js.map

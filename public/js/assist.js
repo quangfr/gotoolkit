@@ -3181,6 +3181,23 @@
 
         inline.cancelBtn.addEventListener("click", this.cancelEditPrompt.bind(this));
         inline.sendBtn.addEventListener("click", this.submitEditPrompt.bind(this));
+        inline.textarea.addEventListener("focus", function () {
+            if (!this.memoSelectionFollowActive || !this.memoSelectionOverlay || !this.memoSelection) return;
+            this.updateMemoSelectionOverlayPosition();
+            this.memoSelectionOverlay.style.display = "block";
+        }.bind(this));
+        inline.textarea.addEventListener("blur", function () {
+            if (this.memoSelectionIgnoreBlur) {
+                this.memoSelectionIgnoreBlur = false;
+                if (this.memoSelectionFollowActive && this.memoSelectionOverlay) {
+                    this.memoSelectionOverlay.style.display = "block";
+                }
+                return;
+            }
+            if (this.memoSelectionOverlay) {
+                this.memoSelectionOverlay.style.display = "none";
+            }
+        }.bind(this));
         inline.textarea.addEventListener("keydown", function (event) {
             if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
@@ -3188,6 +3205,15 @@
             }
         }.bind(this));
         inline.textarea.focus();
+        var restoreSelectionPos = message?.selectionPos || message?.pendingSelectionPos || null;
+        if (restoreSelectionPos) {
+            setTimeout(function () {
+                this.restoreMemoSelectionRange(restoreSelectionPos, {
+                    focusComposer: true,
+                    focusTarget: inline.textarea
+                });
+            }.bind(this), 0);
+        }
         if (window.lucide) window.lucide.createIcons({ props: { size: 14 } });
     };
 
@@ -3627,11 +3653,68 @@
 
     AssistSidebar.prototype.updateMemoSelectionFollowButtonVisibility = function () {
         if (!this.memoSelectionFollowButton) return;
-        var hidden = isMemoExplorerScope(this.currentConversationScopeId);
+        var hidden = false;
         this.memoSelectionFollowButton.style.display = hidden ? "none" : "";
         if (hidden && this.memoSelectionOverlay) {
             this.memoSelectionOverlay.style.display = "none";
         }
+    };
+
+    AssistSidebar.prototype.resolveMemoSelectionBlockRange = function (editor, selection) {
+        if (!editor?.state?.doc || !selection?.$from) return null;
+        var doc = editor.state.doc;
+        var resolvedPositions = [];
+        if (selection.$from) resolvedPositions.push(selection.$from);
+        if (selection.$to && selection.$to !== selection.$from) {
+            resolvedPositions.push(selection.$to);
+        }
+
+        var range = null;
+        var pickRange = function ($pos) {
+            if (!$pos) return null;
+            for (var depth = $pos.depth; depth >= 0; depth--) {
+                var node = $pos.node(depth);
+                if (!node || node.type?.name === "doc") continue;
+                if (node.type?.name === "table") {
+                    return {
+                        from: $pos.start(depth),
+                        to: $pos.end(depth),
+                        nodeType: node.type.name
+                    };
+                }
+                if (node.isTextblock || node.isBlock) {
+                    if (node.isAtom || node.isLeaf || node.content?.size === 0) {
+                        return {
+                            from: depth > 0 ? $pos.before(depth) : 0,
+                            to: depth > 0 ? $pos.after(depth) : doc.content.size,
+                            nodeType: node.type.name
+                        };
+                    }
+                    return {
+                        from: $pos.start(depth),
+                        to: $pos.end(depth),
+                        nodeType: node.type.name
+                    };
+                }
+            }
+            return null;
+        };
+
+        resolvedPositions.forEach(function ($pos) {
+            var nextRange = pickRange($pos);
+            if (!nextRange) return;
+            if (!range) {
+                range = nextRange;
+                return;
+            }
+            range = {
+                from: Math.min(range.from, nextRange.from),
+                to: Math.max(range.to, nextRange.to),
+                nodeType: range.nodeType || nextRange.nodeType
+            };
+        });
+
+        return range;
     };
 
     AssistSidebar.prototype.initMemoSelectionTracking = function () {
@@ -3820,6 +3903,69 @@
         return true;
     };
 
+    AssistSidebar.prototype.restoreMemoSelectionRange = function (selectionPos, options) {
+        options = options || {};
+        var editor = global.memoEditor || global.MemoEditor || null;
+        if (!editor?.state?.doc || !editor?.view) return false;
+        var from = Number(selectionPos?.from);
+        var to = Number(selectionPos?.to);
+        if (!Number.isFinite(from) || !Number.isFinite(to)) return false;
+        var docSize = Number(editor.state.doc.content?.size || 0);
+        if (!(docSize >= 0)) return false;
+        from = Math.max(0, Math.min(docSize, Math.floor(Math.min(from, to))));
+        to = Math.max(from, Math.min(docSize, Math.floor(Math.max(from, to))));
+        try {
+            if (editor.chain && typeof editor.commands?.setTextSelection === "function") {
+                editor.chain().focus().setTextSelection({ from: from, to: to }).run();
+            } else if (editor.commands && typeof editor.commands.focus === "function") {
+                editor.commands.focus(from);
+            }
+        } catch (err) {
+            // ignore selection restore failures and continue with overlay restore
+        }
+
+        var selectedText = "";
+        try {
+            selectedText = editor.state.doc.textBetween(from, to, " ");
+        } catch (err) {
+            selectedText = "";
+        }
+        this.memoSelection = {
+            text: selectedText,
+            blockText: selectedText,
+            blockMarkdown: selectedText,
+            excerpt: selectedText ? selectedText.substring(0, 100) + (selectedText.length > 100 ? "…" : "") : "",
+            from: from,
+            to: to
+        };
+        try {
+            var coordsStart = editor.view.coordsAtPos(from);
+            var coordsEnd = editor.view.coordsAtPos(to);
+            this.memoSelectionBlockCoords = {
+                top: coordsStart.top,
+                left: coordsStart.left,
+                width: Math.max(coordsEnd.right - coordsStart.left, 1),
+                height: Math.max(coordsEnd.bottom - coordsStart.top, 1)
+            };
+            this.updateMemoSelectionOverlayPosition();
+            if (this.memoSelectionOverlay) {
+                this.memoSelectionOverlay.style.display = "block";
+            }
+        } catch (err) {
+            // ignore
+        }
+
+        var focusTarget = options.focusTarget || this.textarea;
+        if (options.focusComposer === true && focusTarget) {
+            try {
+                focusTarget.focus({ preventScroll: true });
+            } catch (err) {
+                focusTarget.focus();
+            }
+        }
+        return true;
+    };
+
     AssistSidebar.prototype.refreshMemoSelectionFromEditorSelection = function (editor) {
         if (!editor || !editor.view || !editor.state) return;
         if (!this.memoSelectionFollowActive) {
@@ -3920,6 +4066,13 @@
             start: selectionStartLine,
             end: selectionEndLine
         };
+    };
+
+    AssistSidebar.prototype.hasExplicitMemoTextSelection = function () {
+        var editor = global.memoEditor || global.MemoEditor || null;
+        var selection = editor?.state?.selection;
+        if (!selection) return false;
+        return !selection.empty;
     };
 
     AssistSidebar.prototype.getActiveSystemPrompt = function () {
@@ -4857,7 +5010,9 @@
                     || readDocumentContent()
                     || window.memoEditor.getHTML?.()
                     || "";
-                var selectionPayload = (!isInlineEdit && this.memoSelection)
+                var canUseSelectionPayload = Boolean(this.memoSelection)
+                    && (this.memoSelectionFollowActive || this.hasExplicitMemoTextSelection());
+                var selectionPayload = (!isInlineEdit && canUseSelectionPayload)
                     ? this.getMemoSelectionPayload(documentMarkdown, documentContent)
                     : null;
                 var shouldInlineAppend = (this.promptPresetId === "edit" || this.promptPresetId === "suggest");
@@ -4921,7 +5076,7 @@
 
         var userMessage = isInlineEdit ? options.editMessage : createMessage("user", value);
         var selectionExcerpt = null;
-        if (!isInlineEdit && this.memoSelection) {
+        if (!isInlineEdit && this.memoSelection && (this.memoSelectionFollowActive || this.hasExplicitMemoTextSelection())) {
             var documentMarkdown = (typeof window.getEditorMarkdown === "function"
                 ? window.getEditorMarkdown()
                 : (typeof window.getMemoEditorSource === "function" ? window.getMemoEditorSource("markdown") : "")) || "";
@@ -6283,61 +6438,10 @@
                 try {
                     var selection = window.memoEditor.state.selection;
                     var allowCaretBlock = Boolean(this.memoSelectionFollowActive) && (this._lastFocusedEditor === window.memoEditor);
-                    var resolveBlockRange = function ($pos) {
-                        var allowedBlockTypes = {
-                            paragraph: true,
-                            heading: true,
-                            codeBlock: true,
-                            table: true,
-                            listItem: true,
-                            blockquote: true,
-                            mermaidDiagram: true
-                        };
-                        var tableDepth = -1;
-                        for (var depth = $pos.depth; depth >= 0; depth--) {
-                            var node = $pos.node(depth);
-                            if (node && node.type && node.type.name === "table") {
-                                tableDepth = depth;
-                                break;
-                            }
-                        }
-                        if (tableDepth >= 0) {
-                            return {
-                                from: $pos.start(tableDepth),
-                                to: $pos.end(tableDepth)
-                            };
-                        }
-                        for (var depth = $pos.depth; depth >= 0; depth--) {
-                            var node = $pos.node(depth);
-                            if (node && allowedBlockTypes[node.type.name]) {
-                                return {
-                                    from: $pos.start(depth),
-                                    to: $pos.end(depth)
-                                };
-                            }
-                        }
-                        return null;
-                    };
                     if (selection && (!selection.empty || allowCaretBlock)) {
                         var from = selection.from;
                         var to = selection.to;
-                        var blockRange = null;
-                        if (selection.$from) {
-                            blockRange = resolveBlockRange(selection.$from);
-                        }
-                        if (selection.$to) {
-                            var blockRangeTo = resolveBlockRange(selection.$to);
-                            if (blockRangeTo) {
-                                if (!blockRange) {
-                                    blockRange = blockRangeTo;
-                                } else {
-                                    blockRange = {
-                                        from: Math.min(blockRange.from, blockRangeTo.from),
-                                        to: Math.max(blockRange.to, blockRangeTo.to)
-                                    };
-                                }
-                            }
-                        }
+                        var blockRange = this.resolveMemoSelectionBlockRange(window.memoEditor, selection);
                         if (blockRange) {
                             from = blockRange.from;
                             to = blockRange.to;
@@ -12814,6 +12918,8 @@
 
             // 3. Afficher (ou réutiliser) le message utilisateur dans le chat
             var userMessage = (editMessage && typeof editMessage === "object") ? editMessage : createMessage('user', askContent);
+            userMessage.selectionPos = selectionPos || userMessage.selectionPos || null;
+            userMessage.pendingSelectionPos = selectionPos || userMessage.pendingSelectionPos || null;
             if (!userMessage.docSnapshotId) {
                 var inlineDocId = (typeof options?.docSnapshotId === "string" && options.docSnapshotId)
                     || (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : null)

@@ -7754,12 +7754,65 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
     const handleSelectionChange = () => {
       const { from, to, empty } = editor.state.selection;
+
+      const resolveBlockRange = (selection = editor.state.selection) => {
+        const doc = editor.state.doc;
+        const resolvedPositions = [selection.$from];
+        if (selection.$to && selection.$to !== selection.$from) {
+          resolvedPositions.push(selection.$to);
+        }
+        let nextRange: { from: number; to: number; nodeType: string } | null = null;
+        const pickRange = (resolvedPos: typeof selection.$from) => {
+          for (let depth = resolvedPos.depth; depth >= 0; depth--) {
+            const node = resolvedPos.node(depth);
+            if (!node || node.type?.name === 'doc') continue;
+            if (node.type?.name === 'table') {
+              return {
+                from: resolvedPos.start(depth),
+                to: resolvedPos.end(depth),
+                nodeType: node.type.name,
+              };
+            }
+            if (node.isTextblock || node.isBlock) {
+              if (node.isAtom || node.isLeaf || node.content.size === 0) {
+                return {
+                  from: depth > 0 ? resolvedPos.before(depth) : 0,
+                  to: depth > 0 ? resolvedPos.after(depth) : doc.content.size,
+                  nodeType: node.type.name,
+                };
+              }
+              return {
+                from: resolvedPos.start(depth),
+                to: resolvedPos.end(depth),
+                nodeType: node.type.name,
+              };
+            }
+          }
+          return null;
+        };
+
+        resolvedPositions.forEach((resolvedPos) => {
+          const currentRange = pickRange(resolvedPos);
+          if (!currentRange) return;
+          if (!nextRange) {
+            nextRange = currentRange;
+            return;
+          }
+          nextRange = {
+            from: Math.min(nextRange.from, currentRange.from),
+            to: Math.max(nextRange.to, currentRange.to),
+            nodeType: nextRange.nodeType || currentRange.nodeType,
+          };
+        });
+
+        return nextRange;
+      };
       
       // Annuler le timeout précédent
       clearTimeout(selectionTimeout);
       
-      // Si pas de sélection, émettre l'événement "pas de sélection"
-      if (empty) {
+      // Si pas de sélection et aucun bloc exploitable, émettre l'événement "pas de sélection"
+      if (empty && !resolveBlockRange()) {
         document.dispatchEvent(new CustomEvent('memoEditorSelectionChanged', {
           detail: { isSelected: false }
         }));
@@ -7793,57 +7846,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           let blockFrom = from;
           let blockTo = to;
           let blockText = selectedText;
-          const allowedBlockTypes = new Set([
-            'paragraph',
-            'heading',
-            'codeBlock',
-            'table',
-            'listItem',
-            'blockquote',
-            'mermaidDiagram'
-          ]);
-          const isWhitespaceSelection = selectedText.trim().length === 0;
+          const blockRange = resolveBlockRange(currentSelection);
 
-          if (isWhitespaceSelection) {
-            const { $from, $to } = editor.state.selection;
-            const pickBlockDepth = (resolvedPos: typeof $from) => {
-              for (let depth = resolvedPos.depth; depth >= 0; depth--) {
-                if (allowedBlockTypes.has(resolvedPos.node(depth).type.name)) {
-                  return depth;
-                }
-              }
-              return -1;
-            };
-            const isEmptyTextblock = (resolvedPos: typeof $from) =>
-              resolvedPos.parent?.isTextblock && resolvedPos.parent.content.size === 0;
-            const preferPos = isEmptyTextblock($to) ? $to : $from;
-            let blockDepth = pickBlockDepth(preferPos);
-
-            if (blockDepth < 0 && preferPos !== $from) {
-              blockDepth = pickBlockDepth($from);
-            }
-            if (blockDepth >= 0) {
-              blockFrom = preferPos.start(blockDepth);
-              blockTo = preferPos.end(blockDepth);
-            }
-          } else {
-            editor.state.doc.nodesBetween(from, to > from ? to - 1 : to, (node, pos) => {
-              // Trouver le bloc parent (paragraphe, heading, table, code block, list item)
-              if (allowedBlockTypes.has(node.type.name)) {
-                blockFrom = Math.min(blockFrom, pos);
-                blockTo = Math.max(blockTo, pos + node.nodeSize);
-              }
-            });
+          if (blockRange) {
+            blockFrom = blockRange.from;
+            blockTo = blockRange.to;
           }
 
           // Extraire le texte du bloc complet
           blockText = editor.state.doc.textBetween(blockFrom, blockTo, '\n').trim();
 
           // Déterminer le type de nœud principal
-          let nodeType = '';
-          editor.state.doc.nodesBetween(from, to > from ? to - 1 : to, (node) => {
-            if (node.type.name === 'mermaidDiagram') nodeType = 'mermaidDiagram';
-          });
+          let nodeType = blockRange?.nodeType || '';
 
           // Extraire le markdown du bloc complet (préserve listes, gras, titres, etc.)
           let blockMarkdown = '';
