@@ -1,6 +1,6 @@
 # GoToolkit Data Architecture
 
-Date: 2026-03-18
+Date: 2026-03-26
 Purpose: describe how app data is structured, stored, synced, ingested, and processed so coding agents can modify the right layer without guessing
 Scope: `public/`, `workers/share-proxy`, browser storage, cloud storage
 
@@ -179,6 +179,7 @@ Lifecycle persistence rule:
 - `beforeunload` also raises a browser warning when the active page changed in memory or cloud sync is still in flight
 - this unload-time flush is intended to reduce refresh/close data loss for the active page, but IndexedDB remains the durable source of truth
 - an emergency active-page snapshot is also written to `localStorage` during normal persistence and unload so the next startup can recover the newest active private page if the IndexedDB flush loses the race
+- cloud/shared save paths must reject transient empty active-tab payloads during blur, hide, resume, reload, or sync windows when the last local cloud payload still has meaningful content
 - on bare-root app open (`/` or `/index.html`), the app does not auto-restore or auto-open a private page from bootstrap metadata or IndexedDB recency; it starts on the empty shell and the user chooses a page from the document panel
 
 Simplification note:

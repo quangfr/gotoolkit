@@ -135,26 +135,48 @@ export async function clickMemoDoc(
     timeout = 120_000,
     waitForContentMatch = true
   } = options;
+  const isCloudDoc = String(docId || "").trim().startsWith("share:");
   const item = getMemoDocItem(page, docId);
-  const visible = await item.isVisible().catch(() => false);
-  if (visible) {
-    await item.click();
-  } else if (allowProgrammaticOpen) {
+  const openById = async () => {
     await page.evaluate(async id => {
       await (window as any).GoToolkitMemoOpenDocumentByLink?.(id);
     }, docId);
-  } else {
-    await expect(item).toBeVisible({ timeout });
-    await item.click();
-  }
-  try {
+  };
+  const waitForActivation = async () => {
     await page.waitForFunction(
       expectedId => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "") === String(expectedId || ""),
       docId,
       { timeout }
     );
+  };
+  const waitForOpenSurface = async () => {
+    await waitForActivation();
+    await waitForMemoEditorVisible(page, Math.min(timeout, 30_000));
+  };
+  const visible = await item.isVisible().catch(() => false);
+  if (visible) {
+    await item.click();
+    if (isCloudDoc) {
+      await openById().catch(() => null);
+    }
+  } else if (allowProgrammaticOpen) {
+    await openById();
+  } else {
+    await expect(item).toBeVisible({ timeout });
+    await item.click();
+    if (isCloudDoc) {
+      await openById().catch(() => null);
+    }
+  }
+  try {
+    await waitForOpenSurface();
   } catch {
-    await page.waitForSelector(".ProseMirror:visible", { timeout });
+    await openById().catch(() => null);
+    try {
+      await waitForOpenSurface();
+    } catch {
+      await page.waitForSelector(".ProseMirror:visible", { timeout });
+    }
   }
   if (!waitForContentMatch) return;
   await page.waitForFunction(async expectedId => {

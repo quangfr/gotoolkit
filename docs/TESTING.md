@@ -1,6 +1,6 @@
 # GoToolkit Test Guide
 
-Date: 2026-03-19
+Date: 2026-03-26
 Purpose: describe how to automate testing, cloud document manipulation, browser-session reuse, worker verification, deployment checks, and CI regression coverage in the current repo
 Audience: coding agents and maintainers working from the repo and terminal
 
@@ -293,6 +293,7 @@ Recent troubleshooting note:
 - keep `tests/debug/private-immediate-reload-persist.spec.ts` and `tests/debug/empty-shell-search.spec.ts` in debug until their immediate-reload and empty-search result contracts are stable
 - `tests/debug/empty-shell-search.spec.ts` is the focused repro for root empty-shell search takeover from both the document panel and the centered empty-page search field
 - `tests/debug/cloud-open-bootstrap-diagnose.spec.ts` is the focused repro for the new no-active-page startup flow before cloud page open
+- `tests/debug/cloud-transient-empty-save-guard.spec.ts` is the focused repro for shared-page lifecycle flushes, proving the transient-empty guard preserves the last meaningful cloud payload and draft snapshot
 - `tests/debug/assist-first-response-latency.spec.ts` is the focused repro for Assist send-button latency, measuring retrieval overlap and first visible AI content timing with deterministic delays
 - `tests/debug/assist-real-first-response-latency.spec.ts` is the focused repro for real end-to-end Assist latency, measuring retrieval timing, IA request timing, first chunk arrival, and first visible bot text
 - `tests/debug/assist-real-second-send-latency.spec.ts` is the focused repro for comparing cold and warm real Assist sends in the same session, with retrieval, IA request, and first visible text timings
@@ -307,8 +308,8 @@ Tier suites:
 
   - `T1.1` `t1-1-cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `00:25`) on `2026-03-17 17:42`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`1 test`, `00:36`) on `2026-03-26 14:06`
+    - details: `Latest run passed after restoring shared-page editor hydration on cloud open and persisting a safe cloud open-document backup payload.`
 
   - `T1.2` `t1-2-cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
@@ -342,8 +343,8 @@ Tier suites:
 
   - `T4.4` `t4-4-private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
-    - results: `passing` (`1 test`, `00:21`) on `2026-03-18 11:22`
-    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
+    - results: `passing` (`3 tests`, `00:36`) on `2026-03-26 14:07`
+    - details: `Latest serial rerun passed after the shared-open fixes, confirming no regression in private reload, blur, or repeated-switch persistence.`
 
   - `T4.5` `t4-5-sample-refresh-heading-diagnose.spec.ts`
     - description: imported `sample.md` refresh survival plus heading visibility across editor, state, and durable record layers
