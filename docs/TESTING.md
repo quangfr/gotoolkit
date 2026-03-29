@@ -308,8 +308,8 @@ Tier suites:
 
   - `T1.1` `t1-1-cloud-switch-persist.spec.ts`
     - description: cloud page switch persistence and reload isolation
-    - results: `passing` (`1 test`, `00:36`) on `2026-03-26 14:06`
-    - details: `Latest run passed after restoring shared-page editor hydration on cloud open and persisting a safe cloud open-document backup payload.`
+    - results: `passing` (`1 test`, `01:31`) on `2026-03-29 13:00`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T1.2` `t1-2-cloud-sync-persist.spec.ts`
     - description: cloud create/edit/rename/move/reorder/delete + sync + reload + remote verification
@@ -343,8 +343,8 @@ Tier suites:
 
   - `T4.4` `t4-4-private-switch-persist.spec.ts`
     - description: private document switch persistence and reload survival
-    - results: `passing` (`3 tests`, `00:36`) on `2026-03-26 14:07`
-    - details: `Latest serial rerun passed after the shared-open fixes, confirming no regression in private reload, blur, or repeated-switch persistence.`
+    - results: `passing` (`1 test`, `00:14`) on `2026-03-29 14:58`
+    - details: `Latest run passed. Auto-synced from Playwright suite metrics.`
 
   - `T4.5` `t4-5-sample-refresh-heading-diagnose.spec.ts`
     - description: imported `sample.md` refresh survival plus heading visibility across editor, state, and durable record layers

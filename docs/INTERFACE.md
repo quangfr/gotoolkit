@@ -1,6 +1,6 @@
 # GoToolkit Interface Map
 
-Date: 2026-03-18
+Date: 2026-03-27
 Purpose: help coding agents locate the right frontend surface, bridge, helper, and runtime owner before changing UI behavior
 Scope: `public/*.html`, `public/js/`, `src/`, frontend window globals, shared UI helpers
 
@@ -196,6 +196,10 @@ Memo bridge do and don't:
 
 - don't change `public/index.html` hydration timing in isolation when the issue might be stale bridge instance selection
   - check both the shell timing and bridge cache behavior in the same investigation
+
+- do distinguish "no active document" from "active document with bridge instance still hydrating"
+  - page-switch flows may briefly have a valid active document id before the next editor instance is ready
+  - during that window, showing the empty shell is a bug in the bridge surface contract, not proof that the document selection failed
 
 ## 4. Where to edit first
 

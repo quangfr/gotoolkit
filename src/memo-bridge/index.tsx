@@ -482,6 +482,17 @@ const App = () => {
         return () => observer.disconnect();
     }, []);
 
+    const hasShellActiveDocument = React.useMemo(() => {
+        try {
+            const explicitActiveId = String((window as any).__memoActiveDocumentId || '').trim();
+            if (explicitActiveId) return true;
+            const activeDocumentId = String((window as any).GoToolkitMemoGetActiveDocumentId?.() || '').trim();
+            return Boolean(activeDocumentId);
+        } catch (err) {
+            return false;
+        }
+    }, [activeId, editors]);
+
     useEffect(() => {
         const methods = editors[activeId]?.methods;
         if (methods) {
@@ -499,6 +510,7 @@ const App = () => {
     }, [activeId, editors]);
 
     const hasActiveEditor = Boolean(activeId && editors[activeId]);
+    const shouldShowMemoSurface = hasActiveEditor || hasShellActiveDocument;
     const editorPlaceholder = hasActiveEditor
         ? "Appuyer sur 'espace' pour l'Assistant ou '/' pour les commandes"
         : "Choisissez une page dans le panneau Documents";
@@ -508,7 +520,7 @@ const App = () => {
 
     return (
         <>
-            {!hasActiveEditor && !isSearchMode ? (
+            {!shouldShowMemoSurface && !isSearchMode ? (
                 <section id="memoEmptyState" className="memo-empty-state">
                     <div className="memo-empty-state__panel">
                         <div className="memo-empty-state__actions">
@@ -539,7 +551,7 @@ const App = () => {
                     </div>
                 </section>
             ) : null}
-            {hasActiveEditor ? (
+            {shouldShowMemoSurface ? (
                 <div className="memo-card">
                     <div className="editor-wrap">
                         <div id="editor" className="editor">

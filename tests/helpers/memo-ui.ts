@@ -149,6 +149,18 @@ export async function clickMemoDoc(
       { timeout }
     );
   };
+  const ensureCloudActivationAfterClick = async () => {
+    if (!isCloudDoc) return;
+    try {
+      await page.waitForFunction(
+        expectedId => String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "") === String(expectedId || ""),
+        docId,
+        { timeout: Math.min(timeout, 2_500) }
+      );
+    } catch {
+      await openById().catch(() => null);
+    }
+  };
   const waitForOpenSurface = async () => {
     await waitForActivation();
     await waitForMemoEditorVisible(page, Math.min(timeout, 30_000));
@@ -156,17 +168,13 @@ export async function clickMemoDoc(
   const visible = await item.isVisible().catch(() => false);
   if (visible) {
     await item.click();
-    if (isCloudDoc) {
-      await openById().catch(() => null);
-    }
+    await ensureCloudActivationAfterClick();
   } else if (allowProgrammaticOpen) {
     await openById();
   } else {
     await expect(item).toBeVisible({ timeout });
     await item.click();
-    if (isCloudDoc) {
-      await openById().catch(() => null);
-    }
+    await ensureCloudActivationAfterClick();
   }
   try {
     await waitForOpenSurface();
@@ -175,7 +183,25 @@ export async function clickMemoDoc(
     try {
       await waitForOpenSurface();
     } catch {
-      await page.waitForSelector(".ProseMirror:visible", { timeout });
+      if (!isCloudDoc) {
+        await page.waitForSelector(".ProseMirror:visible", { timeout });
+      } else {
+        await page.waitForFunction(expectedId => {
+          const activeId = String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "").trim();
+          const currentHtml = String((window as any).GoToolkitMemoInstance?.getValue?.() || "");
+          const hasVisibleEditor = Array.from(document.querySelectorAll(".ProseMirror")).some((node) => {
+            if (!(node instanceof HTMLElement)) return false;
+            const style = window.getComputedStyle(node);
+            const rect = node.getBoundingClientRect();
+            return style.display !== "none"
+              && style.visibility !== "hidden"
+              && rect.width > 0
+              && rect.height > 0;
+          });
+          if (hasVisibleEditor) return true;
+          return activeId === String(expectedId || "").trim() && currentHtml.length > 0;
+        }, docId, { timeout });
+      }
     }
   }
   if (!waitForContentMatch) return;

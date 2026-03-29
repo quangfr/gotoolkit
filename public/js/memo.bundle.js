@@ -64985,6 +64985,17 @@ ${innerMarkdown}
       observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
       return () => observer.disconnect();
     }, []);
+    const hasShellActiveDocument = react_shim_default.useMemo(() => {
+      var _a;
+      try {
+        const explicitActiveId = String(window.__memoActiveDocumentId || "").trim();
+        if (explicitActiveId) return true;
+        const activeDocumentId = String(((_a = window.GoToolkitMemoGetActiveDocumentId) == null ? void 0 : _a.call(window)) || "").trim();
+        return Boolean(activeDocumentId);
+      } catch (err) {
+        return false;
+      }
+    }, [activeId, editors]);
     useEffect(() => {
       var _a;
       const methods = (_a = editors[activeId]) == null ? void 0 : _a.methods;
@@ -65002,13 +65013,14 @@ ${innerMarkdown}
       }
     }, [activeId, editors]);
     const hasActiveEditor = Boolean(activeId && editors[activeId]);
+    const shouldShowMemoSurface = hasActiveEditor || hasShellActiveDocument;
     const editorPlaceholder = hasActiveEditor ? "Appuyer sur 'espace' pour l'Assistant ou '/' pour les commandes" : "Choisissez une page dans le panneau Documents";
     const handleCreateRootPage = react_shim_default.useCallback(() => {
       var _a;
       (_a = window.GoToolkitMemoCreateRootDocument) == null ? void 0 : _a.call(window);
     }, []);
     return /* @__PURE__ */ jsxs(Fragment3, { children: [
-      !hasActiveEditor && !isSearchMode ? /* @__PURE__ */ jsx("section", { id: "memoEmptyState", className: "memo-empty-state", children: /* @__PURE__ */ jsxs("div", { className: "memo-empty-state__panel", children: [
+      !shouldShowMemoSurface && !isSearchMode ? /* @__PURE__ */ jsx("section", { id: "memoEmptyState", className: "memo-empty-state", children: /* @__PURE__ */ jsxs("div", { className: "memo-empty-state__panel", children: [
         /* @__PURE__ */ jsxs("div", { className: "memo-empty-state__actions", children: [
           /* @__PURE__ */ jsx(
             "button",
@@ -65040,7 +65052,7 @@ ${innerMarkdown}
           /* @__PURE__ */ jsx("div", { id: "memoEmptyStateRecentList", className: "memo-empty-state__recent-list" })
         ] })
       ] }) }) : null,
-      hasActiveEditor ? /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: /* @__PURE__ */ jsx("div", { id: "editor", className: "editor", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
+      shouldShowMemoSurface ? /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: /* @__PURE__ */ jsx("div", { id: "editor", className: "editor", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
         EditorItem,
         {
           editor,
@@ -65209,4 +65221,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map
